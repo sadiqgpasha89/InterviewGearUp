@@ -1,0 +1,92 @@
+name: Share an interview question
+description: Post a question you were asked so others preparing for the same company can see it.
+title: "[Company] Question"
+labels: ["community-question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the question in your own words. Please do not share confidential material or anything covered by an NDA.
+        Questions appear on the Community tab of the site once this issue is created.
+  - type: input
+    id: company
+    attributes:
+      label: Company
+    validations:
+      required: true
+  - type: dropdown
+    id: role
+    attributes:
+      label: Role
+      options:
+        - "Software engineer (core)"
+        - "Frontend engineer"
+        - "Backend engineer"
+        - "DevOps / SRE / Cloud"
+        - "Data engineer"
+        - "ML / AI engineer"
+        - "QA / SDET"
+        - "Security engineer"
+        - "Tech lead / Engineering manager"
+    validations:
+      required: true
+  - type: dropdown
+    id: level
+    attributes:
+      label: Level
+      options:
+        - "1 Junior (0 to 2 years)"
+        - "2 Mid-level (2 to 5 years)"
+        - "3 Senior (5 to 8 years)"
+        - "4 Lead / Staff (8+ years)"
+    validations:
+      required: true
+  - type: dropdown
+    id: domain
+    attributes:
+      label: Domain
+      options:
+        - "Fintech / Banking"
+        - "E-commerce / Retail"
+        - "Telecom / Networking"
+        - "Healthcare"
+        - "SaaS / Enterprise software"
+        - "Gaming / Media"
+        - "AI / Data products"
+        - "Cloud / Infrastructure"
+        - "Consulting / IT services"
+        - "Other"
+    validations:
+      required: true
+  - type: dropdown
+    id: round
+    attributes:
+      label: Round
+      options:
+        - "Phone screen"
+        - "Coding"
+        - "System design"
+        - "Technical deep dive"
+        - "Behavioral"
+        - "Hiring manager"
+        - "Take-home"
+        - "Onsite loop"
+    validations:
+      required: true
+  - type: input
+    id: year
+    attributes:
+      label: Year asked
+      placeholder: "2026"
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: The question as it was asked, including any constraints the interviewer gave.
+    validations:
+      required: true
+  - type: textarea
+    id: answer
+    attributes:
+      label: Your answer (optional)
+      description: How you answered, or how you would answer now.
