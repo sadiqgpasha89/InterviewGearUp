@@ -1,5 +1,8 @@
 # InterviewGearUp
 
+🌐 **Live Application:** [https://sadiqgpasha89.github.io/InterviewGearUp/](https://sadiqgpasha89.github.io/InterviewGearUp/)  
+👨‍💻 **Portfolio:** [https://sadiqgpasha89.github.io](https://sadiqgpasha89.github.io)
+
 Interview preparation for IT roles, organised by **gear**:
 * **Gear 1 — Junior** (0 to 2 years)
 * **Gear 2 — Mid-level** (2 to 5 years)
@@ -10,7 +13,7 @@ Interview preparation for IT roles, organised by **gear**:
 
 ## Highlights
 
-- **Question bank**: 66 in-depth questions across 9 tech roles. Every entry provides a 30-second summary answer, deep technical breakdown, pitfalls & trade-offs, and likely follow-up questions tailored to that level.
+- **Question bank**: 900+ in-depth questions across 9 tech roles (100+ questions per role across Junior, Mid-level, Senior, and Lead/Staff gears). Every entry provides a 30-second summary answer, deep technical breakdown, pitfalls & trade-offs, and likely follow-up questions tailored to that level.
 - **Drill mode**: Practice out loud with random questions and a timer. Questions marked as prepared automatically appear less frequently.
 - **Community board**: Real interview questions asked at top companies, filterable by company, role, gear, and business domain.
 - **Auto-generated LLM answers**: Community questions are automatically answered by an LLM (Google Gemini, Anthropic Claude, or OpenAI) calibrated for the stated role, company domain, and gear level.
@@ -19,19 +22,19 @@ Interview preparation for IT roles, organised by **gear**:
 
 ---
 
-## Roles Covered
+## Roles Covered (100+ Questions Each)
 
-| Role | Focus Topics |
-|---|---|
-| **Software Engineer (Core)** | Algorithms, concurrency, distributed systems, caching, API design |
-| **Frontend Engineer** | DOM rendering, state management, web performance, CSS architecture, accessibility |
-| **Backend Engineer** | Microservices, database indexing, transactions, messaging queues, event sourcing |
-| **DevOps / SRE / Cloud** | Kubernetes, CI/CD, observability, containerisation, infrastructure-as-code |
-| **Data Engineer** | ETL pipelines, partitioning, data lakes, streaming vs. batch, SQL optimization |
-| **ML / AI Engineer** | Model evaluation, embeddings, RAG architectures, feature pipelines, drift detection |
-| **QA / SDET** | Test automation pyramids, flaky test mitigation, contract testing, mocking |
-| **Security Engineer** | Threat modeling, zero trust, OAuth2/OIDC, secrets management, input sanitization |
-| **Tech Lead / EM** | System architecture, technical debt management, mentorship, stakeholder alignment |
+| Role | Questions | Focus Topics |
+|---|---|---|
+| **Software Engineer (Core)** | 100 | Algorithms, data structures, concurrency, OOP patterns, bit manipulation, systems programming |
+| **Frontend Engineer** | 100 | DOM rendering, CRP, JavaScript internals, React Fiber, Core Web Vitals, CSS architecture, accessibility |
+| **Backend Engineer** | 100 | Microservices, database indexing, MVCC, transactions, messaging queues, event sourcing, caching |
+| **DevOps / SRE / Cloud** | 100 | Kubernetes, CI/CD, Linux internals, Prometheus observability, GitOps, cloud networking, SRE |
+| **Data Engineer** | 100 | Spark optimization, Iceberg/Delta Lake, ETL/ELT pipelines, dimensional modeling, Kafka, Airflow |
+| **ML / AI Engineer** | 100 | Deep learning, Transformers, Attention derivations, LLM serving (vLLM/FlashAttention), RAG, MLOps |
+| **QA / SDET** | 100 | Test automation pyramids, Playwright/Selenium, API contract testing, performance (k6), flaky tests |
+| **Security Engineer** | 101 | OWASP Top 10, cryptographic primitives, OAuth2/OIDC, cloud IAM, Zero Trust, threat modeling |
+| **Tech Lead / EM** | 100 | Engineering 1-on-1s, delivery execution, ADRs, RFC culture, blameless postmortems, team topologies |
 
 ---
 
@@ -133,6 +136,8 @@ node scripts/generate-answer.js
 ---
 
 ## Deploy to GitHub Pages
+
+The application is deployed live at: **[https://sadiqgpasha89.github.io/InterviewGearUp/](https://sadiqgpasha89.github.io/InterviewGearUp/)**
 
 1. In your GitHub repository, navigate to **Settings > Pages**.
 2. Under **Build and deployment > Source**, select **Deploy from a branch**.

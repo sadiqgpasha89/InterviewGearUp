@@ -743,6 +743,7 @@
 
   const links = document.getElementById('foot-links');
   const repo = 'https://github.com/' + cfg.owner + '/' + cfg.repo;
+  links.appendChild(h('a', { href: 'https://sadiqgpasha89.github.io', rel: 'noopener noreferrer' }, 'Portfolio'));
   links.appendChild(h('a', { href: repo, rel: 'noopener noreferrer' }, 'Source on GitHub'));
   links.appendChild(h('a', { href: repo + '/issues/new', rel: 'noopener noreferrer' }, 'Report a wrong answer'));
 
