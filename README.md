@@ -18,8 +18,9 @@ GitHub Pages cannot run a server, so sharing and answer generation use what is a
 | Registration | A profile (display name, optional GitHub username) saved in your browser's local storage. |
 | Your posts | Saved in local storage, so they are private to your browser until you share them. |
 | Sharing with everyone | **Share with the community** opens a pre-filled issue form in this repository. Issues labelled `community-question` are read through the public GitHub API and shown on the Community tab for all visitors. The GitHub account is the identity, and closing an issue removes the post. |
-| Auto-generated answers | By default an offline engine (`js/engine.js`) classifies the question, calibrates to the level and company domain, gives a structure for the answer, and quotes the closest entries in the curated bank. It is template-based, not a language model, and says so on screen. |
-| Tailored answers (optional) | Add an Anthropic API key in **Settings** and each question gets a Claude-written answer. The call goes from the browser straight to `api.anthropic.com`. The key stays in local storage on that device. Use a key with a low spend limit and remove it on shared computers. |
+| Auto-generated answers (LLM) | Community questions get full AI-generated answers powered by an LLM (calibrated for role, gear level, and company domain). When an issue is posted, a GitHub Action automatically runs and generates the answer using Gemini, Claude, or OpenAI, saving it directly to the issue body so all visitors see it. |
+| In-browser AI answers | Add an API key (Google Gemini free tier, Anthropic Claude, or OpenAI) in **Settings** to generate or re-generate tailored answers instantly from your browser. The key stays in your browser's local storage. |
+| Offline fallback | If no LLM API key or network connection is available, an offline engine (`js/engine.js`) classifies the question and provides a structured scaffold quoting the closest curated bank entries. |
 
 Limits to know about: the GitHub API allows 60 unauthenticated requests per hour per visitor, so the shared list is cached for 10 minutes. Shared posts are unmoderated until someone closes the issue, so review the Issues tab now and then.
 
@@ -33,6 +34,13 @@ npm test                        # data validation and answer-engine tests (Node 
 ## Deploy on GitHub Pages
 
 Settings, Pages, deploy from branch `main`, folder `/ (root)`. If you fork the project, change `owner` and `repo` in `js/config.js` so sharing and the Community tab point at your repository.
+
+### Enable automated LLM answers for community questions
+
+To have GitHub Actions automatically generate AI answers when community questions are submitted:
+1. In your repository on GitHub, go to **Settings > Secrets and variables > Actions**.
+2. Add a repository secret: `GEMINI_API_KEY` (recommended, free from [Google AI Studio](https://aistudio.google.com)), `ANTHROPIC_API_KEY`, or `OPENAI_API_KEY`.
+3. Whenever an issue with the label `community-question` is opened, the `.github/workflows/generate-answer.yml` workflow generates the answer using the LLM and saves it to the issue body for all visitors to see.
 
 ## Add or edit questions
 
@@ -54,7 +62,7 @@ Questions live in `data/*.js`, one file per role. Each entry:
 ## Security notes
 
 - User text is only ever inserted as text nodes (no `innerHTML`), including text from GitHub issues and from the AI.
-- A Content Security Policy in `index.html` restricts scripts and styles to this site and network calls to `api.github.com` and `api.anthropic.com`.
+- A Content Security Policy in `index.html` restricts scripts and styles to this site and network calls to `api.github.com`, `api.anthropic.com`, `generativelanguage.googleapis.com`, and `api.openai.com`.
 - The markdown renderer only allows `#/` and `https://` links.
 - Do not post confidential material or anything covered by an NDA. Describe questions in your own words.
 

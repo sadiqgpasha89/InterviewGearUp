@@ -1,10 +1,8 @@
-/* Offline answer engine. Pure functions, no DOM, so it can be tested in Node.
-   It does three things:
+/* Answer engine and prompt builder. Pure functions, no DOM, so it can be tested in Node.
    1. classify(question)   - what kind of interview question is this?
    2. retrieve(...)        - which curated bank entries are closest?
-   3. generate(...)        - assemble a structured, level-aware answer draft (markdown).
-   It does NOT pretend to be an LLM: it scaffolds a good answer and quotes the curated bank.
-   For a tailored answer, app.js can call Claude with aiPrompt() instead. */
+   3. generate(...)        - offline structured template fallback (markdown).
+   4. aiPrompt(post)       - prompt for LLM answer generation (Gemini, Claude, OpenAI). */
 (function () {
   const IGU = (window.IGU = window.IGU || {});
 

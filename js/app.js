@@ -364,8 +364,20 @@
           question: q, answer: answer.value.trim()
         };
         p.roleName = roleName(p.role);
-        p.gen = engine.generate({ question: p.question, role: p.role, level: p.level, company: p.company, domain: p.domain, round: p.round, answer: p.answer }, bank);
         btn.disabled = true;
+        const s = store.get('settings', {});
+        if (s.key) {
+          btn.textContent = 'Generating answer with AI...';
+          try {
+            p.gen = await askLlm(p);
+            saveAi(p.id, p.gen);
+          } catch (e) {
+            console.warn('AI answer generation failed, using offline fallback:', e);
+            p.gen = engine.generate({ question: p.question, role: p.role, level: p.level, company: p.company, domain: p.domain, round: p.round, answer: p.answer }, bank);
+          }
+        } else {
+          p.gen = engine.generate({ question: p.question, role: p.role, level: p.level, company: p.company, domain: p.domain, round: p.round, answer: p.answer }, bank);
+        }
         posts.save([p].concat(posts.all()));
         go('#/community?open=' + encodeURIComponent(p.id));
       }
@@ -392,12 +404,14 @@
     const fields = {};
     body.split(/^### /m).slice(1).forEach(function (chunk) {
       const nl = chunk.indexOf('\n');
+      if (nl === -1) return;
       const key = chunk.slice(0, nl).trim().toLowerCase();
       const val = chunk.slice(nl + 1).trim();
       fields[key] = val === '_No response_' ? '' : val;
     });
     const lvl = parseInt(fields.level, 10);
-    return {
+    const aiAnswer = fields['auto-generated answer'] || fields['generated answer'] || fields['ai answer'] || '';
+    const item = {
       id: 'gh-' + i.number, createdAt: i.created_at, remote: true, url: i.html_url,
       author: { name: i.user && i.user.login, gh: i.user && i.user.login },
       company: trim(fields.company || 'Unknown', 60),
@@ -406,7 +420,18 @@
       year: parseInt(fields.year, 10) || new Date(i.created_at).getFullYear(),
       question: trim(fields.question || i.title, 1500), answer: trim(fields.answer || '', 2500)
     };
+    if (aiAnswer) {
+      item.gen = {
+        mode: 'llm',
+        model: fields['model'] || fields['ai model'] || 'LLM',
+        md: aiAnswer,
+        at: i.updated_at || i.created_at
+      };
+    }
+    return item;
   }
+  IGU.parseIssue = parseIssue;
+  IGU.detectProvider = detectProvider;
 
   async function fetchShared() {
     const cached = store.get('shared', null);
@@ -430,17 +455,39 @@
     return 'https://github.com/' + cfg.owner + '/' + cfg.repo + '/issues/new?' + q.toString();
   }
 
-  async function askClaude(p) {
-    const s = store.get('settings', {});
-    if (!s.key) throw new Error('Add an API key in Settings first.');
-    const payload = Object.assign({}, p, { roleName: roleName(p.role) });
+  async function callGemini(key, model, systemPrompt, userPrompt) {
+    const m = model || (cfg.providers && cfg.providers.gemini.defaultModel) || 'gemini-2.5-flash';
+    const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(m) + ':generateContent?key=' + encodeURIComponent(key);
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+        systemInstruction: { parts: [{ text: systemPrompt }] }
+      })
+    });
+    if (!res.ok) {
+      let msg = 'Gemini request failed (' + res.status + ').';
+      try { const j = await res.json(); if (j && j.error && j.error.message) msg = j.error.message; } catch (e) { /* keep default */ }
+      throw new Error(msg);
+    }
+    const j = await res.json();
+    const candidate = (j.candidates && j.candidates[0]) || {};
+    const parts = (candidate.content && candidate.content.parts) || [];
+    const text = parts.map(function (p) { return p.text || ''; }).join('\n').trim();
+    if (!text) throw new Error('Gemini returned an empty answer.');
+    return { text: text, model: m, provider: 'Google Gemini' };
+  }
+
+  async function callAnthropic(key, model, systemPrompt, userPrompt) {
+    const m = model || (cfg.providers && cfg.providers.anthropic.defaultModel) || 'claude-sonnet-5-5';
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
-        'content-type': 'application/json', 'x-api-key': s.key, 'anthropic-version': '2023-06-01',
+        'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01',
         'anthropic-dangerous-direct-browser-access': 'true'
       },
-      body: JSON.stringify({ model: s.model || cfg.defaultModel, max_tokens: 1800, system: engine.AI_SYSTEM, messages: [{ role: 'user', content: engine.aiPrompt(payload) }] })
+      body: JSON.stringify({ model: m, max_tokens: 1800, system: systemPrompt, messages: [{ role: 'user', content: userPrompt }] })
     });
     if (!res.ok) {
       let msg = 'Claude request failed (' + res.status + ').';
@@ -450,7 +497,67 @@
     const j = await res.json();
     const text = (j.content || []).filter(function (b) { return b.type === 'text'; }).map(function (b) { return b.text; }).join('\n').trim();
     if (!text) throw new Error('Claude returned an empty answer.');
-    return { mode: 'claude', model: s.model || cfg.defaultModel, md: text, at: new Date().toISOString() };
+    return { text: text, model: m, provider: 'Anthropic Claude' };
+  }
+
+  async function callOpenAI(key, model, systemPrompt, userPrompt) {
+    const m = model || (cfg.providers && cfg.providers.openai.defaultModel) || 'gpt-4o-mini';
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'authorization': 'Bearer ' + key
+      },
+      body: JSON.stringify({
+        model: m,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        max_tokens: 1800
+      })
+    });
+    if (!res.ok) {
+      let msg = 'OpenAI request failed (' + res.status + ').';
+      try { const j = await res.json(); if (j && j.error && j.error.message) msg = j.error.message; } catch (e) { /* keep default */ }
+      throw new Error(msg);
+    }
+    const j = await res.json();
+    const text = (((j.choices || [])[0] || {}).message || {}).content || '';
+    if (!text.trim()) throw new Error('OpenAI returned an empty answer.');
+    return { text: text.trim(), model: m, provider: 'OpenAI' };
+  }
+
+  function detectProvider(s) {
+    if (s.provider) return s.provider;
+    const key = (s.key || '').trim();
+    if (key.startsWith('AIza')) return 'gemini';
+    if (key.startsWith('sk-ant')) return 'anthropic';
+    if (key.startsWith('sk-')) return 'openai';
+    const model = (s.model || '').toLowerCase();
+    if (model.includes('gemini')) return 'gemini';
+    if (model.includes('claude')) return 'anthropic';
+    if (model.includes('gpt')) return 'openai';
+    return cfg.defaultProvider || 'gemini';
+  }
+
+  async function askLlm(p) {
+    const s = store.get('settings', {});
+    if (!s.key) throw new Error('Add an AI API key in Settings first.');
+    const payload = Object.assign({}, p, { roleName: roleName(p.role) });
+    const prompt = engine.aiPrompt(payload);
+    const provider = detectProvider(s);
+    let result;
+    if (provider === 'gemini') {
+      result = await callGemini(s.key, s.model, engine.AI_SYSTEM, prompt);
+    } else if (provider === 'anthropic') {
+      result = await callAnthropic(s.key, s.model, engine.AI_SYSTEM, prompt);
+    } else if (provider === 'openai') {
+      result = await callOpenAI(s.key, s.model, engine.AI_SYSTEM, prompt);
+    } else {
+      throw new Error('Unsupported AI provider: ' + provider);
+    }
+    return { mode: 'llm', provider: result.provider, model: result.model, md: result.text, at: new Date().toISOString() };
   }
 
   function aiCache() { return store.get('ai', {}); }
@@ -466,20 +573,26 @@
     function render() {
       wrap.replaceChildren();
       const gen = aiCache()[p.id] || p.gen || engine.generate({ question: p.question, role: p.role, level: p.level, company: p.company, domain: p.domain, round: p.round, answer: p.answer }, bank);
+      const isLlm = gen.mode === 'llm' || gen.mode === 'claude' || gen.mode === 'gemini' || gen.mode === 'openai';
       const hasKey = !!store.get('settings', {}).key;
       const msg = h('p', { class: 'notice bad', hidden: true });
-      const btn = h('button', { class: 'btn small', type: 'button' }, hasKey ? (gen.mode === 'claude' ? 'Regenerate with Claude' : 'Generate with Claude') : 'Add API key for a tailored answer');
+      const btnLabel = hasKey ? (isLlm ? 'Regenerate with AI' : 'Generate with AI') : 'Add API key in Settings';
+      const btn = h('button', { class: 'btn small', type: 'button' }, btnLabel);
       btn.addEventListener('click', async function () {
         if (!hasKey) { openSettings(); return; }
-        btn.disabled = true; btn.textContent = 'Asking Claude...'; msg.hidden = true;
-        try { saveAi(p.id, await askClaude(p)); render(); }
+        btn.disabled = true; btn.textContent = 'Asking AI...'; msg.hidden = true;
+        try { saveAi(p.id, await askLlm(p)); render(); }
         catch (e) { btn.disabled = false; btn.textContent = 'Try again'; msg.textContent = e.message; msg.hidden = false; }
       });
-      wrap.appendChild(h('div', { class: 'ans-h' },
-        h('span', null, gen.mode === 'claude' ? 'Answer written by Claude' : 'Auto-generated answer (offline draft)'), btn));
+      const headerTitle = isLlm ? ('Answer generated by ' + (gen.model || gen.provider || 'AI')) : 'Auto-generated answer (offline draft)';
+      wrap.appendChild(h('div', { class: 'ans-h' }, h('span', null, headerTitle), btn));
       wrap.appendChild(msg);
       wrap.appendChild(h('div', { class: 'q-body' }, md(gen.md)));
-      if (gen.mode !== 'claude') wrap.appendChild(h('p', { class: 'muted small-text' }, 'Built from templates and the curated question bank, not by a language model. Treat it as a structure to fill with your own experience.'));
+      if (isLlm) {
+        wrap.appendChild(h('p', { class: 'muted small-text' }, 'Generated by a language model for interview preparation. Calibrated to the stated role, level, and company domain.'));
+      } else {
+        wrap.appendChild(h('p', { class: 'muted small-text' }, 'Built from templates and the curated question bank, not by a language model. Add an API key in Settings or share to GitHub for an LLM answer.'));
+      }
     }
     render();
     return wrap;
@@ -581,18 +694,42 @@
 
   /* ---------------- settings dialog ---------------- */
   const dlg = document.getElementById('settings');
+  const providerSel = document.getElementById('set-provider');
+  const keyInput = document.getElementById('set-key');
+  const modelInput = document.getElementById('set-model');
+
+  function updateSettingsPlaceholders() {
+    if (!providerSel || !keyInput || !modelInput) return;
+    const prov = providerSel.value;
+    if (prov === 'gemini') {
+      keyInput.placeholder = 'AIzaSy... (free key via aistudio.google.com)';
+      modelInput.placeholder = 'gemini-2.5-flash (default)';
+    } else if (prov === 'anthropic') {
+      keyInput.placeholder = 'sk-ant-...';
+      modelInput.placeholder = 'claude-sonnet-5-5 (default)';
+    } else if (prov === 'openai') {
+      keyInput.placeholder = 'sk-...';
+      modelInput.placeholder = 'gpt-4o-mini (default)';
+    }
+  }
+  if (providerSel) providerSel.addEventListener('change', updateSettingsPlaceholders);
+
   function openSettings() {
     const s = store.get('settings', {});
-    document.getElementById('set-key').value = s.key || '';
-    document.getElementById('set-model').value = s.model || cfg.defaultModel;
+    if (providerSel) providerSel.value = s.provider || detectProvider(s) || 'gemini';
+    if (keyInput) keyInput.value = s.key || '';
+    if (modelInput) modelInput.value = s.model || '';
+    updateSettingsPlaceholders();
     if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
   }
   document.getElementById('open-settings').addEventListener('click', openSettings);
   dlg.addEventListener('close', function () {
     if (dlg.returnValue !== 'save') return;
+    const prov = providerSel ? providerSel.value : 'gemini';
     store.set('settings', {
-      key: document.getElementById('set-key').value.trim(),
-      model: document.getElementById('set-model').value.trim() || cfg.defaultModel
+      provider: prov,
+      key: keyInput ? keyInput.value.trim() : '',
+      model: modelInput ? modelInput.value.trim() : ''
     });
     render();
   });

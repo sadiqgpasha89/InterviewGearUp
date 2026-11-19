@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src https://api.github.com https://api.anthropic.com; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src https://api.github.com https://api.anthropic.com https://generativelanguage.googleapis.com https://api.openai.com; base-uri 'none'; form-action 'self'">
 <title>InterviewGearUp</title>
 <meta name="description" content="Interview questions with detailed answers for IT roles at every level, plus a community board of questions asked at real companies.">
 <meta name="color-scheme" content="light dark">
@@ -45,12 +45,18 @@
 <dialog id="settings" aria-labelledby="settings-title">
   <form method="dialog" class="dlg" id="settings-form">
     <h2 id="settings-title">Settings</h2>
-    <p class="muted">Posted questions get an answer instantly from the built-in question bank. For a tailored answer, add an Anthropic API key and the app will ask Claude directly from your browser.</p>
-    <label for="set-key">Anthropic API key</label>
-    <input id="set-key" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-...">
-    <label for="set-model">Model</label>
-    <input id="set-model" type="text" autocomplete="off" spellcheck="false">
-    <p class="muted small-text">The key stays in this browser and is sent only to api.anthropic.com. Use a key with a low spend limit, and remove it on shared computers.</p>
+    <p class="muted">Community questions are answered by an LLM. For instant in-browser generation or re-generating answers directly from your browser, add an API key for Google Gemini, Anthropic Claude, or OpenAI.</p>
+    <label for="set-provider">AI Provider</label>
+    <select id="set-provider">
+      <option value="gemini">Google Gemini (free tier via AI Studio)</option>
+      <option value="anthropic">Anthropic Claude</option>
+      <option value="openai">OpenAI</option>
+    </select>
+    <label for="set-key">API key</label>
+    <input id="set-key" type="password" autocomplete="off" spellcheck="false" placeholder="AIzaSy... or sk-ant-... or sk-...">
+    <label for="set-model">Model <span class="hint">(optional)</span></label>
+    <input id="set-model" type="text" autocomplete="off" spellcheck="false" placeholder="Default for selected provider">
+    <p class="muted small-text">The key is stored locally in this browser and only sent to the selected provider. Google AI Studio provides free Gemini API keys without requiring credit cards.</p>
     <div class="dlg-actions">
       <button class="btn danger-ghost" type="button" id="wipe">Delete my local data</button>
       <span class="grow"></span>

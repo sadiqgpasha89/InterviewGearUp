@@ -7,7 +7,13 @@
     repo: 'InterviewGearUp',
     issueLabel: 'community-question',
     cacheMinutes: 10,
-    defaultModel: 'claude-sonnet-5-5'
+    defaultProvider: 'gemini',
+    defaultModel: 'gemini-2.5-flash',
+    providers: {
+      gemini: { name: 'Google Gemini', defaultModel: 'gemini-2.5-flash' },
+      anthropic: { name: 'Anthropic Claude', defaultModel: 'claude-sonnet-5-5' },
+      openai: { name: 'OpenAI', defaultModel: 'gpt-4o-mini' }
+    }
   };
 
   IGU.meta = {

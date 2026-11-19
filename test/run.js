@@ -105,3 +105,109 @@ test('GitHub issue form matches the options used by the app', () => {
   assert.ok(yml.includes('community-question'));
   assert.ok(yml.includes(IGU.config.issueLabel));
 });
+
+test('generate-answer script parses issue bodies and formats LLM answers', async () => {
+  const genScript = require(path.join(root, 'scripts/generate-answer.js'));
+  const rawBody = [
+    '### Company', '', 'Google', '',
+    '### Role', '', 'Backend engineer', '',
+    '### Level', '', '3 Senior (5 to 8 years)', '',
+    '### Domain', '', 'Fintech / Banking', '',
+    '### Round', '', 'System design', '',
+    '### Year asked', '', '2026', '',
+    '### Question', '', 'Design a rate limiter for our public API', '',
+    '### Your answer (optional)', '', '_No response_'
+  ].join('\n');
+
+  const fields = genScript.parseIssueBody(rawBody);
+  assert.equal(fields.company, 'Google');
+  assert.equal(fields.role, 'Backend engineer');
+  assert.equal(fields.question, 'Design a rate limiter for our public API');
+  assert.equal(genScript.parseLevel(fields.level), 3);
+
+  const updatedBody = genScript.appendAnswerToBody(rawBody, '#### 30-second answer\nA token bucket algorithm...', {
+    model: 'gemini-2.5-flash',
+    roleName: 'Backend engineer',
+    level: 3
+  });
+
+  assert.ok(updatedBody.includes('### Auto-generated Answer'));
+  assert.ok(updatedBody.includes('gemini-2.5-flash'));
+  assert.ok(updatedBody.includes('A token bucket algorithm...'));
+
+  const parsedWithAnswer = genScript.parseIssueBody(updatedBody);
+  assert.ok(parsedWithAnswer['auto-generated answer'].includes('A token bucket algorithm...'));
+
+  // Test fallback answer generation
+  const engineContext = genScript.loadAppEngine();
+  const fallback = await genScript.generateAnswerWithLlm(engineContext, {
+    question: fields.question,
+    role: 'backend',
+    roleName: 'Backend engineer',
+    level: 3,
+    company: fields.company,
+    domain: fields.domain,
+    round: fields.round,
+    answer: ''
+  });
+  assert.ok(fallback.text.includes('#### How to structure your answer'));
+  assert.equal(fallback.provider, 'Template Engine');
+});
+
+test('parseIssue extracts AI generated answer from GitHub issues', () => {
+  class Node {}
+  class DocumentFragment extends Node {
+    appendChild() {}
+  }
+  const createElement = () => ({
+    appendChild: () => {},
+    replaceChildren: () => {},
+    addEventListener: () => {},
+    setAttribute: () => {},
+    removeAttribute: () => {},
+    style: { setProperty: () => {} },
+    classList: { toggle: () => {} }
+  });
+  const dummyDoc = {
+    createElement,
+    createDocumentFragment: () => new DocumentFragment(),
+    createTextNode: () => new Node(),
+    getElementById: () => createElement(),
+    querySelectorAll: () => []
+  };
+  const testCtx = { window: {}, document: dummyDoc, location: { hash: '' }, addEventListener: () => {}, scrollTo: () => {}, URLSearchParams, Node, DocumentFragment };
+  testCtx.window = testCtx;
+  vm.createContext(testCtx);
+  ['js/config.js', 'js/util.js', 'js/engine.js', 'js/app.js'].forEach((f) => {
+    vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), testCtx);
+  });
+  const issue = {
+    number: 42,
+    created_at: '2026-11-19T20:00:00Z',
+    user: { login: 'octocat' },
+    html_url: 'https://github.com/sadiqgpasha89/InterviewGearUp/issues/42',
+    body: [
+      '### Company', 'Amazon',
+      '### Role', 'Backend engineer',
+      '### Level', '3 Senior (5 to 8 years)',
+      '### Domain', 'E-commerce / Retail',
+      '### Round', 'System design',
+      '### Year asked', '2026',
+      '### Question', 'How do you design a high-throughput shopping cart?',
+      '### Your answer (optional)', '_No response_',
+      '### Auto-generated Answer', '#### 30-second answer\nUse a distributed cache with write-back...'
+    ].join('\n')
+  };
+  const parsed = testCtx.IGU.parseIssue(issue);
+  assert.equal(parsed.id, 'gh-42');
+  assert.equal(parsed.company, 'Amazon');
+  assert.equal(parsed.level, 3);
+  assert.ok(parsed.gen);
+  assert.equal(parsed.gen.mode, 'llm');
+  assert.ok(parsed.gen.md.includes('distributed cache'));
+
+  // Test provider detection
+  assert.equal(testCtx.IGU.detectProvider({ key: 'AIzaSy123' }), 'gemini');
+  assert.equal(testCtx.IGU.detectProvider({ key: 'sk-ant-api03' }), 'anthropic');
+  assert.equal(testCtx.IGU.detectProvider({ key: 'sk-proj123' }), 'openai');
+});
