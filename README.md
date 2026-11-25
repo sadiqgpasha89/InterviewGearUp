@@ -13,7 +13,7 @@ Interview preparation for IT roles, organised by **gear**:
 
 ## Highlights
 
-- **Question bank**: 1,116 interview questions across 10 tech roles and 4 gears, **every one with a full written answer** (30-second answer, in-depth breakdown, pitfalls, follow-ups). Written answers are currently marked *AI-drafted, not yet reviewed by a person*, so treat them as strong study material and see [CONTRIBUTING.md](CONTRIBUTING.md) to help review and correct them. Questions that come in later and have no answer yet are labelled as pending, with a practice structure instead of filler.
+- **Question bank**: 1,153 interview questions across 10 tech roles and 4 gears, **every one with a full written answer** (30-second answer, in-depth breakdown, pitfalls, follow-ups). Written answers are currently marked *AI-drafted, not yet reviewed by a person*, so treat them as strong study material and see [CONTRIBUTING.md](CONTRIBUTING.md) to help review and correct them. Questions that come in later and have no answer yet are labelled as pending, with a practice structure instead of filler.
 - **Plan**: a daily list built from your role, gear, optional interview date and time budget: reviews that are due first, then new questions with a written answer, plus a mock round every third day. It is a rule-based schedule, not a readiness prediction.
 - **Review (spaced repetition)**: questions you grade in Drill or Review come back on a schedule (again 1 day, partly 3, good 7 then growing, mastered 14 then 30 and up). Daily goal, role and gear filters, a "how it works" explainer and a reset. Days are your local calendar days.
 - **Mock interview**: a timed round of 3, 5 or 7 questions (mixed, technical, behavioral or design). You get a deterministic rubric at the end (structure, specifics, trade-offs, coverage of the reference points, fit to the question type), likely follow-ups, a history, a downloadable Markdown report, and optional AI feedback with your own key. The rubric checks the shape of an answer, not correctness, and is not a prediction of interview results.
@@ -50,11 +50,11 @@ See **[ROADMAP.md](ROADMAP.md)** for the product scope, what shipped in each rel
 | **Backend Engineer** | 116 | Microservices, database indexing, MVCC, transactions, messaging queues, event sourcing, caching |
 | **DevOps / SRE / Cloud** | 120 | Kubernetes, CI/CD, Linux internals, Prometheus observability, GitOps, cloud networking, SRE |
 | **Data Engineer** | 124 | Spark optimization, Iceberg/Delta Lake, ETL/ELT pipelines, dimensional modeling, Kafka, Airflow |
-| **ML / AI Engineer** | 108 | Deep learning, Transformers, Attention derivations, LLM serving (vLLM/FlashAttention), RAG, MLOps |
+| **ML / AI Engineer** | 139 | Deep learning, Transformers, Attention derivations, LLM serving (vLLM/FlashAttention), RAG, MLOps |
 | **Data Scientist** | 60 | Statistics and experimentation, causal inference, A/B testing, modeling and evaluation, SQL for analytics, forecasting, ML in production |
 | **QA / SDET** | 119 | Test automation pyramids, Playwright/Selenium, API contract testing, performance (k6), flaky tests |
 | **Security Engineer** | 122 | OWASP Top 10, cryptographic primitives, OAuth2/OIDC, cloud IAM, Zero Trust, threat modeling |
-| **Tech Lead / EM** | 115 | Engineering 1-on-1s, delivery execution, ADRs, RFC culture, blameless postmortems, team topologies |
+| **Tech Lead / EM** | 121 | Engineering 1-on-1s, delivery execution, ADRs, RFC culture, blameless postmortems, team topologies |
 
 ---
 
