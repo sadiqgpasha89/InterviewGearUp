@@ -281,6 +281,40 @@
       ),
       follow: ["Why is mounting the Docker socket into a container effectively giving it root on the host?", "How do user namespaces change what CAP_SYS_ADMIN means inside a container?", "When would you choose gVisor or Kata Containers over regular runc containers?"],
       tags: ["container security", "container escape", "user namespaces", "capabilities", "isolation"]
+    }),
+    Object.assign(meta("easy"), {
+      id: "sec-32",
+      short: "Authentication (AuthN) verifies who you are, for example with a password, passkey or one-time code. Authorization (AuthZ) decides what that verified identity is allowed to do. Authentication comes first, authorization is checked on every request, and a system can fail at either: being logged in does not mean you may access everything.",
+      detail: L(
+        "#### Authentication: \"Who are you?\"",
+        "Proving an identity using one or more factors:",
+        "- Something you **know** (password, PIN).",
+        "- Something you **have** (phone, hardware key, passkey).",
+        "- Something you **are** (fingerprint, face).",
+        "Multi-factor authentication combines different kinds. The result is an authenticated identity, such as a session or a token.",
+        "",
+        "#### Authorization: \"What are you allowed to do?\"",
+        "After identity is known, the system checks **permissions** against the requested action and resource, using models such as:",
+        "- **RBAC**: roles grant permissions (admin, editor, viewer).",
+        "- **ABAC**: rules over attributes (department, resource owner, time, risk).",
+        "- **ACLs** and ownership checks on individual objects.",
+        "",
+        "#### Example",
+        "A user logs in successfully (authentication). They then request `GET /invoices/42`. The server must check that invoice 42 belongs to **their** account or that their role allows it (authorization). If it fails, the correct responses are:",
+        "- **401 Unauthorized**: not authenticated (or credentials invalid); the client should log in.",
+        "- **403 Forbidden**: authenticated, but not permitted.",
+        "",
+        "#### Common mistakes",
+        "- Checking authorization only in the UI, not on the server.",
+        "- Verifying who the user is but not whether they own the object (insecure direct object references, the top cause of broken access control).",
+        "- Trusting client-supplied roles or ids.",
+        "- Confusing the protocols: **OpenID Connect** handles authentication (login identity), while **OAuth 2.0** handles delegated authorization (access to resources).",
+        "",
+        "#### Principle",
+        "Authenticate once, **authorize on every request** with least privilege and deny by default."
+      ),
+      follow: ["What are 401 and 403 responses and when do you use each?", "How do RBAC and ABAC implement authorization?", "What is the difference between OAuth 2.0 and OpenID Connect in these terms?"],
+      tags: ["authentication", "authorization", "access control", "security basics"]
     })
   ]);
 
