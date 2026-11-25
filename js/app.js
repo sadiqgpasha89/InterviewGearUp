@@ -31,6 +31,10 @@
     document.querySelectorAll('#tabs a').forEach(function (a) {
       if (a.dataset.tab === tab) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
+    document.querySelectorAll('#tabs details.menu').forEach(function (d) {
+      d.removeAttribute('open');
+      d.classList.toggle('current', !!d.querySelector('a[aria-current="page"]'));
+    });
     app.replaceChildren();
     const extra = IGU.routes && IGU.routes[tab];
     const titles = { questions: 'Question bank', drill: 'Drill', progress: 'Progress', community: 'Community', post: 'Post a question' };
@@ -720,8 +724,10 @@
       role: roleId(fields.role), level: lvl >= 1 && lvl <= 4 ? lvl : 2,
       domain: trim(fields.domain || 'Other', 60), round: trim(fields.round || '', 40),
       year: parseInt(fields.year, 10) || new Date(i.created_at).getFullYear(),
-      question: trim(fields.question || i.title, 1500), answer: trim(fields.answer || '', 2500)
+      question: trim(fields.question || i.title, 1500), answer: trim(fields.answer || '', 2500),
+      labels: (i.labels || []).map(function (l) { return l && l.name; }).filter(Boolean)
     };
+    item.review = IGU.company.statusOf(item);
     const botLabelled = (i.labels || []).some(function (l) { return (l && l.name) === 'ai-answered'; });
     // A "generated answer" section is only shown as LLM-written when the bot applied the label; anyone can type that heading into an issue.
     if (aiAnswer && botLabelled) {
@@ -744,7 +750,7 @@
     const res = await fetch(url, { headers: { Accept: 'application/vnd.github+json' } });
     if (!res.ok) throw new Error(res.status === 403 ? 'GitHub rate limit reached' : 'GitHub returned ' + res.status);
     const data = await res.json();
-    const items = data.filter(function (i) { return !i.pull_request; }).map(parseIssue);
+    const items = data.filter(function (i) { return !i.pull_request; }).map(parseIssue).filter(function (p) { return p.review !== 'hidden'; });
     store.set('shared', { t: Date.now(), items: items });
     return items;
   }
@@ -807,7 +813,7 @@
 
   function communityView(params) {
     const openId = params.get('open');
-    const f = { company: '', role: '', level: 0, domain: '' };
+    const f = { company: '', role: '', level: 0, domain: '', round: '' };
     const status = h('div', { class: 'status', 'aria-live': 'polite' }, 'Loading shared questions...');
     const list = h('div', { class: 'qlist' });
     const datalist = h('datalist', { id: 'c-companies' });
@@ -820,6 +826,10 @@
       [h('option', { value: '0' }, 'All gears')].concat(meta.levels.map(function (l) { return h('option', { value: String(l.n) }, l.n + ' ' + l.name); })));
     const domain = h('select', { id: 'c-domain', onchange: function () { f.domain = domain.value; paint(); } },
       [h('option', { value: '' }, 'All domains')].concat(meta.domains.map(function (d) { return h('option', { value: d }, d); })));
+
+    const round = h('select', { id: 'c-round', onchange: function () { f.round = round.value; paint(); } },
+      [h('option', { value: '' }, 'All rounds')].concat(meta.rounds.map(function (d) { return h('option', { value: d }, d); })));
+    if (params.get('company')) { company.value = params.get('company'); f.company = company.value.trim().toLowerCase(); }
 
     function all() {
       const local = posts.all();
@@ -836,7 +846,7 @@
       Object.keys(names).sort().forEach(function (c) { datalist.appendChild(h('option', { value: c })); });
       const rows = items.filter(function (p) {
         return (!f.company || p.company.toLowerCase().indexOf(f.company) >= 0) && (!f.role || p.role === f.role) &&
-          (!f.level || p.level === f.level) && (!f.domain || p.domain === f.domain);
+          (!f.level || p.level === f.level) && (!f.domain || p.domain === f.domain) && (!f.round || p.round === f.round);
       });
       list.replaceChildren();
       if (!rows.length) {
@@ -853,7 +863,7 @@
           h('div', null, h('div', { class: 'qt' }, trim(p.question, 150)),
             h('div', { class: 'qm' }, h('span', null, h('strong', null, p.company)), h('span', null, roleName(p.role)), h('span', null, p.domain),
               p.round ? h('span', null, p.round) : null, h('span', null, String(p.year)))),
-          h('span', { class: 'badge' + (p.remote ? ' shared' : '') }, p.remote ? 'Shared' : 'This device')));
+          h('span', { class: 'badge' + (p.remote ? ' shared' : '') }, p.remote ? (p.review === 'approved' ? 'Reviewed' : 'Shared, unreviewed') : 'This device')));
       function build() {
         if (d.dataset.built) return;
         d.dataset.built = '1';
@@ -868,7 +878,7 @@
         }
         d.appendChild(h('div', { class: 'q-body' },
           h('h4', null, 'Question'), h('p', { class: 'userq' }, p.question),
-          h('p', { class: 'muted small-text' }, 'Posted by ' + (p.author && p.author.name || 'unknown') + ' on ' + String(p.createdAt).slice(0, 10) + '. Level: ' + levelLabel(p.level) + '.'),
+          h('p', { class: 'muted small-text' }, IGU.company.STATUS_TEXT[p.remote ? (p.review || 'unreviewed') : 'local'] + '. Reported by a community member, not confirmed by ' + p.company + '. Posted by ' + (p.author && p.author.name || 'unknown') + ' on ' + String(p.createdAt).slice(0, 10) + '. Level: ' + levelLabel(p.level) + '.'),
           p.answer ? h('div', null, h('h4', null, 'Answer from the contributor'), h('p', { class: 'userq' }, p.answer)) : null,
           answerBlock(p), actions));
       }
@@ -879,12 +889,14 @@
 
     app.appendChild(h('div', null,
       h('h1', null, 'Questions asked at real companies'),
-      h('p', { class: 'lede' }, 'Posted by engineers after their interviews. Filter by company, role and gear, and every question comes with an auto-generated answer.'),
+      h('p', { class: 'lede' }, 'Questions that community members say they were asked. Filter by company, role, gear, domain and round. Answers are AI-generated study aids.'),
       h('div', { class: 'filters' },
         h('div', null, h('label', { for: 'c-company' }, 'Company'), company, datalist),
         h('div', null, h('label', { for: 'c-role' }, 'Role'), role),
         h('div', null, h('label', { for: 'c-level' }, 'Gear'), level),
-        h('div', null, h('label', { for: 'c-domain' }, 'Domain'), domain)),
+        h('div', null, h('label', { for: 'c-domain' }, 'Domain'), domain),
+        h('div', null, h('label', { for: 'c-round' }, 'Round'), round)),
+      h('p', { class: 'muted small-text' }, 'These are reports from community members. Unless marked Reviewed, nobody has checked them, and the companies have not confirmed or endorsed any of it. ', h('a', { href: '#/company' }, 'Browse by company'), '.'),
       status, list));
     paint();
     if (openId) { const el = document.getElementById('c-' + openId); if (el) setTimeout(function () { el.scrollIntoView({ block: 'start' }); }, 0); }
@@ -987,11 +999,20 @@
   IGU.ui = {
     h: h, md: md, store: store, bank: bank, today: today, roleName: roleName, levelLabel: levelLabel, gearBadge: gearBadge,
     go: go, render: render, answerBody: answerBody, notes: notes, done: done, touchActivity: touchActivity,
-    openSettings: openSettings, setCleanup: function (fn) { cleanup = fn; }, app: app, aiAvailable: function () { return !!store.get('settings', {}).key; }
+    openSettings: openSettings, fetchShared: fetchShared, localPosts: function () { return posts.all(); }, setCleanup: function (fn) { cleanup = fn; }, app: app, aiAvailable: function () { return !!store.get('settings', {}).key; }
   };
 
   /* Versioned, additive storage migration; a newer schema than this build knows is left alone. */
   try { IGU.migrate.run(store, today()); } catch (e) { console.warn('Storage migration skipped:', e); }
+
+  /* Grouped menus: close on Escape or a click elsewhere. */
+  document.addEventListener('keydown', function (ev) {
+    if (ev.key !== 'Escape') return;
+    document.querySelectorAll('#tabs details.menu[open]').forEach(function (d) { d.removeAttribute('open'); const sm = d.querySelector('summary'); if (sm) sm.focus(); });
+  });
+  document.addEventListener('click', function (ev) {
+    document.querySelectorAll('#tabs details.menu[open]').forEach(function (d) { if (!d.contains(ev.target)) d.removeAttribute('open'); });
+  });
 
   window.addEventListener('hashchange', render);
   render();

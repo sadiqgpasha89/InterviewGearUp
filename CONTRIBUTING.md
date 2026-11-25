@@ -48,3 +48,16 @@ Use "Report a problem with this answer" under any answer, or the *Content feedba
 ## Moderation of community questions
 
 Issues labelled `community-question` are shown on the board. The AI-answer workflow only runs for maintainers' issues or after a maintainer adds the `approved` label. AI answers are labelled `ai-answered` by the bot and are study aids, not authoritative.
+
+### Labels that control what the board shows
+
+Status comes only from GitHub labels that a maintainer applies; text inside an issue never changes it.
+
+| Label | Effect |
+|---|---|
+| `approved` | Shown as "Reviewed by a maintainer". Also allows the AI answer workflow to run. |
+| `needs-review` | Shown as "Awaiting review". |
+| none of these | Shown as "Unreviewed community report". |
+| `rejected`, `duplicate`, `confidential`, `inappropriate` | Hidden from the board and company pages. Use `confidential` for anything that looks like NDA or proprietary material. |
+
+`ai-answered` is applied by the bot and marks a generated answer. Do not apply it by hand.

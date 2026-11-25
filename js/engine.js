@@ -278,7 +278,7 @@
 
   /* Untrusted text (community posts, job descriptions) must not be able to close or forge our delimiter tags. */
   function untrusted(text, max) {
-    return String(text || '').replace(/<\/?\s*(question|contributor_answer|job_description|candidate_answer|story|reference)[^>]*>/gi, '').slice(0, max);
+    return String(text || '').replace(/<\/?\s*(question|contributor_answer|job_description|candidate_answer|story|reference|design_notes|transcript)[^>]*>/gi, '').slice(0, max);
   }
 
   function aiPrompt(post) {

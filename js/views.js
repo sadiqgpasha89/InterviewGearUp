@@ -5,6 +5,11 @@
   IGU.routes = IGU.routes || {};
   const meta = IGU.meta, SRS = IGU.srs, PL = IGU.planner, MK = IGU.mock, S = IGU.stats, Q = IGU.quality;
   const ui = function () { return IGU.ui; };
+  /* replaceChildren that skips null/false (the native method would insert the text "null"). */
+  function fill(el) {
+    el.replaceChildren();
+    Array.prototype.slice.call(arguments, 1).forEach(function (k) { (Array.isArray(k) ? k : [k]).forEach(function (x) { if (x !== null && x !== undefined && x !== false) el.append(x); }); });
+  }
 
   function download(name, text, type) {
     const h = ui().h;
@@ -27,7 +32,7 @@
       const day = u.today();
       const plan = store.get('plan', {});
       const save = function (p) { store.set('plan', p); u.render(); };
-      app.replaceChildren();
+      fill(app);
 
       if (!plan.profile) { onboarding(); return; }
       dashboard();
@@ -42,7 +47,7 @@
         const date = h('input', { id: 'pl-date', type: 'date', min: day, value: prof.interviewDate || '' });
         const mins = h('input', { id: 'pl-mins', type: 'number', min: '15', max: '240', step: '5', value: String(prof.minutes || 45) });
         const weak = h('input', { id: 'pl-weak', placeholder: 'e.g. caching, SQL, concurrency', value: (prof.weakTopics || []).join(', ') });
-        app.replaceChildren(h('div', { class: 'plan-page' },
+        fill(app, h('div', { class: 'plan-page' },
           h('h1', null, existing ? 'Edit your plan' : 'Plan your preparation'),
           h('p', { class: 'lede' }, 'Answer five questions and get a short daily list: reviews that are due, then new questions with a written answer. Stored only in this browser.'),
           h('form', { class: 'plan-form', novalidate: true, onsubmit: function (ev) {
@@ -104,7 +109,7 @@
             x.kind !== 'mock' && !on ? h('button', { class: 'btn small ghost', type: 'button', onclick: function () { skipTask(x); }, 'aria-label': 'Skip: ' + x.title }, 'Skip') : null);
         })) : h('div', { class: 'empty' }, h('p', null, 'Nothing is scheduled for today.'));
 
-        app.replaceChildren(h('div', { class: 'plan-page' },
+        fill(app, h('div', { class: 'plan-page' },
           h('h1', null, 'Today'),
           h('p', { class: 'lede' }, t.phase.label + (t.daysLeft !== null ? ' · ' + t.daysLeft + (t.daysLeft === 1 ? ' day' : ' days') + ' to your interview' : '') + '. ' + t.phase.why),
           h('p', { class: 'muted small-text' }, 'This is a rule-based schedule built from your answers, not a prediction of how ready you are.'),
@@ -173,7 +178,7 @@
       u.setCleanup(function () { document.removeEventListener('keydown', onKey); });
 
       function paint() {
-        stage.replaceChildren();
+        fill(stage);
         const srs = store.get('srs', {});
         const c = SRS.counts(srs, u.bank, day);
         const cur = st.queue[st.i];
@@ -225,7 +230,7 @@
       } });
 
       rebuild();
-      app.replaceChildren(h('div', { class: 'drill' },
+      fill(app, h('div', { class: 'drill' },
         h('h1', null, 'Review'),
         h('p', { class: 'lede' }, 'Questions come back when you are about to forget them: soon after a miss, later after a good answer.'),
         h('div', { class: 'drill-filters three' },
@@ -257,7 +262,7 @@
         role.value = opt.role; level.value = String(opt.level); type.value = opt.type; count.value = String(opt.count);
         const err = h('p', { class: 'notice', hidden: true, role: 'status' });
         const history = store.get('mocks', []);
-        stage.replaceChildren(
+        fill(stage, 
           h('form', { class: 'plan-form', onsubmit: function (ev) {
             ev.preventDefault();
             opt.role = role.value; opt.level = Number(level.value); opt.type = type.value; opt.count = Number(count.value);
@@ -313,7 +318,7 @@
           const s = (Date.now() - t0) / 1000;
           clockEl.textContent = clock(s); clockEl.classList.toggle('late', s > 180);
         }, 500);
-        stage.replaceChildren(h('div', { class: 'drill-card' },
+        fill(stage, h('div', { class: 'drill-card' },
           h('div', { class: 'drill-row' }, progress, h('span', { class: 'grow' }), clockEl),
           built.shortfall ? h('p', { class: 'notice' }, 'Only ' + built.questions.length + ' matching questions exist for this selection.') : null,
           qEl, h('label', { for: 'mk-answer', class: 'sr-only' }, 'Your answer'), area,
@@ -336,7 +341,7 @@
           const r = it.result;
           const aiOut = h('div', { class: 'ai-feedback', hidden: !it.ai });
           const showAi = function () {
-            aiOut.replaceChildren(h('p', { class: 'muted small-text' }, 'AI feedback from a language model. A study aid only, not a rating or a prediction of any interview.'), md(it.ai));
+            fill(aiOut, h('p', { class: 'muted small-text' }, 'AI feedback from a language model. A study aid only, not a rating or a prediction of any interview.'), md(it.ai));
             aiOut.hidden = false;
           };
           if (it.ai) showAi();
@@ -364,7 +369,7 @@
         const weakIds = session.items.filter(function (it) { return it.result.empty || it.result.band === 'Needs work' || it.result.band === 'Developing'; })
           .map(function (it) { return it.qid; }).filter(function (id) { return u.bank.some(function (e) { return e.id === id; }); });
         const addMsg = h('p', { class: 'notice ok', hidden: true, role: 'status' });
-        stage.replaceChildren(h('div', { class: 'mock-results' },
+        fill(stage, h('div', { class: 'mock-results' },
           h('h2', null, 'Results' + (fromHistory ? ' (' + session.day + ')' : '')),
           h('p', { class: 'muted small-text' }, 'A rubric of surface checks: structure, specifics, trade-offs and the points in the reference answer. It cannot tell whether an answer is correct and is not a prediction of interview results.'),
           h('p', null, sum.answered + ' answered, ' + sum.skipped + ' skipped.' + (sum.weakest ? ' Weakest area: ' + sum.weakest.label + '.' : '')),
@@ -382,7 +387,7 @@
           addMsg));
       }
 
-      app.replaceChildren(h('div', { class: 'plan-page' },
+      fill(app, h('div', { class: 'plan-page' },
         h('h1', null, 'Mock interview'),
         h('p', { class: 'lede' }, 'A timed round from the question bank with a written scorecard. Offline and free; optional AI feedback uses your own key.'),
         stage));
