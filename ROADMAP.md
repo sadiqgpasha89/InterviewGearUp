@@ -48,7 +48,7 @@ InterviewGearUp is a free, static, privacy-first interview preparation site for 
 | Sharing | Open Graph and Twitter meta tags for link previews. |
 | Housekeeping | Removed committed `__pycache__` files and added `.gitignore`. Aligned the GitHub Action's default Claude model with the browser default. Tests added for progress, streaks, backups and service-worker precache coverage. |
 
-## v1.2: honesty, review loop and mock interviews (this release)
+## v1.2: honesty, review loop and mock interviews
 
 Source: `InterviewGearUp_plan.md`. This release does the P0 track (phases 0 to 4, plus the reliability, hardening and test parts of 11 to 13).
 
@@ -63,15 +63,31 @@ Source: `InterviewGearUp_plan.md`. This release does the P0 track (phases 0 to 4
 | 12 AI reliability | Done | `js/ai.js`: timeout, bounded retry, no retry on auth or quota, friendly errors, key redacted from messages, Gemini key moved from the URL to a header, delimiter hardening against prompt injection. |
 | 13 Tests and CI | Done | 40+ tests, `ci.yml` runs them on every PR. Action versions use tags, not commit SHAs. |
 
-### Not started (P1 and P2 in the plan)
+## v1.3: practice tools and moderation (this release)
 
-Phase 5 behavioral story bank, 6 JD analyzer, 7 system design workspace, 8 coding lab, 9 company tracks, 10 voice practice, 14 optional sync and growth. They are intentionally not built; nothing in the app pretends otherwise.
+Phases 5 to 10 from the plan.
+
+| Phase | Status | What changed |
+|---|---|---|
+| 5 Story bank | Done | `#/stories`: STAR editor, 10 tags, question matching, coverage by tag, rule-based tips, optional AI review, Markdown export. |
+| 6 JD analyzer | Done (heuristic) | `#/jd`: skill extraction, estimated seniority, role guess, mapping to bank questions with a confidence label, plan. Job text is untrusted in prompts. |
+| 7 System design | Done | `#/design`: 12 problems, 8-section autosaved notes, flow-to-Mermaid source, staged reference, 7-point rubric. All reference content is AI-drafted. |
+| 8 Coding lab | Done (JavaScript only) | `#/coding`: 8 problems, isolated Worker runner with 3s timeout, hints, timed and review modes. Every reference solution is tested in `npm test`. |
+| 9 Company tracks | Done | `#/company` and board filters; status comes only from maintainer-applied labels (`approved`, `needs-review`; hidden: `rejected`, `duplicate`, `confidential`, `inappropriate`). |
+| 10 Voice practice | Done (needs device testing) | `#/voice`: optional dictation, typed fallback, pace, fillers, rubric, opt-in transcript history. Real speech recognition has not been tried on devices. |
+
+### Not started
+
+Phase 14 (optional sync and growth) is exploratory in the plan and not built. The 15-per-role-and-gear content goal is still open (see Next).
 
 ## Next
 
 - [ ] Write the remaining ~427 answers (`npm run content:status` lists them) and have people review the AI-drafted ones, then set `reviewStatus: 'reviewed'` with a date.
 - [ ] Retire semantic-duplicate placeholder questions.
-- [ ] Moderation workflow for community posts (`needs-review` label, reviewed badge).
+- [x] Moderation labels for community posts (done in v1.3; a maintainer still has to apply them).
 - [ ] Pin GitHub Actions to commit SHAs.
 - [ ] Real-device accessibility testing.
-- [ ] Phases 5 to 10 and 14 from the plan, in that priority order.
+- [x] Phases 5 to 10 from the plan.
+- [ ] Phase 14, only if there is demand.
+- [ ] More coding problems and review of the AI-drafted ones; other languages need a safe runtime first.
+- [ ] Real-device testing of dictation.

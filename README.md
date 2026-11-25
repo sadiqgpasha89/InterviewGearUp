@@ -17,13 +17,19 @@ Interview preparation for IT roles, organised by **gear**:
 - **Plan**: a daily list built from your role, gear, optional interview date and time budget: reviews that are due first, then new questions with a written answer, plus a mock round every third day. It is a rule-based schedule, not a readiness prediction.
 - **Review (spaced repetition)**: questions you grade in Drill or Review come back on a schedule (again 1 day, partly 3, good 7 then growing, mastered 14 then 30 and up). Daily goal, role and gear filters, a "how it works" explainer and a reset. Days are your local calendar days.
 - **Mock interview**: a timed round of 3, 5 or 7 questions (mixed, technical, behavioral or design). You get a deterministic rubric at the end (structure, specifics, trade-offs, coverage of the reference points, fit to the question type), likely follow-ups, a history, a downloadable Markdown report, and optional AI feedback with your own key. The rubric checks the shape of an answer, not correctness, and is not a prediction of interview results.
+- **Behavioral story bank**: write STAR stories in your own words (situation, task, action, result, reflection), tag them (ownership, conflict, failure, leadership and more), see which behavioral questions each story could answer and which tags you have no story for. Rule-based tips flag a missing result or too many "we" statements. Optional AI feedback is told not to invent facts. Stories stay on your device.
+- **Job description analyzer**: paste a job description to extract skills, a rough seniority estimate and the matching role, then get a prep plan linked to bank questions. The estimate is a heuristic, the pasted text stays in your browser unless you choose AI feedback, and it is treated as untrusted text in prompts.
+- **System design workspace**: 12 design problems with requirements and estimate prompts, an 8-section template that autosaves, a text-to-diagram box (`A -> B: label`, shown as Mermaid-style source), a staged reference revealed only after you have written your own, and a deterministic seven-point rubric.
+- **Coding lab**: 8 JavaScript problems with progressive hints, a timed mode and a solution walkthrough. Your code runs in an isolated Web Worker with no network, storage or page access, and is stopped after 3 seconds. JavaScript only; if the browser has no Worker support the lab is editor-only.
+- **Company pages**: community reports grouped by company, with rounds, roles and a generic prep checklist. Reports are unverified unless a maintainer has labelled them `approved`; companies have not endorsed anything here.
+- **Voice practice**: optional dictation (the browser's speech recognition, which may use a cloud service; you are asked first) or typing, then timing, pace, filler-word and structure checks on the text. Transcripts are not saved unless you tick the box, and can be deleted or exported. No emotion or personality inference.
 - **Drill mode**: Practice out loud with random questions and a timer. Grade yourself (confident, mastered, partly, practise again); grades feed the review schedule. Keyboard shortcuts: `N` next, `R` reveal, `Y` confident, `M` mastered, `B` partly, `P` practise again.
 - **Save, annotate, filter**: Star questions for later, keep personal notes on any question, and filter the bank by To prepare / Prepared / Saved / Needs practice / With notes / Full answer / Answer pending. Press `/` to jump to search.
 - **Report a problem**: every answer has a link that opens a pre-filled GitHub issue (question id, role, gear, content version; no personal data).
 - **Progress page**: Overall %, study streak, and a role × gear coverage matrix. **Backup and restore** your progress, review schedule, plan and mock history as a JSON file (API keys are never exported).
 - **Works offline**: Installable as an app (PWA); the question bank, plan, review and mock keep working without a connection (AI features need a connection).
 - **Light / Dark / Auto theme** toggle.
-- **Community board**: Real interview questions asked at top companies, filterable by company, role, gear, and business domain.
+- **Community board**: Interview questions reported by community members, filterable by company, role, gear, round and business domain, with a clear status on each (reviewed, awaiting review or unreviewed).
 - **LLM answers for community questions**: answered by a GitHub Action for maintainers' issues or after a maintainer adds the `approved` label (to prevent cost abuse). The bot marks them with an `ai-answered` label; treat them as study aids.
 - **Post a question**: Register locally with a display name, write questions you were asked in real interviews, and receive an instant answer.
 - **Zero bloat**: Static site built with vanilla HTML, modern CSS, and lightweight JavaScript. No frameworks, no build steps, no tracking, and no external dependencies.
@@ -197,7 +203,8 @@ Run `npm test` after adding questions to verify that IDs are unique, fields meet
   - `https://generativelanguage.googleapis.com`
   - `https://api.anthropic.com`
   - `https://api.openai.com`
-  - `manifest-src` and `worker-src` are limited to `self` for the offline service worker.
+  - `manifest-src` and `worker-src` are limited to `self` for the offline service worker and the coding-lab runner worker.
+- **Code isolation**: coding-lab code is never evaluated in the page. It runs only in a dedicated Web Worker (`js/runner-worker.js`) with network and storage globals removed and a hard 3 second timeout. This limits accidents; it is not a security boundary against a determined attacker, so do not paste secrets into the editor.
 - **Safe Link Rendering**: The built-in markdown parser only allows internal hash routes (`#/`) and secure external links (`https://`).
 - **Local Data Control**: User profiles, saved drafts, preparation progress, notes, and stored API keys can be deleted anytime using **Settings > Delete my local data**.
 - **API keys**: Keys in browser storage can be read by anyone with access to that browser profile, and calls are billed to the key owner. Use a dedicated key with a low spending limit.

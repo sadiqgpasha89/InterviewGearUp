@@ -3,7 +3,7 @@
   const IGU = (window.IGU = window.IGU || {});
 
   /* Keys that a backup file may contain. API keys are deliberately excluded. */
-  const BACKUP_KEYS = ['done', 'saved', 'notes', 'practice', 'activity', 'posts', 'profile', 'srs', 'plan', 'mocks'];
+  const BACKUP_KEYS = ['done', 'saved', 'notes', 'practice', 'activity', 'posts', 'profile', 'srs', 'plan', 'mocks', 'stories', 'jds', 'designs', 'coding', 'voice'];
 
   /* Prepared counts per role and gear. */
   function matrix(bank, done, meta) {
@@ -92,6 +92,11 @@
     if ('activity' in out && !Array.isArray(out.activity)) return { error: 'Backup "activity" section is malformed.' };
     if ('srs' in out && !isMap(out.srs)) return { error: 'Backup "srs" section is malformed.' };
     if ('plan' in out && !isMap(out.plan)) return { error: 'Backup "plan" section is malformed.' };
+    if ('stories' in out && !Array.isArray(out.stories)) return { error: 'Backup "stories" section is malformed.' };
+    if ('jds' in out && !Array.isArray(out.jds)) return { error: 'Backup "jds" section is malformed.' };
+    if ('designs' in out && !isMap(out.designs)) return { error: 'Backup "designs" section is malformed.' };
+    if ('coding' in out && !isMap(out.coding)) return { error: 'Backup "coding" section is malformed.' };
+    if ('voice' in out && !Array.isArray(out.voice)) return { error: 'Backup "voice" section is malformed.' };
     if ('mocks' in out && !Array.isArray(out.mocks)) return { error: 'Backup "mocks" section is malformed.' };
     if ('posts' in out && !Array.isArray(out.posts)) return { error: 'Backup "posts" section is malformed.' };
     return { data: out };
