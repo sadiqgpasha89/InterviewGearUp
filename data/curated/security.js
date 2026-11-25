@@ -224,6 +224,63 @@
       ),
       follow: ["Why might IAST miss a vulnerability that SAST would find?", "Where in the CI pipeline would you run IAST and why?", "How does IAST differ from RASP?"],
       tags: ["iast", "sast", "dast", "appsec", "taint tracking"]
+    }),
+    Object.assign(meta('hard'), {
+      id: "sec-87",
+      short: "SPIFFE gives each workload a cryptographic identity, a SPIFFE ID carried in a short-lived certificate (an SVID), instead of relying on IP addresses or long-lived secrets. SPIRE is the system that attests workloads and issues and rotates these certificates. Services then use mutual TLS, verifying each other's SPIFFE IDs against a trust bundle.",
+      detail: L(
+        "#### The problem",
+        "In dynamic environments IP addresses change, and static API keys or shared certificates are copied, leaked and rarely rotated. Authorisation needs to answer 'which workload is calling?' reliably.",
+        "",
+        "#### SPIFFE (the standard)",
+        "- **SPIFFE ID**: a URI that names a workload within a **trust domain**, in the form `spiffe://trust-domain/path`, for example a payments API service account.",
+        "- **SVID**: the verifiable document proving the ID, usually an **X.509 certificate** with the ID in the URI Subject Alternative Name (JWT-SVIDs also exist).",
+        "- **Trust bundle**: the CA certificates of a trust domain, used to verify peers.",
+        "- **Workload API**: a local endpoint (a Unix socket) through which a workload fetches its SVID and bundles, without handling credentials.",
+        "",
+        "#### SPIRE (the implementation)",
+        "A **SPIRE server** acts as the CA and holds registration entries (which selectors map to which ID). A **SPIRE agent** runs on each node. Issuance has two steps of **attestation**:",
+        "1. **Node attestation**: the agent proves what node it runs on, using a cloud instance identity document or a Kubernetes node token.",
+        "2. **Workload attestation**: the agent inspects the calling process, such as its Kubernetes namespace, service account and labels, or its Unix user, and matches it to a registration entry.",
+        "",
+        "It then issues a short-lived SVID (often an hour or less) and renews it automatically.",
+        "",
+        "#### mTLS with SPIFFE",
+        "Both sides present their SVIDs and validate the peer's certificate against the trust bundle, then **check the peer's SPIFFE ID against policy** (for example only `spiffe://.../frontend` may call `/charge`). Traffic is encrypted and both ends are authenticated. A service mesh sidecar such as Envoy can do this transparently by getting certificates over SDS.",
+        "",
+        "#### Benefits and cautions",
+        "No static secrets, identity bound to the workload, rapid rotation, policy by identity, and federation between trust domains. Protect the SPIRE server and its signing keys (consider HA and an upstream CA), design attestation selectors carefully (weak selectors let the wrong process obtain an identity), and keep clocks in sync."
+      ),
+      follow: ["How does SPIRE decide which identity a Kubernetes pod is allowed to receive?", "Why are short-lived certificates better than long-lived ones?", "How does authorisation by SPIFFE ID differ from allow-listing IP addresses?"],
+      tags: ["spiffe", "spire", "mtls", "workload identity", "zero trust"]
+    }),
+    Object.assign(meta('hard'), {
+      id: "sec-98",
+      short: "Containers share the host kernel, so an escape usually comes from a privileged or over-permissive container configuration (privileged mode, dangerous capabilities, mounted host paths or the Docker socket) or from a kernel or runtime vulnerability. User namespaces map root inside the container to an unprivileged user on the host, so even after an escape the attacker has no host privileges.",
+      detail: L(
+        "#### Common causes",
+        "- **`--privileged`** or added capabilities such as `CAP_SYS_ADMIN`, which allow mounting, cgroup changes and more.",
+        "- **Host access**: mounting `/var/run/docker.sock`, host paths such as `/` or `/proc`, or using `hostPID`, `hostNetwork` or host IPC.",
+        "- **Kernel vulnerabilities** (for example Dirty COW and Dirty Pipe), since all containers use the same kernel.",
+        "- **Runtime flaws**, such as the runc bug (CVE-2019-5736) that let a container overwrite the host's runc binary.",
+        "- Running as root in the container with a weak profile, and missing seccomp or AppArmor restrictions.",
+        "",
+        "#### What user namespaces do",
+        "A user namespace maps a range of IDs inside the container to a different range on the host. Container root (UID 0) can be **UID 100000 on the host**, with no privileges there. Capabilities such as `CAP_SYS_ADMIN` apply only to resources owned by that namespace, not to the host. If a process escapes, it is just an unprivileged user and cannot read root-owned files or load kernel modules.",
+        "",
+        "```",
+        "# /etc/subuid  ->  dockremap:100000:65536     (maps container UID 0..65535 to host 100000..165535)",
+        "```",
+        "Docker supports this with `userns-remap`, rootless mode and rootless Podman do it by design, and recent Kubernetes versions let pods opt in with `hostUsers: false`.",
+        "",
+        "#### Limits",
+        "It does not fix kernel bugs in the namespace code itself, and it can complicate volume ownership and some features. It is one layer, not a complete defence.",
+        "",
+        "#### Defence in depth",
+        "Run as non-root, drop all capabilities and add back only what is needed, set `no-new-privileges`, use a restrictive seccomp profile and AppArmor or SELinux, use a read-only root filesystem, never mount the Docker socket, patch the kernel and runtime, and use sandboxed runtimes (gVisor, Kata Containers) for untrusted workloads."
+      ),
+      follow: ["Why is mounting the Docker socket into a container effectively giving it root on the host?", "How do user namespaces change what CAP_SYS_ADMIN means inside a container?", "When would you choose gVisor or Kata Containers over regular runc containers?"],
+      tags: ["container security", "container escape", "user namespaces", "capabilities", "isolation"]
     })
   ]);
 

@@ -55,7 +55,7 @@ Source: `InterviewGearUp_plan.md`. This release does the P0 track (phases 0 to 4
 | Phase | Status | What changed |
 |---|---|---|
 | 0 Baseline audit | Done | `docs/BASELINE_AUDIT.md`. Found that 805 of 918 questions are placeholders; fixed workflow abuse and provenance forgery. |
-| 1 Content quality | **Partly done** | Placeholders are labelled in the UI and excluded from retrieval; 47 real answers added (66 to 113 real); metadata (difficulty, review status, last reviewed, version, references) with validation; report-a-problem links; duplicate and coverage-ratchet tests; `CONTRIBUTING.md`. **Not done: 377 more answers are needed to reach 15 per role and gear** (content batch 1 added 50, 113 to 163 real). All written answers are AI-drafted and unreviewed by a person. |
+| 1 Content quality | **Partly done** | Placeholders are labelled in the UI and excluded from retrieval; 47 real answers added (66 to 113 real); metadata (difficulty, review status, last reviewed, version, references) with validation; report-a-problem links; duplicate and coverage-ratchet tests; `CONTRIBUTING.md`. **Not done: 327 more answers are needed to reach 15 per role and gear** (content batch 1 added 50, 113 to 163 real; batch 2 added 50, 163 to 213 real). All written answers are AI-drafted and unreviewed by a person. |
 | 2 Planner | Done | `#/plan`: profile, rule-based daily tasks, skip, regenerate, edit, reset. |
 | 3 Spaced repetition | Done | `#/review`, versioned `igu.schema` migration (non-destructive), local-day logic, DST and month-end tests, four grades. |
 | 4 Mock interview | Done (deterministic) | `#/mock`: timed rounds, rubric scorecard, history, Markdown report, optional AI feedback. No server, no voice. |
@@ -82,7 +82,7 @@ Phase 14 (optional sync and growth) is exploratory in the plan and not built. Th
 
 ## Next
 
-- [ ] Write the remaining ~377 answers, in batches of 50 (thinnest role and gear cells first) (`npm run content:status` lists them) and have people review the AI-drafted ones, then set `reviewStatus: 'reviewed'` with a date.
+- [ ] Write the remaining ~327 answers, in batches of 50 (thinnest role and gear cells first) (`npm run content:status` lists them) and have people review the AI-drafted ones, then set `reviewStatus: 'reviewed'` with a date.
 - [ ] Retire semantic-duplicate placeholder questions.
 - [x] Moderation labels for community posts (done in v1.3; a maintainer still has to apply them).
 - [ ] Pin GitHub Actions to commit SHAs.
