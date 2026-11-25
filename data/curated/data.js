@@ -272,6 +272,62 @@
       ),
       follow: ["How would you handle records that arrive two days late?", "Why might an append strategy create duplicates?", "When would you choose insert_overwrite over merge?"],
       tags: ["dbt", "incremental", "merge", "elt", "data modeling"]
+    }),
+    Object.assign(meta('hard'), {
+      id: "de-53",
+      short: "End-to-end exactly-once in Flink needs a replayable source, checkpointed state and a sink that commits atomically. A two-phase commit sink writes output inside an open transaction, pre-commits it when a checkpoint barrier arrives, and commits only after the whole checkpoint has completed. After a failure, Flink restores the checkpoint and commits or aborts the pending transactions to match.",
+      detail: L(
+        "#### The ingredients",
+        "1. **Replayable source**: for example Kafka, with the read offsets stored in Flink's checkpoint so that after a failure it re-reads from the same position.",
+        "2. **Checkpoints**: periodic consistent snapshots of all operator state, taken with barriers that flow through the job.",
+        "3. **Transactional sink** that takes part in the checkpoint protocol.",
+        "",
+        "#### How the two-phase commit sink works",
+        "- **Between checkpoints**: the sink writes records into an **open transaction** in the external system (for example a Kafka transaction, or a staged file). Nothing is visible to readers yet.",
+        "- **Checkpoint barrier arrives (phase 1)**: the sink flushes and **pre-commits** the transaction, so it is durable but not yet visible, and records the transaction handle in its checkpoint state. It then starts a new transaction for the following records.",
+        "- **Checkpoint complete (phase 2)**: when the coordinator confirms every operator finished that checkpoint, the sink **commits** the pre-committed transaction, and its records become visible.",
+        "",
+        "#### Failure handling",
+        "If the job fails, Flink restores the last completed checkpoint. A transaction that was pre-committed as part of that checkpoint is **committed** on recovery (the checkpoint succeeded, so its output must appear), while transactions opened after it are **aborted**, and their input is replayed. No duplicates and no lost records appear in the output.",
+        "",
+        "#### Practical points",
+        "- Consumers of the output must read only committed data, such as Kafka's `read_committed` isolation.",
+        "- Output becomes visible **only at checkpoint commit**, so latency is at least the checkpoint interval.",
+        "- The external transaction timeout must exceed the checkpoint interval plus recovery time, or recovery will find the transaction already aborted.",
+        "- If the target supports it, an **idempotent sink** (upserts by key) is simpler and gives the same visible result without transactions.",
+        "- Modern Flink exposes this through sink interfaces with a committer, which implement the same protocol."
+      ),
+      follow: ["Why does output only become visible after the checkpoint completes?", "What happens to a pre-committed transaction if the job fails before the checkpoint is confirmed?", "When is an idempotent sink a better choice than a two-phase commit sink?"],
+      tags: ["flink", "exactly-once", "two-phase commit", "checkpoints", "stream processing"]
+    }),
+    Object.assign(meta('hard'), {
+      id: "de-98",
+      short: "A zero-downtime warehouse migration runs the old and new warehouses in parallel: copy history in bulk, then feed both from the same pipelines, prove that results match, move consumers over in phases behind a stable alias, and keep the old system available for rollback until you are confident.",
+      detail: L(
+        "#### 1. Plan",
+        "Inventory tables, views, UDFs, jobs, orchestration, BI dashboards and who uses them, plus access policies. Rank workloads by business criticality and decide the migration order, usually by domain.",
+        "",
+        "#### 2. Translate and build",
+        "Convert schemas and SQL (dialect differences in dates, decimals, case sensitivity, null handling, window functions and procedural code), using tools where possible and manual review for the rest. Recreate roles, masking and row-level policies and lineage metadata.",
+        "",
+        "#### 3. Load history, then keep in sync",
+        "- Bulk export to object storage (Parquet or similar) and load into the target. Watch cross-cloud egress costs.",
+        "- Then **dual-run**: point the ingestion pipelines or CDC at both warehouses so the target is continuously current. This is what removes any need for a downtime window.",
+        "",
+        "#### 4. Validate",
+        "Reconcile per table and partition with row counts, checksums and aggregates. Run the same business queries and dashboards on both and compare results. Test performance, concurrency and cost, because query plans differ.",
+        "",
+        "#### 5. Cut over gradually",
+        "Move consumers in waves (a team's dashboards, then downstream jobs). A **view or semantic layer, or a connection alias**, lets you repoint users without changing their queries. Pick quiet windows for each switch, and keep a **rollback path**: the old warehouse stays live and in sync until the new one has run cleanly for an agreed period.",
+        "",
+        "#### 6. Decommission",
+        "After sign-off, freeze, archive what you need for retention, then turn off the old system and its pipelines.",
+        "",
+        "#### Risks",
+        "Silent differences in data types or time zones, unknown consumers (find them from query logs), cost surprises, and a big-bang cutover. 'Zero downtime' here means users are never without a working warehouse because both run side by side."
+      ),
+      follow: ["How would you find consumers of the old warehouse that nobody told you about?", "How do you prove two warehouses return the same results?", "What would make you stop and roll back during cutover?"],
+      tags: ["data migration", "data warehouse", "cutover", "validation", "cloud"]
     })
   ]);
 
