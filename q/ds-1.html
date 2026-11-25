@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>When are the mean, median and mode misleading, and how do you choose which summary statistic to report? | InterviewGearUp</title>
+<meta name="description" content="The mean is sensitive to outliers and skew, the median is robust but ignores magnitude of the tails, and the mode is useful for categorical or multimodal…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-1.html">
+<meta property="og:title" content="When are the mean, median and mode misleading, and how do you choose which summary statistic to report? | InterviewGearUp">
+<meta property="og:description" content="The mean is sensitive to outliers and skew, the median is robust but ignores magnitude of the tails, and the mode is useful for categorical or multimodal…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-1.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>When are the mean, median and mode misleading, and how do you choose which summary statistic to report?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 1 (Junior) · Statistics · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>The mean is sensitive to outliers and skew, the median is robust but ignores magnitude of the tails, and the mode is useful for categorical or multimodal data. Choose by the distribution shape and the decision: income and latency are skewed so report the median and percentiles, while totals and budgets need the mean.</p></div>
+<h4>Explained in depth</h4>
+<h4>The three measures</h4>
+<ul><li><strong>Mean</strong>: the sum divided by the count. It uses every value, so it is efficient for roughly symmetric data, and it is the right quantity when you care about <strong>totals</strong> (revenue per user times users equals revenue).</li><li><strong>Median</strong>: the middle value after sorting. It is <strong>robust</strong>: up to half of the data can be extreme without moving it. It describes the &quot;typical&quot; observation.</li><li><strong>Mode</strong>: the most frequent value. It is the only one that works for <strong>nominal categories</strong> (most common browser) and it reveals <strong>multimodal</strong> shapes.</li></ul>
+<h4>When each misleads</h4>
+<div class="md-table"><table><thead><tr><th>Situation</th><th>Problem</th><th>Better choice</th></tr></thead><tbody><tr><td>Right-skewed data (income, house prices, session length, API latency)</td><td>a few huge values pull the mean up so &quot;the average&quot; describes almost nobody</td><td>median plus percentiles (p90, p95, p99)</td></tr><tr><td>Outliers from errors (a sensor reporting 99999)</td><td>the mean is dragged by bad data</td><td>fix or flag the error, then use the median or a trimmed mean</td></tr><tr><td>Bimodal data (two customer segments)</td><td>mean and median can fall in an empty valley between the peaks</td><td>report both modes or split by segment</td></tr><tr><td>Ratios and rates (conversion per session)</td><td>averaging per-group averages ignores group sizes (Simpson&#39;s paradox)</td><td>compute the weighted overall rate, then segment</td></tr><tr><td>Heavy tails (Pareto, revenue per user)</td><td>the sample mean is unstable, because it varies a lot between samples</td><td>median, log transform, or bootstrap intervals</td></tr><tr><td>Ordinal data (ratings 1 to 5)</td><td>the distance between categories is not equal</td><td>median and the full distribution</td></tr></tbody></table></div>
+<h4>A small example</h4>
+<p>Five salaries: 40k, 42k, 45k, 48k, 500k. Mean = 135k (nobody earns near that). Median = 45k (representative). The mean is still correct for budgeting the <strong>total payroll</strong> (675k).</p>
+<pre><code>import pandas as pd
+s = pd.Series([40, 42, 45, 48, 500])
+print(s.mean(), s.median(), s.mode().tolist())
+print(s.describe(percentiles=[.5, .9, .99]))
+from scipy import stats
+print(stats.trim_mean(s, 0.2))    # drops 20% from each tail: 45</code></pre>
+<h4>How to decide in practice</h4>
+<ol start="1"><li><strong>Plot first</strong>: histogram or density, box plot, ECDF. Shape decides the summary.</li><li>Ask what the <strong>decision</strong> needs: typical experience (median), total or expected value (mean), most common case (mode), worst cases (high percentiles).</li><li>Report <strong>spread</strong> with the centre: standard deviation for symmetric data, <strong>interquartile range</strong> or percentiles for skewed data.</li><li>For comparisons (A/B test of revenue), the mean answers business questions about totals, but use <strong>bootstrap or robust methods</strong> because heavy tails make standard errors unreliable.</li><li>State sample size and any exclusions so readers can judge reliability.</li></ol>
+<h4>Interview pitfalls</h4>
+<p>Saying &quot;the mean is always wrong for skewed data&quot; (it is the right target for totals), forgetting that the median of group medians is not the overall median, and skipping the plot.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is the median latency usually reported together with p95 and p99?</li><li>What summary would you use for a bimodal distribution?</li><li>How does a trimmed mean or winsorising compare with the median?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-1">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-1%3A+When+are+the+mean%2C+median+and+mode+misleading%2C+and+how+do+you+choose%E2%80%A6&amp;question-id=ds-1&amp;context=Data+scientist%2C+Gear+1%2C+topic%3A+Statistics%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-1.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

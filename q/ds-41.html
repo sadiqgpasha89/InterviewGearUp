@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you interpret logistic regression coefficients, and how is the model fitted and diagnosed? | InterviewGearUp</title>
+<meta name="description" content="Logistic regression models the log-odds of the outcome as a linear function of features and is fitted by maximum likelihood. Coefficients are log odds…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-41.html">
+<meta property="og:title" content="How do you interpret logistic regression coefficients, and how is the model fitted and diagnosed? | InterviewGearUp">
+<meta property="og:description" content="Logistic regression models the log-odds of the outcome as a linear function of features and is fitted by maximum likelihood. Coefficients are log odds…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-41.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you interpret logistic regression coefficients, and how is the model fitted and diagnosed?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 3 (Senior) · Regression and classification · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Logistic regression models the log-odds of the outcome as a linear function of features and is fitted by maximum likelihood. Coefficients are log odds ratios, so exp(beta) is the multiplicative change in odds per unit increase. Check calibration, separation, multicollinearity, linearity in the logit and influential points, and use regularisation when features are many.</p></div>
+<h4>Explained in depth</h4>
+<h4>Model</h4>
+<p>For a binary outcome y, logistic regression assumes <strong>log-odds = b0 + b1 x1 + ... + bp xp</strong>, so <strong>P(y = 1 | x) = 1 / (1 + exp(-(b0 + b·x)))</strong>. It belongs to the generalised linear models (Bernoulli distribution, logit link).</p>
+<h4>Fitting</h4>
+<p>Parameters are estimated by <strong>maximum likelihood</strong>: maximise sum of y log p + (1 - y) log(1 - p), equivalently minimise <strong>log loss (cross-entropy)</strong>. There is no closed form; solvers use iteratively reweighted least squares or quasi-Newton / gradient methods. The loss is <strong>convex</strong>, so there is a single optimum (unless the data are perfectly separable). Add <strong>L2 (ridge)</strong> or <strong>L1 (lasso)</strong> penalties to control overfitting and handle collinearity; scikit-learn applies L2 by default (parameter C is the inverse strength).</p>
+<h4>Interpreting coefficients</h4>
+<ul><li>b_j is the change in <strong>log-odds</strong> for a one-unit increase in x_j, holding others fixed.</li><li><strong>exp(b_j) is the odds ratio</strong>: b = 0.69 gives OR = 2, so the odds double. With a binary feature, it compares groups.</li><li>The effect on <strong>probability is not constant</strong>: it depends on the baseline (an OR of 2 moves 50 percent odds-of-1 to 67 percent, but 1 percent to about 2 percent). Report <strong>average marginal effects</strong> or predicted probabilities for representative cases.</li><li>Standardise continuous features to compare effect sizes; interpret &quot;per standard deviation&quot; changes.</li><li>Coefficients are conditional on the other variables; correlated features change signs and magnitudes.</li></ul>
+<pre><code>import statsmodels.api as sm, numpy as np
+res = sm.Logit(y, sm.add_constant(X)).fit()
+print(res.summary())
+print(np.exp(res.params), np.exp(res.conf_int()))     # odds ratios with intervals
+print(res.get_margeff().summary())                     # average marginal effects</code></pre>
+<h4>Diagnostics</h4>
+<ul><li><strong>Calibration</strong> (reliability curve, Hosmer-Lemeshow, calibration slope) and discrimination (AUC, PR AUC).</li><li><strong>Linearity in the logit</strong> for continuous predictors: check with splines, binned plots or Box-Tidwell; add transformations or interactions as needed.</li><li><strong>Multicollinearity</strong>: variance inflation factors; unstable coefficients with huge standard errors.</li><li><strong>Influential points and outliers</strong>: Cook&#39;s distance, leverage, deviance residuals.</li><li><strong>Complete or quasi-complete separation</strong>: a feature perfectly predicts the outcome, coefficients diverge to infinity; fix with regularisation, Firth penalised likelihood, merging categories, or removing the culprit.</li><li><strong>Sample size</strong>: roughly 10 or more events per variable is a rule of thumb for stable estimation; more for prediction.</li><li>Independence of observations (clustered data need mixed models or cluster-robust errors).</li></ul>
+<h4>Thresholds and use</h4>
+<p>The model outputs probabilities; the <strong>decision threshold</strong> comes from costs (cost of false negative versus false positive) and capacity, not automatically 0.5. With class weights the probabilities become distorted; recalibrate if you use them as probabilities.</p>
+<h4>Strengths and limits</h4>
+<p>Strengths: interpretable, fast, well-calibrated when specified correctly, strong baseline, works with small data, supports inference. Limits: linear decision boundary in the log-odds (add interactions or splines), sensitive to outliers and missing data handling, needs feature engineering for non-linear effects.</p>
+<h4>Pitfalls</h4>
+<p>Calling coefficients &quot;percentage point&quot; effects, ignoring separation warnings, interpreting p-values of correlated predictors individually, and comparing raw coefficients across differently scaled features.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is a coefficient not the change in probability, and how do you get marginal effects?</li><li>What is complete separation and how do you deal with it?</li><li>How do you choose a decision threshold for a logistic regression model?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-41">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-41%3A+How+do+you+interpret+logistic+regression+coefficients%2C+and+how+is%E2%80%A6&amp;question-id=ds-41&amp;context=Data+scientist%2C+Gear+3%2C+topic%3A+Regression+and+classification%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-41.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

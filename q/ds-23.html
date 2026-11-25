@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is the multiple comparisons problem, and how do Bonferroni, Holm and Benjamini-Hochberg corrections work? | InterviewGearUp</title>
+<meta name="description" content="Testing many hypotheses at alpha 0.05 inflates the chance of at least one false positive. Bonferroni divides alpha by the number of tests and controls…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-23.html">
+<meta property="og:title" content="What is the multiple comparisons problem, and how do Bonferroni, Holm and Benjamini-Hochberg corrections work? | InterviewGearUp">
+<meta property="og:description" content="Testing many hypotheses at alpha 0.05 inflates the chance of at least one false positive. Bonferroni divides alpha by the number of tests and controls…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-23.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is the multiple comparisons problem, and how do Bonferroni, Holm and Benjamini-Hochberg corrections work?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 2 (Mid-level) · Statistics · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Testing many hypotheses at alpha 0.05 inflates the chance of at least one false positive. Bonferroni divides alpha by the number of tests and controls the family-wise error rate conservatively; Holm does the same more powerfully step by step; Benjamini-Hochberg controls the false discovery rate and is better when screening many hypotheses.</p></div>
+<h4>Explained in depth</h4>
+<h4>The problem</h4>
+<p>If each test has a 5 percent false-positive rate and the hypotheses are all null, the chance of <strong>at least one false positive in m tests</strong> is 1 - 0.95^m: 40 percent for 10 tests, 64 percent for 20, 92 percent for 50. Data scientists meet this when they check many metrics, many variants, many segments, many genes or features, and many model comparisons. Reporting only the &quot;significant&quot; ones without correction is <strong>p-hacking</strong> by accident.</p>
+<h4>Error rates</h4>
+<ul><li><strong>Family-wise error rate (FWER)</strong>: probability of <strong>one or more</strong> false rejections. Strict control, for confirmatory claims.</li><li><strong>False discovery rate (FDR)</strong>: expected <strong>proportion of false discoveries among rejections</strong>. Less strict, more power, for exploratory screening.</li></ul>
+<h4>Methods</h4>
+<div class="md-table"><table><thead><tr><th>Method</th><th>Controls</th><th>Procedure</th><th>Notes</th></tr></thead><tbody><tr><td><strong>Bonferroni</strong></td><td>FWER</td><td>reject if p_i &lt; alpha / m (or multiply p-values by m)</td><td>simple, valid under any dependence, very conservative for large m</td></tr><tr><td><strong>Holm (step-down)</strong></td><td>FWER</td><td>sort p-values ascending; compare p_(i) with alpha / (m - i + 1); stop at the first failure</td><td>uniformly more powerful than Bonferroni, same guarantee</td></tr><tr><td><strong>Hochberg / Sidak</strong></td><td>FWER</td><td>variants for independence assumptions</td><td></td></tr><tr><td><strong>Benjamini-Hochberg (BH)</strong></td><td>FDR</td><td>sort p-values; find the largest k with p_(k) &lt;= (k / m) x q; reject hypotheses 1..k</td><td>valid for independent or positively dependent tests; widely used</td></tr><tr><td><strong>Benjamini-Yekutieli</strong></td><td>FDR</td><td>BH with a harmonic-sum penalty</td><td>any dependence</td></tr><tr><td><strong>Dunnett, Tukey HSD</strong></td><td>FWER</td><td>designed for comparisons against a control or all pairs after ANOVA</td><td></td></tr><tr><td><strong>Gatekeeping / hierarchical testing</strong></td><td>FWER</td><td>test the primary metric first, then secondary only if it passes</td><td>keeps power for key metric</td></tr></tbody></table></div>
+<pre><code>from statsmodels.stats.multitest import multipletests
+rej, p_adj, _, _ = multipletests(pvals, alpha=0.05, method=&quot;fdr_bh&quot;)     # also &quot;bonferroni&quot;, &quot;holm&quot;</code></pre>
+<p><strong>Adjusted p-values</strong> can be compared with alpha directly. A <strong>q-value</strong> is the FDR analogue of the p-value: the smallest FDR at which a result would be called significant.</p>
+<h4>Choosing</h4>
+<ul><li><strong>Confirmatory decisions</strong> (is the new drug better? ship decision) and few hypotheses: Holm or Bonferroni.</li><li><strong>Exploratory screening</strong> (which of 5,000 genes, 200 segments or 50 features show an effect): BH with q = 0.05 or 0.1, then validate the discoveries in follow-up tests.</li><li>In <strong>product experimentation</strong>: pre-specify <strong>one primary metric</strong> (no correction needed), treat guardrails with caution (you worry about false negatives there, so avoid too-strict corrections), and apply FDR or Bonferroni to many secondary metrics and segments, with clear labelling of exploratory findings.</li></ul>
+<h4>Related issues</h4>
+<ul><li><strong>Peeking</strong> and <strong>optional stopping</strong> are a form of multiple testing over time; use sequential methods.</li><li><strong>Forking paths</strong>: researcher degrees of freedom (choice of outliers rule, transformations, segments). Pre-registration and holdout replication guard against it.</li><li><strong>Winner&#39;s curse</strong>: among many variants, the best-looking estimate is biased upward; shrinkage or a confirmation run gives a truer estimate.</li><li>Bayesian hierarchical models partially pool estimates and naturally temper extreme results.</li></ul>
+<h4>Pitfalls</h4>
+<p>Applying Bonferroni to thousands of tests and concluding nothing is real, correcting only some of the tests you ran, and slicing data until something is significant.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>When is controlling FDR more appropriate than controlling the family-wise error rate?</li><li>How does the multiple comparisons issue appear in A/B tests with many metrics and segments?</li><li>What are q-values and adjusted p-values?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-23">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-23%3A+What+is+the+multiple+comparisons+problem%2C+and+how+do+Bonferroni%2C%E2%80%A6&amp;question-id=ds-23&amp;context=Data+scientist%2C+Gear+2%2C+topic%3A+Statistics%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-23.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

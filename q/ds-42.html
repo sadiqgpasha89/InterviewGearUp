@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you do a power analysis and choose the sample size and duration for an experiment? | InterviewGearUp</title>
+<meta name="description" content="Fix the primary metric, baseline and variance, the minimum detectable effect that matters to the business, significance level and power, then compute the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-42.html">
+<meta property="og:title" content="How do you do a power analysis and choose the sample size and duration for an experiment? | InterviewGearUp">
+<meta property="og:description" content="Fix the primary metric, baseline and variance, the minimum detectable effect that matters to the business, significance level and power, then compute the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-42.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you do a power analysis and choose the sample size and duration for an experiment?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 3 (Senior) · Experimentation · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Fix the primary metric, baseline and variance, the minimum detectable effect that matters to the business, significance level and power, then compute the per-arm sample size, typically n = 2 (z_alpha/2 + z_beta)^2 sigma^2 / delta^2. Convert to days using eligible traffic, round up to whole weeks to capture weekly cycles, and decide the stopping rule in advance.</p></div>
+<h4>Explained in depth</h4>
+<h4>Inputs</h4>
+<ol start="1"><li><strong>Primary metric</strong> and its <strong>baseline value and variance</strong> (from historical data, using the same unit of randomisation).</li><li><strong>Minimum detectable effect (MDE)</strong>: the smallest change that would change a decision (cost to build, value gained). Not &quot;what we hope to see&quot;.</li><li><strong>Significance level alpha</strong> (usually 0.05, two-sided): tolerated false-positive rate.</li><li><strong>Power (1 - beta)</strong> (usually 0.8, or 0.9 for important decisions): probability of detecting an effect of size MDE if it exists.</li><li>Allocation ratio, number of variants, and <strong>one- or two-sided</strong> test.</li></ol>
+<h4>Formulas</h4>
+<p>For comparing two means with equal allocation: <strong>n per arm = 2 (z_{1-alpha/2} + z_{1-beta})^2 sigma^2 / delta^2</strong>. With alpha 0.05 and power 0.8, (1.96 + 0.84)^2 = 7.85, so <strong>n = 15.7 sigma^2 / delta^2</strong>. For proportions: use p1 and p2 = p1 + delta with variance p(1 - p). A quick rule: <strong>n per arm is about 16 p (1 - p) / delta^2</strong>. Example: baseline conversion 10 percent, want to detect an absolute lift of 1 point: n is about 16 x 0.1 x 0.9 / 0.0001 = <strong>14,400 per arm</strong>. Detect 0.5 point: <strong>57,600</strong>, four times as many (n scales with 1 / delta^2).</p>
+<pre><code>from statsmodels.stats.power import NormalIndPower
+from statsmodels.stats.proportion import proportion_effectsize
+es = proportion_effectsize(0.11, 0.10)
+n = NormalIndPower().solve_power(effect_size=es, alpha=0.05, power=0.8, ratio=1.0)
+print(round(n))</code></pre>
+<h4>Converting to duration</h4>
+<p>Duration = (n per arm x number of arms) / eligible daily users who enter the experiment. Adjust for:</p>
+<ul><li><strong>Weekly seasonality</strong>: run <strong>full weeks</strong> (at least 1 to 2).</li><li><strong>Novelty and primacy effects</strong>: early behaviour may not represent steady state.</li><li>Users appear repeatedly: if you randomise by user, <strong>each user counts once</strong>; sessions are not independent.</li><li><strong>Ramp-up</strong> (1 percent to 50 percent) for safety.</li><li>For metrics with long maturity (retention at 28 days) the experiment must include that follow-up.</li></ul>
+<h4>Levers when the sample is too small</h4>
+<ul><li><strong>Reduce variance</strong>: CUPED, stratification, triggered analysis, winsorising, a less noisy metric.</li><li>Increase the <strong>MDE</strong> (accept only larger effects), the traffic share, or the duration.</li><li>Relax power or alpha knowingly, or switch to a one-sided test if only improvement matters (document).</li><li>Use a <strong>sequential or Bayesian design</strong> so you can stop early when the effect is large.</li><li>Combine related tests or move to a quasi-experiment for low-traffic situations.</li></ul>
+<h4>Related considerations</h4>
+<ul><li><strong>Multiple metrics and variants</strong>: apply corrections or pre-specify the primary metric; power drops with more comparisons.</li><li><strong>Cluster randomisation</strong> (by store, city, classroom): the <strong>design effect = 1 + (m - 1) ICC</strong> inflates the needed sample.</li><li>Report <strong>confidence intervals</strong>, not just significance; an underpowered &quot;not significant&quot; result is inconclusive, not evidence of no effect.</li><li>Pre-register the plan: metric, MDE, stopping rule, analysis method, guardrails (latency, crash rate, revenue).</li><li><strong>Peeking</strong> inflates false positives unless you use group-sequential or always-valid methods.</li></ul>
+<h4>Pitfalls</h4>
+<p>Choosing the MDE after seeing results, using the observed effect for &quot;post-hoc power&quot;, sizing the test on sessions instead of users, and stopping the test the moment p dips below 0.05.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does the sample size change if you halve the minimum detectable effect?</li><li>Why should you run experiments for full weeks and consider novelty effects when setting duration?</li><li>What do you do when the required sample size exceeds the traffic you have?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-42">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-42%3A+How+do+you+do+a+power+analysis+and+choose+the+sample+size+and%E2%80%A6&amp;question-id=ds-42&amp;context=Data+scientist%2C+Gear+3%2C+topic%3A+Experimentation%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-42.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

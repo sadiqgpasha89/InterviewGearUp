@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are the assumptions of linear regression and how do you check and fix violations? | InterviewGearUp</title>
+<meta name="description" content="Linear regression assumes a linear relationship, independent errors, constant error variance (homoscedasticity), approximately normal residuals for…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-10.html">
+<meta property="og:title" content="What are the assumptions of linear regression and how do you check and fix violations? | InterviewGearUp">
+<meta property="og:description" content="Linear regression assumes a linear relationship, independent errors, constant error variance (homoscedasticity), approximately normal residuals for…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-10.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are the assumptions of linear regression and how do you check and fix violations?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 1 (Junior) · Modeling · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Linear regression assumes a linear relationship, independent errors, constant error variance (homoscedasticity), approximately normal residuals for inference, and little multicollinearity. Check residual plots, Q-Q plots, Durbin-Watson and variance inflation factors, then fix with transformations, additional terms, robust errors, regularisation or a different model.</p></div>
+<h4>Explained in depth</h4>
+<h4>The model</h4>
+<p>Linear regression models y = b0 + b1 x1 + ... + bp xp + e and estimates coefficients by ordinary least squares (OLS), minimising squared residuals. For <strong>prediction</strong> the main requirement is good out-of-sample performance; for <strong>inference</strong> (confidence intervals, p-values, causal-ish interpretation) the assumptions matter much more.</p>
+<h4>The assumptions and checks</h4>
+<div class="md-table"><table><thead><tr><th>Assumption</th><th>Why it matters</th><th>How to check</th><th>Fixes</th></tr></thead><tbody><tr><td><strong>Linearity</strong> (mean of y is linear in parameters)</td><td>bias if the true relationship is curved</td><td>residual versus fitted plot (should show no pattern), partial-regression plots</td><td>add polynomial or spline terms, interactions, transform variables, use a non-linear model</td></tr><tr><td><strong>Independence of errors</strong></td><td>correlated errors (time series, clustered data) make standard errors too small</td><td>Durbin-Watson test, ACF of residuals, knowing the data structure</td><td>add lag terms, use time-series models, <strong>cluster-robust</strong> standard errors, mixed-effects models</td></tr><tr><td><strong>Homoscedasticity</strong> (constant variance)</td><td>non-constant variance makes standard errors and tests invalid (point estimates remain unbiased)</td><td>residual versus fitted funnel shape, Breusch-Pagan or White test</td><td>log or Box-Cox transform of y, weighted least squares, <strong>heteroscedasticity-robust (HC3) errors</strong></td></tr><tr><td><strong>Normality of residuals</strong></td><td>only needed for small-sample inference; with large n the central limit theorem helps</td><td>Q-Q plot, Shapiro-Wilk (sensitive in large n)</td><td>transform, bootstrap intervals, robust or quantile regression</td></tr><tr><td><strong>No (severe) multicollinearity</strong></td><td>unstable, high-variance coefficients, though predictions may be fine</td><td>correlation matrix, <strong>VIF</strong> &gt; 5 or 10, condition number</td><td>drop or combine correlated variables, PCA, ridge regression</td></tr><tr><td><strong>No influential outliers</strong></td><td>a few points can swing the fit</td><td>leverage, Cook&#39;s distance, studentised residuals</td><td>investigate data errors, robust regression (Huber), report with and without</td></tr><tr><td><strong>Correct specification, no omitted variable bias</strong></td><td>omitted confounders bias coefficients</td><td>domain knowledge, DAGs</td><td>add variables, instruments, experiments</td></tr></tbody></table></div>
+<pre><code>import statsmodels.api as sm
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+from statsmodels.stats.diagnostic import het_breuschpagan
+X = sm.add_constant(df[features]); m = sm.OLS(df[&quot;y&quot;], X).fit(cov_type=&quot;HC3&quot;)   # robust SEs
+print(m.summary())
+vif = [variance_inflation_factor(X.values, i) for i in range(1, X.shape[1])]
+print(het_breuschpagan(m.resid, X))
+influence = m.get_influence().cooks_distance[0]</code></pre>
+<h4>Interpretation notes</h4>
+<ul><li>A coefficient is the expected change in y per one-unit change in that predictor <strong>holding the others constant</strong>.</li><li><strong>Log-transformed y</strong>: coefficient approximates a percentage change (b = 0.05 means about 5 percent). <strong>Log-log</strong>: elasticity.</li><li>Standardise predictors to compare effect sizes; centre variables for interpretable intercepts and interactions.</li><li>R-squared always rises with more predictors; use adjusted R-squared, AIC or cross-validated error.</li></ul>
+<h4>Alternatives when assumptions fail</h4>
+<p>Regularised models (ridge, lasso, elastic net), generalised linear models (logistic, Poisson, negative binomial for counts), mixed-effects models, quantile regression, tree-based models and GAMs.</p>
+<h4>Pitfalls</h4>
+<p>Dropping variables because of VIF without considering the causal question, testing normality of the target instead of residuals, and treating a good R-squared as proof that assumptions hold.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What happens to coefficient estimates and standard errors when predictors are highly collinear?</li><li>When do you use robust standard errors or a log transform of the target?</li><li>How does the interpretation change after log-transforming a variable?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-10">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-10%3A+What+are+the+assumptions+of+linear+regression+and+how+do+you+check%E2%80%A6&amp;question-id=ds-10&amp;context=Data+scientist%2C+Gear+1%2C+topic%3A+Modeling%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-10.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

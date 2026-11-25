@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How should you interpret a confidence interval, and how does it differ from a Bayesian credible interval? | InterviewGearUp</title>
+<meta name="description" content="A 95 percent confidence interval comes from a procedure that captures the true parameter in 95 percent of repeated samples, so the probability statement…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-17.html">
+<meta property="og:title" content="How should you interpret a confidence interval, and how does it differ from a Bayesian credible interval? | InterviewGearUp">
+<meta property="og:description" content="A 95 percent confidence interval comes from a procedure that captures the true parameter in 95 percent of repeated samples, so the probability statement…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-17.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How should you interpret a confidence interval, and how does it differ from a Bayesian credible interval?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 2 (Mid-level) · Statistics · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A 95 percent confidence interval comes from a procedure that captures the true parameter in 95 percent of repeated samples, so the probability statement is about the procedure, not this one interval. A Bayesian credible interval states directly that the parameter lies within it with 95 percent probability given the prior and data.</p></div>
+<h4>Explained in depth</h4>
+<h4>Frequentist confidence intervals</h4>
+<p>In frequentist statistics the true parameter (for example the real conversion lift) is <strong>fixed but unknown</strong>, and the data are random. A 95 percent confidence interval is constructed so that, <strong>if you repeated the experiment many times, 95 percent of the intervals would contain the true value</strong>. For one observed interval, the true value is either inside or not; the 95 percent describes the <strong>long-run coverage of the method</strong>.</p>
+<ul><li>Typical formula: estimate +/- critical value x standard error (for a mean, x-bar +/- t x s / sqrt(n)).</li><li>Width shrinks with larger n (as 1 / sqrt(n)), grows with variance and with confidence level.</li><li><strong>Useful readings</strong>: the interval shows the <strong>range of effect sizes consistent with the data</strong>. If it excludes zero, the two-sided test rejects zero at the matching alpha. A wide interval signals low precision even if p &lt; 0.05.</li><li>Many people informally say &quot;95 percent probability the parameter lies here&quot;; that is the <strong>credible interval</strong> interpretation, not the confidence interval one.</li></ul>
+<h4>Bayesian credible intervals</h4>
+<p>Bayesian inference treats the parameter as a <strong>random variable</strong> with a <strong>prior</strong> distribution, updates it with the data through Bayes&#39; theorem to get a <strong>posterior</strong>, and a <strong>95 percent credible interval</strong> is a range containing 95 percent of the posterior probability: &quot;given our model, prior and data, there is a 95 percent probability the lift is between 0.1 and 0.6 percentage points&quot;. Variants: equal-tailed interval and <strong>highest posterior density (HPD)</strong> interval.</p>
+<pre><code># Conversion A/B with Beta-Binomial model
+import numpy as np
+from scipy import stats
+a = stats.beta(1 + 520, 1 + 10000 - 520)       # control: 520 conversions of 10000, Beta(1,1) prior
+b = stats.beta(1 + 565, 1 + 10000 - 565)
+diff = b.rvs(100000) - a.rvs(100000)
+print(np.percentile(diff, [2.5, 97.5]), (diff &gt; 0).mean())   # credible interval and P(B &gt; A)</code></pre>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th></th><th>Confidence interval</th><th>Credible interval</th></tr></thead><tbody><tr><td>Parameter</td><td>fixed, unknown</td><td>random variable with a distribution</td></tr><tr><td>Probability refers to</td><td>long-run coverage of the procedure</td><td>the parameter, given data and prior</td></tr><tr><td>Needs a prior</td><td>no</td><td>yes (can be weakly informative)</td></tr><tr><td>Direct probability statements (P(lift &gt; 0))</td><td>not available</td><td>yes</td></tr><tr><td>With lots of data and a vague prior</td><td>numbers are usually very similar</td><td></td></tr><tr><td>With little data</td><td>can be awkward (for example intervals outside valid range)</td><td>prior regularises, results depend on prior</td></tr></tbody></table></div>
+<h4>Practical issues</h4>
+<ul><li><strong>Prior choice</strong> matters with small samples: do a <strong>sensitivity analysis</strong> with different priors; weakly informative priors are a sensible default; justify informative ones with historical data.</li><li><strong>Non-normal or complicated metrics</strong> (ratios, medians, percentiles, revenue per user): use the <strong>delta method</strong> for ratios, <strong>bootstrap</strong> confidence intervals (percentile or BCa), or model-based intervals. Clustered data needs cluster-robust or hierarchical models.</li><li><strong>Multiple comparisons</strong> affect both; simultaneous intervals or hierarchical models help.</li><li>Check that <strong>model assumptions</strong> hold; an interval is only as valid as the model.</li><li>Report <strong>effect size with interval</strong> and what it means for the decision, rather than only &quot;significant&quot;.</li></ul>
+<h4>Interview framing</h4>
+<p>&quot;A confidence interval tells you how well the procedure performs over repeated sampling; a credible interval gives a direct probability statement but depends on the prior. With plenty of data they typically agree, and I report the interval and the decision-relevant probability.&quot;</p>
+<h4>Pitfalls</h4>
+<p>Interpreting a single 95 percent confidence interval as a 95 percent probability statement, treating overlapping intervals as proof of no difference (they can still differ significantly), and ignoring priors in Bayesian analyses.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is &quot;there is a 95 percent chance the true value is in this interval&quot; incorrect for a frequentist interval?</li><li>How does the choice of prior affect a credible interval, especially with little data?</li><li>How would you compute an interval for a metric that is a ratio or a median?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-17">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-17%3A+How+should+you+interpret+a+confidence+interval%2C+and+how+does+it%E2%80%A6&amp;question-id=ds-17&amp;context=Data+scientist%2C+Gear+2%2C+topic%3A+Statistics%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-17.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

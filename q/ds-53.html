@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you diagnose and optimise slow SQL queries on very large tables in a data warehouse? | InterviewGearUp</title>
+<meta name="description" content="Read the query plan to find scans, shuffles and skew, then reduce data early with partition and column pruning, filter pushdown and pre-aggregation,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-53.html">
+<meta property="og:title" content="How do you diagnose and optimise slow SQL queries on very large tables in a data warehouse? | InterviewGearUp">
+<meta property="og:description" content="Read the query plan to find scans, shuffles and skew, then reduce data early with partition and column pruning, filter pushdown and pre-aggregation,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-53.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you diagnose and optimise slow SQL queries on very large tables in a data warehouse?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 4 (Lead / Staff) · SQL performance · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Read the query plan to find scans, shuffles and skew, then reduce data early with partition and column pruning, filter pushdown and pre-aggregation, choose join strategies deliberately such as broadcasting small tables, avoid row-multiplying joins and non-sargable predicates, use approximate aggregates where acceptable, and materialise reusable intermediate tables incrementally.</p></div>
+<h4>Explained in depth</h4>
+<h4>Approach</h4>
+<ol start="1"><li><strong>Measure first</strong>: runtime, bytes scanned, rows shuffled, memory spilled, slots or credits used. Check the <strong>query plan</strong> (EXPLAIN / EXPLAIN ANALYZE, Snowflake query profile, BigQuery execution graph, Spark UI) to find the expensive step, not the one you suspect.</li><li><strong>Reduce the data early</strong>, <strong>then</strong> join and aggregate.</li><li>Fix the biggest cost first and re-measure.</li></ol>
+<h4>Reduce the data scanned</h4>
+<ul><li><strong>Select only needed columns</strong> (columnar storage reads per column); avoid <code>SELECT *</code>.</li><li><strong>Partition pruning</strong>: filter on the partition key (date) with a literal range, not a function applied to the column (<code>WHERE DATE(ts) = ...</code> can prevent pruning in some engines; use <code>ts &gt;= &#39;2026-11-01&#39; AND ts &lt; &#39;2026-11-02&#39;</code>).</li><li><strong>Clustering / sort keys / Z-order</strong> on common filter or join columns.</li><li><strong>Predicate pushdown</strong> and avoiding non-sargable conditions (<code>WHERE LOWER(col) = &#39;x&#39;</code> or leading-wildcard <code>LIKE</code>).</li><li>Use <strong>pre-aggregated or summary tables</strong> and incremental models (dbt incremental) rather than recomputing from raw events.</li><li><strong>Sample</strong> or limit during development, with deterministic hashing for reproducible samples.</li></ul>
+<h4>Joins</h4>
+<ul><li>Know your <strong>grain</strong>; a join on a non-unique key <strong>multiplies rows</strong> (fan-out) and silently inflates aggregates. Pre-aggregate each side to the join grain first.</li><li><strong>Broadcast</strong> small dimension tables to avoid shuffling the large table; join order and statistics matter (analyse tables, keep stats fresh).</li><li>Filter both sides before joining; use <code>EXISTS</code> / semi-joins instead of joining just to filter; avoid <code>DISTINCT</code> as a bandage for duplicates.</li><li>Avoid cross joins and inequality joins without bounds (range joins), or bucket them (join by date bucket first).</li><li>Prefer window functions over self-joins for &quot;previous row&quot; logic.</li><li><strong>Skew</strong>: a few hot keys (null, &quot;unknown&quot;, a power user) overload one worker. Fix by filtering or handling the hot key separately, salting keys, pre-aggregating, or enabling adaptive skew-join features.</li></ul>
+<h4>Aggregation</h4>
+<ul><li>Use <strong>approximate distinct</strong> (<code>APPROX_COUNT_DISTINCT</code>, HyperLogLog sketches) when exact counts are not needed; pre-compute sketches for roll-ups.</li><li>Aggregate to the lowest necessary grain once; avoid repeated large <code>COUNT(DISTINCT)</code> per metric (use conditional aggregation in one pass).</li><li>Order by and limit carefully: a global sort of billions of rows is expensive; use <code>QUALIFY</code> / top-N per group wisely.</li></ul>
+<h4>Example refactor</h4>
+<pre><code>-- Slow: joins raw events to users before aggregating, scanning all columns and dates
+SELECT u.country, COUNT(DISTINCT e.user_id)
+FROM events e JOIN users u ON u.user_id = e.user_id
+WHERE DATE(e.event_ts) BETWEEN &#39;2026-11-01&#39; AND &#39;2026-11-07&#39;
+GROUP BY u.country;
+
+-- Faster: prune partitions, project needed columns, dedupe users first, then join the small result
+WITH active AS (
+  SELECT DISTINCT user_id
+  FROM events
+  WHERE event_ts &gt;= TIMESTAMP &#39;2026-11-01&#39; AND event_ts &lt; TIMESTAMP &#39;2026-11-08&#39;
+    AND event_type = &#39;session_start&#39;
+)
+SELECT u.country, COUNT(*) AS active_users
+FROM active a JOIN users u USING (user_id)
+GROUP BY u.country;</code></pre>
+<h4>Platform specifics and engineering</h4>
+<p>CTEs may be inlined or materialised depending on the engine, so verify in the plan; temporary tables can help reuse and force materialisation. Watch concurrency and warehouse sizing (scaling up helps spill and shuffle, scaling out helps concurrency), use result caching and materialised views, schedule heavy jobs off-peak, set cost controls (query limits, partition filters required), and add data tests for row counts and uniqueness at model grains.</p>
+<h4>Pitfalls</h4>
+<p>Optimising by guessing, using <code>DISTINCT</code> to hide fan-out, hot-key skew ignored, and forgetting that a faster query that returns subtly different numbers is a regression: validate results against the original.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you recognise and fix data skew in a join or group by on a distributed engine?</li><li>Why can a CTE or subquery be fast in one engine and slow in another?</li><li>When do you materialise a table instead of running the query on demand?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-53">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-53%3A+How+do+you+diagnose+and+optimise+slow+SQL+queries+on+very+large%E2%80%A6&amp;question-id=ds-53&amp;context=Data+scientist%2C+Gear+4%2C+topic%3A+SQL+performance%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-53.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

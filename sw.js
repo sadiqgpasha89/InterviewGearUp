@@ -55,6 +55,7 @@ const SHELL = [
   'data/curated/qa.js',
   'data/curated/security.js',
   'data/curated/leadership.js',
+  'data/curated/datascience-full.js',
   'data/curated/leadership-full.js',
   'data/curated/security-full.js',
   'data/curated/qa-full.js',

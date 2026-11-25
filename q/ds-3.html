@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain precision, recall and F1 score, and give examples of when you would favour each. | InterviewGearUp</title>
+<meta name="description" content="Precision is the share of predicted positives that are correct, recall is the share of actual positives found, and F1 is their harmonic mean. Favour…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-3.html">
+<meta property="og:title" content="Explain precision, recall and F1 score, and give examples of when you would favour each. | InterviewGearUp">
+<meta property="og:description" content="Precision is the share of predicted positives that are correct, recall is the share of actual positives found, and F1 is their harmonic mean. Favour…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-3.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain precision, recall and F1 score, and give examples of when you would favour each.</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 1 (Junior) · Model evaluation · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Precision is the share of predicted positives that are correct, recall is the share of actual positives found, and F1 is their harmonic mean. Favour precision when false alarms are costly (spam filtering of important mail), recall when misses are costly (cancer screening, fraud), and F1 or a cost-weighted metric when you need a balance.</p></div>
+<h4>Explained in depth</h4>
+<h4>Definitions from the confusion matrix</h4>
+<p>For a binary classifier: <strong>TP</strong> (predicted positive, actually positive), <strong>FP</strong> (false alarm), <strong>FN</strong> (miss), <strong>TN</strong>.</p>
+<ul><li><strong>Precision</strong> = TP / (TP + FP): of everything flagged, how much was right?</li><li><strong>Recall (sensitivity, true positive rate)</strong> = TP / (TP + FN): of all real positives, how many did we catch?</li><li><strong>F1</strong> = 2 x precision x recall / (precision + recall): the <strong>harmonic mean</strong>, which is low if either is low. <strong>F-beta</strong> weights recall beta times as much as precision (F2 favours recall).</li><li><strong>Specificity</strong> = TN / (TN + FP), <strong>accuracy</strong> = (TP + TN) / total.</li></ul>
+<h4>Worked example</h4>
+<p>A fraud model flags 100 transactions. 80 are real fraud (TP = 80, FP = 20). There were 200 fraudulent transactions in total (FN = 120).</p>
+<ul><li>Precision = 80/100 = 0.80. Recall = 80/200 = 0.40. F1 = 2 x 0.8 x 0.4 / 1.2 = 0.53.</li></ul>
+<p>Accuracy could still be about 99.9 percent because most transactions are legitimate, which is why accuracy is misleading on <strong>imbalanced data</strong>.</p>
+<h4>When to favour which</h4>
+<div class="md-table"><table><thead><tr><th>Situation</th><th>Cost structure</th><th>Favour</th></tr></thead><tbody><tr><td>Cancer or disease screening, safety defects, security intrusion</td><td>missing a positive is far worse</td><td><strong>high recall</strong> (accept follow-up tests for false alarms)</td></tr><tr><td>Fraud detection with manual review capacity</td><td>misses cost money, but analysts are limited</td><td>recall at a fixed review budget, so precision at top-k</td></tr><tr><td>Spam filter, content moderation auto-removal, legal e-discovery production</td><td>a false positive hurts users (lost mail)</td><td><strong>high precision</strong></td></tr><tr><td>Search and recommendations</td><td>users see only top results</td><td>precision at k, recall at k, NDCG</td></tr><tr><td>General balance, no clear costs</td><td>both errors matter</td><td>F1 or PR AUC</td></tr></tbody></table></div>
+<p>Better: put real <strong>costs</strong> on FP and FN and choose the threshold that minimises expected cost.</p>
+<h4>Threshold effect</h4>
+<p>Most models output scores. Lowering the threshold flags more cases: <strong>recall rises, precision usually falls</strong>. The <strong>precision-recall curve</strong> shows the trade-off; pick the operating point from business constraints (&quot;at least 90 percent recall&quot; or &quot;no more than 5 percent false alarms&quot;).</p>
+<pre><code>from sklearn.metrics import precision_recall_curve, classification_report
+p, r, t = precision_recall_curve(y_true, scores)
+print(classification_report(y_true, scores &gt; 0.35))</code></pre>
+<h4>Multi-class averaging</h4>
+<ul><li><strong>Macro</strong>: average per-class metric equally (treats rare classes as important).</li><li><strong>Micro</strong>: pool all decisions (dominated by frequent classes; equals accuracy for single-label).</li><li><strong>Weighted</strong>: average weighted by class support.</li></ul>
+<h4>Pitfalls</h4>
+<p>Reporting accuracy for rare events, comparing F1 at different thresholds, ignoring calibration, and tuning the threshold on the test set.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is accuracy a poor metric for imbalanced classes?</li><li>How does changing the classification threshold move precision and recall?</li><li>What are macro, micro and weighted averages for multi-class F1?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-3">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-3%3A+Explain+precision%2C+recall+and+F1+score%2C+and+give+examples+of+when%E2%80%A6&amp;question-id=ds-3&amp;context=Data+scientist%2C+Gear+1%2C+topic%3A+Model+evaluation%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-3.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

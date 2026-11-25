@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you protect privacy when analysing user data or training models, covering anonymisation, k-anonymity and differential privacy? | InterviewGearUp</title>
+<meta name="description" content="Minimise and pseudonymise data first, because simple anonymisation is easily reversed by linkage attacks. Use aggregation thresholds and k-anonymity for…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-51.html">
+<meta property="og:title" content="How do you protect privacy when analysing user data or training models, covering anonymisation, k-anonymity and differential privacy? | InterviewGearUp">
+<meta property="og:description" content="Minimise and pseudonymise data first, because simple anonymisation is easily reversed by linkage attacks. Use aggregation thresholds and k-anonymity for…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-51.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you protect privacy when analysing user data or training models, covering anonymisation, k-anonymity and differential privacy?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 4 (Lead / Staff) · Privacy · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Minimise and pseudonymise data first, because simple anonymisation is easily reversed by linkage attacks. Use aggregation thresholds and k-anonymity for releases, differential privacy to bound what any single person&#39;s data can reveal through added calibrated noise, and federated or secure computation where raw data cannot move. Manage a privacy budget and document the trade-off with utility.</p></div>
+<h4>Explained in depth</h4>
+<h4>Principles</h4>
+<p>Collect only what you need (<strong>data minimisation</strong>), keep it for a limited time, control access, and handle consent and legal bases (GDPR, CCPA, HIPAA). Privacy engineering combines <strong>policy, access controls and technical protections</strong>.</p>
+<h4>Why naive anonymisation fails</h4>
+<p>Removing direct identifiers (name, email) leaves <strong>quasi-identifiers</strong> (ZIP code, birth date, gender, device model, rare purchases). Linkage attacks (Sweeney identified a governor&#39;s health record via ZIP, birth date and sex; the Netflix prize dataset was re-identified using IMDb ratings) show that combinations can be unique. High-dimensional behavioural data are especially re-identifiable.</p>
+<h4>Techniques</h4>
+<div class="md-table"><table><thead><tr><th>Technique</th><th>What it does</th><th>Limits</th></tr></thead><tbody><tr><td><strong>Pseudonymisation / tokenisation</strong></td><td>replace identifiers with tokens or salted hashes</td><td>still personal data; reversible via mapping or dictionary attacks</td></tr><tr><td><strong>Generalisation and suppression</strong></td><td>coarsen age to ranges, truncate ZIP, drop rare values</td><td>utility loss</td></tr><tr><td><strong>k-anonymity</strong></td><td>every record is indistinguishable from at least k - 1 others on quasi-identifiers</td><td>vulnerable to homogeneity and background-knowledge attacks</td></tr><tr><td><strong>l-diversity / t-closeness</strong></td><td>add diversity of sensitive values within groups</td><td>complex, still heuristic</td></tr><tr><td><strong>Aggregation with minimum thresholds</strong></td><td>publish only counts for groups of at least N users</td><td>combine multiple queries can still leak (differencing attacks)</td></tr><tr><td><strong>Differential privacy (DP)</strong></td><td><strong>provable</strong> guarantee: outputs are almost the same whether or not any one person&#39;s data is included</td><td>utility cost, needs a privacy budget</td></tr><tr><td><strong>Synthetic data</strong></td><td>generate artificial records</td><td>not automatically private; can memorise</td></tr><tr><td><strong>Federated learning, secure aggregation, MPC, homomorphic encryption, trusted execution environments</strong></td><td>compute without centralising raw data</td><td>engineering cost; may still leak via updates, combine with DP</td></tr></tbody></table></div>
+<h4>Differential privacy</h4>
+<p>A randomised mechanism M is <strong>epsilon-differentially private</strong> if for any two datasets differing in one person, the probability of any output changes by at most a factor of e^epsilon (plus delta in the approximate version). Smaller epsilon means stronger privacy and more noise. A simple mechanism: the <strong>Laplace mechanism</strong> adds noise with scale = sensitivity / epsilon to a query result (for a count, sensitivity is 1).</p>
+<pre><code>import numpy as np
+def dp_count(true_count, epsilon):
+    return true_count + np.random.laplace(0, 1.0 / epsilon)      # sensitivity of a count is 1</code></pre>
+<p>Key ideas: <strong>sensitivity</strong> (how much one person can change the output, so clip contributions), <strong>composition</strong> (every query spends budget; total epsilon accumulates), <strong>post-processing immunity</strong>, and <strong>local vs central</strong> DP (noise at the user&#39;s device versus at a trusted curator). For ML use <strong>DP-SGD</strong>: clip per-example gradients and add Gaussian noise (Opacus, TensorFlow Privacy), tracking the budget with an accountant. Practical epsilon values range from below 1 (strong) to 8 or more (weak but common in production); the choice is a policy decision with a utility trade-off.</p>
+<h4>Model privacy risks</h4>
+<p>Models can leak: <strong>membership inference</strong> (was this record in training?), <strong>training data extraction</strong> from large language models, and model inversion. Defences: DP training, regularisation and less overfitting, deduplicating training data, output filtering, limiting query access, and auditing with attack simulations.</p>
+<h4>Practice</h4>
+<p>Perform a <strong>data protection impact assessment</strong>; separate identifiers from analytics data; use role-based access, audit logs and encryption; apply aggregate-only dashboards with minimum cohort sizes; test re-identification risk before releasing datasets; honour deletion requests (machine unlearning, retraining schedule).</p>
+<h4>Pitfalls</h4>
+<p>Believing hashing emails is anonymisation, releasing many overlapping aggregates without budget accounting, choosing epsilon without understanding utility, and treating synthetic data as automatically safe.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is removing names and emails not enough to anonymise a dataset?</li><li>What does the epsilon parameter mean in differential privacy and how do you pick it?</li><li>How can a trained model leak training data, and what defences exist?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-51">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-51%3A+How+do+you+protect+privacy+when+analysing+user+data+or+training%E2%80%A6&amp;question-id=ds-51&amp;context=Data+scientist%2C+Gear+4%2C+topic%3A+Privacy%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-51.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

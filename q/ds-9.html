@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain the difference between correlation and causation, and what confounders and Simpson&#39;s paradox are. | InterviewGearUp</title>
+<meta name="description" content="Correlation means two variables move together; causation means changing one produces a change in the other. A confounder influences both variables and…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-9.html">
+<meta property="og:title" content="Explain the difference between correlation and causation, and what confounders and Simpson&#39;s paradox are. | InterviewGearUp">
+<meta property="og:description" content="Correlation means two variables move together; causation means changing one produces a change in the other. A confounder influences both variables and…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-9.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain the difference between correlation and causation, and what confounders and Simpson&#39;s paradox are.</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 1 (Junior) · Statistics · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Correlation means two variables move together; causation means changing one produces a change in the other. A confounder influences both variables and creates a misleading association, and Simpson&#39;s paradox shows a trend reversing once data are split into groups. Randomised experiments or careful causal methods are needed to claim causation.</p></div>
+<h4>Explained in depth</h4>
+<h4>Correlation versus causation</h4>
+<ul><li><strong>Correlation</strong> (Pearson r for linear relationships, Spearman for monotonic) measures association strength and direction. It is symmetric and says nothing about mechanism.</li><li><strong>Causation</strong> means an <strong>intervention</strong> on X changes Y. The question is counterfactual: what would Y have been had X been different?</li></ul>
+<p>Why an association may exist without X causing Y:</p>
+<ol start="1"><li><strong>Confounding</strong>: a third variable Z causes both. Ice cream sales and drownings correlate because <strong>hot weather</strong> drives both.</li><li><strong>Reverse causation</strong>: Y causes X (people who feel unwell take more medicine; the medicine did not cause the illness).</li><li><strong>Selection bias</strong> (including collider bias): conditioning on a variable influenced by both X and Y creates a spurious link.</li><li><strong>Coincidence</strong>: with many variables, some spurious correlations appear by chance (Tyler Vigen&#39;s charts).</li></ol>
+<h4>Confounders in business data</h4>
+<ul><li>Customers who use a premium feature churn less, but engaged users are the ones who find and use premium features; <strong>engagement</strong> confounds.</li><li>Hospitals with more doctors have higher mortality because they receive sicker patients (severity confounds).</li><li>Marketing emails appear to boost sales, but they are sent to already-likely buyers.</li></ul>
+<h4>Simpson&#39;s paradox</h4>
+<p>A trend present in aggregated data reverses in subgroups. Classic example: UC Berkeley admissions appeared biased against women overall, but within most departments women were admitted at equal or higher rates; women applied more to competitive departments. Numeric toy example: Treatment A cures 78 percent overall versus B 83 percent, yet A is better for both small and large kidney stones, because A was given more often to the harder large stones. The group-level analysis (conditioning on severity) is the right one <strong>if</strong> severity is a confounder. Whether to aggregate or stratify depends on the <strong>causal structure</strong>, not statistics alone, so draw a causal diagram (DAG).</p>
+<h4>How to get at causation</h4>
+<div class="md-table"><table><thead><tr><th>Approach</th><th>Idea</th></tr></thead><tbody><tr><td><strong>Randomised controlled trial / A/B test</strong></td><td>random assignment balances all confounders (known and unknown) in expectation</td></tr><tr><td><strong>Adjustment</strong></td><td>regression or stratification controlling for measured confounders (needs no unmeasured confounding)</td></tr><tr><td><strong>Matching / propensity scores / inverse probability weighting</strong></td><td>compare similar treated and untreated units</td></tr><tr><td><strong>Difference-in-differences</strong></td><td>compare before-after changes in treated versus control groups (parallel trends assumption)</td></tr><tr><td><strong>Regression discontinuity</strong></td><td>exploit a cutoff rule (scholarship at score 80)</td></tr><tr><td><strong>Instrumental variables</strong></td><td>a variable that affects treatment but not the outcome directly</td></tr><tr><td><strong>Synthetic control</strong></td><td>build a weighted control from other units</td></tr><tr><td><strong>Domain knowledge and DAGs</strong></td><td>decide what to adjust for (confounders) and what not (colliders, mediators)</td></tr></tbody></table></div>
+<pre><code># Naive vs adjusted estimate
+import statsmodels.formula.api as smf
+print(smf.ols(&quot;sales ~ email&quot;, df).fit().params[&quot;email&quot;])             # biased by who gets emails
+print(smf.ols(&quot;sales ~ email + past_purchases + tenure&quot;, df).fit().params[&quot;email&quot;])</code></pre>
+<h4>How to talk about it</h4>
+<p>Say &quot;associated with&quot; unless there is experimental or strong quasi-experimental evidence, state the assumptions, and propose the experiment that would settle it.</p>
+<h4>Pitfalls</h4>
+<p>Adjusting for colliders or mediators, believing regression alone proves causation, and ignoring unmeasured confounding.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does randomisation remove confounding in an A/B test?</li><li>Give an example where a lurking variable explains an apparent effect.</li><li>What do you do when you cannot run an experiment but must estimate an effect?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-9">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-9%3A+Explain+the+difference+between+correlation+and+causation%2C+and+what%E2%80%A6&amp;question-id=ds-9&amp;context=Data+scientist%2C+Gear+1%2C+topic%3A+Statistics%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-9.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

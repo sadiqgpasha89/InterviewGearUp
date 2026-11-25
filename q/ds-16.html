@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you design an A/B test: choosing metrics, randomisation unit, sample size, power and duration? | InterviewGearUp</title>
+<meta name="description" content="Define a hypothesis, one primary metric and guardrail metrics, choose the randomisation unit that matches the metric and avoids interference, compute the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-16.html">
+<meta property="og:title" content="How do you design an A/B test: choosing metrics, randomisation unit, sample size, power and duration? | InterviewGearUp">
+<meta property="og:description" content="Define a hypothesis, one primary metric and guardrail metrics, choose the randomisation unit that matches the metric and avoids interference, compute the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-16.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you design an A/B test: choosing metrics, randomisation unit, sample size, power and duration?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 2 (Mid-level) · Experimentation · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Define a hypothesis, one primary metric and guardrail metrics, choose the randomisation unit that matches the metric and avoids interference, compute the sample size from the baseline, minimum detectable effect, alpha and power, run for whole business cycles without peeking, then analyse as pre-registered with checks such as sample ratio mismatch.</p></div>
+<h4>Explained in depth</h4>
+<h4>1. Hypothesis and metrics</h4>
+<ul><li>Write a <strong>causal hypothesis</strong>: &quot;Changing the checkout button copy will increase purchase conversion.&quot;</li><li>One <strong>primary (OEC) metric</strong> tied to the goal (conversion, revenue per visitor), several <strong>secondary</strong> metrics for understanding, and <strong>guardrail</strong> metrics that must not degrade (latency, error rate, unsubscribe rate, refund rate).</li><li>Choose metrics that are <strong>sensitive</strong>, <strong>attributable</strong> to the change, and measurable within the test window. Avoid long-delay outcomes as primaries unless proxies are validated.</li></ul>
+<h4>2. Randomisation unit and population</h4>
+<ul><li>Pick the unit: <strong>user</strong> (most common, consistent experience), session, device, account or cluster (store, market). The unit should match the <strong>analysis unit</strong> to keep observations independent; otherwise use delta-method or cluster-robust variance.</li><li>Define eligibility (who enters, at what point: trigger on exposure to the changed surface to reduce dilution).</li><li>Use hash-based, sticky bucketing; ensure <strong>no interference</strong> between units (marketplaces, social networks need cluster or switchback designs).</li></ul>
+<h4>3. Sample size and power</h4>
+<p>For a two-sided test on a proportion, per-arm sample size is roughly n = 2 x (z_alpha/2 + z_beta)^2 x p(1 - p) / delta^2, where p is the baseline rate, delta the <strong>minimum detectable effect (MDE)</strong> (absolute), alpha is the false-positive rate (0.05) and power = 1 - beta (typically 80 percent).</p>
+<pre><code>from statsmodels.stats.power import NormalIndPower
+from statsmodels.stats.proportion import proportion_effectsize
+es = proportion_effectsize(0.052, 0.050)           # 5.0% baseline, detect 5.2%
+n = NormalIndPower().solve_power(es, alpha=0.05, power=0.8, ratio=1)
+print(int(n), &quot;users per arm&quot;)</code></pre>
+<p>Effects: halving the MDE roughly <strong>quadruples</strong> the sample; a lower baseline rate or higher variance needs more; higher power or lower alpha needs more. Use <strong>variance reduction</strong> (CUPED) to need fewer users. Choose the MDE from business value (&quot;the smallest lift worth shipping&quot;), not what is convenient.</p>
+<h4>4. Duration</h4>
+<p>Compute days = required sample / daily eligible traffic, then <strong>round up to complete weeks</strong> (at least 1 to 2 weeks) to cover weekday and weekend behaviour; extend for novelty or primacy effects and for metrics with delayed outcomes. Do not stop early because the p-value looks good.</p>
+<h4>5. Before launch</h4>
+<ul><li><strong>A/A test</strong> or checks that the platform produces no false differences.</li><li>QA the variants, logging and exposure events; define the analysis plan (metrics, exclusions such as bots, outlier handling, test, alpha); <strong>pre-register</strong> decisions and ship criteria.</li></ul>
+<h4>6. During and after</h4>
+<ul><li><strong>Sample ratio mismatch (SRM)</strong>: check that the observed split (for example 50/50) matches the design with a chi-square test. A mismatch (p &lt; 0.001) signals bugs in assignment, logging or filtering, and <strong>results are not trustworthy</strong>.</li><li>Avoid <strong>peeking</strong> with fixed-horizon tests, or use <strong>sequential testing</strong>.</li><li>Analyse by intent-to-treat; compute effect, confidence interval, p-value, and practical significance. Apply multiple-testing corrections for many metrics or variants.</li><li>Look at <strong>segments</strong> cautiously (exploratory, pre-specified when possible), and confirm unexpected findings with follow-up experiments.</li><li>Check guardrails, novelty or primacy effects (effect over time), and interactions with other concurrent experiments.</li><li><strong>Decide and document</strong>: ship, iterate or stop, with the learning recorded in an experiment repository.</li></ul>
+<h4>Pitfalls</h4>
+<p>Underpowered tests (&quot;no significant difference&quot; with a tiny sample), stopping when significant, choosing metrics after seeing data, ignoring SRM, and randomising by session while analysing by user.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do baseline rate, MDE, alpha and power each change the required sample size?</li><li>What is sample ratio mismatch and why does it invalidate a test?</li><li>How do you handle novelty effects, weekly seasonality and multiple metrics?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-16">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-16%3A+How+do+you+design+an+A%2FB+test%3A+choosing+metrics%2C+randomisation+unit%2C%E2%80%A6&amp;question-id=ds-16&amp;context=Data+scientist%2C+Gear+2%2C+topic%3A+Experimentation%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-16.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

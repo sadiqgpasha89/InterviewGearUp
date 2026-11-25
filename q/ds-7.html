@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Why do we split data into training, validation and test sets, and how do you do it correctly? | InterviewGearUp</title>
+<meta name="description" content="Training data fits the model, validation data is used to tune hyperparameters and choose between models, and the test set is touched once at the end to…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-7.html">
+<meta property="og:title" content="Why do we split data into training, validation and test sets, and how do you do it correctly? | InterviewGearUp">
+<meta property="og:description" content="Training data fits the model, validation data is used to tune hyperparameters and choose between models, and the test set is touched once at the end to…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-7.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Why do we split data into training, validation and test sets, and how do you do it correctly?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 1 (Junior) · Model evaluation · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Training data fits the model, validation data is used to tune hyperparameters and choose between models, and the test set is touched once at the end to estimate real-world performance. Split in a way that matches deployment: random for iid data, stratified for imbalance, grouped by entity and ordered by time for temporal data, to avoid leakage.</p></div>
+<h4>Explained in depth</h4>
+<h4>Purpose of each set</h4>
+<ul><li><strong>Training set</strong>: parameters are learned from it.</li><li><strong>Validation set</strong> (or cross-validation folds): used repeatedly to compare models and tune hyperparameters. Every decision made using it leaks a little information, so it becomes optimistic.</li><li><strong>Test set</strong>: a final, <strong>untouched</strong> estimate of generalisation. Use it once, after all choices are made. If you keep tweaking until the test score improves, it becomes a second validation set.</li></ul>
+<p>Typical proportions: 60/20/20 or 70/15/15; with small data use <strong>k-fold cross-validation</strong> and keep a small final test set.</p>
+<h4>Splitting correctly</h4>
+<div class="md-table"><table><thead><tr><th>Data type</th><th>Right split</th></tr></thead><tbody><tr><td>iid tabular data</td><td>random split with a fixed seed</td></tr><tr><td>Imbalanced classes</td><td><strong>stratified</strong> split so each set has similar class proportions</td></tr><tr><td>Multiple rows per customer, patient or device</td><td><strong>group split</strong> (GroupKFold) so one entity never appears in both train and test</td></tr><tr><td>Time series or anything where the future must be predicted</td><td><strong>chronological split</strong> and <strong>rolling or expanding window</strong> validation (TimeSeriesSplit); never shuffle</td></tr><tr><td>Spatial data</td><td>block or spatial cross-validation to prevent neighbour leakage</td></tr><tr><td>Duplicates or near-duplicates (images, text)</td><td>deduplicate before splitting</td></tr></tbody></table></div>
+<p>Mirror deployment: if the model will score <strong>new customers</strong> next month, validate on later periods and unseen customers.</p>
+<h4>Data leakage</h4>
+<p>Leakage means information unavailable at prediction time influences training or evaluation, producing inflated scores that collapse in production. Common sources:</p>
+<ul><li><strong>Target leakage</strong>: a feature derived from the outcome (a &quot;refund issued&quot; flag when predicting churn, a post-diagnosis lab test).</li><li><strong>Preprocessing leakage</strong>: fitting scalers, imputers, encoders, PCA or feature selection on the <strong>whole dataset</strong> before splitting.</li><li><strong>Duplicate or related rows</strong> across splits.</li><li><strong>Temporal leakage</strong>: using future information (features aggregated over windows that extend past the prediction date).</li><li><strong>Hyperparameter tuning on the test set.</strong></li></ul>
+<p>Fix with <code>Pipeline</code> objects that fit preprocessing inside each training fold.</p>
+<pre><code>from sklearn.model_selection import train_test_split, GroupKFold, cross_val_score
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.2, stratify=y, random_state=42)
+model = make_pipeline(StandardScaler(), clf)
+scores = cross_val_score(model, X_tr, y_tr, cv=GroupKFold(5), groups=customer_id_tr, scoring=&quot;roc_auc&quot;)</code></pre>
+<h4>Cross-validation versus a single split</h4>
+<p>Single hold-out is fine with large data and expensive models. <strong>k-fold</strong> (5 or 10) gives a more stable estimate and a measure of variance with limited data. Use <strong>nested cross-validation</strong> when tuning and estimating performance simultaneously on small datasets.</p>
+<h4>After deployment</h4>
+<p>Compare offline estimates with online results; shifts between training and live data (drift) explain gaps. Keep a time-based holdout representing the most recent data.</p>
+<h4>Pitfalls</h4>
+<p>Random splits on time-dependent data, scaling before splitting, reusing the test set, and reporting the best fold.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is data leakage and what are common sources of it?</li><li>When do you use cross-validation instead of a single validation split?</li><li>How do you split data for time series or for users with multiple rows?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-7">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-7%3A+Why+do+we+split+data+into+training%2C+validation+and+test+sets%2C+and%E2%80%A6&amp;question-id=ds-7&amp;context=Data+scientist%2C+Gear+1%2C+topic%3A+Model+evaluation%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-7.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

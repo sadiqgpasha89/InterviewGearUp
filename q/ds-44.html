@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you monitor a deployed machine learning model for data drift, concept drift and performance decay, and when do you retrain? | InterviewGearUp</title>
+<meta name="description" content="Monitor data quality, input and prediction distributions using PSI or KS tests, and business and model metrics once labels arrive, with segment…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-44.html">
+<meta property="og:title" content="How do you monitor a deployed machine learning model for data drift, concept drift and performance decay, and when do you retrain? | InterviewGearUp">
+<meta property="og:description" content="Monitor data quality, input and prediction distributions using PSI or KS tests, and business and model metrics once labels arrive, with segment…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-44.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you monitor a deployed machine learning model for data drift, concept drift and performance decay, and when do you retrain?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 3 (Senior) · ML monitoring · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Monitor data quality, input and prediction distributions using PSI or KS tests, and business and model metrics once labels arrive, with segment breakdowns and alerting. Distinguish covariate shift from concept drift, track label delay with proxies, define retraining triggers and a champion-challenger process, and keep rollback and logging in place.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why models decay</h4>
+<p>The world changes: customer behaviour, seasonality, new products, fraud tactics, upstream pipeline changes, and feedback loops (the model&#39;s decisions alter future data). A model with excellent offline metrics can quietly degrade.</p>
+<h4>Types of change</h4>
+<div class="md-table"><table><thead><tr><th>Type</th><th>Meaning</th><th>Example</th></tr></thead><tbody><tr><td><strong>Covariate shift (data drift)</strong></td><td>P(X) changes, P(y given X) stable</td><td>new user demographics</td></tr><tr><td><strong>Label (prior) shift</strong></td><td>P(y) changes</td><td>fraud rate rises in holidays</td></tr><tr><td><strong>Concept drift</strong></td><td>P(y given X) changes</td><td>customer sensitivity to price after a recession</td></tr><tr><td><strong>Data quality / pipeline issue</strong></td><td>schema, units, nulls, delayed feeds</td><td>a feature silently filled with zeros</td></tr><tr><td><strong>Training-serving skew</strong></td><td>features computed differently online and offline</td><td>timezone or rounding difference</td></tr></tbody></table></div>
+<h4>What to monitor</h4>
+<ol start="1"><li><strong>Data quality</strong>: schema validation, null rates, ranges, categorical cardinality, freshness and volume (Great Expectations, Deequ, Evidently).</li><li><strong>Input drift</strong>: compare production feature distributions with the training reference: <strong>Population Stability Index (PSI)</strong> (rule of thumb: below 0.1 stable, 0.1 to 0.25 moderate, above 0.25 major), KS test, Jensen-Shannon divergence, chi-square for categoricals. Prioritise features by importance, and beware that large samples make tiny shifts &quot;significant&quot;.</li><li><strong>Prediction drift</strong>: distribution of scores, share above threshold, calibration of mean prediction.</li><li><strong>Model performance</strong>: precision, recall, AUC, calibration, error metrics, once <strong>labels arrive</strong>; also by <strong>segment</strong> (region, device, new vs old users) and for fairness.</li><li><strong>Business outcomes and proxies</strong>: conversion, approval rate, manual review load, complaints, revenue per decision.</li><li><strong>Operational health</strong>: latency, throughput, errors, resource use, fallback rates.</li></ol>
+<pre><code>import numpy as np
+def psi(expected, actual, bins=10):
+    cuts = np.quantile(expected, np.linspace(0, 1, bins + 1)); cuts[0], cuts[-1] = -np.inf, np.inf
+    e = np.histogram(expected, cuts)[0] / len(expected) + 1e-6
+    a = np.histogram(actual, cuts)[0] / len(actual) + 1e-6
+    return np.sum((a - e) * np.log(a / e))</code></pre>
+<h4>Delayed labels</h4>
+<p>Use <strong>leading indicators</strong>: drift metrics, proxy outcomes (early repayment behaviour, chargeback flags, user feedback), partial labels, estimated performance methods (CBPE, confidence-based), human-labelled samples of recent traffic, and <strong>shadow deployments</strong>. Backfill true performance when labels mature.</p>
+<h4>Response playbook</h4>
+<ul><li><strong>Alerts with thresholds and severity</strong>, owners and runbooks; avoid alert fatigue by tuning.</li><li><strong>Diagnose</strong>: pipeline bug, data source change, or real-world shift? Fix pipeline issues first.</li><li><strong>Retrain</strong> with recent data (windowing or weighting), re-validate, and deploy with <strong>champion-challenger</strong>, shadow mode, canary or A/B tests; keep <strong>rollback</strong> to the previous version.</li><li>Retraining policy: scheduled (weekly, monthly) for steady domains, <strong>triggered</strong> (drift or performance breaches) for volatile ones, or continuous learning with safeguards. Weigh retraining cost, risk of learning from biased feedback, and governance requirements.</li><li>Maintain <strong>model registry, versioned data and code</strong>, reproducible training, and an audit trail of predictions (inputs, model version, outputs) for debugging and compliance.</li></ul>
+<h4>Feedback loops</h4>
+<p>Decisions can censor labels (loans you reject never show whether they would default). Use exploration, randomised holdouts, and reject inference to keep learning unbiased.</p>
+<h4>Pitfalls</h4>
+<p>Monitoring only infrastructure, alerting on every statistically significant drift, retraining blindly on contaminated data, and having no ground truth strategy.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you monitor model performance when ground-truth labels arrive weeks late?</li><li>What is the difference between covariate shift, label shift and concept drift?</li><li>How would you decide between scheduled retraining and trigger-based retraining?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-44">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-44%3A+How+do+you+monitor+a+deployed+machine+learning+model+for+data+drift%2C%E2%80%A6&amp;question-id=ds-44&amp;context=Data+scientist%2C+Gear+3%2C+topic%3A+ML+monitoring%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-44.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

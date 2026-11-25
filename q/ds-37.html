@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you build a recommender system, and how do collaborative filtering, content-based and matrix factorization approaches compare? | InterviewGearUp</title>
+<meta name="description" content="Collaborative filtering learns from user-item interactions, content-based methods use item and user attributes, and matrix factorization or neural…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-37.html">
+<meta property="og:title" content="How do you build a recommender system, and how do collaborative filtering, content-based and matrix factorization approaches compare? | InterviewGearUp">
+<meta property="og:description" content="Collaborative filtering learns from user-item interactions, content-based methods use item and user attributes, and matrix factorization or neural…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-37.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you build a recommender system, and how do collaborative filtering, content-based and matrix factorization approaches compare?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 3 (Senior) · Recommender systems · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Collaborative filtering learns from user-item interactions, content-based methods use item and user attributes, and matrix factorization or neural embeddings combine both in latent space. Production systems use two stages, candidate retrieval then ranking, handle cold start with content features, and are judged offline by ranking metrics and online by A/B tests.</p></div>
+<h4>Explained in depth</h4>
+<h4>Problem framing</h4>
+<p>Given users, items and interaction history (views, clicks, purchases, ratings), suggest items a user is likely to value. Decide the <strong>objective</strong> (clicks, conversions, watch time, long-term satisfaction, diversity) and the surface (homepage, email, search, similar items).</p>
+<h4>Approaches</h4>
+<div class="md-table"><table><thead><tr><th>Approach</th><th>How it works</th><th>Strengths</th><th>Weaknesses</th></tr></thead><tbody><tr><td><strong>Popularity / rules</strong></td><td>top sellers, trending</td><td>strong baseline, cold start</td><td>no personalisation</td></tr><tr><td><strong>Content-based</strong></td><td>match item features (text, category, image embeddings) to user profile</td><td>handles new items; explainable</td><td>limited novelty; needs good features</td></tr><tr><td><strong>Neighbourhood collaborative filtering</strong></td><td>user-user or item-item similarity (cosine on interaction vectors)</td><td>simple, interpretable</td><td>sparse, scales poorly</td></tr><tr><td><strong>Matrix factorization</strong></td><td>factor the user-item matrix into low-dimensional user and item vectors; score = dot product (ALS, SVD++, BPR)</td><td>scalable, captures latent taste</td><td>cold start; mostly linear</td></tr><tr><td><strong>Neural / two-tower models</strong></td><td>encode users and items into embeddings trained with contrastive or softmax loss; retrieve with approximate nearest neighbour (FAISS, ScaNN)</td><td>rich features, real-time retrieval</td><td>needs data, infrastructure</td></tr><tr><td><strong>Sequence models</strong></td><td>transformers or RNNs on session sequences (SASRec)</td><td>capture order and intent</td><td>cost</td></tr><tr><td><strong>Learning to rank / GBDT / deep rankers</strong></td><td>predict click or purchase probability from user, item, context features</td><td>uses many signals, multi-objective</td><td>feature engineering</td></tr><tr><td><strong>Bandits and reinforcement learning</strong></td><td>explore new items, optimise long-run reward</td><td>adaptivity</td><td>complexity</td></tr></tbody></table></div>
+<h4>Implicit versus explicit feedback</h4>
+<p>Most data is <strong>implicit</strong> (views, clicks): there are no explicit negatives, and absence does not mean dislike. Use confidence weighting (ALS for implicit data), <strong>negative sampling</strong>, or pairwise loss (BPR) to rank observed items above unobserved ones. Beware <strong>position bias</strong> and <strong>popularity bias</strong> (items shown higher get more clicks); correct with inverse propensity weighting or randomised exploration.</p>
+<h4>Production architecture</h4>
+<ol start="1"><li><strong>Candidate generation</strong> (retrieval): several sources (collaborative embeddings, recent items, popular in category, similar items) narrow millions of items to hundreds, in milliseconds.</li><li><strong>Ranking</strong>: a richer model scores candidates with user, item, context and cross features.</li><li><strong>Re-ranking</strong>: business rules, diversity, freshness, fairness, deduplication, inventory and caps.</li></ol>
+<p>Features and embeddings are served from a feature store; models are refreshed regularly.</p>
+<pre><code># implicit-feedback ALS sketch
+from implicit.als import AlternatingLeastSquares
+model = AlternatingLeastSquares(factors=64, regularization=0.05, iterations=20)
+model.fit(user_item_csr * 40)                       # confidence weights
+ids, scores = model.recommend(user_id, user_item_csr[user_id], N=20)</code></pre>
+<h4>Cold start</h4>
+<p>New users: popularity, onboarding questions, context (device, location, referrer), content-based, bandit exploration. New items: content embeddings, metadata, exploration boosts, similar-item priors.</p>
+<h4>Evaluation</h4>
+<p><strong>Offline</strong>: time-based split (never random), leave-last-out per user, metrics such as <strong>Recall@K, Precision@K, MAP, NDCG@K, MRR</strong>, plus coverage, diversity, novelty, serendipity. <strong>Online</strong>: A/B tests on CTR, conversion, revenue, retention, and long-term effects. Offline gains often fail online because of logging bias, feedback loops and objective mismatch.</p>
+<h4>Responsible design</h4>
+<p>Avoid filter bubbles, popularity feedback loops, unfair exposure for providers, and manipulation; provide user controls and explanations.</p>
+<h4>Pitfalls</h4>
+<p>Random train-test splits, leakage from future interactions, optimising clicks at the cost of satisfaction, and ignoring cold start and inventory constraints.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you handle the cold-start problem for new users and new items?</li><li>Why are implicit feedback signals different from explicit ratings and how does that change the loss?</li><li>Why can offline recommender metrics disagree with online A/B test results?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-37">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-37%3A+How+do+you+build+a+recommender+system%2C+and+how+do+collaborative%E2%80%A6&amp;question-id=ds-37&amp;context=Data+scientist%2C+Gear+3%2C+topic%3A+Recommender+systems%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-37.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

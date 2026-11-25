@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you detect and treat outliers, and when should you keep them? | InterviewGearUp</title>
+<meta name="description" content="Detect outliers with plots, z-scores, the IQR rule, robust statistics and model-based methods, then investigate each cause. Remove data errors, cap or…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-13.html">
+<meta property="og:title" content="How do you detect and treat outliers, and when should you keep them? | InterviewGearUp">
+<meta property="og:description" content="Detect outliers with plots, z-scores, the IQR rule, robust statistics and model-based methods, then investigate each cause. Remove data errors, cap or…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-13.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you detect and treat outliers, and when should you keep them?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 1 (Junior) · Data preparation · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Detect outliers with plots, z-scores, the IQR rule, robust statistics and model-based methods, then investigate each cause. Remove data errors, cap or transform genuine extremes if they distort the model, use robust methods, and keep true rare events when they carry the signal such as fraud or equipment failure.</p></div>
+<h4>Explained in depth</h4>
+<h4>First, ask what the outlier is</h4>
+<p>An outlier is an observation far from the bulk of the data. Before treating it, determine its <strong>origin</strong>:</p>
+<ol start="1"><li><strong>Data error</strong>: entry typo (age 250), unit mix-up, sensor glitch, default or sentinel value (-999), duplicate or join bug. Fix or remove.</li><li><strong>Genuine rare value</strong>: a whale customer, a viral day, a legitimate large transaction. It is real information about the process.</li><li><strong>Different population</strong>: test accounts, bots, employees, another region. Segment or exclude according to the analysis scope.</li><li><strong>Signal of interest</strong>: fraud, defects, intrusions, failures.</li></ol>
+<h4>Detection methods</h4>
+<div class="md-table"><table><thead><tr><th>Method</th><th>How</th><th>Notes</th></tr></thead><tbody><tr><td><strong>Visual</strong></td><td>box plots, histograms, scatter plots, time-series plots</td><td>always start here</td></tr><tr><td><strong>Z-score</strong></td><td>absolute (x - mean) / std &gt; 3</td><td>assumes roughly normal data; the outlier inflates the mean and std (masking)</td></tr><tr><td><strong>Modified z-score</strong></td><td>0.6745 (x - median) / MAD &gt; 3.5</td><td>based on median absolute deviation; robust</td></tr><tr><td><strong>IQR rule (Tukey fences)</strong></td><td>below Q1 - 1.5 IQR or above Q3 + 1.5 IQR</td><td>simple, non-parametric; use 3 IQR for &quot;far out&quot; values</td></tr><tr><td><strong>Percentile caps</strong></td><td>below 1st or above 99th percentile</td><td>easy, but forces a fixed fraction of &quot;outliers&quot;</td></tr><tr><td><strong>Multivariate</strong></td><td>Mahalanobis distance, Cook&#39;s distance and leverage in regression</td><td>unusual <strong>combinations</strong> can be outliers even if each value is normal</td></tr><tr><td><strong>Model-based</strong></td><td>isolation forest, local outlier factor, DBSCAN noise points, autoencoder reconstruction error</td><td>for high dimensions and anomaly detection</td></tr><tr><td><strong>Residual analysis</strong></td><td>large standardised residuals after a fit</td><td>shows points the model cannot explain</td></tr></tbody></table></div>
+<pre><code>import numpy as np, pandas as pd
+q1, q3 = df.x.quantile([.25, .75]); iqr = q3 - q1
+mask = (df.x &lt; q1 - 1.5*iqr) | (df.x &gt; q3 + 1.5*iqr)
+from sklearn.ensemble import IsolationForest
+df[&quot;iso&quot;] = IsolationForest(contamination=&quot;auto&quot;, random_state=0).fit_predict(df[[&quot;x&quot;, &quot;y&quot;]])</code></pre>
+<h4>Treatment options</h4>
+<ul><li><strong>Correct</strong> errors using source systems or rules; <strong>remove</strong> only with justification and documentation (record how many).</li><li><strong>Winsorise or cap</strong> at percentiles (keeps the row, limits influence).</li><li><strong>Transform</strong> skewed variables (log, square root, Box-Cox) to reduce the pull of extremes.</li><li>Use <strong>robust methods</strong>: median, MAD, Huber or quantile regression, tree models (insensitive to extremes in features), rank-based tests.</li><li><strong>Model separately</strong>: segment whales versus regular users.</li><li><strong>Keep them</strong> when they are the target, or when removing them would misrepresent the business (total revenue is dominated by them).</li><li>Run a <strong>sensitivity analysis</strong>: report results with and without outliers.</li></ul>
+<h4>Cautions</h4>
+<p>Do not remove points just because they hurt the fit; this is data dredging. Fit any caps or thresholds on training data only. In production, decide how the model handles extreme inputs (clipping, fallbacks, alerts) and monitor them.</p>
+<h4>Pitfalls</h4>
+<p>Applying the IQR rule to every column blindly, deleting rare but valid events, and forgetting that the same outlier handling must run at inference time.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is the z-score rule unreliable on skewed data and what is a better alternative?</li><li>How would you treat extreme but valid values in revenue per customer?</li><li>When is an outlier the thing you are trying to predict?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-13">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-13%3A+How+do+you+detect+and+treat+outliers%2C+and+when+should+you+keep+them%3F&amp;question-id=ds-13&amp;context=Data+scientist%2C+Gear+1%2C+topic%3A+Data+preparation%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-13.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

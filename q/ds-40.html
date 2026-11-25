@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What feature selection methods do you use, and when is feature selection worth doing at all? | InterviewGearUp</title>
+<meta name="description" content="Use filter methods like variance, correlation and mutual information for quick pruning, wrapper methods such as recursive feature elimination for small…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-40.html">
+<meta property="og:title" content="What feature selection methods do you use, and when is feature selection worth doing at all? | InterviewGearUp">
+<meta property="og:description" content="Use filter methods like variance, correlation and mutual information for quick pruning, wrapper methods such as recursive feature elimination for small…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-40.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What feature selection methods do you use, and when is feature selection worth doing at all?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 3 (Senior) · Feature selection · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Use filter methods like variance, correlation and mutual information for quick pruning, wrapper methods such as recursive feature elimination for small feature sets, and embedded methods like L1 regularisation or tree importance during training. Always select inside cross-validation to avoid leakage, and remember that for strong regularised models selection often matters less than good features.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why select features</h4>
+<p>Reduce overfitting and variance (especially when p is large relative to n), speed up training and serving, lower data collection and monitoring cost, improve interpretability, and remove leakage-prone or unstable features. It is <strong>not</strong> always needed: gradient boosting and regularised models cope with many features, and aggressive selection can discard useful interactions.</p>
+<h4>Method families</h4>
+<div class="md-table"><table><thead><tr><th>Family</th><th>Methods</th><th>Pros and cons</th></tr></thead><tbody><tr><td><strong>Filter</strong> (model-free, fast)</td><td>drop near-zero variance and high-missing features; remove one of highly correlated pairs; univariate tests (ANOVA F, chi-square), <strong>mutual information</strong></td><td>cheap, scales; ignores interactions and redundancy</td></tr><tr><td><strong>Wrapper</strong> (search with a model)</td><td>forward or backward selection, <strong>recursive feature elimination (RFE)</strong>, genetic search</td><td>accounts for interactions; expensive, overfits selection noise</td></tr><tr><td><strong>Embedded</strong> (during training)</td><td><strong>L1 / lasso / elastic net</strong>, tree-based importance, boosting with feature fraction, stability selection</td><td>efficient; depends on the model</td></tr><tr><td><strong>Permutation / SHAP importance with pruning</strong></td><td>drop features whose shuffling does not hurt validation score</td><td>model-faithful; expensive</td></tr><tr><td><strong>Domain-driven</strong></td><td>keep features with causal plausibility and availability at serving time</td><td>robust, interpretable</td></tr><tr><td><strong>Dimensionality reduction</strong></td><td>PCA, autoencoders</td><td>creates new composite features; loses interpretability</td></tr></tbody></table></div>
+<pre><code>from sklearn.pipeline import Pipeline
+from sklearn.feature_selection import SelectFromModel, VarianceThreshold
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import cross_val_score
+pipe = Pipeline([(&quot;var&quot;, VarianceThreshold(1e-4)),
+                 (&quot;sel&quot;, SelectFromModel(LogisticRegression(penalty=&quot;l1&quot;, solver=&quot;liblinear&quot;, C=0.2))),
+                 (&quot;clf&quot;, LogisticRegression(max_iter=2000))])
+print(cross_val_score(pipe, X, y, cv=5, scoring=&quot;roc_auc&quot;).mean())</code></pre>
+<h4>Critical rules</h4>
+<ul><li><strong>Do selection inside each cross-validation fold</strong> (use a pipeline). Selecting features with the full dataset&#39;s labels and then cross-validating gives wildly optimistic scores, a classic leak that is especially severe with thousands of features and few rows.</li><li><strong>Correlated features</strong>: importance is split or arbitrarily assigned; L1 picks one of a group unpredictably. Cluster correlated features and keep a representative, or use elastic net, or evaluate grouped importance.</li><li><strong>Stability</strong>: check whether selected features are consistent across bootstrap samples (stability selection); unstable selections signal noise.</li><li><strong>Serving constraints</strong>: drop features that are costly, delayed, unavailable at inference time, or risky (protected attributes and proxies, subject to fairness policy).</li><li><strong>Evaluate</strong> the final subset with a clean holdout and compare with the full-feature model; choose the smallest set within one standard error of the best.</li><li>For tree models, remove obvious noise but do not overinvest; for linear and distance-based models, selection and scaling matter more.</li></ul>
+<h4>Process</h4>
+<ol start="1"><li>Remove unusable features (constant, mostly missing, leakage, unavailable at serving).</li><li>Cluster or prune highly correlated groups.</li><li>Fit a regularised or boosted model; examine permutation or SHAP importance on validation data.</li><li>Try a reduced set and confirm that performance holds, with latency or cost savings.</li><li>Monitor the retained features for drift.</li></ol>
+<h4>Pitfalls</h4>
+<p>Selecting on the full dataset before splitting, trusting impurity importance, removing features because univariate scores are low even though they matter in interactions, and chasing minimal subsets at the cost of robustness.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why must feature selection happen inside the cross-validation loop rather than before it?</li><li>How do correlated features distort importance-based selection, and how do you handle them?</li><li>When would you prefer dimensionality reduction such as PCA to feature selection?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-40">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-40%3A+What+feature+selection+methods+do+you+use%2C+and+when+is+feature%E2%80%A6&amp;question-id=ds-40&amp;context=Data+scientist%2C+Gear+3%2C+topic%3A+Feature+selection%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-40.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

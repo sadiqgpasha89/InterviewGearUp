@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does gradient boosting work, and how do XGBoost and LightGBM differ and which parameters matter most? | InterviewGearUp</title>
+<meta name="description" content="Gradient boosting builds trees sequentially, each fitted to the negative gradient of the loss (residuals for squared error) and added with a small…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-35.html">
+<meta property="og:title" content="How does gradient boosting work, and how do XGBoost and LightGBM differ and which parameters matter most? | InterviewGearUp">
+<meta property="og:description" content="Gradient boosting builds trees sequentially, each fitted to the negative gradient of the loss (residuals for squared error) and added with a small…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-35.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does gradient boosting work, and how do XGBoost and LightGBM differ and which parameters matter most?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 3 (Senior) · Machine learning algorithms · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Gradient boosting builds trees sequentially, each fitted to the negative gradient of the loss (residuals for squared error) and added with a small learning rate. XGBoost adds second-order optimisation and regularisation, LightGBM uses histogram binning and leaf-wise growth for speed. Learning rate, number of trees, tree depth or leaves, subsampling and regularisation matter most.</p></div>
+<h4>Explained in depth</h4>
+<h4>Idea</h4>
+<p>Boosting builds a strong model by adding <strong>weak learners (shallow trees)</strong> that each correct the errors of the ensemble so far. In <strong>gradient boosting</strong>, the model is F_m(x) = F_{m-1}(x) + eta x h_m(x), where h_m is a tree fit to the <strong>negative gradient</strong> of the loss with respect to the current predictions (pseudo-residuals). For squared error these are simple residuals; for log loss they are y - p. Steps: initialise with a constant (log-odds for classification), compute pseudo-residuals, fit a small tree, set leaf values (a line search or Newton step), scale by the learning rate <strong>eta</strong>, add to the model, repeat. Compared with <strong>bagging</strong> (random forests: independent deep trees averaged to reduce variance), boosting reduces <strong>bias</strong> by sequentially focusing on hard examples, and can overfit if not regularised.</p>
+<h4>XGBoost</h4>
+<ul><li>Uses a <strong>second-order Taylor approximation</strong> (gradients and Hessians) of the loss for split gain and leaf weights.</li><li>Explicit <strong>regularisation</strong> in the objective: L1 and L2 on leaf weights, a penalty gamma per leaf (min split loss).</li><li>Sparsity-aware split finding (learns a default direction for missing values), column and row subsampling, parallel histogram or exact split search, GPU support, built-in early stopping.</li></ul>
+<h4>LightGBM</h4>
+<ul><li><strong>Histogram-based</strong> splitting (bins continuous features), much less memory and faster.</li><li><strong>Leaf-wise (best-first) growth</strong>: always splits the leaf with the largest loss reduction, reaching lower loss than level-wise growth for the same number of leaves but can create <strong>deep, unbalanced trees that overfit on small data</strong>; control with <code>num_leaves</code>, <code>max_depth</code>, <code>min_data_in_leaf</code>.</li><li><strong>GOSS</strong> (gradient-based one-side sampling) and <strong>EFB</strong> (exclusive feature bundling) for speed; native handling of <strong>categorical features</strong> (optimal partition splits).</li><li><strong>CatBoost</strong> (related): ordered boosting and ordered target statistics to reduce target leakage and prediction shift; excellent with categorical features.</li></ul>
+<h4>Parameters that matter</h4>
+<div class="md-table"><table><thead><tr><th>Parameter</th><th>Effect</th></tr></thead><tbody><tr><td><code>learning_rate</code> (eta)</td><td>smaller = more robust, needs more trees (0.01 to 0.1)</td></tr><tr><td><code>n_estimators</code></td><td>choose with <strong>early stopping</strong> on a validation set</td></tr><tr><td><code>max_depth</code> / <code>num_leaves</code></td><td>model complexity (depth 3 to 8; leaves 15 to 127)</td></tr><tr><td><code>min_child_weight</code> / <code>min_data_in_leaf</code></td><td>minimum evidence per leaf; raises to fight overfitting and noise</td></tr><tr><td><code>subsample</code>, <code>colsample_bytree</code></td><td>row and column sampling (0.6 to 1.0) injects randomness, reduces variance</td></tr><tr><td><code>reg_lambda</code>, <code>reg_alpha</code>, <code>gamma</code></td><td>leaf-weight and split penalties</td></tr><tr><td><code>scale_pos_weight</code></td><td>imbalance (affects calibration)</td></tr><tr><td><code>objective</code>, <code>eval_metric</code></td><td>loss that is optimised vs metric monitored</td></tr></tbody></table></div>
+<pre><code>import lightgbm as lgb
+m = lgb.LGBMClassifier(n_estimators=5000, learning_rate=0.03, num_leaves=31, min_child_samples=50,
+                       subsample=0.8, subsample_freq=1, colsample_bytree=0.8, reg_lambda=5)
+m.fit(X_tr, y_tr, eval_set=[(X_va, y_va)], eval_metric=&quot;auc&quot;,
+      callbacks=[lgb.early_stopping(100), lgb.log_evaluation(200)])</code></pre>
+<h4>Practical notes</h4>
+<ul><li>Trees need no scaling and handle non-linear interactions and mixed types; they <strong>cannot extrapolate</strong> beyond training ranges (poor for trending targets).</li><li>Handle missing values natively, but understand why they are missing.</li><li>Use monotonic constraints when the business requires them; custom objectives for asymmetric costs; quantile loss for intervals.</li><li>Interpret with gain importance cautiously (biased to high-cardinality features) and prefer <strong>permutation importance or SHAP</strong>.</li><li>Calibrate probabilities when needed; watch for target leakage and group leakage in cross-validation.</li></ul>
+<h4>Pitfalls</h4>
+<p>Tuning on the test set, huge numbers of trees without early stopping, ignoring time-based splits for temporal data, and trusting default feature importance.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does a smaller learning rate with more trees usually generalise better?</li><li>How does leaf-wise growth in LightGBM differ from level-wise growth, and what risk does it add?</li><li>How do you handle categorical features and missing values in modern boosting libraries?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-35">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-35%3A+How+does+gradient+boosting+work%2C+and+how+do+XGBoost+and+LightGBM%E2%80%A6&amp;question-id=ds-35&amp;context=Data+scientist%2C+Gear+3%2C+topic%3A+Machine+learning+algorithms%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-35.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is CUPED and how else can you reduce variance in A/B tests to detect smaller effects faster? | InterviewGearUp</title>
+<meta name="description" content="CUPED uses a pre-experiment covariate, typically the same metric before the test, to subtract predictable variation from the outcome, shrinking variance…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-33.html">
+<meta property="og:title" content="What is CUPED and how else can you reduce variance in A/B tests to detect smaller effects faster? | InterviewGearUp">
+<meta property="og:description" content="CUPED uses a pre-experiment covariate, typically the same metric before the test, to subtract predictable variation from the outcome, shrinking variance…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-33.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is CUPED and how else can you reduce variance in A/B tests to detect smaller effects faster?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 3 (Senior) · Experimentation · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>CUPED uses a pre-experiment covariate, typically the same metric before the test, to subtract predictable variation from the outcome, shrinking variance without biasing the estimate. Together with stratification, ratio-metric handling by the delta method, winsorising and triggered analysis it shortens experiments or lets you detect smaller lifts.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why variance matters</h4>
+<p>The required sample size is proportional to <strong>variance / (minimum detectable effect)^2</strong>. Halving the variance halves the needed sample (or time). Online metrics (revenue, sessions) are noisy and heavy-tailed, so variance reduction is very valuable.</p>
+<h4>CUPED (Controlled-experiment Using Pre-Experiment Data)</h4>
+<p>Take a covariate X measured <strong>before</strong> the experiment (for example the user&#39;s metric in the previous 4 weeks) that correlates with outcome Y. Compute the adjusted metric: <strong>Y_cuped = Y - theta (X - mean(X))</strong>, with <strong>theta = Cov(X, Y) / Var(X)</strong> estimated on pooled data.</p>
+<ul><li>Because X is determined before randomisation, it is independent of treatment, so the adjusted difference in means remains <strong>unbiased</strong>; the mean(X) term re-centres.</li><li>Variance reduces by a factor of <strong>(1 - rho^2)</strong>, where rho is the correlation between X and Y. A correlation of 0.7 cuts variance about 51 percent; 0.3 only 9 percent.</li><li>It is equivalent to a <strong>regression adjustment (ANCOVA)</strong>: regress Y on treatment and X.</li></ul>
+<pre><code>import numpy as np
+theta = np.cov(x_pre, y)[0, 1] / np.var(x_pre, ddof=1)
+y_adj = y - theta * (x_pre - x_pre.mean())
+effect = y_adj[t == 1].mean() - y_adj[t == 0].mean()</code></pre>
+<p>Practicalities: use pre-period data of the same unit; for users with no history, set X to the mean with a missing-indicator; do not use post-treatment covariates; compute theta from pooled arms; CUPAC extends the idea by using a <strong>ML-predicted</strong> covariate built from pre-experiment features.</p>
+<h4>Other variance-reduction techniques</h4>
+<div class="md-table"><table><thead><tr><th>Technique</th><th>How it helps</th></tr></thead><tbody><tr><td><strong>Stratification / post-stratification</strong></td><td>analyse within strata (platform, country, tenure) and combine; removes between-strata variance</td></tr><tr><td><strong>Regression with covariates</strong></td><td>generalises CUPED to several pre-period features</td></tr><tr><td><strong>Triggered (counterfactual-aware) analysis</strong></td><td>analyse only users who could be affected (reached the changed screen); dilution from unaffected users disappears</td></tr><tr><td><strong>Winsorising / capping outliers</strong></td><td>limit influence of extreme spenders; bias-variance trade-off, decide before the test</td></tr><tr><td><strong>Delta method for ratio metrics</strong></td><td>correct variance for metrics like sum(revenue) / sum(sessions) where numerator and denominator vary together</td></tr><tr><td><strong>Choosing a more sensitive metric</strong></td><td>proxy with lower variance (conversion instead of revenue); use a validated surrogate</td></tr><tr><td><strong>Blocking or paired designs</strong></td><td>randomise within matched pairs</td></tr><tr><td><strong>Longer exposure or larger traffic share</strong></td><td>direct, but costs time and risk</td></tr><tr><td><strong>Bayesian shrinkage / hierarchical models</strong></td><td>pool information across segments</td></tr><tr><td><strong>Sequential testing</strong></td><td>stop early with valid inference when effects are large</td></tr></tbody></table></div>
+<h4>Ratio metrics</h4>
+<p>Per-session metrics have a <strong>unit of analysis different from the unit of randomisation</strong> (users). Computing a t-test over sessions treats correlated sessions as independent and understates variance. Use the delta method or bootstrap at the user level.</p>
+<h4>Pitfalls</h4>
+<p>Using pre-period covariates contaminated by the treatment (an earlier overlapping experiment), choosing covariates after seeing results, winsorising thresholds picked post hoc, and assuming high correlation exists when metrics are new-user driven.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does CUPED not introduce bias even though it adjusts the outcome?</li><li>How is the optimal coefficient theta computed, and what correlation do you need for it to help?</li><li>How do you analyse ratio metrics such as revenue per session correctly?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-33">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-33%3A+What+is+CUPED+and+how+else+can+you+reduce+variance+in+A%2FB+tests+to%E2%80%A6&amp;question-id=ds-33&amp;context=Data+scientist%2C+Gear+3%2C+topic%3A+Experimentation%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-33.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

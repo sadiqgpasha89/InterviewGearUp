@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>When should you use ROC AUC versus precision-recall AUC to evaluate a classifier? | InterviewGearUp</title>
+<meta name="description" content="ROC AUC measures how well scores rank positives above negatives across all thresholds and is insensitive to class prevalence. PR AUC focuses on precision…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-21.html">
+<meta property="og:title" content="When should you use ROC AUC versus precision-recall AUC to evaluate a classifier? | InterviewGearUp">
+<meta property="og:description" content="ROC AUC measures how well scores rank positives above negatives across all thresholds and is insensitive to class prevalence. PR AUC focuses on precision…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-21.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>When should you use ROC AUC versus precision-recall AUC to evaluate a classifier?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 2 (Mid-level) · Model evaluation · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>ROC AUC measures how well scores rank positives above negatives across all thresholds and is insensitive to class prevalence. PR AUC focuses on precision and recall for the positive class and reflects performance under heavy imbalance. Prefer PR AUC when positives are rare and false positives matter, and ROC AUC for balanced problems or ranking quality.</p></div>
+<h4>Explained in depth</h4>
+<h4>ROC curve and AUC</h4>
+<p>The <strong>ROC curve</strong> plots the <strong>true positive rate</strong> (recall) against the <strong>false positive rate</strong> (FPR = FP / (FP + TN)) as the threshold sweeps from 1 to 0. <strong>ROC AUC</strong> is the area under it and has a neat meaning: the <strong>probability that a random positive receives a higher score than a random negative</strong>. 0.5 is random, 1.0 is perfect. Properties: invariant to monotonic score transformations and <strong>independent of class prevalence</strong> (because TPR and FPR are each conditioned on a true class). It evaluates <strong>ranking</strong> across all thresholds, not calibration.</p>
+<h4>Precision-recall curve and AUC</h4>
+<p>The <strong>PR curve</strong> plots <strong>precision</strong> against <strong>recall</strong>. <strong>Average precision (AP)</strong> summarises it (a weighted mean of precisions at each recall increase). Precision depends on prevalence because it divides by predicted positives, so PR curves expose how many false alarms accompany each level of recall. A <strong>random classifier&#39;s PR AUC equals the positive rate</strong> (0.5 percent for 0.5 percent prevalence), so values must be read relative to that baseline.</p>
+<h4>Why they disagree under imbalance</h4>
+<p>Suppose 100,000 negatives and 100 positives. A model that catches 80 percent of positives with FPR = 1 percent gives:</p>
+<ul><li>TPR = 0.8, FPR = 0.01, which looks great (ROC AUC maybe above 0.95).</li><li>But FP = 1,000 and TP = 80, so <strong>precision = 80 / 1,080 = 7.4 percent</strong>. Reviewers would see 12 false alarms per true case.</li></ul>
+<p>FPR uses the huge negative class in its denominator, so large absolute numbers of false positives barely move it. PR analysis shows the problem immediately.</p>
+<h4>Choosing</h4>
+<div class="md-table"><table><thead><tr><th>Situation</th><th>Prefer</th></tr></thead><tbody><tr><td>Rare positive class, interest in the positive class (fraud, disease, defect, retrieval)</td><td><strong>PR AUC / average precision</strong>, precision at k, recall at fixed precision</td></tr><tr><td>Balanced classes, care about both classes equally</td><td>ROC AUC works well</td></tr><tr><td>Comparing models across datasets with different prevalence</td><td>ROC AUC is more comparable (but not decision-relevant)</td></tr><tr><td>Ranking quality or scoring system independent of threshold</td><td>ROC AUC; also gain and lift charts</td></tr><tr><td>A specific operating constraint exists (&quot;at least 90 percent precision&quot;)</td><td>read the point from the PR curve or report recall at that precision</td></tr><tr><td>Costs of errors known</td><td>expected cost curves or decision-curve analysis</td></tr></tbody></table></div>
+<p>Also report <strong>calibration</strong> (Brier score, reliability curve) if probabilities are used, and metrics at the <strong>chosen threshold</strong> (confusion matrix).</p>
+<pre><code>from sklearn.metrics import roc_auc_score, average_precision_score, precision_recall_curve
+print(&quot;ROC AUC&quot;, roc_auc_score(y_te, p), &quot;AP&quot;, average_precision_score(y_te, p), &quot;baseline&quot;, y_te.mean())
+prec, rec, thr = precision_recall_curve(y_te, p)
+ok = prec[:-1] &gt;= 0.9                     # operating point: best recall with precision &gt;= 90%
+print(thr[ok][0] if ok.any() else None, rec[:-1][ok].max() if ok.any() else None)</code></pre>
+<h4>Cautions</h4>
+<ul><li>Both ignore how scores are <strong>calibrated</strong>.</li><li>AUC summarises all thresholds, including ones you will never use; <strong>partial AUC</strong> or metrics in the relevant region can be more meaningful.</li><li>Small numbers of positives make PR AUC noisy; use bootstrap intervals.</li><li>Interpolating PR curves linearly is incorrect; use average precision as implemented.</li><li>Multi-class: one-vs-rest macro averages.</li></ul>
+<h4>Pitfalls</h4>
+<p>Quoting ROC AUC as proof of usefulness for rare events, comparing PR AUC across datasets with different prevalence without the baseline, and treating AUC as a decision rule.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why can ROC AUC stay high while precision is poor when negatives vastly outnumber positives?</li><li>What is the baseline PR AUC of a random classifier?</li><li>How do you pick an operating point on either curve for a business decision?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-21">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-21%3A+When+should+you+use+ROC+AUC+versus+precision-recall+AUC+to+evaluate%E2%80%A6&amp;question-id=ds-21&amp;context=Data+scientist%2C+Gear+2%2C+topic%3A+Model+evaluation%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-21.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Write SQL to return the top three earners per department, and explain how window functions such as ROW_NUMBER, RANK and DENSE_RANK differ. | InterviewGearUp</title>
+<meta name="description" content="Use a window function that ranks salaries within each department using PARTITION BY and ORDER BY, then filter the rank in an outer query or CTE.…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-8.html">
+<meta property="og:title" content="Write SQL to return the top three earners per department, and explain how window functions such as ROW_NUMBER, RANK and DENSE_RANK differ. | InterviewGearUp">
+<meta property="og:description" content="Use a window function that ranks salaries within each department using PARTITION BY and ORDER BY, then filter the rank in an outer query or CTE.…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-8.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Write SQL to return the top three earners per department, and explain how window functions such as ROW_NUMBER, RANK and DENSE_RANK differ.</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 1 (Junior) · SQL for data science · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Use a window function that ranks salaries within each department using PARTITION BY and ORDER BY, then filter the rank in an outer query or CTE. ROW_NUMBER gives unique positions, RANK leaves gaps after ties, and DENSE_RANK has no gaps, so the choice decides how ties are handled.</p></div>
+<h4>Explained in depth</h4>
+<h4>The query</h4>
+<pre><code>WITH ranked AS (
+  SELECT
+    employee_id,
+    department_id,
+    salary,
+    DENSE_RANK() OVER (PARTITION BY department_id ORDER BY salary DESC) AS salary_rank
+  FROM employees
+)
+SELECT department_id, employee_id, salary, salary_rank
+FROM ranked
+WHERE salary_rank &lt;= 3
+ORDER BY department_id, salary_rank, employee_id;</code></pre>
+<p><code>PARTITION BY</code> restarts the ranking per department; <code>ORDER BY</code> defines the order inside each partition. Window functions are evaluated <strong>after</strong> WHERE, GROUP BY and HAVING, so you cannot filter on them in the same SELECT. Wrap in a CTE or subquery (some engines such as Snowflake, BigQuery and Teradata support <code>QUALIFY salary_rank &lt;= 3</code>).</p>
+<h4>Ranking functions compared</h4>
+<p>For salaries 100, 90, 90, 80 in one partition:</p>
+<div class="md-table"><table><thead><tr><th>Salary</th><th>ROW_NUMBER</th><th>RANK</th><th>DENSE_RANK</th></tr></thead><tbody><tr><td>100</td><td>1</td><td>1</td><td>1</td></tr><tr><td>90</td><td>2</td><td>2</td><td>2</td></tr><tr><td>90</td><td>3</td><td>2</td><td>2</td></tr><tr><td>80</td><td>4</td><td>4</td><td>3</td></tr></tbody></table></div>
+<ul><li><strong>ROW_NUMBER</strong>: always unique, ties broken arbitrarily (add a tiebreaker like <code>employee_id</code> for determinism). Use it to <strong>pick exactly N rows</strong> or to deduplicate (keep the latest record per key).</li><li><strong>RANK</strong>: ties share a rank and the next rank skips.</li><li><strong>DENSE_RANK</strong>: ties share a rank and no gaps. &quot;Top 3 salaries&quot; with ties usually means DENSE_RANK; &quot;top 3 people&quot; means ROW_NUMBER.</li></ul>
+<p>Other useful functions: <code>NTILE(4)</code> for quartiles, <code>LAG</code> and <code>LEAD</code> for previous and next rows, <code>FIRST_VALUE</code>, <code>PERCENT_RANK</code>, <code>CUME_DIST</code>.</p>
+<h4>Aggregates as windows and frames</h4>
+<pre><code>SELECT order_date,
+       revenue,
+       SUM(revenue) OVER (ORDER BY order_date)                                  AS running_total,
+       AVG(revenue) OVER (ORDER BY order_date ROWS BETWEEN 6 PRECEDING AND CURRENT ROW) AS moving_avg_7d,
+       revenue - LAG(revenue, 7) OVER (ORDER BY order_date)                      AS wow_change
+FROM daily_revenue;</code></pre>
+<p><code>ROWS</code> counts physical rows; <code>RANGE</code> groups peers with equal ORDER BY values. For calendar windows with gaps in dates, first generate a date spine or use <code>RANGE</code> with intervals where supported.</p>
+<h4>Alternatives</h4>
+<ul><li><strong>Correlated subquery</strong>: <code>WHERE (SELECT COUNT(DISTINCT salary) FROM employees e2 WHERE e2.department_id = e1.department_id AND e2.salary &gt; e1.salary) &lt; 3</code>. Works everywhere but is often slower (quadratic).</li><li><strong>Self-join</strong> with counts, or <code>LATERAL</code> / <code>CROSS APPLY</code> with <code>ORDER BY ... LIMIT 3</code> per department, which can use an index well.</li><li>Window functions are usually clearer and efficient: one sort per partition.</li></ul>
+<h4>Performance and correctness tips</h4>
+<ul><li>Index or cluster on <code>(department_id, salary DESC)</code> for large tables.</li><li>Beware NULLs: <code>ORDER BY salary DESC NULLS LAST</code> so missing salaries do not rank first (PostgreSQL puts NULLs first for DESC by default).</li><li>Define ties explicitly in the spec; ask the interviewer.</li><li>Check results on a small example, including departments with fewer than three employees.</li></ul>
+<h4>Pitfalls</h4>
+<p>Using WHERE on a window alias, relying on ROW_NUMBER with ties without a tiebreaker, and forgetting PARTITION BY (ranking the whole table).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How would the result differ for ties at the third position under each ranking function?</li><li>How do you compute a running total or a 7-day moving average with window frames?</li><li>When is a correlated subquery or a join a better choice than a window function?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-8">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-8%3A+Write+SQL+to+return+the+top+three+earners+per+department%2C+and%E2%80%A6&amp;question-id=ds-8&amp;context=Data+scientist%2C+Gear+1%2C+topic%3A+SQL+for+data+science%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-8.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

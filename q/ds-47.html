@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain instrumental variables and regression discontinuity as ways to identify causal effects without randomisation. What assumptions do they need? | InterviewGearUp</title>
+<meta name="description" content="An instrumental variable affects treatment but influences the outcome only through treatment and is independent of confounders, letting two-stage least…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-47.html">
+<meta property="og:title" content="Explain instrumental variables and regression discontinuity as ways to identify causal effects without randomisation. What assumptions do they need? | InterviewGearUp">
+<meta property="og:description" content="An instrumental variable affects treatment but influences the outcome only through treatment and is independent of confounders, letting two-stage least…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-47.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain instrumental variables and regression discontinuity as ways to identify causal effects without randomisation. What assumptions do they need?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 4 (Lead / Staff) · Causal inference · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>An instrumental variable affects treatment but influences the outcome only through treatment and is independent of confounders, letting two-stage least squares isolate a local effect for compliers. Regression discontinuity exploits a cutoff in assignment, comparing units just above and below it. Both rely on untestable assumptions that you probe with falsification and robustness checks.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why these methods</h4>
+<p>Observational comparisons are confounded. If you cannot randomise or measure all confounders, you can look for <strong>quasi-random variation</strong>: something that changes treatment for reasons unrelated to the outcome.</p>
+<h4>Instrumental variables (IV)</h4>
+<p>An <strong>instrument Z</strong> must satisfy:</p>
+<ol start="1"><li><strong>Relevance</strong>: Z strongly affects treatment T.</li><li><strong>Independence (exogeneity)</strong>: Z is as good as randomly assigned, unrelated to unobserved confounders.</li><li><strong>Exclusion restriction</strong>: Z affects outcome Y <strong>only through T</strong>.</li><li><strong>Monotonicity</strong> (for the LATE interpretation): Z pushes everyone&#39;s treatment in the same direction (no &quot;defiers&quot;).</li></ol>
+<p>Examples: <strong>randomised encouragement</strong> (a random email nudging adoption of a feature, used to estimate the effect of adoption, since some people ignore the nudge), draft lottery numbers for military service, distance to a college, random assignment of judges, weather shocks.</p>
+<p><strong>Estimator</strong>: two-stage least squares (2SLS). Stage 1 regress T on Z (and covariates); Stage 2 regress Y on fitted T. With one binary instrument it equals the <strong>Wald estimator</strong>: (effect of Z on Y) / (effect of Z on T). The result is the <strong>local average treatment effect (LATE)</strong>: the effect for <strong>compliers</strong>, those whose treatment status is changed by the instrument, not for everyone.</p>
+<pre><code>from linearmodels.iv import IV2SLS
+res = IV2SLS.from_formula(&quot;y ~ 1 + age + [adopt ~ nudge]&quot;, data=df).fit(cov_type=&quot;robust&quot;)
+print(res.summary); print(res.first_stage)</code></pre>
+<p>Diagnostics: <strong>first-stage F statistic</strong> (rule of thumb above 10; weak instruments give biased, high-variance estimates), overidentification tests (Sargan or Hansen) with multiple instruments, and reasoned arguments for exclusion (cannot be tested directly). Confidence intervals can be wide; that is the price of identification.</p>
+<h4>Regression discontinuity (RD)</h4>
+<p>Treatment is assigned by whether a <strong>running variable</strong> crosses a <strong>cutoff</strong> (scholarship if test score is at least 80, credit approval at a score threshold, a policy for age 65, a loyalty tier at spend 1,000). Units just below and just above are very similar, so the jump in outcomes at the cutoff estimates the causal effect <strong>locally at the threshold</strong>.</p>
+<ul><li><strong>Sharp RD</strong>: treatment is a deterministic function of the running variable.</li><li><strong>Fuzzy RD</strong>: the cutoff changes the probability of treatment; the estimate is the jump in outcome divided by the jump in treatment (IV with the cutoff as instrument).</li><li>Estimate with <strong>local linear regression</strong> on each side within a <strong>bandwidth</strong> chosen by data-driven methods (Imbens-Kalyanaraman, CCT with bias correction); use a triangular kernel; report robustness to bandwidth and polynomial order.</li></ul>
+<p>Assumptions and checks: units cannot precisely manipulate the running variable (check density continuity with a <strong>McCrary or Cattaneo density test</strong>), covariates are smooth at the cutoff (balance tests), no other policy changes at the same threshold, and placebo cutoffs show no jumps. Plot binned means around the cutoff.</p>
+<h4>Comparison with other methods</h4>
+<div class="md-table"><table><thead><tr><th>Method</th><th>Needs</th><th>Estimand</th></tr></thead><tbody><tr><td>Randomised experiment</td><td>randomisation</td><td>ATE</td></tr><tr><td>IV</td><td>valid instrument</td><td>LATE for compliers</td></tr><tr><td>RD</td><td>cutoff rule</td><td>effect at the cutoff</td></tr><tr><td>DiD</td><td>pre/post and parallel trends</td><td>ATT</td></tr><tr><td>Propensity methods</td><td>no unmeasured confounding</td><td>ATE or ATT</td></tr></tbody></table></div>
+<h4>Pitfalls</h4>
+<p>Using instruments with weak first stages, claiming exclusion without arguments, generalising RD effects far from the threshold, and fitting high-order polynomials over wide ranges.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the exclusion restriction and why is it so hard to defend?</li><li>What is a weak instrument and how do you detect it?</li><li>How do you choose the bandwidth in a regression discontinuity design and what is a fuzzy RD?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-47">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-47%3A+Explain+instrumental+variables+and+regression+discontinuity+as+ways%E2%80%A6&amp;question-id=ds-47&amp;context=Data+scientist%2C+Gear+4%2C+topic%3A+Causal+inference%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-47.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

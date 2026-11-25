@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How would you design experiments for a two-sided marketplace such as ride-hailing or delivery where user-level randomisation is biased by interference? | InterviewGearUp</title>
+<meta name="description" content="In marketplaces treatment on one side changes supply or demand for the other, so user-level A/B tests are biased. Use switchback tests that alternate…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-55.html">
+<meta property="og:title" content="How would you design experiments for a two-sided marketplace such as ride-hailing or delivery where user-level randomisation is biased by interference? | InterviewGearUp">
+<meta property="og:description" content="In marketplaces treatment on one side changes supply or demand for the other, so user-level A/B tests are biased. Use switchback tests that alternate…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-55.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How would you design experiments for a two-sided marketplace such as ride-hailing or delivery where user-level randomisation is biased by interference?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 4 (Lead / Staff) · Experimentation design · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>In marketplaces treatment on one side changes supply or demand for the other, so user-level A/B tests are biased. Use switchback tests that alternate treatment over time in a region, geo or cluster randomisation, budget-split or two-sided designs, and measure market-level metrics. Increase power with long windows and variance reduction, and use simulation and observational models to correct interference.</p></div>
+<h4>Explained in depth</h4>
+<h4>The interference problem</h4>
+<p>In a two-sided marketplace, treatment and control users share finite resources: drivers, couriers, inventory, ad budgets, or demand. Examples:</p>
+<ul><li>A new pricing for riders in treatment draws more demand, using up drivers that control riders would have used, so control looks <strong>worse</strong>, inflating the measured lift (and the reverse for cannibalisation).</li><li>A ranking change that favours some sellers shifts demand away from others.</li><li>Matching algorithm changes affect everybody nearby.</li></ul>
+<p>The assumption of no interference (SUTVA) fails, and the A/B estimate does not equal the effect of launching to everyone (the <strong>global treatment effect</strong>).</p>
+<h4>Design options</h4>
+<div class="md-table"><table><thead><tr><th>Design</th><th>How</th><th>When</th><th>Drawbacks</th></tr></thead><tbody><tr><td><strong>Switchback (time-split)</strong></td><td>within a geographic market, alternate treatment and control over time blocks (30 minutes, 2 hours, days), randomised or following a schedule</td><td>dispatch, pricing and matching algorithms where the whole market flips</td><td>carryover between blocks; fewer independent units; time-of-day confounding</td></tr><tr><td><strong>Geo / cluster randomisation</strong></td><td>randomise whole cities, zones or graph clusters</td><td>features with local spillovers, marketing campaigns</td><td>few units, low power; need matched pairs or synthetic control</td></tr><tr><td><strong>Two-sided or hybrid randomisation</strong></td><td>randomise buyers and sellers independently (e.g., 4 cells) to measure direct and spillover effects</td><td>ranking and fee changes</td><td>complex analysis, larger samples</td></tr><tr><td><strong>Budget-split / &quot;inventory-split&quot;</strong></td><td>divide supply (ads budget, couriers, inventory) between arms</td><td>ads auctions, promotions</td><td>not always feasible</td></tr><tr><td><strong>Holdout market / staggered rollout</strong></td><td>launch in some markets and use DiD or synthetic control</td><td>big launches</td><td>assumptions needed</td></tr><tr><td><strong>Simulation and structural models</strong></td><td>calibrate a marketplace simulator to explore effects</td><td>before costly live tests</td><td>model risk</td></tr></tbody></table></div>
+<h4>Switchback specifics</h4>
+<ul><li>Pick time blocks <strong>long enough</strong> that the effect of one period fades before the next (carryover), but <strong>short enough</strong> to get many randomisation units; common compromise is 30 to 120 minutes for dispatch, and day-level for slow systems.</li><li><strong>Randomise or counterbalance</strong> the sequence (avoid always starting with treatment on Mondays) and stratify by hour-of-week; use a washout period at boundaries, dropping the first minutes after switch.</li><li>Analyse at the <strong>block level</strong> (market x time window) with regression: <code>metric ~ treatment + market FE + hour-of-week FE</code>, <strong>clustering standard errors by market-time units</strong> or using randomisation inference; account for autocorrelation (HAC).</li><li>Variance is high: use <strong>CUPED</strong> with pre-period of the same block, ratio estimators, and longer runs (weeks).</li></ul>
+<pre><code>import statsmodels.formula.api as smf
+# one row per market x time block; trt in {0,1}
+m = smf.ols(&quot;completed_rate ~ trt + C(market) + C(hour_of_week)&quot;, data=blocks).fit(
+    cov_type=&quot;cluster&quot;, cov_kwds={&quot;groups&quot;: blocks[&quot;block_id&quot;]})
+print(m.params[&quot;trt&quot;], m.bse[&quot;trt&quot;])</code></pre>
+<h4>Metrics</h4>
+<p>Use <strong>market-level outcomes</strong>: trips completed per hour, wait time, utilisation, driver earnings, cancellations, GMV, plus guardrails on both sides (rider experience, driver supply). Look at <strong>short-run versus long-run</strong> effects: pricing changes alter behaviour over weeks (learning), and supply responds to earnings with delay.</p>
+<h4>Complementary evidence</h4>
+<p>Pair experiments with observational analyses, structural models of supply and demand elasticities, interference-aware estimators (exposure mapping), and sanity checks such as comparing user-level A/B to switchback results to estimate bias magnitude.</p>
+<h4>Pitfalls</h4>
+<p>Using user-level randomisation for market-wide algorithms, switching too frequently, ignoring day-of-week balance, and ignoring that effects at small scale may differ from a full launch (equilibrium effects).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does a user-level test of a feature that helps riders get matched faster typically overstate the effect?</li><li>How do you pick the interval length for a switchback experiment and handle carryover effects?</li><li>How would you analyse a switchback experiment statistically?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-55">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-55%3A+How+would+you+design+experiments+for+a+two-sided+marketplace+such+as%E2%80%A6&amp;question-id=ds-55&amp;context=Data+scientist%2C+Gear+4%2C+topic%3A+Experimentation+design%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-55.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

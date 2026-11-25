@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is overfitting and how do you detect it using training and validation performance? | InterviewGearUp</title>
+<meta name="description" content="Overfitting means a model memorises noise and quirks in the training data, so it scores well on training data but poorly on unseen data. Detect it by a…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-2.html">
+<meta property="og:title" content="What is overfitting and how do you detect it using training and validation performance? | InterviewGearUp">
+<meta property="og:description" content="Overfitting means a model memorises noise and quirks in the training data, so it scores well on training data but poorly on unseen data. Detect it by a…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-2.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is overfitting and how do you detect it using training and validation performance?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 1 (Junior) · ML fundamentals · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Overfitting means a model memorises noise and quirks in the training data, so it scores well on training data but poorly on unseen data. Detect it by a large gap between training and validation metrics, learning curves where validation error rises or plateaus while training error keeps falling, and unstable cross-validation scores.</p></div>
+<h4>Explained in depth</h4>
+<h4>The idea</h4>
+<p>A model should learn <strong>signal</strong> that generalises, not <strong>noise</strong> specific to the sample. A model with too much capacity relative to the data (deep trees, many features, high-degree polynomials, huge networks) can fit the training set almost perfectly while failing on new data. The opposite is <strong>underfitting</strong>: both training and validation performance are poor because the model is too simple or poorly specified.</p>
+<h4>How to detect it</h4>
+<ol start="1"><li><strong>Compare metrics</strong>: hold out a validation set (or use cross-validation) and compare. For example training accuracy 99 percent versus validation 78 percent signals overfitting. The metric should match the task (RMSE, AUC, F1).</li><li><strong>Learning curves</strong>: plot training and validation score against training-set size.</li></ol>
+<ul><li>Large gap that does not close: <strong>high variance (overfitting)</strong>; more data or regularisation helps.</li><li>Both curves low and close: <strong>high bias (underfitting)</strong>; need a richer model or better features.</li></ul>
+<ol start="3"><li><strong>Validation curves</strong> against a complexity parameter (tree depth, polynomial degree, regularisation strength): validation score peaks and then falls while training score keeps rising.</li><li><strong>Epoch curves</strong> for iterative models: validation loss begins to rise while training loss still falls (the point for <strong>early stopping</strong>).</li><li><strong>Cross-validation variance</strong>: a high spread of fold scores suggests the model depends heavily on the particular sample.</li><li><strong>Sanity checks</strong>: very high accuracy on a hard problem often means <strong>data leakage</strong>, not a great model.</li></ol>
+<pre><code>from sklearn.model_selection import learning_curve
+import numpy as np
+sizes, train_s, val_s = learning_curve(model, X, y, cv=5, scoring=&quot;roc_auc&quot;, train_sizes=np.linspace(.1, 1, 8))
+gap = train_s.mean(1) - val_s.mean(1)      # a persistent large gap means variance problem</code></pre>
+<h4>Remedies</h4>
+<div class="md-table"><table><thead><tr><th>Model type</th><th>Techniques</th></tr></thead><tbody><tr><td>Any</td><td><strong>more data</strong>, simpler model, fewer or better features (feature selection), <strong>cross-validation</strong> for model choice, ensembling (bagging)</td></tr><tr><td>Linear models</td><td>L2 or L1 regularisation, feature selection, fewer polynomial terms</td></tr><tr><td>Decision trees and boosting</td><td>limit depth, minimum samples per leaf, pruning, learning rate and number of trees with early stopping, subsampling</td></tr><tr><td>Neural networks</td><td>dropout, weight decay, data augmentation, early stopping, smaller architecture, batch normalisation</td></tr><tr><td>KNN</td><td>larger k</td></tr></tbody></table></div>
+<h4>Subtle cases</h4>
+<ul><li>You can <strong>overfit the validation set</strong> by tuning hyperparameters against it many times. Keep a <strong>final untouched test set</strong>, or use nested cross-validation.</li><li><strong>Time series</strong> needs time-ordered splits; random splits leak the future and hide overfitting.</li><li>Distribution shift in production looks like overfitting but is a data problem; monitor it.</li></ul>
+<h4>Interview tip</h4>
+<p>Describe the whole loop: split correctly, compare train and validation, diagnose with learning curves, apply regularisation or more data, confirm on a clean test set once.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do learning curves tell you whether more data or a simpler model will help?</li><li>Which techniques reduce overfitting in tree models and in neural networks?</li><li>Can a model overfit the validation set and how do you guard against that?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-2">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-2%3A+What+is+overfitting+and+how+do+you+detect+it+using+training+and%E2%80%A6&amp;question-id=ds-2&amp;context=Data+scientist%2C+Gear+1%2C+topic%3A+ML+fundamentals%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-2.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain Bayesian A/B testing and multi-armed bandits. When would you use Thompson sampling instead of a classic fixed-horizon test? | InterviewGearUp</title>
+<meta name="description" content="Bayesian A/B testing updates a prior with data to give a posterior over each variant&#39;s rate, so you report the probability that B beats A and expected…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-34.html">
+<meta property="og:title" content="Explain Bayesian A/B testing and multi-armed bandits. When would you use Thompson sampling instead of a classic fixed-horizon test? | InterviewGearUp">
+<meta property="og:description" content="Bayesian A/B testing updates a prior with data to give a posterior over each variant&#39;s rate, so you report the probability that B beats A and expected…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-34.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain Bayesian A/B testing and multi-armed bandits. When would you use Thompson sampling instead of a classic fixed-horizon test?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 3 (Senior) · Experimentation · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Bayesian A/B testing updates a prior with data to give a posterior over each variant&#39;s rate, so you report the probability that B beats A and expected loss. Multi-armed bandits such as Thompson sampling shift traffic towards better variants as evidence accumulates, which cuts regret when the cost of showing poor variants is high, at the price of weaker inference.</p></div>
+<h4>Explained in depth</h4>
+<h4>Bayesian A/B test</h4>
+<p>Treat each variant&#39;s conversion rate as an unknown with a <strong>prior</strong> and update with data. For binary outcomes use <strong>Beta-Binomial</strong>: prior Beta(a, b); after s successes and f failures the posterior is Beta(a + s, b + f). Sample from both posteriors to compute:</p>
+<ul><li><strong>P(B &gt; A)</strong>: probability that B has the higher rate.</li><li><strong>Distribution of the lift</strong> (credible interval).</li><li><strong>Expected loss</strong>: the expected conversion lost if you choose a variant and it is actually worse (decision-oriented stopping rule: stop when expected loss falls below a tolerance).</li></ul>
+<pre><code>import numpy as np
+rng = np.random.default_rng(0)
+a = rng.beta(1 + sA, 1 + nA - sA, 200_000)
+b = rng.beta(1 + sB, 1 + nB - sB, 200_000)
+print(&quot;P(B&gt;A) =&quot;, (b &gt; a).mean(), &quot;expected loss choosing B =&quot;, np.maximum(a - b, 0).mean())</code></pre>
+<p>Benefits: direct probability statements, natural use of prior knowledge, flexible decision rules. Caveats: results depend on the prior (use weakly informative ones, check sensitivity); repeated peeking still has frequentist error rates unless you calibrate the stopping rule by simulation; &quot;P(B &gt; A) above 95 percent&quot; is not a p-value, and the lift estimate is still subject to winner&#39;s curse (shrink with hierarchical priors).</p>
+<h4>Multi-armed bandits</h4>
+<p>In a classic test you split traffic evenly until the end. A <strong>bandit</strong> treats allocation as sequential decision-making: <strong>explore</strong> to learn which arm is best, <strong>exploit</strong> by sending traffic to the apparent best, minimising <strong>cumulative regret</strong> (value lost to showing worse arms).</p>
+<div class="md-table"><table><thead><tr><th>Algorithm</th><th>Idea</th></tr></thead><tbody><tr><td><strong>Epsilon-greedy</strong></td><td>exploit with probability 1 - epsilon, explore randomly otherwise</td></tr><tr><td><strong>UCB</strong></td><td>choose the arm with the highest upper confidence bound</td></tr><tr><td><strong>Thompson sampling</strong></td><td>sample a rate from each arm&#39;s posterior and play the arm with the highest sample; arms with high uncertainty are tried more naturally</td></tr><tr><td><strong>Contextual bandits</strong></td><td>choose arm using context features (LinUCB, contextual Thompson) for personalisation</td></tr></tbody></table></div>
+<pre><code>import numpy as np
+alpha, beta = np.ones(K), np.ones(K)
+for t in range(T):
+    arm = np.argmax(np.random.beta(alpha, beta))
+    reward = pull(arm)
+    alpha[arm] += reward; beta[arm] += 1 - reward</code></pre>
+<h4>When bandits fit</h4>
+<ul><li>The <strong>opportunity cost is high and short-lived</strong>: headline testing on news, promotions with an expiry, ad creatives, many variants (10+), recommendation slates.</li><li>Outcomes arrive <strong>quickly</strong> (click or conversion within minutes).</li><li>You care about maximising reward during the test rather than precisely estimating each effect.</li></ul>
+<h4>When to prefer a fixed-horizon (or sequential) test</h4>
+<ul><li>You need <strong>unbiased effect estimates and clean confidence intervals</strong> for decision making or reporting (bandits bias estimates for under-sampled arms).</li><li><strong>Delayed or long-term outcomes</strong> (retention, lifetime value): the bandit adapts on short-term proxies.</li><li><strong>Non-stationarity</strong> (day-of-week, novelty effects) can mislead adaptive allocation; use discounting or sliding windows if you must.</li><li>Guardrail metrics and multiple metrics need monitoring, and stakeholder trust in standard methodology matters.</li><li>Interference and network effects.</li></ul>
+<h4>Practical hybrid</h4>
+<p>Run a bandit for exploration with a minimum traffic floor per arm, and a confirmatory holdout test for the winner; log propensities for later <strong>off-policy evaluation</strong>.</p>
+<h4>Pitfalls</h4>
+<p>Declaring victory with a posterior probability after peeking continuously, ignoring delayed conversions, and using bandits where the reward is a noisy proxy for what the business values.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you choose a prior and how sensitive are conclusions to it?</li><li>What is the exploration-exploitation trade-off and how does Thompson sampling resolve it?</li><li>Why can bandits be a poor fit for measuring long-term effects or when outcomes are delayed?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-34">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-34%3A+Explain+Bayesian+A%2FB+testing+and+multi-armed+bandits.+When+would+you%E2%80%A6&amp;question-id=ds-34&amp;context=Data+scientist%2C+Gear+3%2C+topic%3A+Experimentation%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-34.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

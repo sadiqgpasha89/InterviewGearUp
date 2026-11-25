@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is survival analysis and why is it better than plain classification for modelling customer churn or time-to-event outcomes? | InterviewGearUp</title>
+<meta name="description" content="Survival analysis models time until an event while handling censored customers who have not yet churned. Kaplan-Meier estimates survival curves, Cox…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-38.html">
+<meta property="og:title" content="What is survival analysis and why is it better than plain classification for modelling customer churn or time-to-event outcomes? | InterviewGearUp">
+<meta property="og:description" content="Survival analysis models time until an event while handling censored customers who have not yet churned. Kaplan-Meier estimates survival curves, Cox…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-38.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is survival analysis and why is it better than plain classification for modelling customer churn or time-to-event outcomes?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 3 (Senior) · Survival analysis · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Survival analysis models time until an event while handling censored customers who have not yet churned. Kaplan-Meier estimates survival curves, Cox proportional hazards relates covariates to the hazard rate, and tree or deep survival models add flexibility. It uses all partial histories, so avoids the bias of labelling still-active users as non-churners.</p></div>
+<h4>Explained in depth</h4>
+<h4>The problem with simple classification</h4>
+<p>A churn classifier asks &quot;did the customer churn within 90 days?&quot;. Customers observed for only 30 days cannot be labelled properly: dropping them wastes data, labelling them &quot;not churned&quot; biases rates downward, and the model ignores <strong>when</strong> churn happens. Survival analysis models <strong>time to event</strong> and uses information from everyone, including those who have not experienced the event.</p>
+<h4>Core concepts</h4>
+<ul><li><strong>Event</strong>: churn, default, failure, conversion, recovery.</li><li><strong>Censoring</strong>: for some units the event has not occurred by the end of observation (right-censoring) or they left the study; we only know the duration is at least t. Valid methods assume <strong>non-informative censoring</strong> (censoring unrelated to the event risk).</li><li><strong>Survival function S(t)</strong> = P(T &gt; t): probability still &quot;alive&quot; at time t.</li><li><strong>Hazard h(t)</strong>: instantaneous event rate at t among those who survived to t.</li><li><strong>Cumulative hazard H(t)</strong>; S(t) = exp(-H(t)).</li></ul>
+<h4>Methods</h4>
+<div class="md-table"><table><thead><tr><th>Method</th><th>Use</th></tr></thead><tbody><tr><td><strong>Kaplan-Meier estimator</strong></td><td>non-parametric survival curve by group; compare with the <strong>log-rank test</strong></td></tr><tr><td><strong>Cox proportional hazards</strong></td><td>semi-parametric regression: h(t given x) = h0(t) exp(beta x); coefficients give <strong>hazard ratios</strong> (exp(beta) = 1.3 means 30 percent higher hazard)</td></tr><tr><td><strong>Parametric models (Weibull, log-normal, AFT)</strong></td><td>specify the distribution; extrapolate beyond data and predict time directly</td></tr><tr><td><strong>Random survival forests, gradient-boosted survival (XGBoost AFT/Cox), DeepSurv, discrete-time models</strong></td><td>non-linear effects and interactions</td></tr><tr><td><strong>Discrete-time hazard models</strong></td><td>expand each customer into customer-period rows and fit a logistic or GBDT model; simple, flexible, supports time-varying features</td></tr></tbody></table></div>
+<pre><code>from lifelines import KaplanMeierFitter, CoxPHFitter
+km = KaplanMeierFitter().fit(df[&quot;tenure_days&quot;], event_observed=df[&quot;churned&quot;])
+cph = CoxPHFitter(penalizer=0.1).fit(df[[&quot;tenure_days&quot;, &quot;churned&quot;, &quot;plan&quot;, &quot;tickets_90d&quot;, &quot;age&quot;]],
+                                     duration_col=&quot;tenure_days&quot;, event_col=&quot;churned&quot;)
+cph.print_summary(); cph.check_assumptions(df)</code></pre>
+<h4>Assumption checks and extensions</h4>
+<ul><li><strong>Proportional hazards</strong>: hazard ratios constant over time; check Schoenfeld residuals and log-log plots; fix with stratification, time-varying coefficients, or an alternative model.</li><li><strong>Time-varying covariates</strong> (usage this month, plan changes) via a long data format with start and stop times.</li><li><strong>Competing risks</strong> (voluntary versus involuntary churn, death versus transplant): use cause-specific hazards or Fine-Gray models; Kaplan-Meier on one cause overstates its probability.</li><li><strong>Left truncation</strong> (late entry), <strong>recurrent events</strong>, and <strong>cure fractions</strong> (some never churn).</li><li>Evaluate with <strong>concordance index (C-index)</strong>, time-dependent AUC, <strong>calibration</strong> of predicted survival at fixed horizons, and the integrated Brier score; split by time to mimic deployment.</li></ul>
+<h4>Using the output</h4>
+<p>Predict risk at 30, 90, 180 days, identify high-hazard segments and drivers, estimate <strong>customer lifetime value</strong> from expected survival times margin, and time interventions. For causal conclusions about retention offers, use experiments or uplift models, not hazard ratios from observational data.</p>
+<h4>Pitfalls</h4>
+<p>Treating censored customers as non-events, using random splits when time matters, ignoring competing risks, and reading hazard ratios as causal effects.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is censoring, and why does ignoring it bias a churn model?</li><li>What does the proportional hazards assumption mean and how do you check it?</li><li>How would you handle time-varying covariates and competing risks?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-38">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-38%3A+What+is+survival+analysis+and+why+is+it+better+than+plain%E2%80%A6&amp;question-id=ds-38&amp;context=Data+scientist%2C+Gear+3%2C+topic%3A+Survival+analysis%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-38.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you approach feature engineering for tabular data, and how do you avoid target leakage? | InterviewGearUp</title>
+<meta name="description" content="Start from the prediction moment and domain understanding, build features only from information available at that time: aggregates over past windows,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-22.html">
+<meta property="og:title" content="How do you approach feature engineering for tabular data, and how do you avoid target leakage? | InterviewGearUp">
+<meta property="og:description" content="Start from the prediction moment and domain understanding, build features only from information available at that time: aggregates over past windows,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-22.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you approach feature engineering for tabular data, and how do you avoid target leakage?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 2 (Mid-level) · Feature engineering · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Start from the prediction moment and domain understanding, build features only from information available at that time: aggregates over past windows, ratios, time and interaction features, careful categorical encodings, and transformations. Validate with time-aware splits, compute target-dependent encodings out of fold, and audit suspiciously strong features for leakage.</p></div>
+<h4>Explained in depth</h4>
+<h4>Principles</h4>
+<ol start="1"><li><strong>Define the prediction point</strong>: &quot;At the moment we score a customer (the cutoff date), what do we know?&quot; Every feature must be computable from data <strong>before</strong> that point, using the same logic in training and serving.</li><li><strong>Use domain knowledge</strong>: ask experts what drives the outcome; encode it explicitly (tenure, recency, frequency, monetary value, payment failures).</li><li><strong>Iterate against a solid validation scheme</strong>; keep features that improve out-of-sample performance and are stable.</li></ol>
+<h4>Feature families</h4>
+<div class="md-table"><table><thead><tr><th>Type</th><th>Examples</th></tr></thead><tbody><tr><td><strong>Aggregates over windows</strong></td><td>purchases in last 7, 30, 90 days; average basket; max, std, trend; number of distinct categories</td></tr><tr><td><strong>Recency, frequency, monetary</strong></td><td>days since last order, order count, spend</td></tr><tr><td><strong>Ratios and rates</strong></td><td>refunds / orders, clicks / impressions, utilisation = balance / limit</td></tr><tr><td><strong>Temporal features</strong></td><td>hour, weekday, month, holiday, time since event, cyclic encoding with sin and cos</td></tr><tr><td><strong>Interactions and polynomials</strong></td><td>price x quantity, age bucket x region</td></tr><tr><td><strong>Categorical encodings</strong></td><td>one-hot (low cardinality), target or mean encoding, frequency encoding, hashing, embeddings (high cardinality)</td></tr><tr><td><strong>Text and image</strong></td><td>TF-IDF, embeddings from pretrained models</td></tr><tr><td><strong>Geographic</strong></td><td>distance to store, region aggregates, H3 cells</td></tr><tr><td><strong>Missingness and flags</strong></td><td>&quot;has ever purchased&quot;, missing-value indicators</td></tr><tr><td><strong>Transformations</strong></td><td>log, Box-Cox, binning when non-linearity matters, rank transforms</td></tr><tr><td><strong>Cross-entity aggregates</strong></td><td>features from related tables (merchant fraud rate), using only past data</td></tr></tbody></table></div>
+<h4>Target leakage</h4>
+<p>Leakage inflates validation scores and then fails in production. Typical forms:</p>
+<ul><li><strong>Post-outcome information</strong>: &quot;days since last support ticket&quot; when the ticket was caused by churn; a &quot;refund amount&quot; in a fraud model; hospital discharge codes when predicting admission.</li><li><strong>Window overlap</strong>: aggregates computed over a window that includes the label period (a &quot;total spend in March&quot; feature when predicting March churn).</li><li><strong>Preprocessing on all data</strong>: scalers, imputers, selection, target encoding fitted before the split.</li><li><strong>Duplicates and group leakage</strong>: the same customer in train and validation.</li><li><strong>Proxy variables</strong> for the label (an ID range that correlates with outcome because of how data were collected).</li></ul>
+<p><strong>Audit</strong>: investigate features with implausibly high importance or univariate AUC (for example above 0.9 on a hard problem), check timestamps of the source data, and ask &quot;would this value exist at decision time?&quot;</p>
+<h4>Target encoding safely</h4>
+<p>Replace a category with the (smoothed) mean of the target. Compute it <strong>out of fold</strong>: for each training row, use statistics from other folds; for validation and test, use statistics from the full training set. Add <strong>smoothing</strong> toward the global mean for rare categories, and optionally noise.</p>
+<pre><code>from sklearn.preprocessing import TargetEncoder     # scikit-learn &gt;= 1.3, uses internal cross-fitting
+enc = TargetEncoder(smooth=&quot;auto&quot;, target_type=&quot;binary&quot;, cv=5)
+X_tr_enc = enc.fit_transform(X_tr[[&quot;merchant&quot;]], y_tr)     # out-of-fold for training
+X_te_enc = enc.transform(X_te[[&quot;merchant&quot;]])</code></pre>
+<h4>Point-in-time correctness</h4>
+<p>Use an <strong>as-of join</strong>: for each training example with timestamp t, take feature values as they were at t (a feature store with time travel, <code>merge_asof</code>). Backfilling with the latest values leaks the future. Build the training set from snapshots at cutoff dates.</p>
+<h4>Production consistency</h4>
+<p>Define features once (feature store: Feast, Tecton, Databricks, Vertex), share transformation code between training and serving, monitor feature distributions, and handle missing or late data identically.</p>
+<h4>Pitfalls</h4>
+<p>Creating hundreds of features without validation discipline, using the full-data mean for encoding, and shipping features that need data unavailable in real time.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you do target encoding of a high-cardinality categorical feature without leaking the label?</li><li>How do you build rolling aggregate features correctly for a model that predicts at a point in time?</li><li>How do you maintain feature consistency between training and online serving?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-22">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-22%3A+How+do+you+approach+feature+engineering+for+tabular+data%2C+and+how+do%E2%80%A6&amp;question-id=ds-22&amp;context=Data+scientist%2C+Gear+2%2C+topic%3A+Feature+engineering%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-22.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

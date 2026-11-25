@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Walk through an end-to-end customer churn prediction project from problem definition to deployment and business impact. | InterviewGearUp</title>
+<meta name="description" content="Define churn and the decision it supports, build a leakage-safe point-in-time dataset with an observation window and prediction horizon, engineer…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-56.html">
+<meta property="og:title" content="Walk through an end-to-end customer churn prediction project from problem definition to deployment and business impact. | InterviewGearUp">
+<meta property="og:description" content="Define churn and the decision it supports, build a leakage-safe point-in-time dataset with an observation window and prediction horizon, engineer…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-56.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Walk through an end-to-end customer churn prediction project from problem definition to deployment and business impact.</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 4 (Lead / Staff) · End-to-end project · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Define churn and the decision it supports, build a leakage-safe point-in-time dataset with an observation window and prediction horizon, engineer behavioural features, benchmark simple and boosted models with time-based validation and calibration, translate scores into targeted interventions with uplift or A/B tests, deploy with monitoring, and measure incremental retention and ROI.</p></div>
+<h4>Explained in depth</h4>
+<h4>1. Frame the business problem</h4>
+<p>Who acts on predictions and how? &quot;Retention team calls the top 5,000 at-risk customers each month with an offer costing 20.&quot; Define:</p>
+<ul><li><strong>Churn definition</strong>: contractual (cancellation or non-renewal) versus non-contractual (no purchase in 90 days, chosen with an inter-purchase-time analysis).</li><li><strong>Prediction horizon</strong>: churn within the next 30 days, scored monthly; the <strong>observation (feature) window</strong>, e.g., the previous 90 days.</li><li><strong>Success metrics</strong>: offline (PR AUC, recall@top-k, calibration) and business (incremental retained customers, net revenue after discount cost).</li><li>Constraints: capacity, latency, explainability for agents, privacy.</li></ul>
+<h4>2. Data and leakage-safe dataset</h4>
+<p>Create <strong>snapshots</strong>: for each customer and snapshot date t, features from data <strong>before t</strong> and label = churned in (t, t + 30 days]. Stack several snapshot dates. Exclude customers already churned. Split <strong>by time</strong> (train on earlier snapshots, validate on later ones) and group by customer to avoid the same person across splits. Beware leakage such as &quot;cancellation request submitted&quot; flags, cancellation-flow page views, or retention-offer history that happens because of churn intent.</p>
+<h4>3. Features</h4>
+<p>Recency, frequency and monetary aggregates over multiple windows (7, 30, 90 days), trends (usage this month versus last), support tickets and sentiment, billing issues and failed payments, product adoption depth, tenure and plan, price changes, contract end date proximity, acquisition channel, and engagement with communications. Add cohort and account-level context for B2B.</p>
+<h4>4. Modelling</h4>
+<p>Baselines: logistic regression with a few features, then <strong>gradient boosting</strong> (LightGBM) with early stopping. Handle imbalance with class weights or subsampling, and then <strong>calibrate</strong> probabilities to estimate expected loss. Consider <strong>survival models</strong> for time-to-churn and risk curves. Evaluate on the future snapshot: PR AUC, recall at top 10 percent, lift charts, calibration, stability across segments, and error analysis (who is missed?).</p>
+<pre><code>import lightgbm as lgb
+from sklearn.calibration import CalibratedClassifierCV
+gbm = lgb.LGBMClassifier(n_estimators=2000, learning_rate=0.03, num_leaves=31, subsample=0.8, colsample_bytree=0.8)
+gbm.fit(X_tr, y_tr, eval_set=[(X_va, y_va)], eval_metric=&quot;average_precision&quot;, callbacks=[lgb.early_stopping(100)])</code></pre>
+<p>Explain with SHAP for agents and for finding drivers (not causes).</p>
+<h4>5. From prediction to action</h4>
+<p>A churn score alone does not say who is <strong>persuadable</strong>. Prioritise by <strong>expected value = P(churn) x uplift from the offer x customer value - cost</strong>. Test interventions with a <strong>randomised holdout</strong> (treat a random subset of high-risk customers, compare retention) and, with enough data, train an <strong>uplift model</strong>. Different drivers need different actions (billing failure: update payment; low usage: onboarding help; price sensitivity: discount).</p>
+<h4>6. Deployment</h4>
+<p>Batch scoring pipeline into CRM, with data validation, versioned features, model registry, scheduled retraining, and fallbacks. Monitor input drift, score distribution, calibration when labels mature, and campaign outcomes. Keep a persistent control group to measure true impact.</p>
+<h4>7. Measure impact</h4>
+<p>Report <strong>incremental retention</strong> (treated minus control), revenue saved, cost, ROI, and long-term effects (did discounted customers churn later?). Share learnings (top drivers, segment insights) with product teams, who can fix root causes rather than relying only on campaigns.</p>
+<h4>Pitfalls</h4>
+<p>Predicting churn after the decision is already made (leaky features), evaluating on random splits, measuring campaign success without a control group, and optimising AUC instead of money saved.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you define churn for a subscription versus a non-contractual retail business?</li><li>How do you avoid targeting customers who would have stayed anyway?</li><li>What would you do if the model has good AUC but retention campaigns show no impact?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-56">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-56%3A+Walk+through+an+end-to-end+customer+churn+prediction+project+from%E2%80%A6&amp;question-id=ds-56&amp;context=Data+scientist%2C+Gear+4%2C+topic%3A+End-to-end+project%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-56.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>
