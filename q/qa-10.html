@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does Decision Table testing help model complex business logic and combinatorial rules? | InterviewGearUp</title>
+<meta name="description" content="A decision table lists every combination of conditions (columns are rules) and the action each one triggers. It turns tangled business rules into a…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-10.html">
+<meta property="og:title" content="How does Decision Table testing help model complex business logic and combinatorial rules? | InterviewGearUp">
+<meta property="og:description" content="A decision table lists every combination of conditions (columns are rules) and the action each one triggers. It turns tangled business rules into a…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-10.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does Decision Table testing help model complex business logic and combinatorial rules?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 2 (Mid-level) · Fundamentals · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A decision table lists every combination of conditions (columns are rules) and the action each one triggers. It turns tangled business rules into a checkable grid: each rule becomes at least one test, and gaps, contradictions and impossible combinations in the requirements show up as you fill it in.</p></div>
+<h4>Explained in depth</h4>
+<h4>Example: discount rules</h4>
+<p>Conditions: is a member? has coupon? order over 100? Actions: discount, free shipping.</p>
+<div class="md-table"><table><thead><tr><th></th><th>R1</th><th>R2</th><th>R3</th><th>R4</th><th>R5</th></tr></thead><tbody><tr><td>Member</td><td>Y</td><td>Y</td><td>Y</td><td>N</td><td>N</td></tr><tr><td>Coupon</td><td>Y</td><td>N</td><td>N</td><td>Y</td><td>N</td></tr><tr><td>Order over 100</td><td>-</td><td>Y</td><td>N</td><td>-</td><td>-</td></tr><tr><td><strong>10% discount</strong></td><td>Y</td><td>Y</td><td>N</td><td>Y</td><td>N</td></tr><tr><td><strong>Free shipping</strong></td><td>Y</td><td>Y</td><td>N</td><td>N</td><td>N</td></tr></tbody></table></div>
+<p>A dash means the condition does not affect the outcome (a &#39;don&#39;t care&#39;), which collapses several combinations into one rule.</p>
+<h4>How to build one</h4>
+<ol start="1"><li>List all conditions and the possible actions.</li><li>Enumerate combinations: n true/false conditions give 2^n columns before you merge them.</li><li>Fill in the expected action for each, and merge rules that behave the same.</li><li>Mark rules that are impossible or undefined and <strong>ask the product owner</strong>. Many requirement bugs are found right here.</li><li>Write at least one test per rule.</li></ol>
+<h4>Strengths and limits</h4>
+<ul><li>Catches missing, overlapping and contradictory rules early, and gives a clear traceable list of tests.</li><li>Grows quickly with many conditions. Then split the logic into smaller tables, use pairwise testing, or draw a cause-effect graph.</li><li>Combine with boundary value analysis for numeric conditions (is 100 over 100?), and with equivalence classes to limit the input values per condition.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>What do you do when the table has too many conditions to enumerate?</li><li>How do you discover rules that the requirements never mentioned?</li><li>How does a decision table relate to boundary value analysis?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-10">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-10%3A+How+does+Decision+Table+testing+help+model+complex+business+logic%E2%80%A6&amp;question-id=qa-10&amp;context=QA+%2F+SDET%2C+Gear+2%2C+topic%3A+Fundamentals%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-10.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What causes data skew in Spark joins and how does key salting resolve partition bottlenecks? | InterviewGearUp</title>
+<meta name="description" content="Skew means a few keys hold most of the rows, so a shuffle sends them to one partition and a single task runs long or runs out of memory while the others…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-20.html">
+<meta property="og:title" content="What causes data skew in Spark joins and how does key salting resolve partition bottlenecks? | InterviewGearUp">
+<meta property="og:description" content="Skew means a few keys hold most of the rows, so a shuffle sends them to one partition and a single task runs long or runs out of memory while the others…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-20.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What causes data skew in Spark joins and how does key salting resolve partition bottlenecks?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Spark · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Skew means a few keys hold most of the rows, so a shuffle sends them to one partition and a single task runs long or runs out of memory while the others finish early. Fixes include adaptive skew-join handling, broadcasting the small side, and salting the hot key to spread it across several partitions.</p></div>
+<h4>Explained in depth</h4>
+<h4>Detecting skew</h4>
+<p>In the Spark UI&#39;s stage page, the task duration or shuffle-read size shows a <strong>maximum far above the median</strong>. One straggler task keeps the whole stage waiting; it may spill to disk or hit an OOM error.</p>
+<h4>Options</h4>
+<ol start="1"><li><strong>Adaptive Query Execution</strong>: <code>spark.sql.adaptive.enabled</code> with <code>spark.sql.adaptive.skewJoin.enabled</code> detects oversized shuffle partitions at runtime and splits them. Try this first.</li><li><strong>Broadcast join</strong>: if one side is small enough, broadcast it so the big side is not shuffled at all.</li><li><strong>Salting</strong>: add a random salt to the skewed key on the large side and replicate the small side once per salt value.</li><li><strong>Isolate hot keys</strong>: handle the few heavy keys in a separate path (for example a broadcast join) and everything else normally; filter or default null keys, which are a classic hot key.</li><li>For aggregations, do a <strong>two-stage aggregation</strong>: aggregate by (key, salt) first, then by key.</li></ol>
+<pre><code>from pyspark.sql import functions as F
+N = 8                                                   # salt buckets
+big = big.withColumn(&#39;salt&#39;, (F.rand() * N).cast(&#39;int&#39;))
+small = small.withColumn(&#39;salt&#39;, F.explode(F.array([F.lit(i) for i in range(N)])))
+joined = big.join(small, [&#39;key&#39;, &#39;salt&#39;])</code></pre>
+<h4>Trade-offs</h4>
+<p>Salting multiplies the small side by N and makes the code more complex, so pick N just large enough to balance the work. Measure after the change, because the real fix is whichever one brings the slowest task close to the median.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How would you handle skew caused by null join keys?</li><li>How does adaptive query execution split a skewed partition?</li><li>How do you choose the number of salt buckets?</li></ul>
+<p><a class="btn primary" href="../#/q/de-20">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-20%3A+What+causes+data+skew+in+Spark+joins+and+how+does+key+salting%E2%80%A6&amp;question-id=de-20&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Spark%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-20.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

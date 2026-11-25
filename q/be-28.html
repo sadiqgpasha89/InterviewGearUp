@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is a cache stampede (thundering herd) and how do single-flight locks and XFetch prevent it? | InterviewGearUp</title>
+<meta name="description" content="A cache stampede (thundering herd) happens when a popular key expires and many requests miss at once, all hitting the database to rebuild it. Prevent it…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-28.html">
+<meta property="og:title" content="What is a cache stampede (thundering herd) and how do single-flight locks and XFetch prevent it? | InterviewGearUp">
+<meta property="og:description" content="A cache stampede (thundering herd) happens when a popular key expires and many requests miss at once, all hitting the database to rebuild it. Prevent it…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-28.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is a cache stampede (thundering herd) and how do single-flight locks and XFetch prevent it?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · Caching · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A cache stampede (thundering herd) happens when a popular key expires and many requests miss at once, all hitting the database to rebuild it. Prevent it by letting only one request recompute (single-flight or a lock), serving slightly stale data while refreshing, and refreshing early with probabilistic XFetch before expiry.</p></div>
+<h4>Explained in depth</h4>
+<h4>The problem</h4>
+<p>A hot key (home page data, 10,000 requests per second) expires. In the next milliseconds every request sees a miss, and all of them run the expensive query. The database spikes, slows down, the rebuild takes longer and more requests pile up, which can cause an outage.</p>
+<h4>Solutions</h4>
+<ol start="1"><li><strong>Single-flight (request coalescing)</strong>: the first request for a missing key takes a lock (in-process, or a Redis <code>SET key NX PX</code> lock across servers) and recomputes; others wait for its result or briefly serve stale data.</li></ol>
+<pre><code>def get(key):
+    v = cache.get(key)
+    if v is not None:
+        return v
+    if cache.set(key + &#39;:lock&#39;, 1, nx=True, px=5000):     # we won the lock
+        try:
+            v = load_from_db(key)
+            cache.set(key, v, ex=300)
+        finally:
+            cache.delete(key + &#39;:lock&#39;)
+        return v
+    time.sleep(0.05)                                      # someone else is loading
+    return get(key)                                       # (add a retry limit in real code)</code></pre>
+<ol start="2"><li><strong>Serve stale while revalidating</strong>: keep a soft TTL in the value; when it passes, return the old value and refresh in the background.</li><li><strong>Probabilistic early expiration (XFetch)</strong>: each request may decide to refresh <strong>before</strong> expiry, with probability that grows as expiry nears and with the cost of recomputing, so refreshes are spread out and one usually completes before the key expires.</li><li><strong>Jitter</strong> TTLs so many keys do not expire together.</li><li><strong>Pre-warm</strong> or refresh hot keys with a background job.</li></ol>
+<h4>Notes</h4>
+<p>Always set a lock timeout, protect against a failing loader (negative caching or backoff), and monitor miss rates for hot keys.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does adding jitter to TTLs help with related problems?</li><li>How would you implement single-flight across multiple servers?</li><li>What is stale-while-revalidate?</li></ul>
+<p><a class="btn primary" href="../#/q/be-28">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-28%3A+What+is+a+cache+stampede+%28thundering+herd%29+and+how+do+single-flight%E2%80%A6&amp;question-id=be-28&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+Caching%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-28.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain the difference between narrow transformations and wide transformations in Spark. | InterviewGearUp</title>
+<meta name="description" content="A narrow transformation computes each output partition from a single input partition (map, filter, select), so it needs no data movement and is pipelined…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-19.html">
+<meta property="og:title" content="Explain the difference between narrow transformations and wide transformations in Spark. | InterviewGearUp">
+<meta property="og:description" content="A narrow transformation computes each output partition from a single input partition (map, filter, select), so it needs no data movement and is pipelined…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-19.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain the difference between narrow transformations and wide transformations in Spark.</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 2 (Mid-level) · Spark · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A narrow transformation computes each output partition from a single input partition (map, filter, select), so it needs no data movement and is pipelined within a stage. A wide transformation (groupBy, join, distinct, repartition) needs data from many partitions, causes a shuffle across the network and starts a new stage.</p></div>
+<h4>Explained in depth</h4>
+<h4>Narrow</h4>
+<p><code>map</code>, <code>filter</code>, <code>select</code>, <code>withColumn</code>, <code>union</code>. Every output partition depends on at most one input partition, so Spark chains them in one task with no data exchange. If a partition is lost, only that partition&#39;s lineage is recomputed.</p>
+<h4>Wide</h4>
+<p><code>groupBy</code>, <code>reduceByKey</code>, <code>distinct</code>, <code>orderBy</code>, <code>repartition</code>, and most joins. Rows with the same key must end up in the same partition, so every task writes shuffle files to local disk, and the next stage reads the relevant pieces from all of them over the network. That is the expensive part: disk, network and serialisation.</p>
+<h4>Stages</h4>
+<p>Spark splits the job graph into <strong>stages at shuffle boundaries</strong>. In the Spark UI (or <code>df.explain()</code>) an <code>Exchange</code> node marks a shuffle.</p>
+<pre><code>df.filter(&#39;amount &gt; 0&#39;).select(&#39;user&#39;, &#39;amount&#39;)     # narrow, one stage
+  .groupBy(&#39;user&#39;).sum(&#39;amount&#39;)                      # wide, shuffle, new stage</code></pre>
+<h4>Reducing shuffle cost</h4>
+<ul><li>Filter and project early so less data is shuffled.</li><li>Prefer <code>reduceByKey</code> or DataFrame aggregations, which combine map-side, over <code>groupByKey</code> on RDDs.</li><li>Use a <strong>broadcast join</strong> when one side is small, so the large side is not shuffled.</li><li>Tune <code>spark.sql.shuffle.partitions</code> and rely on adaptive query execution to coalesce small post-shuffle partitions.</li><li>Watch for skew, where one key makes a single shuffle partition huge.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is reduceByKey usually faster than groupByKey?</li><li>How can you tell from explain() where the shuffles happen?</li><li>Is a join always a wide transformation?</li></ul>
+<p><a class="btn primary" href="../#/q/de-19">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-19%3A+Explain+the+difference+between+narrow+transformations+and+wide%E2%80%A6&amp;question-id=de-19&amp;context=Data+engineer%2C+Gear+2%2C+topic%3A+Spark%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-19.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

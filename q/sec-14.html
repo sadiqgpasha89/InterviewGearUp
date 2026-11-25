@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does Insecure Deserialization lead to Remote Code Execution (RCE) in modern runtimes? | InterviewGearUp</title>
+<meta name="description" content="Insecure deserialization happens when an application rebuilds objects from untrusted bytes using a format that lets the data choose which classes to…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-14.html">
+<meta property="og:title" content="How does Insecure Deserialization lead to Remote Code Execution (RCE) in modern runtimes? | InterviewGearUp">
+<meta property="og:description" content="Insecure deserialization happens when an application rebuilds objects from untrusted bytes using a format that lets the data choose which classes to…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-14.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does Insecure Deserialization lead to Remote Code Execution (RCE) in modern runtimes?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · AppSec · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Insecure deserialization happens when an application rebuilds objects from untrusted bytes using a format that lets the data choose which classes to create. Special methods run during that process, and chains of existing classes (gadgets) can reach code execution. Avoid native object formats for untrusted data and use strict data-only formats instead.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why it leads to RCE</h4>
+<p>Native serialisation formats (Java serialisation, Python <code>pickle</code>, PHP <code>unserialize</code>, Ruby <code>Marshal</code>, .NET <code>BinaryFormatter</code>) rebuild arbitrary objects. During reconstruction, the runtime invokes methods automatically: Java&#39;s <code>readObject</code>, PHP&#39;s <code>__wakeup</code> and <code>__destruct</code>, or Python&#39;s <code>__reduce__</code>, which can name any callable.</p>
+<pre><code>import pickle
+pickle.loads(untrusted_bytes)   # __reduce__ can run os.system(...) during loading</code></pre>
+<p>In Java the attacker rarely has a class that runs commands directly. Instead, they chain <strong>gadgets</strong>: classes already on the classpath whose normal behaviour (a comparator, a <code>hashCode</code>, a <code>toString</code>) calls the next one, until something dangerous such as reflection or command execution is reached. Tools like ysoserial generate such chains for common libraries.</p>
+<h4>Other impacts</h4>
+<p>Tampering with serialised session objects (changing a role or price), denial of service with deeply nested or huge objects, and authentication bypass.</p>
+<h4>Defences</h4>
+<ol start="1"><li><strong>Do not deserialise untrusted data with native formats.</strong> Use JSON or Protocol Buffers into fixed, known types with schema validation.</li><li>If you cannot avoid it, use an <strong>allow-list of classes</strong> (Java&#39;s <code>ObjectInputFilter</code>), disable polymorphic type handling such as <code>TypeNameHandling</code> in Json.NET or default typing in Jackson, and drop the dangerous libraries.</li><li>Sign or encrypt serialised data you issue (HMAC) to detect tampering, but this does not make deserialising it safe if the key leaks.</li><li>Keep dependencies patched, run with low privileges and restrict egress, so any code execution has less reach.</li><li>Monitor for deserialisation exceptions, which are often attack attempts.</li></ol>
+<p>Microsoft has deprecated <code>BinaryFormatter</code> and removed it in recent .NET versions for this reason.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is a gadget chain and why does the classpath matter?</li><li>Why is signing serialised data not a complete defence?</li><li>What would you use instead of pickle for passing data between Python services?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-14">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-14%3A+How+does+Insecure+Deserialization+lead+to+Remote+Code+Execution%E2%80%A6&amp;question-id=sec-14&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+AppSec%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-14.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

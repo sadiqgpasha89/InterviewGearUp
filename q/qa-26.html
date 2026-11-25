@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you structure an API test automation framework using REST Assured or pytest-requests? | InterviewGearUp</title>
+<meta name="description" content="Structure an API automation framework in layers: a thin client that wraps HTTP, request builders and data models, reusable assertions for status, schema…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-26.html">
+<meta property="og:title" content="How do you structure an API test automation framework using REST Assured or pytest-requests? | InterviewGearUp">
+<meta property="og:description" content="Structure an API automation framework in layers: a thin client that wraps HTTP, request builders and data models, reusable assertions for status, schema…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-26.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you structure an API test automation framework using REST Assured or pytest-requests?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 2 (Mid-level) · API Testing · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Structure an API automation framework in layers: a thin client that wraps HTTP, request builders and data models, reusable assertions for status, schema and body, test data and environment configuration, fixtures for authentication and setup, and clear reports. Tests then read as intent while transport details live in one place.</p></div>
+<h4>Explained in depth</h4>
+<h4>Layers</h4>
+<ol start="1"><li><strong>Config</strong>: base URLs and credentials per environment, loaded from environment variables, never hard coded.</li><li><strong>Client layer</strong>: one class that wraps the HTTP library, sets headers, handles auth, timeouts and retries, and logs requests and responses.</li><li><strong>Models</strong>: request and response objects (dataclasses, POJOs) so tests use typed data instead of raw dictionaries.</li><li><strong>Service wrappers</strong>: <code>UsersApi.create(user)</code>, <code>OrdersApi.get(id)</code>, one per resource.</li><li><strong>Assertions</strong>: shared helpers for status code, JSON schema, headers, response time and error format.</li><li><strong>Fixtures and data</strong>: create and clean up test data (via API or database), generate unique values, and provide authenticated sessions.</li><li><strong>Tests</strong>: short, readable and independent.</li></ol>
+<pre><code>def test_create_order_returns_201(orders_api, customer):
+    resp = orders_api.create(customer_id=customer.id, items=[{&#39;sku&#39;: &#39;A1&#39;, &#39;qty&#39;: 2}])
+    assert resp.status_code == 201
+    assert_matches_schema(resp.json(), &#39;order.json&#39;)
+    assert resp.json()[&#39;total&#39;] == 20.0</code></pre>
+<h4>Practices</h4>
+<ul><li>Cover the happy path, validation errors (400), auth failures (401 and 403), not found (404) and conflicts (409).</li><li>Make tests <strong>idempotent and isolated</strong>: each creates what it needs and cleans up.</li><li>Run in CI on every pull request, publish reports, and tag smoke versus full regression.</li><li>In Java, REST Assured gives a fluent DSL; in Python, <code>requests</code> with <code>pytest</code> fixtures is common.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you keep tests independent when they share data?</li><li>How do you version tests alongside API changes?</li><li>Where do contract tests fit in?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-26">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-26%3A+How+do+you+structure+an+API+test+automation+framework+using+REST%E2%80%A6&amp;question-id=qa-26&amp;context=QA+%2F+SDET%2C+Gear+2%2C+topic%3A+API+Testing%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-26.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are the symptoms of overfitting, and what techniques prevent it in machine learning? | InterviewGearUp</title>
+<meta name="description" content="Overfitting shows as very low training error but much higher validation or test error, with the gap growing as training continues. Prevent it with more…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-9.html">
+<meta property="og:title" content="What are the symptoms of overfitting, and what techniques prevent it in machine learning? | InterviewGearUp">
+<meta property="og:description" content="Overfitting shows as very low training error but much higher validation or test error, with the gap growing as training continues. Prevent it with more…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-9.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are the symptoms of overfitting, and what techniques prevent it in machine learning?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 1 (Junior) · Fundamentals · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Overfitting shows as very low training error but much higher validation or test error, with the gap growing as training continues. Prevent it with more or better data, simpler models, regularisation (L1, L2, dropout), early stopping, cross-validation, data augmentation, feature selection and ensembling.</p></div>
+<h4>Explained in depth</h4>
+<h4>Symptoms</h4>
+<ul><li>Training accuracy keeps improving while validation accuracy stalls or worsens.</li><li>A large gap between training and validation scores.</li><li>Unstable predictions when training data changes slightly, and implausibly complex fitted functions.</li></ul>
+<h4>Prevention techniques</h4>
+<ol start="1"><li><strong>More data</strong> or <strong>data augmentation</strong> (flips, crops, noise, synonym replacement).</li><li><strong>Simpler models</strong>: fewer parameters, shallower trees (<code>max_depth</code>), pruning.</li><li><strong>Regularisation</strong>:</li></ol>
+<ul><li><strong>L2 (ridge)</strong> shrinks weights, <strong>L1 (lasso)</strong> drives some to zero (feature selection).</li><li><strong>Dropout</strong> randomly disables units during training.</li><li><strong>Weight decay</strong> in neural networks.</li></ul>
+<ol start="4"><li><strong>Early stopping</strong>: monitor validation loss and stop (restoring the best weights) when it stops improving.</li><li><strong>Cross-validation</strong> to choose hyperparameters without tuning on the test set.</li><li><strong>Feature selection</strong> and removing noisy or leaky features.</li><li><strong>Ensembling</strong>: bagging and random forests reduce variance.</li><li>Reduce model capacity or use pre-trained representations with transfer learning.</li></ol>
+<h4>Process points</h4>
+<ul><li>Keep a <strong>held-out test set</strong> touched only once at the end.</li><li>Beware of <strong>data leakage</strong> (information from the target or the future in features, preprocessing fit on all data), which makes results look better than they are.</li><li>Compare against a simple baseline; if a complex model barely beats it, prefer the simple one.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How does early stopping work and what does it need?</li><li>What is data leakage and how can it look like good generalisation?</li><li>How do you choose the regularisation strength?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-9">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-9%3A+What+are+the+symptoms+of+overfitting%2C+and+what+techniques+prevent+it%E2%80%A6&amp;question-id=ml-9&amp;context=ML+%2F+AI+engineer%2C+Gear+1%2C+topic%3A+Fundamentals%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-9.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

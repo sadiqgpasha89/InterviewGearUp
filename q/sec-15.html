@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain XML External Entity (XXE) attacks and how disabling external DTD parsing prevents file exfiltration. | InterviewGearUp</title>
+<meta name="description" content="XXE happens when an XML parser resolves external entities defined in a DOCTYPE, letting an attacker make the server read local files…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-15.html">
+<meta property="og:title" content="Explain XML External Entity (XXE) attacks and how disabling external DTD parsing prevents file exfiltration. | InterviewGearUp">
+<meta property="og:description" content="XXE happens when an XML parser resolves external entities defined in a DOCTYPE, letting an attacker make the server read local files…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-15.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain XML External Entity (XXE) attacks and how disabling external DTD parsing prevents file exfiltration.</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 2 (Mid-level) · AppSec · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>XXE happens when an XML parser resolves external entities defined in a DOCTYPE, letting an attacker make the server read local files (file:///etc/passwd), reach internal URLs (SSRF) or consume resources. The fix is to disable DTD and external entity processing in the parser, or use a data format such as JSON that has no such feature.</p></div>
+<h4>Explained in depth</h4>
+<h4>The attack</h4>
+<p>XML allows entities defined in a Document Type Definition (DTD). An external entity pulls content from a URI when the document is parsed:</p>
+<pre><code>&lt;?xml version=&quot;1.0&quot;?&gt;
+&lt;!DOCTYPE data [ &lt;!ENTITY xxe SYSTEM &quot;file:///etc/passwd&quot;&gt; ]&gt;
+&lt;data&gt;&lt;name&gt;&amp;xxe;&lt;/name&gt;&lt;/data&gt;</code></pre>
+<p>If the application echoes the parsed <code>name</code> field, the response contains the file. Even without echo, the attacker can:</p>
+<ul><li>Read files, secrets and cloud credentials.</li><li>Trigger <strong>SSRF</strong> by pointing the entity at internal HTTP endpoints (for example a cloud metadata service).</li><li>Use <strong>out-of-band</strong> channels (parameter entities loading an attacker&#39;s DTD) to send data to a server they control.</li><li>Cause <strong>denial of service</strong> with nested entity expansion (billion laughs).</li></ul>
+<h4>Where it appears</h4>
+<p>SOAP and XML APIs, file uploads that are XML under the hood (DOCX, XLSX, SVG), SAML, RSS importers and configuration parsers.</p>
+<h4>Prevention</h4>
+<ul><li><strong>Disable DTDs entirely</strong> where possible, or at least disable external entities and external DTD loading.</li></ul>
+<pre><code>DocumentBuilderFactory f = DocumentBuilderFactory.newInstance();
+f.setFeature(&quot;http://apache.org/xml/features/disallow-doctype-decl&quot;, true);
+f.setFeature(&quot;http://xml.org/sax/features/external-general-entities&quot;, false);
+f.setFeature(&quot;http://xml.org/sax/features/external-parameter-entities&quot;, false);
+f.setXIncludeAware(false);
+f.setExpandEntityReferences(false);</code></pre>
+<ul><li>In Python, use <code>defusedxml</code>; in .NET set <code>DtdProcessing = Prohibit</code>; in libxml2 avoid <code>NOENT</code>.</li><li>Keep parsers updated, and prefer JSON for new APIs.</li><li>Run the application with least privilege and restrict outbound network access, which limits SSRF and exfiltration even if parsing is misconfigured.</li><li>Detect with SAST, DAST and tests that send entity payloads.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How does an out-of-band XXE exfiltrate data when the response is not shown?</li><li>What is the billion laughs attack?</li><li>Which libraries are vulnerable by default and how do you configure them securely?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-15">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-15%3A+Explain+XML+External+Entity+%28XXE%29+attacks+and+how+disabling+external%E2%80%A6&amp;question-id=sec-15&amp;context=Security+engineer%2C+Gear+2%2C+topic%3A+AppSec%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-15.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

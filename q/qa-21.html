@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain the Appium architecture and how it automates native and hybrid iOS and Android applications. | InterviewGearUp</title>
+<meta name="description" content="Appium is a server that exposes the WebDriver protocol and translates commands into platform automation frameworks: XCUITest on iOS and UiAutomator2 or…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-21.html">
+<meta property="og:title" content="Explain the Appium architecture and how it automates native and hybrid iOS and Android applications. | InterviewGearUp">
+<meta property="og:description" content="Appium is a server that exposes the WebDriver protocol and translates commands into platform automation frameworks: XCUITest on iOS and UiAutomator2 or…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-21.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain the Appium architecture and how it automates native and hybrid iOS and Android applications.</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 3 (Senior) · Mobile · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Appium is a server that exposes the WebDriver protocol and translates commands into platform automation frameworks: XCUITest on iOS and UiAutomator2 or Espresso on Android. The client sends HTTP requests, the Appium server routes them to a driver, and the driver controls the app on a real device or emulator, including native, hybrid and mobile web apps.</p></div>
+<h4>Explained in depth</h4>
+<h4>Architecture</h4>
+<ol start="1"><li><strong>Client</strong>: your test in Java, Python, JavaScript or others using an Appium client library, sending WebDriver commands over HTTP with <strong>capabilities</strong> (platform, device, app path).</li><li><strong>Appium server</strong> (Node.js): receives the session request and picks the right <strong>driver</strong>.</li><li><strong>Drivers</strong>: <code>XCUITest</code> driver for iOS (uses Apple&#39;s XCUITest through WebDriverAgent), <code>UiAutomator2</code> driver for Android (and Espresso driver for in-process access).</li><li><strong>Device</strong>: a real device, simulator or emulator running the app.</li></ol>
+<h4>Native and hybrid apps</h4>
+<ul><li><strong>Native</strong>: elements are found through the accessibility tree using accessibility id, iOS predicate, class chain or Android UiSelector.</li><li><strong>Hybrid</strong>: the app contains a <strong>webview</strong>. Switch the context from <code>NATIVE_APP</code> to <code>WEBVIEW_...</code>, then use web locators; switch back for native elements. Webviews must be debuggable.</li></ul>
+<h4>Practical points</h4>
+<ul><li>Prefer <strong>accessibility ids</strong> (<code>content-desc</code>, <code>accessibilityIdentifier</code>), which are stable and help accessibility.</li><li>Use explicit waits; mobile animations and network calls vary a lot.</li><li>Run on a device cloud or a grid for coverage across OS versions and screen sizes.</li><li>Reset or reinstall the app between tests for isolation, and capture screenshots and logs on failure.</li><li>Appium is cross-platform and language-agnostic but slower than framework-native tools (Espresso, XCUITest), which are faster and more stable for single-platform teams.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you switch between native and webview contexts in a hybrid app?</li><li>How do you reduce flakiness in mobile tests?</li><li>How does Appium compare with Espresso and XCUITest used directly?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-21">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-21%3A+Explain+the+Appium+architecture+and+how+it+automates+native+and%E2%80%A6&amp;question-id=qa-21&amp;context=QA+%2F+SDET%2C+Gear+3%2C+topic%3A+Mobile%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-21.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

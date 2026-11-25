@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you manage dependency and supply chain risk in a large frontend codebase? | InterviewGearUp</title>
+<meta name="description" content="Reduce and vet dependencies, pin versions with lockfiles, scan continuously for known vulnerabilities and malicious packages, restrict install scripts,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-116.html">
+<meta property="og:title" content="How do you manage dependency and supply chain risk in a large frontend codebase? | InterviewGearUp">
+<meta property="og:description" content="Reduce and vet dependencies, pin versions with lockfiles, scan continuously for known vulnerabilities and malicious packages, restrict install scripts,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-116.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you manage dependency and supply chain risk in a large frontend codebase?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 4 (Lead / Staff) · Security · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Reduce and vet dependencies, pin versions with lockfiles, scan continuously for known vulnerabilities and malicious packages, restrict install scripts, use trusted registries and provenance checks, build in isolated CI with minimal secrets, apply CSP and Subresource Integrity for runtime scripts, and have a fast patch and incident process.</p></div>
+<h4>Explained in depth</h4>
+<h4>Risks</h4>
+<p>Vulnerable libraries, <strong>typosquatting</strong> and dependency confusion, compromised maintainer accounts (malicious updates), <strong>install scripts</strong> that run code on developer or CI machines, abandoned packages, and third-party scripts loaded at runtime.</p>
+<h4>Prevention</h4>
+<ul><li><strong>Fewer dependencies</strong>: question every new package (size, maintenance, alternatives, licence); keep an approved list and use native APIs where possible.</li><li><strong>Lockfiles and exact versions</strong>: commit <code>package-lock.json</code> or <code>pnpm-lock.yaml</code>, install with <code>npm ci</code>, and review lockfile diffs in pull requests.</li><li><strong>Private registry or proxy</strong> (Artifactory, Verdaccio) with scoped internal names to prevent dependency confusion, and caching with a quarantine delay for brand-new releases.</li><li><strong>Disable install scripts</strong> by default (<code>--ignore-scripts</code>, pnpm&#39;s restrictions) and allow them only where needed.</li><li><strong>Provenance and signatures</strong>: npm provenance attestations, and verify publishers for critical packages.</li></ul>
+<h4>Detection and response</h4>
+<ul><li>Automated updates (Renovate, Dependabot) in small batches with CI tests.</li><li><strong>SCA</strong> scanning (npm audit, Snyk, Socket, OSV-Scanner) with severity-based SLAs, and checks for suspicious behaviour (new network or file system access).</li><li><strong>SBOM</strong> generation (CycloneDX) per build to find affected apps quickly when an advisory appears. Use overrides or resolutions to patch transitive dependencies, and record exceptions with expiry.</li><li>Incident playbook: identify exposure, rotate secrets, roll back, and communicate.</li></ul>
+<h4>Build and runtime hardening</h4>
+<ul><li>Isolated, ephemeral CI runners with <strong>least-privilege tokens</strong>, no long-lived secrets, and separate build and deploy permissions.</li><li><strong>Content Security Policy</strong>, <strong>Subresource Integrity</strong> for external scripts, self-hosting of critical libraries, and strict governance of tag manager scripts with a review process.</li><li>Two-person review of dependency changes in sensitive packages.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>What attack does a lockfile protect against, and what does it not?</li><li>How do you handle a critical vulnerability in a transitive dependency?</li><li>How do you control third-party scripts loaded by a tag manager?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-116">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-116%3A+How+do+you+manage+dependency+and+supply+chain+risk+in+a+large%E2%80%A6&amp;question-id=fe-116&amp;context=Frontend+engineer%2C+Gear+4%2C+topic%3A+Security%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-116.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

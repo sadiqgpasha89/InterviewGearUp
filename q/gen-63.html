@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain the Single Responsibility Principle (SRP) and provide a concrete refactoring example. | InterviewGearUp</title>
+<meta name="description" content="The Single Responsibility Principle says a class or module should have one reason to change, meaning it serves one actor or concern. A class that handles…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-63.html">
+<meta property="og:title" content="Explain the Single Responsibility Principle (SRP) and provide a concrete refactoring example. | InterviewGearUp">
+<meta property="og:description" content="The Single Responsibility Principle says a class or module should have one reason to change, meaning it serves one actor or concern. A class that handles…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-63.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain the Single Responsibility Principle (SRP) and provide a concrete refactoring example.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 1 (Junior) · OOP · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>The Single Responsibility Principle says a class or module should have one reason to change, meaning it serves one actor or concern. A class that handles business rules, persistence and report formatting changes whenever any of those change; splitting it into focused classes makes each easier to test and modify.</p></div>
+<h4>Explained in depth</h4>
+<h4>The idea</h4>
+<p>Robert Martin&#39;s wording: a module should have <strong>one, and only one, reason to change</strong>. A reason to change usually maps to a stakeholder or concern, such as finance, the database team or the UI team.</p>
+<h4>Before</h4>
+<pre><code>class Invoice:
+    def calculate_total(self): ...      # business rule
+    def save(self, db): ...             # persistence
+    def to_pdf(self): ...               # presentation</code></pre>
+<p>A tax rule change, a database change and a layout change all force edits to the same class, and each change risks breaking the others.</p>
+<h4>After</h4>
+<pre><code>class Invoice:                # data and business rules
+    def calculate_total(self): ...
+
+class InvoiceRepository:      # persistence
+    def save(self, invoice): ...
+
+class InvoicePdfRenderer:     # presentation
+    def render(self, invoice): ...</code></pre>
+<p>Now each class has one reason to change, can be tested alone (for example the repository with a fake database) and can be swapped.</p>
+<h4>Cautions</h4>
+<ul><li>Do not split just to make classes small. A class with five methods that all serve one concern is fine.</li><li>Over-splitting leads to many tiny classes and hard-to-follow code. Split when you see different change reasons, not before.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you decide how small a responsibility should be?</li><li>How does SRP differ from high cohesion?</li><li>Can over-applying SRP hurt a codebase?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-63">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-63%3A+Explain+the+Single+Responsibility+Principle+%28SRP%29+and+provide+a%E2%80%A6&amp;question-id=gen-63&amp;context=Software+engineer+%28core%29%2C+Gear+1%2C+topic%3A+OOP%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-63.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

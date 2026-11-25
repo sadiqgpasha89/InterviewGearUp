@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Design a multi-region setup for a critical service with a defined RTO and RPO. | InterviewGearUp</title>
+<meta name="description" content="Start from the business RTO and RPO, then pick the simplest topology that meets them: backup and restore, pilot light, warm standby or active-active.…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-8.html">
+<meta property="og:title" content="Design a multi-region setup for a critical service with a defined RTO and RPO. | InterviewGearUp">
+<meta property="og:description" content="Start from the business RTO and RPO, then pick the simplest topology that meets them: backup and restore, pilot light, warm standby or active-active.…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-8.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Design a multi-region setup for a critical service with a defined RTO and RPO.</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 4 (Lead / Staff) · Architecture · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Start from the business RTO and RPO, then pick the simplest topology that meets them: backup and restore, pilot light, warm standby or active-active. Active-active gives the best availability but forces hard choices on data consistency, conflicts and cost.</p></div>
+<h4>Explained in depth</h4>
+<p><strong>RTO</strong> is how long you can be down; <strong>RPO</strong> is how much data you can lose. Set them per service tier, since not everything justifies active-active.</p>
+<h4>Patterns, cheapest to costliest</h4>
+<p>Backup and restore (hours), pilot light, warm standby (minutes), active-active (near zero downtime).</p>
+<h4>Traffic</h4>
+<p>Global load balancing or anycast with health checks. If you rely on DNS, remember TTLs.</p>
+<h4>Data is the hard part</h4>
+<ul><li>Single-writer region with asynchronous replicas: simple, but failover can lose recent writes (RPO above zero).</li><li>Multi-writer: needs conflict resolution or ownership of each tenant or user by one region.</li><li>Globally consistent database: strong guarantees at the price of write latency.</li></ul>
+<h4>Often forgotten</h4>
+<p>Hidden single-region dependencies (identity, secrets, CI/CD, DNS), capacity in the surviving region to carry 100% of traffic, and regular failover drills. An untested disaster recovery plan is not a plan. Consider data-residency rules and total cost.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you avoid split-brain?</li><li>How would you test a regional failover?</li><li>How do you route users to the nearest healthy region?</li></ul>
+<p><a class="btn primary" href="../#/q/do-8">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-8%3A+Design+a+multi-region+setup+for+a+critical+service+with+a+defined%E2%80%A6&amp;question-id=do-8&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+4%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-8.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

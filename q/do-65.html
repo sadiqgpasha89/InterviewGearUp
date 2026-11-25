@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does Border Gateway Protocol (BGP) and Anycast routing route user traffic to the nearest edge PoP? | InterviewGearUp</title>
+<meta name="description" content="BGP is the routing protocol that exchanges which IP prefixes each network can reach. With anycast, many edge sites announce the same prefix, and each…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-65.html">
+<meta property="og:title" content="How does Border Gateway Protocol (BGP) and Anycast routing route user traffic to the nearest edge PoP? | InterviewGearUp">
+<meta property="og:description" content="BGP is the routing protocol that exchanges which IP prefixes each network can reach. With anycast, many edge sites announce the same prefix, and each…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-65.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does Border Gateway Protocol (BGP) and Anycast routing route user traffic to the nearest edge PoP?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 4 (Lead / Staff) · Networking · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>BGP is the routing protocol that exchanges which IP prefixes each network can reach. With anycast, many edge sites announce the same prefix, and each user&#39;s traffic follows the best BGP path, usually the closest site by network topology. Withdrawing the announcement from a failed site reroutes traffic to the others.</p></div>
+<h4>Explained in depth</h4>
+<h4>BGP in brief</h4>
+<p>The Internet is thousands of autonomous systems (AS). Each announces the prefixes it can deliver, and routers choose among received routes by <strong>policy</strong> (local preference, customer versus peer versus transit), then by <strong>shortest AS path</strong>, among other attributes. BGP knows nothing about latency or physical distance.</p>
+<h4>Anycast</h4>
+<p>A CDN or DNS provider announces the same IP prefix (for example a /24) from dozens of PoPs. Each network on the Internet picks its preferred route, so a user typically ends up at a PoP that is close in routing terms. All sites answer to the <strong>same IP address</strong>, so no client configuration or DNS trick is needed.</p>
+<h4>Benefits</h4>
+<ul><li>Low latency for most users, and automatic <strong>failover</strong>: if a site dies or is drained, it withdraws the route and traffic shifts to the next best PoP (taking seconds to minutes to converge).</li><li><strong>DDoS absorption</strong>: attack traffic is spread across all sites instead of concentrating on one.</li><li>Easy to add capacity.</li></ul>
+<h4>Caveats</h4>
+<ul><li>&#39;Nearest&#39; means BGP&#39;s choice, which may not be the lowest-latency path. Traffic engineering uses AS-path prepending, communities and selective announcements.</li><li>A route change in the middle of a TCP connection can send packets to a different PoP, which resets the connection. Anycast therefore suits short requests and DNS, or needs connection-aware designs.</li><li>A site that is up in BGP but whose service is broken still attracts traffic, so tie route announcements to <strong>health checks</strong>.</li><li>Prefixes smaller than /24 are generally filtered on the public Internet.</li></ul>
+<h4>Versus geo-DNS</h4>
+<p>GeoDNS returns different IPs by resolver location. It is coarse (resolvers may be far from users), limited by DNS caching and TTLs, and slower to fail over. Many CDNs combine anycast with DNS-based steering.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why can anycast break long-lived TCP connections?</li><li>How does a PoP failure get detected and traffic rerouted?</li><li>When would you prefer geo-DNS or latency-based DNS over anycast?</li></ul>
+<p><a class="btn primary" href="../#/q/do-65">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-65%3A+How+does+Border+Gateway+Protocol+%28BGP%29+and+Anycast+routing+route%E2%80%A6&amp;question-id=do-65&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+4%2C+topic%3A+Networking%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-65.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does a Two-Phase Commit Sink guarantee end-to-end exactly-once processing in stream pipelines? | InterviewGearUp</title>
+<meta name="description" content="End-to-end exactly-once in Flink needs a replayable source, checkpointed state and a sink that commits atomically. A two-phase commit sink writes output…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-53.html">
+<meta property="og:title" content="How does a Two-Phase Commit Sink guarantee end-to-end exactly-once processing in stream pipelines? | InterviewGearUp">
+<meta property="og:description" content="End-to-end exactly-once in Flink needs a replayable source, checkpointed state and a sink that commits atomically. A two-phase commit sink writes output…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-53.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does a Two-Phase Commit Sink guarantee end-to-end exactly-once processing in stream pipelines?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 4 (Lead / Staff) · Streaming · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>End-to-end exactly-once in Flink needs a replayable source, checkpointed state and a sink that commits atomically. A two-phase commit sink writes output inside an open transaction, pre-commits it when a checkpoint barrier arrives, and commits only after the whole checkpoint has completed. After a failure, Flink restores the checkpoint and commits or aborts the pending transactions to match.</p></div>
+<h4>Explained in depth</h4>
+<h4>The ingredients</h4>
+<ol start="1"><li><strong>Replayable source</strong>: for example Kafka, with the read offsets stored in Flink&#39;s checkpoint so that after a failure it re-reads from the same position.</li><li><strong>Checkpoints</strong>: periodic consistent snapshots of all operator state, taken with barriers that flow through the job.</li><li><strong>Transactional sink</strong> that takes part in the checkpoint protocol.</li></ol>
+<h4>How the two-phase commit sink works</h4>
+<ul><li><strong>Between checkpoints</strong>: the sink writes records into an <strong>open transaction</strong> in the external system (for example a Kafka transaction, or a staged file). Nothing is visible to readers yet.</li><li><strong>Checkpoint barrier arrives (phase 1)</strong>: the sink flushes and <strong>pre-commits</strong> the transaction, so it is durable but not yet visible, and records the transaction handle in its checkpoint state. It then starts a new transaction for the following records.</li><li><strong>Checkpoint complete (phase 2)</strong>: when the coordinator confirms every operator finished that checkpoint, the sink <strong>commits</strong> the pre-committed transaction, and its records become visible.</li></ul>
+<h4>Failure handling</h4>
+<p>If the job fails, Flink restores the last completed checkpoint. A transaction that was pre-committed as part of that checkpoint is <strong>committed</strong> on recovery (the checkpoint succeeded, so its output must appear), while transactions opened after it are <strong>aborted</strong>, and their input is replayed. No duplicates and no lost records appear in the output.</p>
+<h4>Practical points</h4>
+<ul><li>Consumers of the output must read only committed data, such as Kafka&#39;s <code>read_committed</code> isolation.</li><li>Output becomes visible <strong>only at checkpoint commit</strong>, so latency is at least the checkpoint interval.</li><li>The external transaction timeout must exceed the checkpoint interval plus recovery time, or recovery will find the transaction already aborted.</li><li>If the target supports it, an <strong>idempotent sink</strong> (upserts by key) is simpler and gives the same visible result without transactions.</li><li>Modern Flink exposes this through sink interfaces with a committer, which implement the same protocol.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does output only become visible after the checkpoint completes?</li><li>What happens to a pre-committed transaction if the job fails before the checkpoint is confirmed?</li><li>When is an idempotent sink a better choice than a two-phase commit sink?</li></ul>
+<p><a class="btn primary" href="../#/q/de-53">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-53%3A+How+does+a+Two-Phase+Commit+Sink+guarantee+end-to-end+exactly-once%E2%80%A6&amp;question-id=de-53&amp;context=Data+engineer%2C+Gear+4%2C+topic%3A+Streaming%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-53.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

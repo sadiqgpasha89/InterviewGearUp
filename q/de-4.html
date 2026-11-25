@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you make a data pipeline idempotent and handle late-arriving data and backfills? | InterviewGearUp</title>
+<meta name="description" content="Design every load so re-running it for the same time window gives the same result: write by partition with overwrite or MERGE on a business key, never…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-4.html">
+<meta property="og:title" content="How do you make a data pipeline idempotent and handle late-arriving data and backfills? | InterviewGearUp">
+<meta property="og:description" content="Design every load so re-running it for the same time window gives the same result: write by partition with overwrite or MERGE on a business key, never…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-4.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you make a data pipeline idempotent and handle late-arriving data and backfills?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 2 (Mid-level) · Pipelines · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Design every load so re-running it for the same time window gives the same result: write by partition with overwrite or MERGE on a business key, never blind appends, and separate event time from processing time to handle late data.</p></div>
+<h4>Explained in depth</h4>
+<p>Retries, failures and backfills are normal, so rerunning must be safe.</p>
+<h4>Idempotent writes</h4>
+<ul><li>Overwrite the date partition (delete and insert in one transaction, or <code>INSERT OVERWRITE</code>).</li><li><code>MERGE</code> (upsert) on a primary key, deduplicating by latest <code>updated_at</code>.</li><li>Stage data, then swap atomically.</li><li>Keep transforms deterministic: pass the logical run date as a parameter instead of calling <code>now()</code> inside logic.</li></ul>
+<h4>Late data</h4>
+<p>Process by <strong>event time</strong>, not arrival time. Reprocess a trailing window (say the last 3 days) on every run, or rebuild affected partitions when late records arrive. In streaming, use watermarks with an allowed lateness.</p>
+<h4>Backfills</h4>
+<p>A parameterised job over a date range, run in parallel with limits, writing to the same idempotent targets.</p>
+<h4>Safety nets</h4>
+<p>Row-count and freshness audits, uniqueness and null checks that fail the run, and schema-change detection.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How would you backfill two years of data?</li><li>How do you detect duplicates?</li><li>What is the difference between event time and processing time?</li></ul>
+<p><a class="btn primary" href="../#/q/de-4">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-4%3A+How+do+you+make+a+data+pipeline+idempotent+and+handle+late-arriving%E2%80%A6&amp;question-id=de-4&amp;context=Data+engineer%2C+Gear+2%2C+topic%3A+Pipelines%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-4.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

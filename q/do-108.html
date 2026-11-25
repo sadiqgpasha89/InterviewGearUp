@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are the three pillars of observability (logs, metrics and traces), and how do they differ from basic monitoring? | InterviewGearUp</title>
+<meta name="description" content="Metrics are numeric time series that show trends and trigger alerts, logs are timestamped event records that explain what happened in detail, and traces…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-108.html">
+<meta property="og:title" content="What are the three pillars of observability (logs, metrics and traces), and how do they differ from basic monitoring? | InterviewGearUp">
+<meta property="og:description" content="Metrics are numeric time series that show trends and trigger alerts, logs are timestamped event records that explain what happened in detail, and traces…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-108.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are the three pillars of observability (logs, metrics and traces), and how do they differ from basic monitoring?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 1 (Junior) · Observability · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Metrics are numeric time series that show trends and trigger alerts, logs are timestamped event records that explain what happened in detail, and traces follow a single request across services to show where time is spent. Monitoring watches known failure conditions, while observability lets you ask new questions about unknown problems from the data your system emits.</p></div>
+<h4>Explained in depth</h4>
+<h4>The three signals</h4>
+<div class="md-table"><table><thead><tr><th>Signal</th><th>What it is</th><th>Good for</th><th>Example tools</th></tr></thead><tbody><tr><td><strong>Metrics</strong></td><td>Aggregated numbers over time (request rate, error rate, latency, CPU)</td><td>Dashboards, alerting, trends, capacity</td><td>Prometheus, CloudWatch, Datadog</td></tr><tr><td><strong>Logs</strong></td><td>Discrete event records, ideally structured JSON</td><td>Debugging detail: what happened, with what input and error</td><td>Loki, Elasticsearch, Splunk, CloudWatch Logs</td></tr><tr><td><strong>Traces</strong></td><td>A request&#39;s path through services as timed <strong>spans</strong></td><td>Finding which service or call is slow or failing</td><td>OpenTelemetry, Jaeger, Tempo, X-Ray</td></tr></tbody></table></div>
+<h4>How they work together</h4>
+<ol start="1"><li>An <strong>alert</strong> from a metric says &quot;checkout error rate is 5 percent&quot;.</li><li>A <strong>trace</strong> shows the slow or failing span, such as the payment service call timing out.</li><li>The <strong>logs</strong> for that trace ID show the exact exception and parameters.</li></ol>
+<p>Use a shared <strong>trace or correlation ID</strong> in all three so you can move between them.</p>
+<h4>Monitoring versus observability</h4>
+<ul><li><strong>Monitoring</strong>: checks and alerts for conditions you predicted (&quot;disk above 90 percent&quot;).</li><li><strong>Observability</strong>: the property that you can understand internal state from outputs, including <strong>novel</strong> failures. It needs rich, high-cardinality context (user, version, region) so you can slice data when something unexpected happens.</li></ul>
+<h4>Practices</h4>
+<ul><li>Use structured logs with levels and request IDs, and avoid logging secrets.</li><li>Choose metrics carefully (RED: rate, errors, duration for services; USE: utilisation, saturation, errors for resources).</li><li>Sample traces to control cost, and keep retention tiers.</li><li>Alert on user-facing symptoms and SLOs, not every cause.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>When would you reach for a trace instead of a log?</li><li>What is the cost problem with high-volume logging?</li><li>How do correlation IDs tie the three signals together?</li></ul>
+<p><a class="btn primary" href="../#/q/do-108">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-108%3A+What+are+the+three+pillars+of+observability+%28logs%2C+metrics+and%E2%80%A6&amp;question-id=do-108&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+1%2C+topic%3A+Observability%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-108.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

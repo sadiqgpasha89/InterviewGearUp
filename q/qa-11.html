@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is State Transition Testing and how do you design tests for dynamic order or account lifecycles? | InterviewGearUp</title>
+<meta name="description" content="State transition testing models the system as states, events and the transitions between them, then designs tests that cover transitions and sequences,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-11.html">
+<meta property="og:title" content="What is State Transition Testing and how do you design tests for dynamic order or account lifecycles? | InterviewGearUp">
+<meta property="og:description" content="State transition testing models the system as states, events and the transitions between them, then designs tests that cover transitions and sequences,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-11.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is State Transition Testing and how do you design tests for dynamic order or account lifecycles?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 2 (Mid-level) · Fundamentals · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>State transition testing models the system as states, events and the transitions between them, then designs tests that cover transitions and sequences, including events that must be rejected in a given state. It suits lifecycles such as orders, accounts and workflows.</p></div>
+<h4>Explained in depth</h4>
+<h4>Model first</h4>
+<p>Draw the states and the events that move between them, with any <strong>guard conditions</strong> and actions. An order might be: Created, Paid, Shipped, Delivered, Cancelled, Refunded.</p>
+<div class="md-table"><table><thead><tr><th>State</th><th>Pay</th><th>Ship</th><th>Cancel</th><th>Deliver</th></tr></thead><tbody><tr><td>Created</td><td>Paid</td><td>invalid</td><td>Cancelled</td><td>invalid</td></tr><tr><td>Paid</td><td>invalid</td><td>Shipped</td><td>Cancelled</td><td>invalid</td></tr><tr><td>Shipped</td><td>invalid</td><td>invalid</td><td>invalid</td><td>Delivered</td></tr></tbody></table></div>
+<h4>Coverage levels</h4>
+<ul><li><strong>All states</strong>: every state is visited at least once.</li><li><strong>All transitions</strong> (0-switch): every valid transition is exercised.</li><li><strong>N-switch</strong>: sequences of N+1 transitions in a row, which finds bugs that depend on history (pay, cancel, then pay again).</li><li><strong>Invalid transitions</strong>: the empty cells of the table. Check that the system rejects them with a clear error and <strong>leaves the state unchanged</strong>.</li></ul>
+<h4>What to check after each step</h4>
+<p>The new state in the UI, the database and any emitted events, plus side effects such as stock changes, emails and refunds.</p>
+<h4>Account lifecycle example</h4>
+<p>Active moves to Locked after 5 failed logins, Locked returns to Active by reset, and Active moves to Suspended by an admin. Test the fifth failure versus the fourth, a login attempt while locked, and a password reset on a suspended account.</p>
+<h4>Extra cases</h4>
+<p>Repeated or duplicate events (idempotency: paying twice), concurrent events (cancel while shipping), and timeouts that cause automatic transitions.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the difference between 0-switch and 1-switch coverage?</li><li>How would you test concurrent events, such as cancelling an order at the moment it ships?</li><li>Why test invalid transitions as well as valid ones?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-11">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-11%3A+What+is+State+Transition+Testing+and+how+do+you+design+tests+for%E2%80%A6&amp;question-id=qa-11&amp;context=QA+%2F+SDET%2C+Gear+2%2C+topic%3A+Fundamentals%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-11.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

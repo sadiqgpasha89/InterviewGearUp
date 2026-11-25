@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is the KV Cache in autoregressive LLM decoding and why does it create GPU memory bottlenecks? | InterviewGearUp</title>
+<meta name="description" content="During autoregressive decoding each new token needs the keys and values of all previous tokens in every layer. The KV cache stores them so they are…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-48.html">
+<meta property="og:title" content="What is the KV Cache in autoregressive LLM decoding and why does it create GPU memory bottlenecks? | InterviewGearUp">
+<meta property="og:description" content="During autoregressive decoding each new token needs the keys and values of all previous tokens in every layer. The KV cache stores them so they are…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-48.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is the KV Cache in autoregressive LLM decoding and why does it create GPU memory bottlenecks?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · LLMs · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>During autoregressive decoding each new token needs the keys and values of all previous tokens in every layer. The KV cache stores them so they are computed once and reused, turning per-token cost from quadratic recomputation into a linear read. The cache grows with batch size, sequence length, layers and heads, so it becomes the main GPU memory bottleneck for long contexts and high concurrency.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why it exists</h4>
+<p>For token t, attention needs the keys K and values V of tokens 1 to t. Without a cache, generating each token would recompute K and V for the whole prefix: O(n^2) work overall for each step. The cache stores K and V per layer; at each step the model computes only the <strong>new token&#39;s</strong> K, V and query, appends K, V to the cache and attends over it.</p>
+<h4>Two phases</h4>
+<ul><li><strong>Prefill</strong>: process the whole prompt in parallel, filling the cache. Compute-bound.</li><li><strong>Decode</strong>: generate one token at a time, reading the entire cache each step. <strong>Memory-bandwidth-bound</strong>.</li></ul>
+<h4>Cache size</h4>
+<p><code>bytes = 2 (K and V) * layers * kv_heads * head_dim * sequence_length * batch * bytes_per_value</code> Example: a 7B-class model with 32 layers, 32 KV heads of dimension 128 and FP16 (2 bytes) uses <code>2 * 32 * 32 * 128 * 2 = 524,288 bytes</code> (about 0.5 MB) per token. At 4,096 tokens that is 2 GB <strong>per sequence</strong>; with 32 concurrent users, 64 GB just for the cache.</p>
+<h4>Why it limits serving</h4>
+<p>GPU memory holds the weights plus the cache, so cache size bounds concurrent sequences and context length. Fragmentation from variable-length requests wastes memory.</p>
+<h4>Mitigations</h4>
+<ul><li><strong>GQA and MQA</strong>: share K and V across heads, cutting cache several times.</li><li><strong>PagedAttention</strong> (vLLM): store the cache in fixed-size blocks, like virtual memory pages, to avoid fragmentation and allow sharing of common prefixes.</li><li><strong>KV cache quantisation</strong> (INT8 or FP8), sliding-window or sparse attention, and offloading to CPU.</li><li><strong>Prefix caching</strong> to reuse the cache for shared system prompts.</li><li>Continuous batching and speculative decoding improve throughput.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you estimate KV cache size for a given model and context?</li><li>How do grouped-query attention and PagedAttention reduce the cost?</li><li>What is the difference between the prefill and decode phases?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-48">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-48%3A+What+is+the+KV+Cache+in+autoregressive+LLM+decoding+and+why+does+it%E2%80%A6&amp;question-id=ml-48&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+LLMs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-48.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does HashiCorp Vault manage dynamic, short-lived database and cloud credentials in CI/CD pipelines? | InterviewGearUp</title>
+<meta name="description" content="HashiCorp Vault&#39;s secrets engines (database, AWS, GCP and others) generate credentials on demand with a lease and a short TTL, then revoke them…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-52.html">
+<meta property="og:title" content="How does HashiCorp Vault manage dynamic, short-lived database and cloud credentials in CI/CD pipelines? | InterviewGearUp">
+<meta property="og:description" content="HashiCorp Vault&#39;s secrets engines (database, AWS, GCP and others) generate credentials on demand with a lease and a short TTL, then revoke them…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-52.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does HashiCorp Vault manage dynamic, short-lived database and cloud credentials in CI/CD pipelines?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · CI/CD · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>HashiCorp Vault&#39;s secrets engines (database, AWS, GCP and others) generate credentials on demand with a lease and a short TTL, then revoke them automatically when they expire. A CI job authenticates to Vault with its own identity (JWT, OIDC or Kubernetes auth), requests credentials and uses them briefly, so no long-lived secrets sit in pipeline variables.</p></div>
+<h4>Explained in depth</h4>
+<h4>Problem with static secrets</h4>
+<p>Long-lived database passwords or cloud keys stored in CI variables get copied, leaked in logs, shared between jobs and rarely rotated. A leak is valid for months.</p>
+<h4>Dynamic secrets</h4>
+<p>When a client reads <code>database/creds/readonly</code>, Vault:</p>
+<ol start="1"><li>Creates a <strong>new database user</strong> with the permissions defined by a role, using its own admin connection.</li><li>Returns the username and password with a <strong>lease</strong> (for example 1 hour).</li><li><strong>Revokes</strong> the user when the lease expires or is revoked early, or can be renewed within a maximum TTL.</li></ol>
+<pre><code>vault read database/creds/app-readonly
+# username  v-jwt-app-ro-8h3k
+# password  A1b2...   lease_duration 1h</code></pre>
+<p>Every consumer has its own credentials, so audit logs show who used what and a leak is limited by time.</p>
+<h4>Authenticating the pipeline</h4>
+<p>Use an <strong>identity-based auth method</strong> instead of a stored token:</p>
+<ul><li><strong>JWT or OIDC auth</strong>: the CI platform (GitHub Actions, GitLab CI) issues a signed token per job with claims for repository, branch and environment; Vault verifies it and applies a policy based on those claims.</li><li><strong>Kubernetes auth</strong> for pods using their service account, and <strong>AppRole</strong> or cloud IAM auth for other workloads.</li></ul>
+<h4>Good practices</h4>
+<ul><li>Apply <strong>least-privilege policies</strong> per role and environment.</li><li>Keep TTLs short and use <strong>response wrapping</strong> or direct injection into the job.</li><li>Mask secrets in logs and avoid writing them to disk or artifacts.</li><li>Enable audit devices, and make Vault highly available (Raft storage) with auto-unseal.</li><li>Alternative: cloud-native OIDC federation (for example GitHub OIDC to AWS roles) provides short-lived cloud credentials without running Vault, but does not cover databases and other systems.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How does the CI job authenticate to Vault without a stored secret?</li><li>What happens to credentials when a lease is revoked?</li><li>How does Vault compare with cloud-native OIDC federation from CI?</li></ul>
+<p><a class="btn primary" href="../#/q/do-52">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-52%3A+How+does+HashiCorp+Vault+manage+dynamic%2C+short-lived+database+and%E2%80%A6&amp;question-id=do-52&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+CI%2FCD%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-52.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

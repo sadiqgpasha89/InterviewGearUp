@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Differentiate between Smoke testing, Sanity testing, and Full Regression testing suites. | InterviewGearUp</title>
+<meta name="description" content="Smoke testing is a fast check that the build works at all (it starts, you can log in, the main page loads) and decides whether deeper testing is…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-12.html">
+<meta property="og:title" content="Differentiate between Smoke testing, Sanity testing, and Full Regression testing suites. | InterviewGearUp">
+<meta property="og:description" content="Smoke testing is a fast check that the build works at all (it starts, you can log in, the main page loads) and decides whether deeper testing is…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-12.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Differentiate between Smoke testing, Sanity testing, and Full Regression testing suites.</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 1 (Junior) · Fundamentals · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Smoke testing is a fast check that the build works at all (it starts, you can log in, the main page loads) and decides whether deeper testing is worthwhile. Sanity testing is a narrow check that a specific change or fix works. Regression testing re-runs a broad suite to confirm that existing behaviour was not broken.</p></div>
+<h4>Explained in depth</h4>
+<ul><li><strong>Smoke</strong> (build verification): a handful of critical-path checks, a few minutes long, run on every build or deployment, including after deploying to production. If it fails, stop and reject the build.</li><li><strong>Sanity</strong>: focused, shallow checks on the area that just changed, for example after a bug fix, to see that the fix works and nothing obvious nearby broke. Often unscripted.</li><li><strong>Regression</strong>: a broad, usually automated suite covering existing features. It is slower, so teams run it nightly or before a release, and pick subsets by risk or by changed code for pull requests.</li></ul>
+<h4>How they fit together</h4>
+<p>Build, then <strong>smoke</strong>, then (a change verified with <strong>sanity</strong>), then <strong>regression</strong>, then release. Terminology varies between companies, so confirm the definitions with your team.</p>
+<p><strong>Good practice</strong>: keep the smoke suite tiny and reliable (a flaky smoke test blocks everyone), tag tests so suites can be composed, and add a regression test for every defect that escaped.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How would you decide which tests belong in the smoke suite?</li><li>How do you keep a regression suite from growing too slow?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-12">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-12%3A+Differentiate+between+Smoke+testing%2C+Sanity+testing%2C+and+Full%E2%80%A6&amp;question-id=qa-12&amp;context=QA+%2F+SDET%2C+Gear+1%2C+topic%3A+Fundamentals%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-12.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

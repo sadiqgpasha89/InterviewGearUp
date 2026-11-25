@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is HTTP caching and how do Cache-Control and ETag headers work? | InterviewGearUp</title>
+<meta name="description" content="HTTP caching lets browsers, CDNs and proxies reuse earlier responses. Cache-Control sets how long a response is fresh and who may store it, while ETag…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-111.html">
+<meta property="og:title" content="What is HTTP caching and how do Cache-Control and ETag headers work? | InterviewGearUp">
+<meta property="og:description" content="HTTP caching lets browsers, CDNs and proxies reuse earlier responses. Cache-Control sets how long a response is fresh and who may store it, while ETag…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-111.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is HTTP caching and how do Cache-Control and ETag headers work?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 1 (Junior) · Caching · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>HTTP caching lets browsers, CDNs and proxies reuse earlier responses. Cache-Control sets how long a response is fresh and who may store it, while ETag and Last-Modified allow conditional requests so the server can answer 304 Not Modified without resending the body. Cache static assets for a long time with versioned filenames and keep private data out of shared caches.</p></div>
+<h4>Explained in depth</h4>
+<h4>Freshness with Cache-Control</h4>
+<pre><code>Cache-Control: public, max-age=31536000, immutable</code></pre>
+<ul><li><code>max-age=N</code>: the response is fresh for N seconds; the browser uses it without contacting the server.</li><li><code>public</code> allows shared caches (CDN); <code>private</code> restricts to the user&#39;s browser (use for personalised responses).</li><li><code>no-cache</code>: may store, but <strong>must revalidate</strong> before reuse.</li><li><code>no-store</code>: do not store at all (sensitive data).</li><li><code>s-maxage</code>: freshness for shared caches; <code>stale-while-revalidate</code> serves stale content while refreshing in the background.</li></ul>
+<h4>Revalidation with validators</h4>
+<p>When a response becomes stale, the client asks whether it changed:</p>
+<ol start="1"><li>The server first sends <code>ETag: &quot;abc123&quot;</code> (a version fingerprint) or <code>Last-Modified</code>.</li><li>The client later sends <code>If-None-Match: &quot;abc123&quot;</code> (or <code>If-Modified-Since</code>).</li><li>If unchanged, the server returns <strong><code>304 Not Modified</code></strong> with no body, saving bandwidth. Otherwise it returns <code>200</code> with the new content.</li></ol>
+<h4>Practical strategy</h4>
+<ul><li><strong>Fingerprinted static assets</strong> (<code>app.9f3c1.js</code>): <code>max-age=31536000, immutable</code>. When content changes, the filename changes, so no stale files (cache busting).</li><li><strong>HTML documents</strong>: <code>no-cache</code> (or short <code>max-age</code>) so users get new versions quickly.</li><li><strong>API responses</strong>: <code>private</code> or <code>no-store</code> for user data; short caching with ETags for public data.</li><li><strong><code>Vary: Accept-Encoding, Accept-Language</code></strong> tells caches that the response differs by those request headers; wrong <code>Vary</code> leaks or duplicates content.</li></ul>
+<h4>Pitfalls</h4>
+<p>Caching authenticated pages in a shared cache, forgetting that <code>POST</code> responses are generally not cached, and having no way to purge a CDN after a mistake. Use CDN invalidation APIs and test headers with browser dev tools or <code>curl -I</code>.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the difference between no-cache and no-store?</li><li>How does cache busting with fingerprinted filenames work?</li><li>What does the Vary header do?</li></ul>
+<p><a class="btn primary" href="../#/q/be-111">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-111%3A+What+is+HTTP+caching+and+how+do+Cache-Control+and+ETag+headers+work%3F&amp;question-id=be-111&amp;context=Backend+engineer%2C+Gear+1%2C+topic%3A+Caching%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-111.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

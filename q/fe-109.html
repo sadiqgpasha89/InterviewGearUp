@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you establish and enforce performance budgets across many frontend teams? | InterviewGearUp</title>
+<meta name="description" content="Agree measurable budgets tied to user experience (Core Web Vitals, bundle size, request counts), measure them with both lab tests in CI and real user…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-109.html">
+<meta property="og:title" content="How do you establish and enforce performance budgets across many frontend teams? | InterviewGearUp">
+<meta property="og:description" content="Agree measurable budgets tied to user experience (Core Web Vitals, bundle size, request counts), measure them with both lab tests in CI and real user…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-109.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you establish and enforce performance budgets across many frontend teams?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 4 (Lead / Staff) · Performance · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Agree measurable budgets tied to user experience (Core Web Vitals, bundle size, request counts), measure them with both lab tests in CI and real user monitoring, fail or warn builds that regress, give every team a dashboard and an owner, and review budgets regularly. Budgets work only with tooling, visibility and a clear escalation and exception process.</p></div>
+<h4>Explained in depth</h4>
+<h4>Define what to budget</h4>
+<ul><li><strong>User-centred metrics</strong>: LCP under 2.5 s, INP under 200 ms, CLS under 0.1 at the 75th percentile of real users.</li><li><strong>Resource budgets</strong>: JavaScript size per route (for example 170 KB compressed), total page weight, image size, number of third-party scripts and requests.</li><li><strong>Timing</strong>: time to first byte, long tasks, hydration time.</li></ul>
+<p>Start from <strong>data</strong>: current field metrics, competitors, and business impact (conversion correlates with speed). Set budgets by page type and device class (a mid-range phone on 4G is a realistic baseline).</p>
+<h4>Measure in two ways</h4>
+<ol start="1"><li><strong>Lab (synthetic) in CI</strong>: Lighthouse CI, <code>size-limit</code> or bundlewatch on every pull request, comparing against the base branch. Fail on hard limits and warn on soft ones, and comment the diff on the PR with the cause (for example a new dependency).</li><li><strong>Field (RUM)</strong>: collect Web Vitals with the <code>web-vitals</code> library, segmented by route, release, country and device, so you see what users actually feel and catch regressions that CI misses.</li></ol>
+<h4>Make it organisational</h4>
+<ul><li><strong>Ownership</strong>: each route or product area has an owner and a budget; a central platform or performance group provides tooling, guidance and review.</li><li><strong>Visibility</strong>: shared dashboards, weekly regressions report, and alerts when field metrics cross thresholds.</li><li><strong>Process</strong>: a documented <strong>exception path</strong> (justify, time-box, add a plan to recover) so budgets are not simply bypassed. Include performance in design reviews and definition of done.</li><li><strong>Tooling defaults</strong>: code splitting, lazy loading, image optimisation, and a vetted dependency list with bundle cost shown at install time.</li><li><strong>Education and wins</strong>: share case studies linking speed to revenue.</li></ul>
+<h4>Pitfalls</h4>
+<p>Budgets set once and forgotten, only lab numbers, tight limits that teams learn to ignore, and unmanaged third-party tags (tag manager scripts) which often cause the biggest regressions.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you choose the numbers for the budgets?</li><li>How do you handle a team that needs to exceed the budget for a business-critical feature?</li><li>What is the difference between lab data and field data?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-109">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-109%3A+How+do+you+establish+and+enforce+performance+budgets+across+many%E2%80%A6&amp;question-id=fe-109&amp;context=Frontend+engineer%2C+Gear+4%2C+topic%3A+Performance%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-109.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

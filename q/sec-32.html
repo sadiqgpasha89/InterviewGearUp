@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is the fundamental difference between Authentication (AuthN) and Authorization (AuthZ)? | InterviewGearUp</title>
+<meta name="description" content="Authentication (AuthN) verifies who you are, for example with a password, passkey or one-time code. Authorization (AuthZ) decides what that verified…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-32.html">
+<meta property="og:title" content="What is the fundamental difference between Authentication (AuthN) and Authorization (AuthZ)? | InterviewGearUp">
+<meta property="og:description" content="Authentication (AuthN) verifies who you are, for example with a password, passkey or one-time code. Authorization (AuthZ) decides what that verified…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-32.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is the fundamental difference between Authentication (AuthN) and Authorization (AuthZ)?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 1 (Junior) · IAM · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Authentication (AuthN) verifies who you are, for example with a password, passkey or one-time code. Authorization (AuthZ) decides what that verified identity is allowed to do. Authentication comes first, authorization is checked on every request, and a system can fail at either: being logged in does not mean you may access everything.</p></div>
+<h4>Explained in depth</h4>
+<h4>Authentication: &quot;Who are you?&quot;</h4>
+<p>Proving an identity using one or more factors:</p>
+<ul><li>Something you <strong>know</strong> (password, PIN).</li><li>Something you <strong>have</strong> (phone, hardware key, passkey).</li><li>Something you <strong>are</strong> (fingerprint, face).</li></ul>
+<p>Multi-factor authentication combines different kinds. The result is an authenticated identity, such as a session or a token.</p>
+<h4>Authorization: &quot;What are you allowed to do?&quot;</h4>
+<p>After identity is known, the system checks <strong>permissions</strong> against the requested action and resource, using models such as:</p>
+<ul><li><strong>RBAC</strong>: roles grant permissions (admin, editor, viewer).</li><li><strong>ABAC</strong>: rules over attributes (department, resource owner, time, risk).</li><li><strong>ACLs</strong> and ownership checks on individual objects.</li></ul>
+<h4>Example</h4>
+<p>A user logs in successfully (authentication). They then request <code>GET /invoices/42</code>. The server must check that invoice 42 belongs to <strong>their</strong> account or that their role allows it (authorization). If it fails, the correct responses are:</p>
+<ul><li><strong>401 Unauthorized</strong>: not authenticated (or credentials invalid); the client should log in.</li><li><strong>403 Forbidden</strong>: authenticated, but not permitted.</li></ul>
+<h4>Common mistakes</h4>
+<ul><li>Checking authorization only in the UI, not on the server.</li><li>Verifying who the user is but not whether they own the object (insecure direct object references, the top cause of broken access control).</li><li>Trusting client-supplied roles or ids.</li><li>Confusing the protocols: <strong>OpenID Connect</strong> handles authentication (login identity), while <strong>OAuth 2.0</strong> handles delegated authorization (access to resources).</li></ul>
+<h4>Principle</h4>
+<p>Authenticate once, <strong>authorize on every request</strong> with least privilege and deny by default.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What are 401 and 403 responses and when do you use each?</li><li>How do RBAC and ABAC implement authorization?</li><li>What is the difference between OAuth 2.0 and OpenID Connect in these terms?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-32">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-32%3A+What+is+the+fundamental+difference+between+Authentication+%28AuthN%29%E2%80%A6&amp;question-id=sec-32&amp;context=Security+engineer%2C+Gear+1%2C+topic%3A+IAM%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-32.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

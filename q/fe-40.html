@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain Core Web Vitals: Largest Contentful Paint (LCP), Interaction to Next Paint (INP), and Cumulative Layout Shift (CLS). | InterviewGearUp</title>
+<meta name="description" content="Core Web Vitals measure loading, responsiveness and visual stability from real users. LCP is when the largest content element renders (good is 2.5 s or…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-40.html">
+<meta property="og:title" content="Explain Core Web Vitals: Largest Contentful Paint (LCP), Interaction to Next Paint (INP), and Cumulative Layout Shift (CLS). | InterviewGearUp">
+<meta property="og:description" content="Core Web Vitals measure loading, responsiveness and visual stability from real users. LCP is when the largest content element renders (good is 2.5 s or…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-40.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain Core Web Vitals: Largest Contentful Paint (LCP), Interaction to Next Paint (INP), and Cumulative Layout Shift (CLS).</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 3 (Senior) · Performance · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Core Web Vitals measure loading, responsiveness and visual stability from real users. LCP is when the largest content element renders (good is 2.5 s or less), INP is the latency of interactions across the visit (good is 200 ms or less), and CLS sums unexpected layout shifts (good is 0.1 or less), each judged at the 75th percentile.</p></div>
+<h4>Explained in depth</h4>
+<div class="md-table"><table><thead><tr><th>Metric</th><th>Measures</th><th>Good threshold</th></tr></thead><tbody><tr><td><strong>LCP</strong> Largest Contentful Paint</td><td>When the largest image or text block in the viewport is rendered</td><td>2.5 s or less</td></tr><tr><td><strong>INP</strong> Interaction to Next Paint</td><td>How long it takes the page to visually respond to clicks, taps and key presses, over the whole visit</td><td>200 ms or less</td></tr><tr><td><strong>CLS</strong> Cumulative Layout Shift</td><td>How much visible content moves unexpectedly</td><td>0.1 or less</td></tr></tbody></table></div>
+<p>INP replaced First Input Delay as the responsiveness metric in 2024, because FID only looked at the first interaction&#39;s input delay while INP covers every interaction and the full time to the next paint.</p>
+<h4>Improving each one</h4>
+<ul><li><strong>LCP</strong>: serve the hero image early with <code>&lt;link rel=preload&gt;</code> or <code>fetchpriority=high</code>, never lazy-load the LCP image, cut server response time (cache, CDN), avoid render-blocking CSS and JS.</li><li><strong>INP</strong>: break up long tasks, defer non-critical and third-party scripts, avoid heavy work in event handlers, reduce hydration cost, and give instant visual feedback before slow work.</li><li><strong>CLS</strong>: set <code>width</code> and <code>height</code> or <code>aspect-ratio</code> on images and embeds, reserve space for ads and banners, avoid inserting content above existing content, and use <code>font-display</code> with metric-matched fallback fonts.</li></ul>
+<h4>Measuring</h4>
+<p><strong>Field data</strong> from real users (Chrome UX Report, the web-vitals library sending to your analytics) is what counts, judged per page at the 75th percentile. <strong>Lab tools</strong> such as Lighthouse are good for debugging but do not capture real interactions; Total Blocking Time is only a rough proxy for INP.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is field data preferred over a Lighthouse score?</li><li>How would you find which interaction causes a poor INP?</li><li>How can a web font cause both LCP and CLS problems?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-40">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-40%3A+Explain+Core+Web+Vitals%3A+Largest+Contentful+Paint+%28LCP%29%2C+Interaction%E2%80%A6&amp;question-id=fe-40&amp;context=Frontend+engineer%2C+Gear+3%2C+topic%3A+Performance%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-40.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

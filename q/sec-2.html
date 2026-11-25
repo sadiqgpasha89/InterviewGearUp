@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain SQL injection and cross-site scripting, and how to prevent each. | InterviewGearUp</title>
+<meta name="description" content="SQL injection happens when user input is concatenated into a query and changes its logic; fix it with parameterised queries. XSS happens when untrusted…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-2.html">
+<meta property="og:title" content="Explain SQL injection and cross-site scripting, and how to prevent each. | InterviewGearUp">
+<meta property="og:description" content="SQL injection happens when user input is concatenated into a query and changes its logic; fix it with parameterised queries. XSS happens when untrusted…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-2.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain SQL injection and cross-site scripting, and how to prevent each.</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 1 (Junior) · Web security · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>SQL injection happens when user input is concatenated into a query and changes its logic; fix it with parameterised queries. XSS happens when untrusted input is rendered as HTML or script; fix it with output encoding and a strict Content Security Policy.</p></div>
+<h4>Explained in depth</h4>
+<h4>SQL injection</h4>
+<p>Example: building <code>&quot;SELECT * FROM users WHERE name=&#39;&quot; + name + &quot;&#39;&quot;</code> with input <code>&#39; OR &#39;1&#39;=&#39;1</code> returns every user.</p>
+<ul><li>Use prepared statements or bound parameters (the database treats input as data, never as SQL).</li><li>Give the application database account least privilege.</li><li>Validate input as defence in depth, but never rely on escaping alone.</li></ul>
+<h4>Cross-site scripting</h4>
+<p>Types: <strong>stored</strong> (saved, shown to others), <strong>reflected</strong> (in a URL), <strong>DOM-based</strong>. Impact: stealing sessions, acting as the victim, defacing pages.</p>
+<ul><li>Encode output for its context (HTML, attribute, JavaScript, URL).</li><li>Use frameworks that auto-escape, and do not bypass them with <code>innerHTML</code>.</li><li>Sanitise rich text with an allow-list library.</li><li>Send a Content Security Policy and set <code>HttpOnly</code> on session cookies.</li></ul>
+<p>Both come from mixing <strong>data</strong> with <strong>code</strong>. In the OWASP Top 10, broken access control is the most common category.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why are prepared statements safe?</li><li>Stored versus reflected XSS?</li><li>What does a Content Security Policy do?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-2">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-2%3A+Explain+SQL+injection+and+cross-site+scripting%2C+and+how+to+prevent%E2%80%A6&amp;question-id=sec-2&amp;context=Security+engineer%2C+Gear+1%2C+topic%3A+Web+security%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-2.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

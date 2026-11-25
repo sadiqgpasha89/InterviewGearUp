@@ -36,9 +36,12 @@ Bump `contentVersion` when an answer changes materially.
 ## Before you open a pull request
 
 ```sh
-npm test            # schema, metadata, duplicates, coverage ratchet
+npm test            # schema, metadata, duplicates, coverage ratchet, static page freshness
 npm run content:status
+npm run seo         # regenerate the static pages in q/, sitemap.xml and robots.txt after any answer change
 ```
+
+`q/*.html` are generated from the answers so search engines can index them. Never edit them by hand; `npm test` fails when they are out of date.
 
 Coverage per role and gear may not go down (`test/coverage-baseline.json`). If your change raises it, regenerate the baseline in the same PR.
 
@@ -62,3 +65,11 @@ Status comes only from GitHub labels that a maintainer applies; text inside an i
 | `rejected`, `duplicate`, `confidential`, `inappropriate` | Hidden from the board and company pages. Use `confidential` for anything that looks like NDA or proprietary material. |
 
 `ai-answered` is applied by the bot and marks a generated answer. Do not apply it by hand.
+
+## Learning paths
+
+A learning path is an ordered list of existing question ids with a title and note. Learners build them on the **Learning paths** page and can export a file. To suggest one for everyone, open the *Suggest a learning path* issue form and paste the file. Maintainers check the ids and order, then add it to `js/starter-paths.js`. Starter paths are labelled as not reviewed by a person until a maintainer has actually read them.
+
+## Private sync
+
+Optional encrypted sync through the learner's own GitHub Gist lives in `js/sync.js`. Read `docs/THREAT_MODEL.md` before changing it: the token must stay gist-only and out of backups, the passphrase must never be stored, and only `api.github.com` may be contacted.

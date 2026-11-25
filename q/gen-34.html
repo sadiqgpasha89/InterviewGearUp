@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does the two pointers technique solve the Two-Sum problem in a sorted array in $O(N)$ time? | InterviewGearUp</title>
+<meta name="description" content="With a sorted array, put one pointer at each end. If the sum is too small move the left pointer right; if too large move the right pointer left; stop…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-34.html">
+<meta property="og:title" content="How does the two pointers technique solve the Two-Sum problem in a sorted array in $O(N)$ time? | InterviewGearUp">
+<meta property="og:description" content="With a sorted array, put one pointer at each end. If the sum is too small move the left pointer right; if too large move the right pointer left; stop…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-34.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does the two pointers technique solve the Two-Sum problem in a sorted array in $O(N)$ time?</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 1 (Junior) · Algorithms · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>With a sorted array, put one pointer at each end. If the sum is too small move the left pointer right; if too large move the right pointer left; stop when the sum equals the target. Each step discards one candidate, so it takes O(N) time and O(1) extra space.</p></div>
+<h4>Explained in depth</h4>
+<h4>Algorithm</h4>
+<pre><code>def two_sum_sorted(nums, target):
+    lo, hi = 0, len(nums) - 1
+    while lo &lt; hi:
+        s = nums[lo] + nums[hi]
+        if s == target:
+            return [lo, hi]
+        if s &lt; target:
+            lo += 1        # need a bigger sum
+        else:
+            hi -= 1        # need a smaller sum
+    return []</code></pre>
+<h4>Why it is correct</h4>
+<p>If <code>nums[lo] + nums[hi]</code> is smaller than the target, <code>nums[lo]</code> cannot pair with any element at or before <code>hi</code>, because those are all no larger than <code>nums[hi]</code>. So <code>lo</code> can be safely discarded. The same argument for <code>hi</code> applies when the sum is too large. Every iteration removes one element from consideration.</p>
+<h4>Complexity</h4>
+<p>O(N) time, O(1) space. A hash map solves the unsorted version in O(N) time but needs O(N) space; sorting first costs O(N log N) and loses the original indexes.</p>
+<h4>Related problems</h4>
+<p>Three-sum (fix one element, run two pointers on the rest, O(N²)), container with most water, removing duplicates in place and checking palindromes.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is the sorted order required for this to be correct?</li><li>How do you extend this to three-sum?</li><li>What would you do if the array is unsorted and you must keep original indexes?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-34">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-34%3A+How+does+the+two+pointers+technique+solve+the+Two-Sum+problem+in+a%E2%80%A6&amp;question-id=gen-34&amp;context=Software+engineer+%28core%29%2C+Gear+1%2C+topic%3A+Algorithms%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-34.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

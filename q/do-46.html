@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are the core principles of GitOps, and how does pull-based reconciliation differ from push-based CI/CD? | InterviewGearUp</title>
+<meta name="description" content="GitOps stores the desired state of infrastructure and applications declaratively in Git, and an agent in the cluster continuously reconciles the live…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-46.html">
+<meta property="og:title" content="What are the core principles of GitOps, and how does pull-based reconciliation differ from push-based CI/CD? | InterviewGearUp">
+<meta property="og:description" content="GitOps stores the desired state of infrastructure and applications declaratively in Git, and an agent in the cluster continuously reconciles the live…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-46.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are the core principles of GitOps, and how does pull-based reconciliation differ from push-based CI/CD?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · GitOps · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>GitOps stores the desired state of infrastructure and applications declaratively in Git, and an agent in the cluster continuously reconciles the live system toward it. In the pull-based model, the in-cluster controller pulls changes from Git, so the CI system needs no cluster credentials; in push-based CI/CD, the pipeline pushes changes into the cluster.</p></div>
+<h4>Explained in depth</h4>
+<h4>Core principles (OpenGitOps)</h4>
+<ol start="1"><li><strong>Declarative</strong>: the desired state is expressed as manifests, Helm charts or Kustomize.</li><li><strong>Versioned and immutable</strong>: Git is the single source of truth, giving history, review and audit.</li><li><strong>Pulled automatically</strong>: software agents fetch the approved state.</li><li><strong>Continuously reconciled</strong>: agents detect and correct drift.</li></ol>
+<h4>Push versus pull</h4>
+<div class="md-table"><table><thead><tr><th></th><th>Push-based CI/CD</th><th>Pull-based GitOps</th></tr></thead><tbody><tr><td>Who deploys</td><td>The pipeline runs <code>kubectl apply</code> or <code>helm upgrade</code></td><td>An in-cluster controller (Argo CD, Flux)</td></tr><tr><td>Credentials</td><td>CI needs cluster admin access from outside</td><td>Cluster only needs read access to Git and registry</td></tr><tr><td>Drift</td><td>Not detected until the next run</td><td>Continuously detected and corrected</td></tr><tr><td>Rollback</td><td>Re-run a pipeline</td><td><code>git revert</code> and the controller applies it</td></tr><tr><td>Visibility</td><td>Pipeline logs</td><td>Diff between Git and live state</td></tr></tbody></table></div>
+<h4>Typical workflow</h4>
+<ol start="1"><li>Developer merges code; <strong>CI</strong> builds, tests and pushes an image.</li><li>CI updates the image tag in a <strong>config repository</strong> (or an image-updater does) through a pull request.</li><li>After review and merge, the GitOps controller notices the change and syncs the cluster.</li></ol>
+<h4>Benefits</h4>
+<p>Audit trail, easy rollbacks, consistent environments, reduced credential exposure and disaster recovery by re-applying from Git.</p>
+<h4>Cautions</h4>
+<p>Secrets cannot be stored in plain text (use Sealed Secrets or External Secrets), repository structure for many environments needs design, and sync and health feedback is asynchronous, so teams need good dashboards and alerts.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does GitOps handle rollbacks?</li><li>What happens if someone changes the cluster by hand?</li><li>What are the downsides of pull-based delivery?</li></ul>
+<p><a class="btn primary" href="../#/q/do-46">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-46%3A+What+are+the+core+principles+of+GitOps%2C+and+how+does+pull-based%E2%80%A6&amp;question-id=do-46&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+GitOps%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-46.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain Linux virtual memory, Resident Set Size (RSS), swap space, and what triggers the OOM Killer. | InterviewGearUp</title>
+<meta name="description" content="Each process sees virtual memory that the kernel maps to physical RAM in pages on demand. RSS is the part of a process currently resident in RAM, while…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-11.html">
+<meta property="og:title" content="Explain Linux virtual memory, Resident Set Size (RSS), swap space, and what triggers the OOM Killer. | InterviewGearUp">
+<meta property="og:description" content="Each process sees virtual memory that the kernel maps to physical RAM in pages on demand. RSS is the part of a process currently resident in RAM, while…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-11.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain Linux virtual memory, Resident Set Size (RSS), swap space, and what triggers the OOM Killer.</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 2 (Mid-level) · Linux · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Each process sees virtual memory that the kernel maps to physical RAM in pages on demand. RSS is the part of a process currently resident in RAM, while swap holds pages moved to disk. When the system cannot reclaim enough memory, the kernel&#39;s OOM killer picks a process with a high oom score and kills it to free memory.</p></div>
+<h4>Explained in depth</h4>
+<h4>Virtual memory</h4>
+<p>Every process has its own address space. The kernel maps virtual pages to physical frames lazily: pages are allocated when first touched. This gives isolation, memory-mapped files, copy-on-write after <code>fork</code> and overcommit (promising more than exists, hoping not everything is used).</p>
+<h4>Key measures</h4>
+<ul><li><strong>VSZ</strong>: total virtual size, including unmapped or untouched areas, so it is often huge and misleading.</li><li><strong>RSS</strong>: resident set size, the pages actually in RAM (including shared libraries counted in full in each process).</li><li><strong>PSS</strong>: proportional share, dividing shared pages among users; better for totals.</li><li>Page cache and buffers use spare RAM for files and are reclaimed when needed; <code>free -h</code> shows &quot;available&quot;.</li></ul>
+<h4>Swap</h4>
+<p>Swap is disk space for pages that are not currently used, which lets the kernel reclaim RAM. Heavy swapping (thrashing) makes the system extremely slow. <code>vm.swappiness</code> controls how eagerly the kernel swaps.</p>
+<h4>The OOM killer</h4>
+<p>When allocations cannot be satisfied and reclaim fails, the kernel chooses a victim by <strong>oom_score</strong> (mostly memory use, adjusted by <code>oom_score_adj</code>) and sends SIGKILL.</p>
+<pre><code>dmesg -T | grep -i &#39;killed process&#39;      # evidence of an OOM kill
+cat /proc/&lt;pid&gt;/oom_score</code></pre>
+<p>In containers, <strong>cgroup memory limits</strong> trigger a cgroup-level OOM kill when the container exceeds its limit, even when the host has free memory (Kubernetes shows <code>OOMKilled</code>).</p>
+<h4>Diagnosis</h4>
+<p>Check <code>free</code>, <code>vmstat 1</code> (swap in and out), <code>top</code> sorted by RES, and application memory growth. Fix leaks, raise limits or add memory; do not simply disable the OOM killer.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the difference between RSS, VSZ and PSS?</li><li>How does a container memory limit lead to an OOM kill?</li><li>How do you tune vm.swappiness and what does it do?</li></ul>
+<p><a class="btn primary" href="../#/q/do-11">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-11%3A+Explain+Linux+virtual+memory%2C+Resident+Set+Size+%28RSS%29%2C+swap+space%2C%E2%80%A6&amp;question-id=do-11&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+2%2C+topic%3A+Linux%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-11.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is Content Security Policy (CSP) and what directives prevent unauthorized script execution? | InterviewGearUp</title>
+<meta name="description" content="Content Security Policy is a response header that tells the browser which sources it may load scripts, styles, frames and connections from. To limit XSS,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-48.html">
+<meta property="og:title" content="What is Content Security Policy (CSP) and what directives prevent unauthorized script execution? | InterviewGearUp">
+<meta property="og:description" content="Content Security Policy is a response header that tells the browser which sources it may load scripts, styles, frames and connections from. To limit XSS,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-48.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is Content Security Policy (CSP) and what directives prevent unauthorized script execution?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 3 (Senior) · Security · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Content Security Policy is a response header that tells the browser which sources it may load scripts, styles, frames and connections from. To limit XSS, avoid &#39;unsafe-inline&#39; and &#39;unsafe-eval&#39; in script-src, use per-response nonces or hashes (optionally with &#39;strict-dynamic&#39;), and set object-src &#39;none&#39; and base-uri restrictions.</p></div>
+<h4>Explained in depth</h4>
+<h4>Directives that matter for script execution</h4>
+<ul><li><code>script-src</code>: where scripts may come from. The strongest form is a <strong>nonce</strong> (a random value per response, copied onto each legitimate <code>&lt;script nonce=...&gt;</code>) or a <strong>hash</strong> of an inline script. <code>&#39;strict-dynamic&#39;</code> lets nonce-trusted scripts load further scripts.</li><li><code>default-src</code>: fallback for other fetch directives. Start with <code>&#39;self&#39;</code> or <code>&#39;none&#39;</code>.</li><li><code>object-src &#39;none&#39;</code> and <code>base-uri &#39;none&#39;</code> (or <code>&#39;self&#39;</code>): close plugin and base-tag tricks.</li><li><code>connect-src</code>, <code>img-src</code>, <code>style-src</code>, <code>form-action</code>: limit where data can be sent.</li><li><code>frame-ancestors</code>: who may embed the page (clickjacking). It only works as a header, not in a <code>&lt;meta&gt;</code> tag.</li></ul>
+<pre><code>Content-Security-Policy: default-src &#39;self&#39;; script-src &#39;nonce-r4nd0m&#39; &#39;strict-dynamic&#39;; object-src &#39;none&#39;; base-uri &#39;none&#39;; frame-ancestors &#39;none&#39;</code></pre>
+<h4>Rolling it out</h4>
+<p>Start with <code>Content-Security-Policy-Report-Only</code> and a reporting endpoint, fix violations, then enforce. Inline event handlers and inline scripts must be moved to files or nonced.</p>
+<h4>Limits</h4>
+<ul><li>CSP is defence in depth, <strong>not a replacement</strong> for output encoding. If an attacker can inject markup, a weak policy may still be bypassed.</li><li>Allow-lists of hosts are often bypassable (a trusted CDN or JSONP endpoint can serve attacker-controlled code), which is why nonce or hash policies are recommended.</li><li><code>unsafe-inline</code> in <code>script-src</code> removes most XSS protection. Trusted Types (<code>require-trusted-types-for &#39;script&#39;</code>) additionally locks down dangerous DOM sinks such as <code>innerHTML</code>.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is a nonce-based policy stronger than a host allow-list?</li><li>How would you deploy CSP on a large site that uses many inline scripts?</li><li>What does Trusted Types add beyond CSP?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-48">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-48%3A+What+is+Content+Security+Policy+%28CSP%29+and+what+directives+prevent%E2%80%A6&amp;question-id=fe-48&amp;context=Frontend+engineer%2C+Gear+3%2C+topic%3A+Security%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-48.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

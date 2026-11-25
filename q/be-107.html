@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is dependency injection and why is it useful in backend code? | InterviewGearUp</title>
+<meta name="description" content="Dependency injection means an object receives the collaborators it needs from the outside, through its constructor or parameters, instead of creating…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-107.html">
+<meta property="og:title" content="What is dependency injection and why is it useful in backend code? | InterviewGearUp">
+<meta property="og:description" content="Dependency injection means an object receives the collaborators it needs from the outside, through its constructor or parameters, instead of creating…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-107.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is dependency injection and why is it useful in backend code?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 1 (Junior) · Fundamentals · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Dependency injection means an object receives the collaborators it needs from the outside, through its constructor or parameters, instead of creating them itself. It decouples code from concrete implementations, makes unit testing easy by substituting fakes, and centralises configuration. A DI container can wire objects, but plain constructor injection is enough for many programs.</p></div>
+<h4>Explained in depth</h4>
+<h4>The problem it solves</h4>
+<pre><code>class OrderService {
+  private final PaymentGateway gateway = new StripeGateway(); // hard-wired
+}</code></pre>
+<p>The class is tied to Stripe, cannot be tested without calling it, and decides how its own dependency is built.</p>
+<h4>With injection</h4>
+<pre><code>class OrderService {
+  private final PaymentGateway gateway;
+  OrderService(PaymentGateway gateway) { this.gateway = gateway; }
+}
+// production
+new OrderService(new StripeGateway(config));
+// test
+new OrderService(new FakeGateway());</code></pre>
+<p><code>OrderService</code> depends on an <strong>interface</strong> and receives an implementation. This is the <strong>Dependency Inversion Principle</strong> in practice: high-level code does not depend on low-level details.</p>
+<h4>Benefits</h4>
+<ul><li><strong>Testability</strong>: replace databases, clocks, HTTP clients with fakes or mocks.</li><li><strong>Flexibility</strong>: swap implementations (different payment providers, in-memory versus real storage) without editing the consumer.</li><li><strong>Clear dependencies</strong>: constructor parameters document what a class needs; too many parameters signals a class doing too much.</li><li><strong>Lifecycle control</strong>: a container manages singletons versus per-request instances.</li></ul>
+<h4>Forms</h4>
+<ul><li><strong>Constructor injection</strong> (preferred): dependencies are required and immutable.</li><li><strong>Setter or field injection</strong>: optional dependencies, but allow half-built objects and are harder to test.</li><li><strong>Function parameters</strong> in functional or Go-style code work just as well.</li></ul>
+<h4>DI containers</h4>
+<p>Frameworks (Spring, ASP.NET Core, NestJS, Dagger) create and wire objects from configuration or annotations, resolving the graph at startup. Downsides: hidden magic, runtime errors for missing bindings, and overuse of containers where simple manual wiring (a composition root in <code>main</code>) would be clearer. Avoid the <strong>service locator</strong> pattern, where classes pull dependencies from a global registry, because it hides dependencies.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the difference between dependency injection and a service locator?</li><li>What are the downsides of heavy DI containers?</li><li>What does constructor injection look like compared with field injection?</li></ul>
+<p><a class="btn primary" href="../#/q/be-107">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-107%3A+What+is+dependency+injection+and+why+is+it+useful+in+backend+code%3F&amp;question-id=be-107&amp;context=Backend+engineer%2C+Gear+1%2C+topic%3A+Fundamentals%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-107.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

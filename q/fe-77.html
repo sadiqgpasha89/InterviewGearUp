@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are the security implications of `rel=&quot;noopener noreferrer&quot;` on external anchor tags? | InterviewGearUp</title>
+<meta name="description" content="Links with target=&quot;_blank&quot; used to give the new page access to the opener through window.opener, so a malicious page could redirect the original tab to a…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-77.html">
+<meta property="og:title" content="What are the security implications of `rel=&quot;noopener noreferrer&quot;` on external anchor tags? | InterviewGearUp">
+<meta property="og:description" content="Links with target=&quot;_blank&quot; used to give the new page access to the opener through window.opener, so a malicious page could redirect the original tab to a…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-77.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are the security implications of `rel=&quot;noopener noreferrer&quot;` on external anchor tags?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 1 (Junior) · Security · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Links with target=&quot;_blank&quot; used to give the new page access to the opener through window.opener, so a malicious page could redirect the original tab to a phishing site (reverse tabnabbing). rel=&quot;noopener&quot; cuts that link, and noreferrer additionally hides the Referer header. Modern browsers imply noopener for _blank, but adding it is still good practice.</p></div>
+<h4>Explained in depth</h4>
+<h4>The problem</h4>
+<p>When a page opens another page in a new tab with <code>target=&quot;_blank&quot;</code>, the new page historically received <code>window.opener</code>, a reference to the original window. A malicious or compromised destination could run:</p>
+<pre><code>window.opener.location = &#39;https://evil.example/fake-login&#39;;</code></pre>
+<p>The user returns to the original tab, which now shows a look-alike login page. This is <strong>reverse tabnabbing</strong>.</p>
+<h4>The fix</h4>
+<pre><code>&lt;a href=&quot;https://external.example&quot; target=&quot;_blank&quot; rel=&quot;noopener noreferrer&quot;&gt;External&lt;/a&gt;</code></pre>
+<ul><li><code>noopener</code>: the new page gets <code>window.opener = null</code>, and it may run in a separate process, which also helps performance isolation.</li><li><code>noreferrer</code>: the browser does not send the <code>Referer</code> header, and it also implies <code>noopener</code>. Use it for privacy when you do not want the destination to learn which page or URL the user came from.</li></ul>
+<h4>Current behaviour</h4>
+<p>Modern browsers (Chrome 88+, Firefox 79+, Safari 12.1+) treat <code>target=&quot;_blank&quot;</code> as <code>noopener</code> by default, but older browsers do not, so many linters and security checklists still require the attribute. User-generated links should always have it, and you should also restrict URL schemes (no <code>javascript:</code>).</p>
+<h4>Trade-off</h4>
+<p><code>noreferrer</code> removes referrer data that analytics or affiliate programs may need. In that case use <code>rel=&quot;noopener&quot;</code> alone.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is reverse tabnabbing and what could an attacker do with it?</li><li>When do you want to keep the referrer for analytics?</li><li>Does rel=noopener affect same-origin links?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-77">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-77%3A+What+are+the+security+implications+of+%60rel%3D%22noopener+noreferrer%22%60+on%E2%80%A6&amp;question-id=fe-77&amp;context=Frontend+engineer%2C+Gear+1%2C+topic%3A+Security%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-77.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

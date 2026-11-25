@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is a database index and what does it cost? | InterviewGearUp</title>
+<meta name="description" content="An index is a separate sorted structure, usually a B-tree, that lets the database find rows by a column without scanning the whole table, turning a full…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-102.html">
+<meta property="og:title" content="What is a database index and what does it cost? | InterviewGearUp">
+<meta property="og:description" content="An index is a separate sorted structure, usually a B-tree, that lets the database find rows by a column without scanning the whole table, turning a full…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-102.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is a database index and what does it cost?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 1 (Junior) · Databases · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>An index is a separate sorted structure, usually a B-tree, that lets the database find rows by a column without scanning the whole table, turning a full scan into roughly a logarithmic lookup. The cost is extra storage and slower writes, because every insert, update or delete must also maintain each index.</p></div>
+<h4>Explained in depth</h4>
+<p><strong>How it helps</strong>: <code>SELECT * FROM orders WHERE customer_id = 42</code> on a million rows reads every row without an index. With an index on <code>customer_id</code>, the database walks a tree to the matching entries. Indexes also speed up <code>ORDER BY</code>, range filters and joins on the indexed columns.</p>
+<h4>Costs and gotchas</h4>
+<ul><li><strong>Write overhead</strong>: each extra index slows <code>INSERT</code>, <code>UPDATE</code> and <code>DELETE</code>.</li><li><strong>Storage</strong>: indexes can be as large as the table itself.</li><li><strong>Not always used</strong>: low-selectivity columns (like a boolean) rarely help, and a function on the column (<code>WHERE lower(email) = ...</code>) prevents use of a plain index unless you index the expression.</li><li><strong>Composite indexes</strong> follow the *leftmost prefix* rule: an index on <code>(a, b)</code> helps filters on <code>a</code>, or on <code>a</code> and <code>b</code>, but not on <code>b</code> alone.</li></ul>
+<p>Check with <code>EXPLAIN</code> that a query actually uses the index. Add indexes for real, frequent queries rather than for every column.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does the order of columns in a composite index matter?</li><li>What is a covering index?</li></ul>
+<p><a class="btn primary" href="../#/q/be-102">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-102%3A+What+is+a+database+index+and+what+does+it+cost%3F&amp;question-id=be-102&amp;context=Backend+engineer%2C+Gear+1%2C+topic%3A+Databases%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-102.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are file system inodes, and how can a disk run out of space when `df -h` shows available megabytes? | InterviewGearUp</title>
+<meta name="description" content="An inode stores a file&#39;s metadata (owner, permissions, size, block pointers) and each file needs one. A filesystem is created with a fixed number of…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-12.html">
+<meta property="og:title" content="What are file system inodes, and how can a disk run out of space when `df -h` shows available megabytes? | InterviewGearUp">
+<meta property="og:description" content="An inode stores a file&#39;s metadata (owner, permissions, size, block pointers) and each file needs one. A filesystem is created with a fixed number of…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-12.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are file system inodes, and how can a disk run out of space when `df -h` shows available megabytes?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 2 (Mid-level) · Linux · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>An inode stores a file&#39;s metadata (owner, permissions, size, block pointers) and each file needs one. A filesystem is created with a fixed number of inodes, so millions of tiny files can use them all while plenty of free space remains. df -h shows block usage, while df -i shows inode usage; at 100 percent you cannot create new files.</p></div>
+<h4>Explained in depth</h4>
+<h4>What an inode is</h4>
+<p>Each file or directory has an <strong>inode</strong> with its metadata and pointers to data blocks, but not its name. Directory entries map names to inode numbers, so a file can have several names (<strong>hard links</strong>). The number of inodes is fixed at format time for ext4 (XFS allocates them dynamically, which makes exhaustion rare).</p>
+<h4>Symptom</h4>
+<pre><code>$ touch newfile
+touch: cannot create &#39;newfile&#39;: No space left on device
+$ df -h /var        # shows 40% used, plenty of space
+$ df -i /var        # shows IUse% 100%</code></pre>
+<h4>Finding the culprit</h4>
+<pre><code>df -i                                          # which filesystem is out of inodes
+for d in /var/*; do echo &quot;$(find $d -xdev | wc -l) $d&quot;; done | sort -n | tail    # count entries per directory</code></pre>
+<p>Common causes: session or cache files, mail queues, millions of tiny files from a runaway job, and container layers.</p>
+<h4>Fixes</h4>
+<ul><li>Delete the unneeded files (use <code>find ... -delete</code>; <code>rm *</code> may fail with &quot;argument list too long&quot;).</li><li>Add cleanup jobs (tmpwatch, logrotate, TTL on caches).</li><li>For a long-term fix, create the filesystem with more inodes (<code>mkfs.ext4 -i bytes-per-inode</code> or <code>-N</code>), or use XFS or Btrfs.</li></ul>
+<h4>Related disk space puzzle</h4>
+<p>Deleted files that a process still holds open continue to use space until it closes them. Check with <code>lsof +L1</code> and restart or truncate the file instead.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you find which directory holds millions of small files?</li><li>Why does deleting a large log file not free space while a process still has it open?</li><li>How are hard links related to inodes?</li></ul>
+<p><a class="btn primary" href="../#/q/do-12">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-12%3A+What+are+file+system+inodes%2C+and+how+can+a+disk+run+out+of+space%E2%80%A6&amp;question-id=do-12&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+2%2C+topic%3A+Linux%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-12.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

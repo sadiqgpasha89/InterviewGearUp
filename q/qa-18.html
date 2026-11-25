@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare locator strategies: CSS selectors, XPath, and `data-testid` attributes for test stability. | InterviewGearUp</title>
+<meta name="description" content="Prefer locators tied to what users or tests rely on, not page structure. A dedicated data-testid attribute is the most stable, accessible roles and…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-18.html">
+<meta property="og:title" content="Compare locator strategies: CSS selectors, XPath, and `data-testid` attributes for test stability. | InterviewGearUp">
+<meta property="og:description" content="Prefer locators tied to what users or tests rely on, not page structure. A dedicated data-testid attribute is the most stable, accessible roles and…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-18.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare locator strategies: CSS selectors, XPath, and `data-testid` attributes for test stability.</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 2 (Mid-level) · UI Automation · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Prefer locators tied to what users or tests rely on, not page structure. A dedicated data-testid attribute is the most stable, accessible roles and labels are next best because they mirror user behaviour, CSS selectors are fine when kept short, and long absolute XPath is the most brittle because it breaks on any layout change.</p></div>
+<h4>Explained in depth</h4>
+<h4>Options</h4>
+<div class="md-table"><table><thead><tr><th>Strategy</th><th>Example</th><th>Stability</th><th>Notes</th></tr></thead><tbody><tr><td>Test id</td><td><code>[data-testid=&quot;submit-order&quot;]</code></td><td>Very high</td><td>Needs developer cooperation; invisible to users</td></tr><tr><td>Role and name</td><td><code>getByRole(&#39;button&#39;, { name: &#39;Place order&#39; })</code></td><td>High</td><td>Also checks accessibility; breaks if text is translated</td></tr><tr><td>Label or text</td><td><code>getByLabel(&#39;Email&#39;)</code></td><td>Medium to high</td><td>Tied to copy and language</td></tr><tr><td>CSS</td><td><code>form.login input[name=email]</code></td><td>Medium</td><td>Fast, but classes used for styling change often</td></tr><tr><td>Absolute XPath</td><td><code>/html/body/div[2]/div/form/button</code></td><td>Very low</td><td>Breaks when any ancestor changes</td></tr></tbody></table></div>
+<h4>Guidance</h4>
+<ul><li>Agree on a <strong>test id convention</strong> with developers and keep it out of styling.</li><li>Prefer <strong>user-facing</strong> locators first, since they also verify what the user sees.</li><li>Avoid generated class names (from CSS-in-JS) and index-based selectors such as <code>nth-child</code> when meaning matters.</li><li><strong>XPath</strong> is still useful for walking up to a parent, matching by text content in older tools, or complex relationships. Keep it relative and short, for example <code>//tr[td[text()=&#39;Ana&#39;]]//button</code>.</li><li>Centralise locators in page objects so a change is made in one place.</li></ul>
+<h4>Test of a good locator</h4>
+<p>Ask: &quot;Would this still work after a redesign that keeps the same behaviour?&quot; If yes, it is a good locator.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>When is XPath still the right choice?</li><li>How do role-based locators help accessibility as well as stability?</li><li>How do you handle dynamically generated IDs and class names?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-18">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-18%3A+Compare+locator+strategies%3A+CSS+selectors%2C+XPath%2C+and+%60data-testid%60%E2%80%A6&amp;question-id=qa-18&amp;context=QA+%2F+SDET%2C+Gear+2%2C+topic%3A+UI+Automation%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-18.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>A Pod is stuck in CrashLoopBackOff. How do you debug it? | InterviewGearUp</title>
+<meta name="description" content="The container keeps starting and exiting, so Kubernetes backs off between restarts. Run kubectl describe pod for the exit reason and kubectl logs…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-4.html">
+<meta property="og:title" content="A Pod is stuck in CrashLoopBackOff. How do you debug it? | InterviewGearUp">
+<meta property="og:description" content="The container keeps starting and exiting, so Kubernetes backs off between restarts. Run kubectl describe pod for the exit reason and kubectl logs…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-4.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>A Pod is stuck in CrashLoopBackOff. How do you debug it?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 2 (Mid-level) · Kubernetes · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>The container keeps starting and exiting, so Kubernetes backs off between restarts. Run kubectl describe pod for the exit reason and kubectl logs --previous for the crashed container&#39;s output.</p></div>
+<h4>Explained in depth</h4>
+<ol start="1"><li><code>kubectl get pod</code> to see the restart count.</li><li><code>kubectl describe pod &lt;name&gt;</code>: check Last State, Reason, Exit Code and Events. Exit 137 or reason <code>OOMKilled</code> points to the memory limit; exit 1 is an application error; 127 means command not found; 143 is SIGTERM.</li><li><code>kubectl logs &lt;name&gt; --previous</code> to read the crashed container&#39;s output.</li><li>Check the usual causes:</li></ol>
+<ul><li>Missing or wrong environment variable, ConfigMap or Secret.</li><li>A dependency unreachable at startup (database, other service).</li><li>Wrong command or arguments, or file permission problems.</li><li>A liveness probe killing a slow-starting app (add a startup probe).</li><li>Memory limit too low or a leak.</li></ul>
+<ol start="5"><li>To investigate interactively, override the command (for example <code>sleep</code>) and exec in, or use <code>kubectl debug</code> with an ephemeral container.</li><li>Fix, roll out, and consider making the app retry its dependencies instead of exiting.</li></ol>
+<p>Do not confuse it with <code>ImagePullBackOff</code>, which means the image could not be pulled (wrong tag, registry credentials).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the difference between OOMKilled and an eviction?</li><li>How is ImagePullBackOff different?</li><li>How do you debug a distroless container that has no shell?</li></ul>
+<p><a class="btn primary" href="../#/q/do-4">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-4%3A+A+Pod+is+stuck+in+CrashLoopBackOff.+How+do+you+debug+it%3F&amp;question-id=do-4&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+2%2C+topic%3A+Kubernetes%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-4.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

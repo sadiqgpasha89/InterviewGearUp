@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How would you design a versioning and deprecation strategy for a public API with thousands of consumers? | InterviewGearUp</title>
+<meta name="description" content="Choose one explicit versioning scheme, make changes additive wherever possible so most never need a new version, publish a written compatibility policy,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-106.html">
+<meta property="og:title" content="How would you design a versioning and deprecation strategy for a public API with thousands of consumers? | InterviewGearUp">
+<meta property="og:description" content="Choose one explicit versioning scheme, make changes additive wherever possible so most never need a new version, publish a written compatibility policy,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-106.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How would you design a versioning and deprecation strategy for a public API with thousands of consumers?</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 4 (Lead / Staff) · API design · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Choose one explicit versioning scheme, make changes additive wherever possible so most never need a new version, publish a written compatibility policy, and run deprecations on a long, communicated timeline with the Deprecation and Sunset headers, usage analytics per consumer, migration guides, and gradual brownouts before removal.</p></div>
+<h4>Explained in depth</h4>
+<h4>Prefer evolution over new versions</h4>
+<p>Most changes can be <strong>backward compatible</strong>: add optional fields, new endpoints, new enum values (if clients are told to tolerate unknown values), and new optional parameters. Apply the <strong>robustness principle</strong>: clients ignore unknown fields, servers accept old inputs. Publish a policy that lists what is breaking (removing or renaming fields, changing types or semantics, stricter validation, changed error codes) and what is not.</p>
+<h4>Versioning schemes</h4>
+<div class="md-table"><table><thead><tr><th>Scheme</th><th>Example</th><th>Notes</th></tr></thead><tbody><tr><td>URI path</td><td><code>/v2/orders</code></td><td>Simple, visible, easy to route and cache</td></tr><tr><td>Header or media type</td><td><code>Accept: application/vnd.acme.v2+json</code></td><td>Cleaner URLs, harder to test</td></tr><tr><td>Date-based version</td><td><code>Stripe-Version: 2024-06-20</code></td><td>Fine-grained, each account pinned to a version</td></tr></tbody></table></div>
+<p>Pick one, apply it consistently, and version the whole API surface (or resource) predictably.</p>
+<h4>Keeping the code manageable</h4>
+<p>Implement versions as <strong>thin translation layers</strong> over one core domain model (adapters or transformers per version) rather than duplicate services. Contract tests per version stop regressions in old versions.</p>
+<h4>Deprecation process</h4>
+<ol start="1"><li>Announce early with a <strong>migration guide</strong>, changelog and timeline (commonly 6 to 12 months or more for public APIs).</li><li>Add <code>Deprecation</code> and <code>Sunset</code> response headers (RFC 8594) and a link to docs; mark fields in OpenAPI.</li><li>Track <strong>usage per consumer</strong> (API key, version, endpoint), and contact affected customers directly with owners and status.</li><li>Run scheduled <strong>brownouts</strong> (short planned failures) shortly before removal to flush out forgotten callers.</li><li>Remove only when usage is near zero or after the date, and return <code>410 Gone</code> with a helpful message.</li><li>Offer SDK updates and sandbox testing, and make exceptions explicit and costed.</li></ol>
+<h4>Governance</h4>
+<p>An API review board or checklist, automatic <strong>breaking-change detection</strong> in CI (openapi-diff), and changelog discipline.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What counts as a breaking change?</li><li>How do you version an API without duplicating the whole codebase?</li><li>How do you deal with a large customer who will not migrate?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-106">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-106%3A+How+would+you+design+a+versioning+and+deprecation+strategy+for+a%E2%80%A6&amp;question-id=gen-106&amp;context=Software+engineer+%28core%29%2C+Gear+4%2C+topic%3A+API+design%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-106.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

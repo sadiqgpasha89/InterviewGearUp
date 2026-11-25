@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is the difference between blocking and non-blocking I/O, and between synchronous and asynchronous code? | InterviewGearUp</title>
+<meta name="description" content="Blocking I/O makes a thread wait until the operation finishes, while non-blocking I/O returns immediately and lets the thread do other work until the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-108.html">
+<meta property="og:title" content="What is the difference between blocking and non-blocking I/O, and between synchronous and asynchronous code? | InterviewGearUp">
+<meta property="og:description" content="Blocking I/O makes a thread wait until the operation finishes, while non-blocking I/O returns immediately and lets the thread do other work until the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-108.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is the difference between blocking and non-blocking I/O, and between synchronous and asynchronous code?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 1 (Junior) · Concurrency · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Blocking I/O makes a thread wait until the operation finishes, while non-blocking I/O returns immediately and lets the thread do other work until the result is ready. Synchronous code waits for each result in order, and asynchronous code starts work and continues, handling completion through callbacks, promises or await. Non-blocking designs serve many concurrent connections with few threads.</p></div>
+<h4>Explained in depth</h4>
+<h4>Blocking versus non-blocking</h4>
+<ul><li><strong>Blocking I/O</strong>: <code>read()</code> suspends the calling thread until data arrives. A thread-per-request server needs one thread (and its memory, around 1 MB of stack) per waiting connection, so thousands of slow clients exhaust threads.</li><li><strong>Non-blocking I/O</strong>: the call returns right away (for example &quot;no data yet&quot;), and the OS notifies the program when the socket is ready using <code>epoll</code> (Linux), <code>kqueue</code> or IOCP. One thread in an <strong>event loop</strong> can manage tens of thousands of connections.</li></ul>
+<h4>Synchronous versus asynchronous</h4>
+<ul><li><strong>Synchronous</strong>: the caller waits for the result before moving on.</li><li><strong>Asynchronous</strong>: the caller starts an operation and <strong>continues</strong>; the result arrives later via callback, promise or future, or <code>await</code>.</li></ul>
+<p>These are different axes: you can write synchronous-looking code (<code>await</code>) on top of non-blocking I/O.</p>
+<h4>Examples</h4>
+<pre><code>// Node.js: non-blocking, other requests are served while the file loads
+const data = await fs.promises.readFile(&#39;big.json&#39;);</code></pre>
+<pre><code>// Blocking: this thread waits
+byte[] data = Files.readAllBytes(path);</code></pre>
+<h4>When each fits</h4>
+<ul><li>Event-loop servers (Node.js, Nginx, Netty, Vert.x, asyncio) excel at <strong>I/O-bound</strong> workloads with many concurrent connections.</li><li><strong>CPU-bound</strong> work blocks the loop and delays every request; offload it to worker threads, processes or another service.</li><li>Thread-per-request models are simpler to reason about and fine at moderate concurrency. Modern runtimes narrow the gap: Java <strong>virtual threads</strong> and Go <strong>goroutines</strong> make blocking-style code cheap.</li></ul>
+<h4>Pitfalls</h4>
+<p>Accidentally calling blocking functions inside async code (a sync database driver), unbounded concurrency overwhelming dependencies, and lost errors in unawaited promises.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why can a Node.js server handle many connections on one thread?</li><li>What goes wrong if you run CPU-heavy work on an event loop?</li><li>How do thread pools and async I/O differ in Java?</li></ul>
+<p><a class="btn primary" href="../#/q/be-108">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-108%3A+What+is+the+difference+between+blocking+and+non-blocking+I%2FO%2C+and%E2%80%A6&amp;question-id=be-108&amp;context=Backend+engineer%2C+Gear+1%2C+topic%3A+Concurrency%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-108.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

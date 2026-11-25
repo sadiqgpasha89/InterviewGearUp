@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain hash table internals: Hash functions, buckets, load factor, and rehashing triggers. | InterviewGearUp</title>
+<meta name="description" content="A hash table maps a key through a hash function to a bucket index. Collisions are resolved by chaining or open addressing. Operations are O(1) on average…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-15.html">
+<meta property="og:title" content="Explain hash table internals: Hash functions, buckets, load factor, and rehashing triggers. | InterviewGearUp">
+<meta property="og:description" content="A hash table maps a key through a hash function to a bucket index. Collisions are resolved by chaining or open addressing. Operations are O(1) on average…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-15.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain hash table internals: Hash functions, buckets, load factor, and rehashing triggers.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 1 (Junior) · Data structures · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A hash table maps a key through a hash function to a bucket index. Collisions are resolved by chaining or open addressing. Operations are O(1) on average while the load factor (entries divided by buckets) stays low; when it crosses a threshold the table resizes and rehashes every key into a larger array.</p></div>
+<h4>Explained in depth</h4>
+<h4>Pieces</h4>
+<ol start="1"><li><strong>Hash function</strong>: turns a key into an integer, ideally fast, deterministic and uniformly distributed. Equal keys must give equal hashes.</li><li><strong>Index</strong>: <code>hash % capacity</code> (or a bit mask when the capacity is a power of two) picks the bucket.</li><li><strong>Collision handling</strong>:</li></ol>
+<ul><li><strong>Chaining</strong>: each bucket holds a list (or tree) of entries.</li><li><strong>Open addressing</strong>: probe other slots in the array (linear, quadratic or double hashing). Deletion needs tombstones.</li></ul>
+<h4>Load factor and rehashing</h4>
+<p>Load factor = entries / buckets. As it rises, collisions and probe lengths grow. A typical rule is to resize when it exceeds about 0.75 (Java HashMap default) by doubling the capacity and <strong>reinserting every key</strong>, because their indexes change. That single resize costs O(n), but doubling keeps insertion O(1) amortized.</p>
+<h4>Complexity</h4>
+<ul><li>Average: O(1) for insert, lookup and delete.</li><li>Worst case: O(n) if all keys collide. Java 8 converts long chains into balanced trees to limit this to O(log n).</li></ul>
+<h4>Practical notes</h4>
+<p>Mutable keys are dangerous: if a key&#39;s hash changes after insertion, the entry is lost. Hash flooding attacks use crafted keys to force collisions, so many runtimes randomize or seed their hash functions.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does a bad hash function degrade lookups to O(n)?</li><li>How do chaining and open addressing differ in cache behaviour and deletion?</li><li>Why are table sizes often powers of two or primes?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-15">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-15%3A+Explain+hash+table+internals%3A+Hash+functions%2C+buckets%2C+load+factor%2C%E2%80%A6&amp;question-id=gen-15&amp;context=Software+engineer+%28core%29%2C+Gear+1%2C+topic%3A+Data+structures%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-15.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

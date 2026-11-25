@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>ETL versus ELT: what is the difference and when do you choose each? | InterviewGearUp</title>
+<meta name="description" content="ETL transforms data before loading it into the target; ELT loads raw data first and transforms inside the warehouse. ELT dominates now because cloud…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-2.html">
+<meta property="og:title" content="ETL versus ELT: what is the difference and when do you choose each? | InterviewGearUp">
+<meta property="og:description" content="ETL transforms data before loading it into the target; ELT loads raw data first and transforms inside the warehouse. ELT dominates now because cloud…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-2.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>ETL versus ELT: what is the difference and when do you choose each?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 1 (Junior) · Pipelines · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>ETL transforms data before loading it into the target; ELT loads raw data first and transforms inside the warehouse. ELT dominates now because cloud warehouses make compute cheap and raw data lets you re-transform when logic changes.</p></div>
+<h4>Explained in depth</h4>
+<p><strong>ETL</strong>: transformation runs in a separate engine. Useful when sensitive fields must be masked before data lands, or when the target has limited compute.</p>
+<p><strong>ELT</strong>: land raw data, then build staging and modelled layers (raw, staging, marts, or bronze, silver, gold) with SQL. Tools like dbt add version control, tests and lineage to the transformations.</p>
+<h4>Trade-offs</h4>
+<p>ELT keeps more data (storage cost, and governance of raw personal data), but is flexible and auditable. ETL can become rigid because logic is baked into the load.</p>
+<h4>Choosing</h4>
+<p>Consider volume, compliance (where PII may land), team skills and target engine. An orchestrator such as Airflow or Dagster handles scheduling, dependencies and retries either way.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Where would you mask PII?</li><li>What does dbt do?</li><li>What is a medallion architecture?</li></ul>
+<p><a class="btn primary" href="../#/q/de-2">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-2%3A+ETL+versus+ELT%3A+what+is+the+difference+and+when+do+you+choose+each%3F&amp;question-id=de-2&amp;context=Data+engineer%2C+Gear+1%2C+topic%3A+Pipelines%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-2.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

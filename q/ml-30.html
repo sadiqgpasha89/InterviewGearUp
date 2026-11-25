@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare Batch Normalization and Layer Normalization: Why does LayerNorm dominate in NLP? | InterviewGearUp</title>
+<meta name="description" content="Batch Normalisation normalises each feature across the batch dimension, so it depends on batch statistics and needs running averages at inference. Layer…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-30.html">
+<meta property="og:title" content="Compare Batch Normalization and Layer Normalization: Why does LayerNorm dominate in NLP? | InterviewGearUp">
+<meta property="og:description" content="Batch Normalisation normalises each feature across the batch dimension, so it depends on batch statistics and needs running averages at inference. Layer…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-30.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare Batch Normalization and Layer Normalization: Why does LayerNorm dominate in NLP?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 2 (Mid-level) · Deep Learning · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Batch Normalisation normalises each feature across the batch dimension, so it depends on batch statistics and needs running averages at inference. Layer Normalisation normalises across the features of each single example, independent of batch size and sequence length. LayerNorm dominates in NLP because sequences vary in length, batches are small or distributed, and it behaves identically in training and inference.</p></div>
+<h4>Explained in depth</h4>
+<h4>What each computes</h4>
+<p>Given activations shaped (batch, features):</p>
+<ul><li><strong>BatchNorm</strong> computes the mean and variance of <strong>each feature over the batch</strong> (and spatial positions for images), normalises, then applies learnable scale and shift.</li><li><strong>LayerNorm</strong> computes the mean and variance <strong>over the features of each example</strong> (for transformers, the hidden dimension at each token), then scale and shift.</li></ul>
+<p><code>y = gamma * (x - mean) / sqrt(var + eps) + beta</code></p>
+<h4>Differences</h4>
+<div class="md-table"><table><thead><tr><th></th><th>BatchNorm</th><th>LayerNorm</th></tr></thead><tbody><tr><td>Statistics over</td><td>Batch (per feature)</td><td>Features (per example)</td></tr><tr><td>Depends on batch size</td><td>Yes, poor with small batches</td><td>No</td></tr><tr><td>Train versus inference</td><td>Different: uses running averages at inference</td><td>Same computation</td></tr><tr><td>Variable-length sequences</td><td>Awkward, padding pollutes statistics</td><td>Natural</td></tr><tr><td>Typical use</td><td>CNNs for vision</td><td>Transformers, RNNs, NLP</td></tr></tbody></table></div>
+<h4>Why NLP prefers LayerNorm</h4>
+<ul><li>Sequence lengths and padding vary, so batch statistics are noisy and mixed across token positions.</li><li>Large language model training uses tiny per-device batches, or none, making batch statistics unreliable.</li><li>No running statistics, so there is no train and inference mismatch and no extra synchronisation across devices.</li></ul>
+<h4>Variants</h4>
+<ul><li><strong>Pre-norm</strong> (normalise before each sublayer) trains more stably for deep transformers than the original post-norm.</li><li><strong>RMSNorm</strong> drops mean subtraction and the shift, normalising only by the root mean square; it is cheaper and used in many recent LLMs.</li><li>GroupNorm and InstanceNorm serve small-batch vision tasks.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does batch norm struggle with small batches and with RNNs?</li><li>What is the difference between pre-norm and post-norm transformers?</li><li>What is RMSNorm and why do many LLMs use it?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-30">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-30%3A+Compare+Batch+Normalization+and+Layer+Normalization%3A+Why+does%E2%80%A6&amp;question-id=ml-30&amp;context=ML+%2F+AI+engineer%2C+Gear+2%2C+topic%3A+Deep+Learning%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-30.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

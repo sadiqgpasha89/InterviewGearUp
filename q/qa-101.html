@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you measure and reduce test flakiness across an organization with hundreds of pipelines? | InterviewGearUp</title>
+<meta name="description" content="Treat flakiness as a measured reliability problem: record every test&#39;s pass and fail history, compute a flake rate (a test that both passes and fails on…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-101.html">
+<meta property="og:title" content="How do you measure and reduce test flakiness across an organization with hundreds of pipelines? | InterviewGearUp">
+<meta property="og:description" content="Treat flakiness as a measured reliability problem: record every test&#39;s pass and fail history, compute a flake rate (a test that both passes and fails on…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-101.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you measure and reduce test flakiness across an organization with hundreds of pipelines?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 4 (Lead / Staff) · Reliability · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Treat flakiness as a measured reliability problem: record every test&#39;s pass and fail history, compute a flake rate (a test that both passes and fails on the same commit), quarantine offenders with an owner and a deadline, and fix root causes such as shared state, timing and unstable environments. Make the signal trustworthy before adding more tests.</p></div>
+<h4>Explained in depth</h4>
+<h4>Measure</h4>
+<ul><li>Detect flakes by <strong>retrying a failed test on the same commit</strong>; if it passes on retry, record a flake. Aggregate per test, per suite and per team: flake rate, retries consumed and developer time lost.</li><li>Track pipeline-level impact: the share of builds that fail for non-code reasons, and time to green.</li></ul>
+<h4>Respond</h4>
+<ul><li><strong>Quarantine</strong> flaky tests quickly (still run, but non-blocking) and file an owned ticket with a deadline. Delete tests that nobody will fix. Never leave them silently ignored.</li><li>Fix the usual causes: shared mutable state and test-order dependence, fixed sleeps instead of explicit waits, real clocks and randomness, network or third-party calls (use fakes), resource limits in CI, and uncleaned test data.</li><li>Make tests hermetic and run them in random order to expose hidden dependencies.</li></ul>
+<h4>Prevent</h4>
+<p>Set flaky-test budgets per team, require new tests to pass a repeated-run check (for example 50 runs) before merging, and give clear guidance on the testing pyramid so fewer slow end-to-end tests exist.</p>
+<h4>Organizational angle</h4>
+<p>Publish a dashboard, set a target (for example under 1% of builds failing because of flakes) and give teams time to pay it down. Blindly retrying everything hides the problem rather than solving it.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Is automatically retrying failed tests a good policy?</li><li>How would you decide whether to delete or fix a flaky end-to-end test?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-101">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-101%3A+How+do+you+measure+and+reduce+test+flakiness+across+an+organization%E2%80%A6&amp;question-id=qa-101&amp;context=QA+%2F+SDET%2C+Gear+4%2C+topic%3A+Reliability%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-101.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

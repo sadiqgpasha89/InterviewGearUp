@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is QLoRA and how do 4-bit NormalFloat (NF4) and double quantization enable fine-tuning on consumer GPUs? | InterviewGearUp</title>
+<meta name="description" content="QLoRA keeps the frozen base model quantised to 4 bits and trains LoRA adapters in higher precision on top of it. It uses NF4, a 4-bit data type designed…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-43.html">
+<meta property="og:title" content="What is QLoRA and how do 4-bit NormalFloat (NF4) and double quantization enable fine-tuning on consumer GPUs? | InterviewGearUp">
+<meta property="og:description" content="QLoRA keeps the frozen base model quantised to 4 bits and trains LoRA adapters in higher precision on top of it. It uses NF4, a 4-bit data type designed…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-43.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is QLoRA and how do 4-bit NormalFloat (NF4) and double quantization enable fine-tuning on consumer GPUs?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · LLMs · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>QLoRA keeps the frozen base model quantised to 4 bits and trains LoRA adapters in higher precision on top of it. It uses NF4, a 4-bit data type designed for normally distributed weights, double quantisation (quantising the quantisation constants too) and paged optimisers to avoid memory spikes, so a 65B model can be fine-tuned on a single 48 GB GPU.</p></div>
+<h4>Explained in depth</h4>
+<h4>Problem</h4>
+<p>Fine-tuning a large model needs memory for the weights, gradients and optimiser states. LoRA removes gradients and optimiser state for most weights, but the 16-bit base weights still occupy about 2 bytes per parameter (130 GB for 65B parameters).</p>
+<h4>QLoRA ingredients</h4>
+<ol start="1"><li><strong>4-bit NormalFloat (NF4)</strong>: pre-trained weights are roughly normally distributed. NF4 places its 16 quantisation levels at the <strong>quantiles of a normal distribution</strong>, so each level represents equal probability mass. This gives lower error than uniform 4-bit integers or standard 4-bit floats for such weights. Weights are quantised in small blocks (for example 64 values), each with its own scale.</li><li><strong>Double quantisation</strong>: the per-block scale constants are themselves quantised (to 8 bits), saving roughly 0.37 bits per parameter.</li><li><strong>Paged optimisers</strong>: optimiser states use unified memory that pages to CPU RAM when the GPU runs short, avoiding out-of-memory crashes on long sequences.</li><li><strong>LoRA adapters in 16-bit</strong> (bf16) are the only trained parameters.</li></ol>
+<h4>Forward and backward</h4>
+<p>The base weights stay in 4 bits. During each layer&#39;s computation they are <strong>dequantised on the fly</strong> to bf16 for the matrix multiplication; gradients flow through to the LoRA adapters, while the quantised weights are never updated.</p>
+<h4>Results and trade-offs</h4>
+<ul><li>Memory: about 0.5 bytes per base parameter plus small adapter and activation memory.</li><li>The paper reports quality matching 16-bit LoRA on benchmarks, though some small degradation can occur on sensitive tasks.</li><li>Slower per step than 16-bit LoRA because of dequantisation.</li><li>After training, the adapter can be merged into a dequantised or 16-bit copy, or served on top of the quantised model.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is NF4 a better fit than uniform 4-bit integers?</li><li>Where does dequantisation happen in the forward pass?</li><li>What quality loss should you expect compared with 16-bit LoRA?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-43">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-43%3A+What+is+QLoRA+and+how+do+4-bit+NormalFloat+%28NF4%29+and+double%E2%80%A6&amp;question-id=ml-43&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+LLMs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-43.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

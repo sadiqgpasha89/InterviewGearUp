@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are the core principles of Chaos Engineering, and how does Chaos Mesh inject controlled failures? | InterviewGearUp</title>
+<meta name="description" content="Chaos engineering runs controlled experiments that inject real failures to check that a system keeps meeting its steady-state metrics: define the steady…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-61.html">
+<meta property="og:title" content="What are the core principles of Chaos Engineering, and how does Chaos Mesh inject controlled failures? | InterviewGearUp">
+<meta property="og:description" content="Chaos engineering runs controlled experiments that inject real failures to check that a system keeps meeting its steady-state metrics: define the steady…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-61.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are the core principles of Chaos Engineering, and how does Chaos Mesh inject controlled failures?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 4 (Lead / Staff) · SRE · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Chaos engineering runs controlled experiments that inject real failures to check that a system keeps meeting its steady-state metrics: define the steady state, form a hypothesis, inject a fault with a small blast radius, observe, and fix the weaknesses found. Chaos Mesh does this on Kubernetes with custom resources for pod, network, stress and I/O faults.</p></div>
+<h4>Explained in depth</h4>
+<h4>Principles</h4>
+<ol start="1"><li><strong>Define steady state</strong> with metrics tied to user experience (success rate, p99 latency, orders per minute).</li><li><strong>Hypothesise</strong> that it holds under a fault: &#39;if one payment pod dies, success rate stays above 99.9%&#39;.</li><li><strong>Inject realistic failures</strong>: instance and pod loss, network latency or partition, dependency outage, CPU or disk pressure, clock skew.</li><li><strong>Limit the blast radius</strong>: start in staging or on a small slice of traffic, with automatic abort conditions and an owner watching.</li><li><strong>Observe and learn</strong>: if the hypothesis fails, you found a weakness (a missing timeout, no retry, a single point of failure). Fix it and rerun.</li><li><strong>Automate and repeat</strong>, for example in game days and scheduled experiments, so regressions are caught.</li></ol>
+<h4>Chaos Mesh</h4>
+<p>A CNCF project with a controller manager plus a privileged <strong>chaos daemon</strong> on each node that manipulates containers using Linux namespaces, cgroups and <code>tc netem</code>. Experiments are Kubernetes custom resources:</p>
+<ul><li><code>PodChaos</code> (kill a pod, kill a container, fail a pod)</li><li><code>NetworkChaos</code> (delay, loss, duplication, partition, bandwidth)</li><li><code>StressChaos</code> (CPU and memory), <code>IOChaos</code> (I/O delay and errors), <code>HTTPChaos</code>, <code>DNSChaos</code>, <code>TimeChaos</code></li></ul>
+<pre><code>apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata: { name: delay-payments }
+spec:
+  action: delay
+  mode: one
+  selector: { namespaces: [shop], labelSelectors: { app: payments } }
+  delay: { latency: 300ms }
+  duration: 5m</code></pre>
+<p>Selectors choose targets by namespace and labels, and workflows and schedules chain and repeat experiments.</p>
+<h4>Safety</h4>
+<p>Get approval, announce experiments, define stop conditions, restrict who can create chaos resources (the daemon is privileged), and never test in production before you have confidence in staging and good observability.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you choose the blast radius for the first experiment in production?</li><li>What steady-state metrics would you pick for a checkout service?</li><li>What are the security considerations of running a chaos tool in a cluster?</li></ul>
+<p><a class="btn primary" href="../#/q/do-61">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-61%3A+What+are+the+core+principles+of+Chaos+Engineering%2C+and+how+does%E2%80%A6&amp;question-id=do-61&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+4%2C+topic%3A+SRE%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-61.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

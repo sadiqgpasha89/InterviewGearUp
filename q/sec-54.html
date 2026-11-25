@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is Zero Trust Architecture (ZTA) and how do microsegmentation and continuous verification enforce it? | InterviewGearUp</title>
+<meta name="description" content="Zero trust assumes the network is hostile and never grants access just because a request comes from inside the perimeter. Every request is authenticated,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-54.html">
+<meta property="og:title" content="What is Zero Trust Architecture (ZTA) and how do microsegmentation and continuous verification enforce it? | InterviewGearUp">
+<meta property="og:description" content="Zero trust assumes the network is hostile and never grants access just because a request comes from inside the perimeter. Every request is authenticated,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-54.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is Zero Trust Architecture (ZTA) and how do microsegmentation and continuous verification enforce it?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 4 (Lead / Staff) · Architecture · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Zero trust assumes the network is hostile and never grants access just because a request comes from inside the perimeter. Every request is authenticated, authorized and evaluated against identity, device health and context, with least privilege. Microsegmentation limits lateral movement, and continuous verification re-checks trust during a session instead of only at login.</p></div>
+<h4>Explained in depth</h4>
+<h4>Core principles (NIST SP 800-207)</h4>
+<ul><li><strong>Verify explicitly</strong>: strong identity for users, devices and workloads (MFA, device posture, mutual TLS) on every request.</li><li><strong>Least privilege</strong>: just-enough, just-in-time access to specific resources, not to a whole network.</li><li><strong>Assume breach</strong>: design so that one compromised host or credential cannot reach everything, and log everything for detection.</li></ul>
+<h4>Building blocks</h4>
+<ul><li><strong>Policy decision and enforcement points</strong>: a central engine decides, and proxies and gateways enforce.</li><li><strong>Microsegmentation</strong>: network policies and service identity (for example SPIFFE IDs or a service mesh) restrict which workloads may talk to which, shrinking the blast radius.</li><li><strong>Continuous verification</strong>: risk signals such as a new location, a compromised device or impossible travel can trigger step-up authentication or revoke access mid-session.</li><li><strong>Identity-aware access</strong> to applications (ZTNA) replaces broad VPN access.</li></ul>
+<h4>Making it real</h4>
+<p>It is a program, not a product: inventory assets and data flows, protect the most sensitive systems first, adopt strong identity and device management, then segment and monitor. Expect pushback from legacy systems that assume a trusted network, and measure user friction so that security does not push people towards workarounds.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does microsegmentation differ from a traditional network firewall?</li><li>Where would you start a zero trust program in a company with a flat internal network?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-54">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-54%3A+What+is+Zero+Trust+Architecture+%28ZTA%29+and+how+do+microsegmentation%E2%80%A6&amp;question-id=sec-54&amp;context=Security+engineer%2C+Gear+4%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-54.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

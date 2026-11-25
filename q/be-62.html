@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare Token Bucket and Leaky Bucket algorithms for API rate limiting. | InterviewGearUp</title>
+<meta name="description" content="A token bucket refills at a steady rate up to a capacity and lets each request take a token, so it allows bursts up to the capacity and then enforces the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-62.html">
+<meta property="og:title" content="Compare Token Bucket and Leaky Bucket algorithms for API rate limiting. | InterviewGearUp">
+<meta property="og:description" content="A token bucket refills at a steady rate up to a capacity and lets each request take a token, so it allows bursts up to the capacity and then enforces the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-62.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare Token Bucket and Leaky Bucket algorithms for API rate limiting.</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 2 (Mid-level) · APIs · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A token bucket refills at a steady rate up to a capacity and lets each request take a token, so it allows bursts up to the capacity and then enforces the average rate. A leaky bucket drains requests at a fixed rate, so it smooths traffic into an even output. Token bucket suits APIs that tolerate bursts; leaky bucket suits protecting something that needs steady load.</p></div>
+<h4>Explained in depth</h4>
+<h4>Token bucket</h4>
+<p>A bucket holds up to <code>capacity</code> tokens and gains <code>rate</code> tokens per second. Each request consumes one token, and with no token it is rejected or delayed. A client that was idle can send a burst of up to <code>capacity</code> requests, then settles to <code>rate</code> per second.</p>
+<h4>Leaky bucket</h4>
+<p>Requests enter a queue of fixed size, and the system processes them at a constant rate. If the queue is full, new requests are dropped. Output is smooth regardless of how bursty the input is, but a burst adds queueing delay.</p>
+<div class="md-table"><table><thead><tr><th></th><th>Token bucket</th><th>Leaky bucket (queue)</th></tr></thead><tbody><tr><td>Bursts</td><td>Allowed up to the capacity</td><td>Absorbed by the queue, then dropped</td></tr><tr><td>Output rate</td><td>Can burst</td><td>Constant</td></tr><tr><td>Latency</td><td>None added</td><td>Queueing delay</td></tr><tr><td>Good for</td><td>Public APIs with per-client limits</td><td>Traffic shaping in front of a fragile backend</td></tr></tbody></table></div>
+<h4>Cheap implementation</h4>
+<p>Store only <code>tokens</code> and <code>last_refill</code> per key and refill lazily on each request:</p>
+<pre><code>def allow(state, now, rate, capacity):
+    state.tokens = min(capacity, state.tokens + (now - state.last) * rate)
+    state.last = now
+    if state.tokens &gt;= 1:
+        state.tokens -= 1
+        return True
+    return False</code></pre>
+<p>That is O(1) time and memory per client. In a distributed system the read-modify-write must be <strong>atomic</strong>, for example in a Redis Lua script, or you get races that let extra requests through.</p>
+<p>Return <code>429 Too Many Requests</code> with a <code>Retry-After</code> header so clients can back off.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How would you make the limiter atomic across several app servers?</li><li>How does a sliding window counter compare with a token bucket?</li><li>What should a client do when it receives a 429 response?</li></ul>
+<p><a class="btn primary" href="../#/q/be-62">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-62%3A+Compare+Token+Bucket+and+Leaky+Bucket+algorithms+for+API+rate%E2%80%A6&amp;question-id=be-62&amp;context=Backend+engineer%2C+Gear+2%2C+topic%3A+APIs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-62.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

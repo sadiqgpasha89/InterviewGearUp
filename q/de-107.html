@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are structured, semi-structured and unstructured data? Give examples and how each is stored and queried. | InterviewGearUp</title>
+<meta name="description" content="Structured data fits fixed rows and columns, like relational tables. Semi-structured data has tags or keys but a flexible schema, such as JSON, XML and…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-107.html">
+<meta property="og:title" content="What are structured, semi-structured and unstructured data? Give examples and how each is stored and queried. | InterviewGearUp">
+<meta property="og:description" content="Structured data fits fixed rows and columns, like relational tables. Semi-structured data has tags or keys but a flexible schema, such as JSON, XML and…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-107.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are structured, semi-structured and unstructured data? Give examples and how each is stored and queried.</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 1 (Junior) · Fundamentals · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Structured data fits fixed rows and columns, like relational tables. Semi-structured data has tags or keys but a flexible schema, such as JSON, XML and logs. Unstructured data has no predefined model, such as text, images, audio and video. Each needs a different storage and processing approach, from SQL warehouses to document stores and object storage with specialised tools.</p></div>
+<h4>Explained in depth</h4>
+<h4>Structured data</h4>
+<ul><li>Organised in a <strong>fixed schema</strong>: tables with typed columns and rows.</li><li>Examples: customers, orders, transactions, spreadsheets, CSV exports.</li><li>Stored in relational databases and warehouses (PostgreSQL, Snowflake, BigQuery); queried with <strong>SQL</strong>. Schema is enforced on write (schema-on-write).</li></ul>
+<h4>Semi-structured data</h4>
+<ul><li>Has <strong>self-describing structure</strong> (keys, tags, nesting) but not a rigid, uniform schema; fields can vary or be optional.</li><li>Examples: JSON from APIs, XML, Avro and Parquet files (with embedded schema), event and application logs, clickstream.</li><li>Stored as files in a lake, in document databases (MongoDB), or in warehouse columns of type <code>VARIANT</code> (Snowflake), <code>JSON</code> (PostgreSQL) or <code>STRUCT</code> and <code>ARRAY</code> (BigQuery). Queried with SQL JSON functions or by flattening nested fields. Often <strong>schema-on-read</strong>: you decide the structure when reading.</li></ul>
+<h4>Unstructured data</h4>
+<ul><li>No predefined model or uniform fields; most real-world data by volume.</li><li>Examples: documents and emails, PDFs, images, audio, video, social posts.</li><li>Stored in <strong>object storage</strong> (S3, GCS, Blob) with metadata catalogues; processed with specialised tools: NLP and OCR, speech-to-text, computer vision, and embeddings stored in <strong>vector databases</strong> for semantic search.</li></ul>
+<h4>Practical approach</h4>
+<p>Land everything in a lake, then extract structure: parse JSON into columns, generate text from documents, create embeddings, and produce tables used for analytics. Key issues to manage: schema evolution, data quality, cost of storing big files, privacy (documents often contain personal data) and metadata for discovery.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you query JSON data in a warehouse?</li><li>What is schema-on-read versus schema-on-write?</li><li>How do you make unstructured data searchable?</li></ul>
+<p><a class="btn primary" href="../#/q/de-107">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-107%3A+What+are+structured%2C+semi-structured+and+unstructured+data%3F+Give%E2%80%A6&amp;question-id=de-107&amp;context=Data+engineer%2C+Gear+1%2C+topic%3A+Fundamentals%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-107.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

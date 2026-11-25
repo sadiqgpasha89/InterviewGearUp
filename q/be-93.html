@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does clock skew affect distributed systems, and how do TrueTime and logical clocks address it? | InterviewGearUp</title>
+<meta name="description" content="Physical clocks on different machines drift and jump when synced, so timestamps cannot reliably order events across nodes, which breaks last-write-wins,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-93.html">
+<meta property="og:title" content="How does clock skew affect distributed systems, and how do TrueTime and logical clocks address it? | InterviewGearUp">
+<meta property="og:description" content="Physical clocks on different machines drift and jump when synced, so timestamps cannot reliably order events across nodes, which breaks last-write-wins,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-93.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does clock skew affect distributed systems, and how do TrueTime and logical clocks address it?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 4 (Lead / Staff) · Distributed systems · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Physical clocks on different machines drift and jump when synced, so timestamps cannot reliably order events across nodes, which breaks last-write-wins, lock leases and log ordering. Spanner&#39;s TrueTime exposes a bounded uncertainty interval and waits it out; logical clocks (Lamport, vector, hybrid) order events by causality instead of wall time.</p></div>
+<h4>Explained in depth</h4>
+<h4>What goes wrong with clock skew</h4>
+<ul><li><strong>Last-write-wins</strong> by timestamp can discard a newer write that came from a node with a slow clock.</li><li><strong>Leases and TTLs</strong>: a node that thinks its lease is still valid (because its clock or its process paused) can act while another node holds the lock. Use <strong>fencing tokens</strong>, increasing numbers checked by the resource.</li><li><strong>Ordering</strong> of logs and transactions across machines is wrong, and expiring certificates or tokens can behave inconsistently.</li><li>NTP corrections can make the clock jump forwards or backwards. Use <strong>monotonic clocks</strong> to measure durations.</li></ul>
+<h4>TrueTime (Google Spanner)</h4>
+<p>TrueTime returns an interval <code>[earliest, latest]</code> that is guaranteed to contain the real time, with an uncertainty of a few milliseconds thanks to GPS receivers and atomic clocks in each data centre. When a transaction commits, Spanner assigns a timestamp and then <strong>waits out the uncertainty</strong> (commit wait) before making it visible. That guarantees external consistency: if one transaction finishes before another starts, it has the smaller timestamp.</p>
+<h4>Logical clocks</h4>
+<ul><li><strong>Lamport clocks</strong>: a counter increased on each event and merged on message receipt. If A happened before B, then clock(A) &lt; clock(B), but the reverse is not true, so it cannot detect concurrency.</li><li><strong>Vector clocks</strong>: one counter per node. They can tell whether two events are causally ordered or concurrent, at the cost of size growing with the number of nodes (used by Dynamo-style systems to surface conflicts).</li><li><strong>Hybrid logical clocks</strong>: physical time plus a logical counter, staying close to wall time while preserving causality. CockroachDB and MongoDB use variants.</li></ul>
+<h4>Practical advice</h4>
+<p>Monitor NTP offset, avoid wall-clock comparisons for correctness, use versions or fencing tokens, and treat last-write-wins as lossy.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why can a lock lease with a wall-clock timeout be unsafe even with a correct clock?</li><li>What does commit wait guarantee in Spanner?</li><li>How do vector clocks detect concurrent writes?</li></ul>
+<p><a class="btn primary" href="../#/q/be-93">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-93%3A+How+does+clock+skew+affect+distributed+systems%2C+and+how+do+TrueTime%E2%80%A6&amp;question-id=be-93&amp;context=Backend+engineer%2C+Gear+4%2C+topic%3A+Distributed+systems%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-93.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

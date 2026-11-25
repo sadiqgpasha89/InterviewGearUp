@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>When is PR-AUC (Precision-Recall AUC) preferred over ROC-AUC for imbalanced datasets? | InterviewGearUp</title>
+<meta name="description" content="With rare positives, ROC-AUC can look excellent because the false positive rate divides by the huge number of negatives, so many false alarms barely move…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-13.html">
+<meta property="og:title" content="When is PR-AUC (Precision-Recall AUC) preferred over ROC-AUC for imbalanced datasets? | InterviewGearUp">
+<meta property="og:description" content="With rare positives, ROC-AUC can look excellent because the false positive rate divides by the huge number of negatives, so many false alarms barely move…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-13.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>When is PR-AUC (Precision-Recall AUC) preferred over ROC-AUC for imbalanced datasets?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 2 (Mid-level) · Metrics · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>With rare positives, ROC-AUC can look excellent because the false positive rate divides by the huge number of negatives, so many false alarms barely move it. PR-AUC uses precision, which counts those false alarms directly, so it reflects how useful the positive predictions are. Prefer PR-AUC when positives are rare and matter most.</p></div>
+<h4>Explained in depth</h4>
+<h4>The difference</h4>
+<ul><li>ROC plots true positive rate against false positive rate, where FPR = FP / (FP + TN). With a million negatives, 1,000 false positives give an FPR of only 0.001.</li><li>A PR curve plots precision = TP / (TP + FP) against recall. If there are only 100 positives and the model finds 80 of them, those 1,000 false positives give a precision of 80 / 1,080, about 7%, which shows the practical cost.</li></ul>
+<h4>Baselines</h4>
+<p>A random classifier scores ROC-AUC of 0.5 whatever the class balance. The random baseline for PR-AUC equals the <strong>positive rate</strong> (for example 0.01 for 1% positives), so a PR-AUC of 0.3 can be a big improvement even though it looks low.</p>
+<h4>When to use which</h4>
+<ul><li><strong>PR-AUC (average precision)</strong>: fraud, disease screening, anomaly detection, retrieval, anywhere the positive class is rare and false alarms are costly.</li><li><strong>ROC-AUC</strong>: roughly balanced classes, or when you care equally about both classes. It does not depend on the class ratio, which makes it useful for comparing across datasets.</li></ul>
+<h4>Cautions</h4>
+<ul><li>PR-AUC depends on prevalence, so values are not comparable between datasets with different positive rates.</li><li>Use average precision rather than the trapezoid rule on a PR curve, because linear interpolation between points is misleading.</li><li>Neither metric picks the operating threshold. Choose it from business costs, precision at a fixed recall, or recall at a fixed precision.</li><li>Report confidence intervals; with very few positives, both metrics are noisy.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How would you pick a decision threshold for a fraud model?</li><li>Why is the random baseline of a PR curve the class prevalence?</li><li>What does ROC-AUC actually estimate in terms of ranking?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-13">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-13%3A+When+is+PR-AUC+%28Precision-Recall+AUC%29+preferred+over+ROC-AUC+for%E2%80%A6&amp;question-id=ml-13&amp;context=ML+%2F+AI+engineer%2C+Gear+2%2C+topic%3A+Metrics%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-13.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

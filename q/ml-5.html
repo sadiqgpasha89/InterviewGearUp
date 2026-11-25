@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you evaluate an LLM-powered application? | InterviewGearUp</title>
+<meta name="description" content="Build a representative evaluation set from real usage, define task-specific metrics, combine automated checks (exact match, rubric-based LLM judges,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-5.html">
+<meta property="og:title" content="How do you evaluate an LLM-powered application? | InterviewGearUp">
+<meta property="og:description" content="Build a representative evaluation set from real usage, define task-specific metrics, combine automated checks (exact match, rubric-based LLM judges,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-5.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you evaluate an LLM-powered application?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · LLMs · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Build a representative evaluation set from real usage, define task-specific metrics, combine automated checks (exact match, rubric-based LLM judges, retrieval metrics) with human review, run it on every prompt or model change, and track online signals after launch.</p></div>
+<h4>Explained in depth</h4>
+<ol start="1"><li><strong>Dataset</strong>: real queries, edge cases and adversarial inputs, labelled with reference answers or rubrics. Keep a held-out set you do not tune against.</li><li><strong>Define good</strong>: correctness or faithfulness to sources, completeness, tone, safety, latency and cost.</li><li><strong>Metrics</strong>: use deterministic checks wherever possible (valid format, citations present, correct tool call). For subjective qualities use an LLM judge, calibrated against human labels, watching for position and verbosity bias (compare pairs in both orders). For RAG, separate retrieval metrics (recall@k, MRR) from groundedness of the answer.</li><li><strong>Regression suite</strong> in CI. Compare versions by failure category, not just the average.</li><li><strong>Online</strong>: user feedback, task success, escalation rate, A/B tests, sampled human review, drift and cost monitoring.</li><li><strong>Safety</strong>: jailbreaks, PII leakage, prompt injection.</li></ol>
+<p>Pitfalls: tuning prompts against the test set, evaluating on too few examples, and trusting an uncalibrated judge. With no users yet, bootstrap with expert-written cases and synthetic variations, then replace them with real traffic.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you decide whether to trust an LLM judge?</li><li>Offline versus online evaluation?</li><li>How would you build the first dataset with no users?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-5">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-5%3A+How+do+you+evaluate+an+LLM-powered+application%3F&amp;question-id=ml-5&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+LLMs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-5.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

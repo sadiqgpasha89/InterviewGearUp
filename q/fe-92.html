@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is layout thrashing (forced synchronous layout) and how do batching reads and writes prevent it? | InterviewGearUp</title>
+<meta name="description" content="Layout thrashing happens when code alternates between writing styles and reading layout values like offsetHeight, which forces the browser to recalculate…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-92.html">
+<meta property="og:title" content="What is layout thrashing (forced synchronous layout) and how do batching reads and writes prevent it? | InterviewGearUp">
+<meta property="og:description" content="Layout thrashing happens when code alternates between writing styles and reading layout values like offsetHeight, which forces the browser to recalculate…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-92.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is layout thrashing (forced synchronous layout) and how do batching reads and writes prevent it?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 3 (Senior) · DOM · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Layout thrashing happens when code alternates between writing styles and reading layout values like offsetHeight, which forces the browser to recalculate layout synchronously each time. Batch all reads first and then all writes, or schedule writes in requestAnimationFrame.</p></div>
+<h4>Explained in depth</h4>
+<p>Browsers batch style changes and compute layout once before painting. Reading a geometry value (<code>offsetWidth</code>, <code>offsetHeight</code>, <code>getBoundingClientRect()</code>, <code>scrollTop</code>, <code>getComputedStyle(...)</code>) after a write forces the browser to flush pending styles and run <strong>layout immediately</strong> to give a correct answer. Doing that inside a loop repeats the expensive work for every element.</p>
+<pre><code>// Thrashing: read, write, read, write...
+for (const el of items) {
+  const h = el.offsetHeight;          // forces layout
+  el.style.height = h * 2 + &#39;px&#39;;     // invalidates layout
+}
+
+// Batched: all reads, then all writes
+const heights = items.map((el) =&gt; el.offsetHeight);
+items.forEach((el, i) =&gt; { el.style.height = heights[i] * 2 + &#39;px&#39;; });</code></pre>
+<h4>Ways to avoid it</h4>
+<ul><li>Group reads before writes, or use a small scheduler such as FastDOM, and run writes inside <code>requestAnimationFrame</code>.</li><li>Animate <code>transform</code> and <code>opacity</code>, which usually do not trigger layout, instead of <code>top</code>, <code>left</code> or <code>height</code>.</li><li>Use <code>IntersectionObserver</code> and <code>ResizeObserver</code> instead of polling geometry in scroll handlers.</li><li>Toggle CSS classes instead of writing many inline styles, and use CSS containment (<code>contain</code>) to limit how far a change spreads.</li><li>Frameworks help by batching DOM writes, but a <code>useLayoutEffect</code> that reads and then sets state can still thrash.</li></ul>
+<h4>Finding it</h4>
+<p>In the Chrome DevTools Performance panel, look for repeated purple &#39;Layout&#39; blocks with a warning about forced reflow, and check which function caused them in the call tree.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Which common properties and methods force a synchronous layout?</li><li>Why are transform animations cheaper than animating height?</li><li>How would you find forced reflows in a real page?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-92">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-92%3A+What+is+layout+thrashing+%28forced+synchronous+layout%29+and+how+do%E2%80%A6&amp;question-id=fe-92&amp;context=Frontend+engineer%2C+Gear+3%2C+topic%3A+DOM%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-92.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

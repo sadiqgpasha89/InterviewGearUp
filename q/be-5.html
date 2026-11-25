@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is the difference between authentication and authorization? Sessions versus JWTs? | InterviewGearUp</title>
+<meta name="description" content="Authentication proves who you are; authorization decides what you may do. Server-side sessions are easy to revoke; JWTs are self-contained and scale…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-5.html">
+<meta property="og:title" content="What is the difference between authentication and authorization? Sessions versus JWTs? | InterviewGearUp">
+<meta property="og:description" content="Authentication proves who you are; authorization decides what you may do. Server-side sessions are easy to revoke; JWTs are self-contained and scale…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-5.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is the difference between authentication and authorization? Sessions versus JWTs?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 2 (Mid-level) · Security · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Authentication proves who you are; authorization decides what you may do. Server-side sessions are easy to revoke; JWTs are self-contained and scale across services but are hard to revoke, so keep them short-lived.</p></div>
+<h4>Explained in depth</h4>
+<h4>Sessions</h4>
+<p>A random ID in a cookie, with state kept server-side (often Redis). Revocation is instant. Needs a shared store.</p>
+<h4>JWT</h4>
+<p>A signed token (header.payload.signature) carrying claims such as <code>sub</code>, <code>exp</code> and scopes. Any service can verify it locally with no lookup. The payload is encoded, <strong>not encrypted</strong>, so never put secrets in it.</p>
+<p>Weaknesses and fixes: revocation (short expiry plus refresh tokens, or a deny list), algorithm confusion (pin accepted algorithms; always validate <code>iss</code>, <code>aud</code> and <code>exp</code>), and theft (store carefully).</p>
+<h4>Passwords</h4>
+<p>Hash with Argon2id, bcrypt or scrypt with a per-user salt. Never encrypt passwords for storage or use plain MD5 or SHA-1.</p>
+<h4>Authorization</h4>
+<p>Enforce it on the server on every request. Check object-level access too, or you get IDOR bugs (changing <code>/orders/42</code> to <code>/orders/43</code>). Prefer an established OAuth2/OIDC provider over rolling your own.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How would you revoke a JWT?</li><li>Access tokens versus refresh tokens?</li><li>What is an IDOR vulnerability?</li></ul>
+<p><a class="btn primary" href="../#/q/be-5">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-5%3A+What+is+the+difference+between+authentication+and+authorization%3F%E2%80%A6&amp;question-id=be-5&amp;context=Backend+engineer%2C+Gear+2%2C+topic%3A+Security%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-5.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

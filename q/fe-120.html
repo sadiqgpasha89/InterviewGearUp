@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you define a browser support policy and use progressive enhancement across a large product? | InterviewGearUp</title>
+<meta name="description" content="Base the support matrix on your own analytics and business needs, write it down with tiers (fully supported, best effort, unsupported), build core…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-120.html">
+<meta property="og:title" content="How do you define a browser support policy and use progressive enhancement across a large product? | InterviewGearUp">
+<meta property="og:description" content="Base the support matrix on your own analytics and business needs, write it down with tiers (fully supported, best effort, unsupported), build core…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-120.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you define a browser support policy and use progressive enhancement across a large product?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 4 (Lead / Staff) · Compatibility · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Base the support matrix on your own analytics and business needs, write it down with tiers (fully supported, best effort, unsupported), build core functionality that works everywhere using progressive enhancement and feature detection, transpile and polyfill by target, test the matrix automatically, and review it regularly so old browsers are retired with notice.</p></div>
+<h4>Explained in depth</h4>
+<h4>Define the policy</h4>
+<ol start="1"><li><strong>Use data</strong>: look at analytics by browser, version, device and revenue share, and at customer contracts (some enterprise customers require specific browsers). Include accessibility and assistive technology combinations.</li><li><strong>Write tiers</strong>:</li></ol>
+<ul><li><strong>Tier 1</strong> (fully supported, tested in CI): the latest two versions of evergreen browsers (Chrome, Edge, Firefox, Safari on desktop and mobile), plus specific versions by traffic share.</li><li><strong>Tier 2</strong> (best effort): core tasks work, visual differences accepted.</li><li><strong>Unsupported</strong>: show a clear message or a basic experience.</li></ul>
+<ol start="3"><li>Publish the policy, review it every quarter or six months, and announce changes with notice.</li></ol>
+<h4>Progressive enhancement</h4>
+<p>Build in layers:</p>
+<ol start="1"><li><strong>Content and core function</strong> with semantic HTML that works without JavaScript or modern CSS.</li><li><strong>Enhance</strong> with CSS for layout and presentation, using <code>@supports</code> and fallbacks (for example flexbox layout with a grid enhancement).</li><li><strong>Enhance behaviour</strong> with JavaScript where available, using <strong>feature detection</strong> (<code>&#39;IntersectionObserver&#39; in window</code>) rather than <strong>user agent sniffing</strong>, which is brittle.</li></ol>
+<p>Handle failures gracefully: a failed script or unsupported API should not break reading or primary tasks.</p>
+<h4>Tooling</h4>
+<ul><li><strong>Browserslist</strong> config shared by Babel or SWC, Autoprefixer, ESLint compat plugins and stylelint, so output matches the policy.</li><li>Transpile and polyfill only what targets need (differential serving avoids shipping legacy code to modern browsers), and check APIs against MDN or Can I Use data.</li><li>Lint to prevent unsupported APIs.</li></ul>
+<h4>Verification</h4>
+<p>Automated tests across the matrix with Playwright (Chromium, Firefox, WebKit) and a cloud device grid (BrowserStack, Sauce Labs) for real devices, visual regression checks on key pages, and RUM segmented by browser to find production issues.</p>
+<h4>Retiring support</h4>
+<p>Use data and thresholds (for example under 1 percent of traffic and under a revenue limit), warn users in-product, offer a supported alternative, then remove polyfills and old code, which reduces bundle size and complexity.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you decide when to drop support for an old browser?</li><li>What is the difference between feature detection and user agent sniffing?</li><li>How do browserslist and build tools use the support policy?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-120">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-120%3A+How+do+you+define+a+browser+support+policy+and+use+progressive%E2%80%A6&amp;question-id=fe-120&amp;context=Frontend+engineer%2C+Gear+4%2C+topic%3A+Compatibility%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-120.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

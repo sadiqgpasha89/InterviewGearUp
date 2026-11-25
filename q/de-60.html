@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is Change Data Capture (CDC) and how does Debezium stream database changes into Kafka? | InterviewGearUp</title>
+<meta name="description" content="Change data capture streams a database&#39;s row-level inserts, updates and deletes to other systems. Log-based CDC reads the transaction log, so it is…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-60.html">
+<meta property="og:title" content="What is Change Data Capture (CDC) and how does Debezium stream database changes into Kafka? | InterviewGearUp">
+<meta property="og:description" content="Change data capture streams a database&#39;s row-level inserts, updates and deletes to other systems. Log-based CDC reads the transaction log, so it is…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-60.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is Change Data Capture (CDC) and how does Debezium stream database changes into Kafka?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Ingestion · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Change data capture streams a database&#39;s row-level inserts, updates and deletes to other systems. Log-based CDC reads the transaction log, so it is low-impact and sees deletes and every change in order. Debezium runs as Kafka Connect source connectors, takes an initial snapshot and then publishes before and after images of each row to a Kafka topic per table.</p></div>
+<h4>Explained in depth</h4>
+<h4>Approaches</h4>
+<ul><li><strong>Query-based</strong> (poll an <code>updated_at</code> column): simple, but misses deletes and intermediate updates and adds load.</li><li><strong>Trigger-based</strong>: captures everything but adds write overhead to the source.</li><li><strong>Log-based</strong>: reads the MySQL binlog, the PostgreSQL write-ahead log (via logical decoding) or the SQL Server and Oracle change logs. It has little impact on the source and preserves commit order.</li></ul>
+<h4>Debezium</h4>
+<p>A Kafka Connect source connector per database. It performs an initial <strong>snapshot</strong> of existing rows, then streams changes. Each event carries the primary key, the <code>before</code> and <code>after</code> row state, an operation code (create, update, delete, read for snapshot), source metadata such as the log position, and a timestamp. Offsets are stored in Kafka so the connector resumes where it stopped.</p>
+<pre><code>{ &#39;op&#39;: &#39;u&#39;, &#39;before&#39;: {&#39;id&#39;: 7, &#39;status&#39;: &#39;NEW&#39;}, &#39;after&#39;: {&#39;id&#39;: 7, &#39;status&#39;: &#39;PAID&#39;}, &#39;source&#39;: {&#39;table&#39;: &#39;orders&#39;, &#39;lsn&#39;: 53829104} }</code></pre>
+<h4>Operational concerns</h4>
+<ul><li>On PostgreSQL a <strong>replication slot</strong> keeps WAL until the connector reads it. A stopped connector can fill the database&#39;s disk.</li><li>Using the primary key as the Kafka message key keeps each row&#39;s changes in order within a partition.</li><li>Delivery is at least once, so consumers should be idempotent (upsert by key).</li><li>Schema changes need a schema registry and compatible evolution; very large initial snapshots need planning.</li><li>Deletes arrive as an event plus an optional tombstone, which matters for compacted topics.</li></ul>
+<p>The <strong>outbox pattern</strong> uses CDC to publish events reliably from a service without dual writes.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why can a Postgres replication slot fill the disk of the source database?</li><li>How do consumers apply CDC events idempotently?</li><li>What is the outbox pattern and how does CDC support it?</li></ul>
+<p><a class="btn primary" href="../#/q/de-60">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-60%3A+What+is+Change+Data+Capture+%28CDC%29+and+how+does+Debezium+stream%E2%80%A6&amp;question-id=de-60&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Ingestion%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-60.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

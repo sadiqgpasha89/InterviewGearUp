@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is the principle of least privilege and how do you apply it? | InterviewGearUp</title>
+<meta name="description" content="Least privilege means giving every user, service and process only the access it needs to do its job, for only as long as it needs it. It limits the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-102.html">
+<meta property="og:title" content="What is the principle of least privilege and how do you apply it? | InterviewGearUp">
+<meta property="og:description" content="Least privilege means giving every user, service and process only the access it needs to do its job, for only as long as it needs it. It limits the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-102.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is the principle of least privilege and how do you apply it?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 1 (Junior) · Fundamentals · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Least privilege means giving every user, service and process only the access it needs to do its job, for only as long as it needs it. It limits the damage from mistakes and compromised credentials. Apply it with role-based access, narrow service permissions, short-lived credentials and regular access reviews.</p></div>
+<h4>Explained in depth</h4>
+<p><strong>Why</strong>: if an attacker steals a credential or exploits a bug, the blast radius equals what that identity could do. A read-only reporting job that cannot delete anything cannot be used to delete anything.</p>
+<h4>Examples</h4>
+<ul><li><strong>Cloud IAM</strong>: a function that reads one S3 bucket gets <code>s3:GetObject</code> on that bucket, not <code>s3:*</code> on every resource.</li><li><strong>Databases</strong>: the application connects as a user with <code>SELECT</code>, <code>INSERT</code> and <code>UPDATE</code> on its own tables, not as the owner or a superuser; migrations use a separate account.</li><li><strong>Operating systems and containers</strong>: run as a non-root user, drop Linux capabilities and mount file systems read-only.</li><li><strong>People</strong>: grant admin access just in time, with approval and expiry, instead of permanently.</li></ul>
+<h4>Practical approach</h4>
+<ol start="1"><li>Start from deny and add specific permissions.</li><li>Use roles and groups rather than individual grants.</li><li>Prefer short-lived, automatically rotated credentials to long-lived keys.</li><li>Review and remove unused permissions (access analyzers show which were never used).</li><li>Log privileged actions.</li></ol>
+<p><strong>Trade-off</strong>: overly tight permissions cause outages and slow developers down, so provide a quick, audited way to request more access.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How would you find which permissions a service account actually uses?</li><li>What is just-in-time access?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-102">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-102%3A+What+is+the+principle+of+least+privilege+and+how+do+you+apply+it%3F&amp;question-id=sec-102&amp;context=Security+engineer%2C+Gear+1%2C+topic%3A+Fundamentals%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-102.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

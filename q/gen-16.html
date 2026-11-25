@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare collision resolution strategies: Separate chaining versus open addressing (linear/quadratic probing). | InterviewGearUp</title>
+<meta name="description" content="Separate chaining keeps a list (or tree) of entries in each bucket, so it degrades gracefully as the load factor passes 1. Open addressing stores entries…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-16.html">
+<meta property="og:title" content="Compare collision resolution strategies: Separate chaining versus open addressing (linear/quadratic probing). | InterviewGearUp">
+<meta property="og:description" content="Separate chaining keeps a list (or tree) of entries in each bucket, so it degrades gracefully as the load factor passes 1. Open addressing stores entries…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-16.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare collision resolution strategies: Separate chaining versus open addressing (linear/quadratic probing).</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 2 (Mid-level) · Data structures · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Separate chaining keeps a list (or tree) of entries in each bucket, so it degrades gracefully as the load factor passes 1. Open addressing stores entries in the table itself and probes for another slot on collision; it is cache-friendly but needs a load factor below 1, tombstones for deletes and care about clustering.</p></div>
+<h4>Explained in depth</h4>
+<div class="md-table"><table><thead><tr><th></th><th>Separate chaining</th><th>Open addressing</th></tr></thead><tbody><tr><td>Storage</td><td>Buckets point to lists or trees</td><td>Entries live in the array</td></tr><tr><td>Load factor</td><td>Can exceed 1, slows gradually</td><td>Must stay below 1; resize at about 0.5 to 0.8</td></tr><tr><td>Delete</td><td>Remove from the list</td><td>Needs a tombstone (or backward shift for linear probing)</td></tr><tr><td>Cache behaviour</td><td>Pointer chasing</td><td>Better locality</td></tr><tr><td>Extra memory</td><td>A pointer per node</td><td>None, but empty slots are wasted</td></tr></tbody></table></div>
+<h4>Probing strategies</h4>
+<ul><li><strong>Linear probing</strong>: try i, i+1, i+2. Very cache-friendly but suffers <strong>primary clustering</strong>: runs of occupied slots grow and make later probes longer.</li><li><strong>Quadratic probing</strong>: try i + 1, i + 4, i + 9. Breaks up primary clusters but keys with the same start follow the same path (<strong>secondary clustering</strong>). It only visits every slot for suitable table sizes, so pick the size and load factor carefully.</li><li><strong>Double hashing</strong>: the step comes from a second hash, which spreads keys with the same first hash.</li></ul>
+<pre><code>def find(table, key):
+    i = hash(key) % len(table)
+    while table[i] is not EMPTY:          # a tombstone keeps the probe going
+        if table[i] is not TOMBSTONE and table[i].key == key:
+            return table[i]
+        i = (i + 1) % len(table)           # linear probing
+    return None</code></pre>
+<h4>Choosing</h4>
+<p>Chaining is simple and tolerant of bad hash functions. Open addressing wins on speed for small keys and values because of cache locality, and many modern tables (Python dicts, SwissTable-style maps) use it. Java&#39;s HashMap uses chaining and converts long chains into trees to bound the worst case.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why do deletions in open addressing need tombstones?</li><li>What happens to lookup cost as the load factor approaches 1 under linear probing?</li><li>How does a table resize and why is it still amortised O(1) per insert?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-16">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-16%3A+Compare+collision+resolution+strategies%3A+Separate+chaining+versus%E2%80%A6&amp;question-id=gen-16&amp;context=Software+engineer+%28core%29%2C+Gear+2%2C+topic%3A+Data+structures%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-16.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain binary search: Classic exact match implementation and avoiding integer overflow in midpoint calculation. | InterviewGearUp</title>
+<meta name="description" content="Binary search repeatedly halves a sorted range: compare the middle element with the target and discard the half that cannot contain it. It runs in O(log…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-38.html">
+<meta property="og:title" content="Explain binary search: Classic exact match implementation and avoiding integer overflow in midpoint calculation. | InterviewGearUp">
+<meta property="og:description" content="Binary search repeatedly halves a sorted range: compare the middle element with the target and discard the half that cannot contain it. It runs in O(log…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-38.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain binary search: Classic exact match implementation and avoiding integer overflow in midpoint calculation.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 1 (Junior) · Algorithms · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Binary search repeatedly halves a sorted range: compare the middle element with the target and discard the half that cannot contain it. It runs in O(log N). Compute the midpoint as lo + (hi - lo) / 2 instead of (lo + hi) / 2, because the sum can overflow a fixed-width integer.</p></div>
+<h4>Explained in depth</h4>
+<h4>Implementation</h4>
+<pre><code>def binary_search(a, target):
+    lo, hi = 0, len(a) - 1
+    while lo &lt;= hi:
+        mid = lo + (hi - lo) // 2
+        if a[mid] == target:
+            return mid
+        if a[mid] &lt; target:
+            lo = mid + 1
+        else:
+            hi = mid - 1
+    return -1</code></pre>
+<h4>Midpoint overflow</h4>
+<p>In languages with 32-bit ints, <code>lo + hi</code> can exceed 2^31 - 1 for large arrays and wrap to a negative number. This bug sat in the Java standard library for years. <code>lo + (hi - lo) / 2</code> never exceeds <code>hi</code>, so it is safe. (Python has arbitrary-precision ints, so it does not overflow there.)</p>
+<h4>Details that matter</h4>
+<ul><li>The array must be <strong>sorted</strong> and support O(1) random access.</li><li>Be consistent about the range: with <code>lo &lt;= hi</code> and <code>hi = len - 1</code>, use <code>mid + 1</code> and <code>mid - 1</code>. Mixing conventions causes off-by-one bugs and infinite loops.</li><li>Each iteration halves the range, so at most about log2(N) steps. For one billion elements that is roughly 30 comparisons.</li><li>It can also search on an answer space, for example the smallest value that satisfies a monotonic condition.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you find the first or last occurrence of a duplicate value?</li><li>What loop invariant keeps the search correct?</li><li>How does binary search apply to a rotated sorted array?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-38">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-38%3A+Explain+binary+search%3A+Classic+exact+match+implementation+and%E2%80%A6&amp;question-id=gen-38&amp;context=Software+engineer+%28core%29%2C+Gear+1%2C+topic%3A+Algorithms%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-38.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

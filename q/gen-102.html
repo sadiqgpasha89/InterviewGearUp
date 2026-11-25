@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Design a web crawler that fetches billions of pages politely and keeps its index fresh. | InterviewGearUp</title>
+<meta name="description" content="A crawler keeps a URL frontier (a prioritised, per-host queue), distributed fetchers that obey robots.txt and politeness delays, a parser that extracts…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-102.html">
+<meta property="og:title" content="Design a web crawler that fetches billions of pages politely and keeps its index fresh. | InterviewGearUp">
+<meta property="og:description" content="A crawler keeps a URL frontier (a prioritised, per-host queue), distributed fetchers that obey robots.txt and politeness delays, a parser that extracts…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-102.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Design a web crawler that fetches billions of pages politely and keeps its index fresh.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 4 (Lead / Staff) · System design · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A crawler keeps a URL frontier (a prioritised, per-host queue), distributed fetchers that obey robots.txt and politeness delays, a parser that extracts links, a seen-URL check with a Bloom filter or hash store, content deduplication with fingerprints, and storage for pages. Prioritise by importance and change rate, and shard everything by host.</p></div>
+<h4>Explained in depth</h4>
+<h4>Requirements</h4>
+<p>Crawl billions of pages, respect site rules and load, tolerate failures, avoid duplicates, and keep important or fast-changing pages fresh. Assume around 1 billion pages per month, roughly 400 pages per second sustained, and average page of 100 KB, so tens of terabytes of raw storage monthly.</p>
+<h4>Components</h4>
+<ol start="1"><li><strong>Seed URLs</strong> start the crawl.</li><li><strong>URL frontier</strong>: queues of URLs to fetch. It has two layers: <strong>priority</strong> (importance, change rate, depth) and <strong>politeness</strong> (one queue per host, so only one request per host at a time with a delay such as 1 second or the <code>Crawl-delay</code> value).</li><li><strong>Fetchers</strong>: many workers, each owning a set of hosts (consistent hashing by hostname). DNS results are cached, connections are reused, and timeouts are strict.</li><li><strong>robots.txt cache</strong>: fetch and cache per host, and honour disallow rules.</li><li><strong>Parser and link extractor</strong>: extract text and links, normalise URLs (lowercase host, remove fragments, resolve relative paths, sort parameters).</li><li><strong>Seen-URL filter</strong>: a Bloom filter in memory backed by a persistent store, so already known URLs are not queued again.</li><li><strong>Content dedup</strong>: hash of the content for exact duplicates, SimHash or MinHash for near-duplicates.</li><li><strong>Storage</strong>: raw pages in object storage, metadata (URL, fetch time, ETag, status, checksum) in a key-value store, and a hand-off to the indexing pipeline through a queue.</li></ol>
+<h4>Hard problems</h4>
+<ul><li><strong>Politeness and fairness</strong>: per-host rate limits and a global cap; back off on 429 and 5xx.</li><li><strong>Spider traps</strong>: limit URL length and depth, cap pages per host and detect repeating patterns.</li><li><strong>Freshness</strong>: schedule recrawls with an adaptive interval, using the page&#39;s observed change history, sitemaps, and <code>If-Modified-Since</code> or <code>ETag</code> requests to save bandwidth.</li><li><strong>Dynamic content</strong>: a small share needs a headless browser, which is expensive and rationed.</li><li><strong>Failures</strong>: workers are stateless besides their frontier shard; use checkpointing and retries with exponential backoff.</li></ul>
+<h4>Scaling and ethics</h4>
+<p>Partition by host, scale fetchers horizontally, and monitor throughput, error rates and queue depth. Identify the crawler with a clear user agent and contact address, and avoid pages that opt out.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you detect duplicate and near-duplicate pages?</li><li>How do you avoid spider traps and infinite URL spaces?</li><li>How do you decide how often to recrawl each page?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-102">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-102%3A+Design+a+web+crawler+that+fetches+billions+of+pages+politely+and%E2%80%A6&amp;question-id=gen-102&amp;context=Software+engineer+%28core%29%2C+Gear+4%2C+topic%3A+System+design%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-102.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do cache eviction policies like LRU, LFU, FIFO, and TTL differ under memory pressure? | InterviewGearUp</title>
+<meta name="description" content="Eviction policies decide which entries to remove when a cache is full. LRU removes the least recently used, LFU removes the least frequently used, FIFO…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-27.html">
+<meta property="og:title" content="How do cache eviction policies like LRU, LFU, FIFO, and TTL differ under memory pressure? | InterviewGearUp">
+<meta property="og:description" content="Eviction policies decide which entries to remove when a cache is full. LRU removes the least recently used, LFU removes the least frequently used, FIFO…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-27.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do cache eviction policies like LRU, LFU, FIFO, and TTL differ under memory pressure?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 2 (Mid-level) · Caching · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Eviction policies decide which entries to remove when a cache is full. LRU removes the least recently used, LFU removes the least frequently used, FIFO removes the oldest inserted regardless of use, and TTL expires entries by age rather than memory pressure. LRU suits recency-based workloads, LFU suits stable hot sets, and TTL controls staleness.</p></div>
+<h4>Explained in depth</h4>
+<h4>Policies</h4>
+<div class="md-table"><table><thead><tr><th>Policy</th><th>Evicts</th><th>Strength</th><th>Weakness</th></tr></thead><tbody><tr><td><strong>LRU</strong></td><td>Least recently accessed</td><td>Good general default, adapts to changing hot data</td><td>A one-time scan of many keys can flush the useful ones</td></tr><tr><td><strong>LFU</strong></td><td>Least frequently accessed</td><td>Keeps consistently popular items, scan resistant</td><td>Old popular items linger; needs counter ageing</td></tr><tr><td><strong>FIFO</strong></td><td>Oldest inserted</td><td>Very simple, cheap</td><td>Ignores usage, may evict hot data</td></tr><tr><td><strong>TTL</strong></td><td>Entries past their expiry time</td><td>Bounds staleness, predictable</td><td>Does not itself free memory when full of fresh data</td></tr><tr><td><strong>Random</strong></td><td>A random entry</td><td>No bookkeeping</td><td>Unpredictable hit rate</td></tr></tbody></table></div>
+<h4>Implementation notes</h4>
+<ul><li><strong>LRU in O(1)</strong>: a hash map from key to a node in a doubly linked list; on access move the node to the front, and on eviction remove the tail.</li><li><strong>Redis</strong> offers <code>allkeys-lru</code>, <code>allkeys-lfu</code>, <code>volatile-ttl</code> and other policies, selected with <code>maxmemory-policy</code>. It approximates LRU by sampling a few keys instead of tracking exact order, which saves memory and CPU.</li><li>LFU uses a small counter with decay, so that old popularity fades.</li></ul>
+<h4>Choosing</h4>
+<ul><li>Recency pattern (sessions, recent content): <strong>LRU</strong>.</li><li>Stable popularity (top products, config): <strong>LFU</strong>.</li><li>Data that must expire for correctness (tokens, prices): add a <strong>TTL</strong> regardless of the eviction policy.</li><li>Measure hit rate and eviction counts, and size the cache to the working set.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How is an LRU cache implemented with O(1) operations?</li><li>What does Redis&#39;s approximated LRU do and why?</li><li>Why is LFU better at resisting scans?</li></ul>
+<p><a class="btn primary" href="../#/q/be-27">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-27%3A+How+do+cache+eviction+policies+like+LRU%2C+LFU%2C+FIFO%2C+and+TTL+differ%E2%80%A6&amp;question-id=be-27&amp;context=Backend+engineer%2C+Gear+2%2C+topic%3A+Caching%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-27.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare Data Lakehouse architecture with traditional Data Warehouses and Data Lakes. | InterviewGearUp</title>
+<meta name="description" content="A data lakehouse stores open-format files (Parquet) on cheap object storage like a data lake, but adds a transactional table layer (Delta Lake, Iceberg,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-13.html">
+<meta property="og:title" content="Compare Data Lakehouse architecture with traditional Data Warehouses and Data Lakes. | InterviewGearUp">
+<meta property="og:description" content="A data lakehouse stores open-format files (Parquet) on cheap object storage like a data lake, but adds a transactional table layer (Delta Lake, Iceberg,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-13.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare Data Lakehouse architecture with traditional Data Warehouses and Data Lakes.</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Architecture · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A data lakehouse stores open-format files (Parquet) on cheap object storage like a data lake, but adds a transactional table layer (Delta Lake, Iceberg, Hudi) that provides ACID transactions, schema enforcement, versioning and fast SQL like a warehouse. One copy of the data then serves BI, SQL and machine learning, without copying between a lake and a warehouse.</p></div>
+<h4>Explained in depth</h4>
+<h4>The three approaches</h4>
+<div class="md-table"><table><thead><tr><th></th><th>Data warehouse</th><th>Data lake</th><th>Lakehouse</th></tr></thead><tbody><tr><td>Data</td><td>Structured, modelled</td><td>Any format, raw</td><td>Any, with structured tables on top</td></tr><tr><td>Storage</td><td>Proprietary, tightly coupled to compute</td><td>Cheap object storage</td><td>Cheap object storage, open formats</td></tr><tr><td>Transactions and schema</td><td>Strong (ACID, enforced)</td><td>None, schema on read</td><td>ACID and schema enforcement via table format</td></tr><tr><td>Workloads</td><td>BI and SQL</td><td>Data science, ML, raw archive</td><td>BI, SQL, streaming and ML together</td></tr><tr><td>Weakness</td><td>Cost, less flexible for unstructured data, silos</td><td>Data swamps, unreliable, slow SQL</td><td>Newer, needs table maintenance</td></tr></tbody></table></div>
+<h4>What makes it work</h4>
+<p>A <strong>table format</strong> (Delta Lake, Apache Iceberg, Apache Hudi) keeps a transaction log or metadata that tracks which files make up each table version. This gives:</p>
+<ul><li>ACID transactions and safe concurrent writes.</li><li>Schema enforcement and evolution.</li><li><strong>Time travel</strong> and rollbacks.</li><li>Upserts and deletes (<code>MERGE</code>), plus streaming and batch on the same table.</li><li>Query engines can skip files using statistics.</li></ul>
+<h4>Architecture pattern</h4>
+<p>Often organised in <strong>medallion layers</strong>: bronze (raw), silver (cleaned, conformed), gold (business-level aggregates). Compute engines (Spark, Trino, Snowflake, Databricks SQL) read the same tables.</p>
+<h4>Trade-offs</h4>
+<p>You must run maintenance (compaction, snapshot expiry), manage catalogs and permissions across engines, and performance on small, highly concurrent BI workloads may still favour a dedicated warehouse. Many organisations run both.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What does the table format add that plain Parquet on S3 lacks?</li><li>When would a classic warehouse still be the better choice?</li><li>How does governance work across a lakehouse?</li></ul>
+<p><a class="btn primary" href="../#/q/de-13">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-13%3A+Compare+Data+Lakehouse+architecture+with+traditional+Data+Warehouses%E2%80%A6&amp;question-id=de-13&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-13.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

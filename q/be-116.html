@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How would you lead a migration from a single large PostgreSQL database to a sharded architecture? | InterviewGearUp</title>
+<meta name="description" content="First exhaust simpler options such as indexing, read replicas, partitioning and archiving. If sharding is still required, choose a shard key that matches…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-116.html">
+<meta property="og:title" content="How would you lead a migration from a single large PostgreSQL database to a sharded architecture? | InterviewGearUp">
+<meta property="og:description" content="First exhaust simpler options such as indexing, read replicas, partitioning and archiving. If sharding is still required, choose a shard key that matches…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-116.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How would you lead a migration from a single large PostgreSQL database to a sharded architecture?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 4 (Lead / Staff) · Databases · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>First exhaust simpler options such as indexing, read replicas, partitioning and archiving. If sharding is still required, choose a shard key that matches access patterns, migrate in phases with dual writes and verification, route through a thin data-access layer or proxy, move one tenant or range at a time with rollback, and plan for cross-shard queries, IDs and operations.</p></div>
+<h4>Explained in depth</h4>
+<h4>Step 0: be sure you need it</h4>
+<p>Sharding adds permanent complexity. Before it, try: query and index tuning, caching, <strong>read replicas</strong>, connection pooling, <strong>table partitioning</strong>, archiving old data, bigger hardware, and splitting by service (vertical partitioning). Measure which limit you will hit (write throughput, storage size, hot tables) and when.</p>
+<h4>Choose the sharding approach</h4>
+<ul><li><strong>Shard key</strong>: should appear in most queries, spread load evenly, and keep related data together. For SaaS, <strong>tenant ID</strong> is ideal (all of a tenant&#39;s data on one shard, so joins and transactions stay local). Bad keys: low-cardinality, monotonically increasing (hot shard), or something rarely used in queries.</li><li><strong>Mapping</strong>: hash-based (even, hard to rebalance), range-based (simple, risk of hotspots) or <strong>directory-based</strong> lookup (flexible: a table maps tenant to shard, allowing moves).</li><li>Consider managed or extension options (<strong>Citus</strong>, Vitess for MySQL, CockroachDB, Aurora Limitless) instead of building your own.</li></ul>
+<h4>Prepare the application</h4>
+<ul><li>Add the shard key to every table and query; remove cross-tenant joins and foreign keys across shards.</li><li>Replace auto-increment IDs with <strong>globally unique IDs</strong> (UUIDv7, Snowflake-style).</li><li>Introduce a <strong>routing layer</strong> (library or proxy) that maps key to shard, with connection pools per shard.</li><li>Plan for <strong>cross-shard</strong> needs: scatter-gather for rare queries, a separate analytics store (warehouse) for reporting, and sagas instead of distributed transactions.</li></ul>
+<h4>Migration plan</h4>
+<ol start="1"><li>Build the new shards and routing, test in staging with production-like data.</li><li><strong>Copy data</strong> using logical replication or CDC (change data capture) while the old database keeps serving.</li><li><strong>Dual write or replicate</strong>, then verify with checksums and row counts, and shadow-read comparisons.</li><li><strong>Cut over per tenant or range</strong> with a feature flag, watching errors and latency; keep the ability to route back.</li><li>Decommission old data after a safe period.</li></ol>
+<h4>Operations</h4>
+<p>Schema changes across all shards with automation, backups and point-in-time recovery per shard, monitoring per shard, a rebalancing process (move tenants between shards), and capacity planning. Communicate the plan and risks to the business, and run migration rehearsals and a rollback drill before the final cutover.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you choose a shard key and what makes a bad one?</li><li>How do you handle queries and transactions that span shards?</li><li>How do you rebalance data when one shard becomes too large?</li></ul>
+<p><a class="btn primary" href="../#/q/be-116">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-116%3A+How+would+you+lead+a+migration+from+a+single+large+PostgreSQL%E2%80%A6&amp;question-id=be-116&amp;context=Backend+engineer%2C+Gear+4%2C+topic%3A+Databases%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-116.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

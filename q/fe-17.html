@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare `Promise.all`, `Promise.allSettled`, `Promise.race`, and `Promise.any`. | InterviewGearUp</title>
+<meta name="description" content="Promise.all resolves with all results or rejects on the first rejection. Promise.allSettled waits for everything and reports each outcome without…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-17.html">
+<meta property="og:title" content="Compare `Promise.all`, `Promise.allSettled`, `Promise.race`, and `Promise.any`. | InterviewGearUp">
+<meta property="og:description" content="Promise.all resolves with all results or rejects on the first rejection. Promise.allSettled waits for everything and reports each outcome without…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-17.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare `Promise.all`, `Promise.allSettled`, `Promise.race`, and `Promise.any`.</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · JavaScript · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Promise.all resolves with all results or rejects on the first rejection. Promise.allSettled waits for everything and reports each outcome without rejecting. Promise.race settles with whichever promise settles first, success or failure. Promise.any resolves with the first fulfilment and rejects only if every promise rejects.</p></div>
+<h4>Explained in depth</h4>
+<div class="md-table"><table><thead><tr><th>Combinator</th><th>Resolves when</th><th>Rejects when</th><th>Result</th></tr></thead><tbody><tr><td><code>Promise.all</code></td><td>All fulfil</td><td><strong>Any</strong> rejects (immediately)</td><td>Array of values, in input order</td></tr><tr><td><code>Promise.allSettled</code></td><td>All settle</td><td>Never</td><td>Array of <code>{ status, value }</code> or <code>{ status, reason }</code></td></tr><tr><td><code>Promise.race</code></td><td>First promise to <strong>settle</strong> fulfils</td><td>First promise to settle rejects</td><td>That promise&#39;s value or reason</td></tr><tr><td><code>Promise.any</code></td><td>First to <strong>fulfil</strong></td><td><strong>All</strong> reject (<code>AggregateError</code>)</td><td>First value</td></tr></tbody></table></div>
+<h4>Typical uses</h4>
+<pre><code>// all: need every result, fail fast
+const [user, orders] = await Promise.all([getUser(id), getOrders(id)]);
+
+// allSettled: independent tasks, report partial failure
+const results = await Promise.allSettled(urls.map(fetch));
+const failed = results.filter((r) =&gt; r.status === &#39;rejected&#39;);
+
+// race: timeout
+await Promise.race([fetch(url), new Promise((_, rej) =&gt; setTimeout(() =&gt; rej(new Error(&#39;timeout&#39;)), 5000))]);
+
+// any: fastest healthy mirror
+const data = await Promise.any(mirrors.map((m) =&gt; fetch(m)));</code></pre>
+<h4>Things to remember</h4>
+<ul><li>Promises start when they are <strong>created</strong>, not when passed to a combinator, so <code>all</code> runs them concurrently.</li><li>The combinators do <strong>not cancel</strong> the losing work. Use <code>AbortController</code> to stop requests you no longer need.</li><li>With <code>all</code>, when one rejects, the others keep running and their results are ignored. Their rejections are handled (no unhandled-rejection warning).</li><li>Empty input: <code>all</code> and <code>allSettled</code> resolve with <code>[]</code>, <code>any</code> rejects, and <code>race</code> stays pending forever.</li><li>For sequential work, use a loop with <code>await</code>, not <code>all</code>.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How would you limit concurrency when fetching 1000 URLs?</li><li>Why does Promise.race not cancel the slower request?</li><li>What does Promise.any reject with when everything fails?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-17">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-17%3A+Compare+%60Promise.all%60%2C+%60Promise.allSettled%60%2C+%60Promise.race%60%2C+and%E2%80%A6&amp;question-id=fe-17&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+JavaScript%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-17.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

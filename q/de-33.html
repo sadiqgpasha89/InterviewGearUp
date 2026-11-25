@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What causes the small files problem in data lakes and what compaction strategies resolve it? | InterviewGearUp</title>
+<meta name="description" content="The small files problem happens when a data lake holds many tiny files, from frequent streaming micro-batches or over-partitioned writes. Each file costs…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-33.html">
+<meta property="og:title" content="What causes the small files problem in data lakes and what compaction strategies resolve it? | InterviewGearUp">
+<meta property="og:description" content="The small files problem happens when a data lake holds many tiny files, from frequent streaming micro-batches or over-partitioned writes. Each file costs…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-33.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What causes the small files problem in data lakes and what compaction strategies resolve it?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 2 (Mid-level) · Lakehouse · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>The small files problem happens when a data lake holds many tiny files, from frequent streaming micro-batches or over-partitioned writes. Each file costs a metadata lookup and task scheduling overhead, so queries slow down and listing gets expensive. Fix it by compacting small files into larger ones (about 128 MB to 1 GB), writing fewer partitions and using table formats with built-in compaction.</p></div>
+<h4>Explained in depth</h4>
+<h4>Causes</h4>
+<ul><li>Streaming or micro-batch jobs that write a file every few seconds per partition.</li><li><strong>Over-partitioning</strong>: partitioning by a high-cardinality column (user id, hour and minute) so each partition holds a few kilobytes.</li><li>Spark writing with <code>shuffle.partitions</code> = 200 for a small dataset, which creates 200 tiny files per partition.</li><li>Many small source files that are copied as they are.</li></ul>
+<h4>Why it hurts</h4>
+<ul><li><strong>Metadata overhead</strong>: object stores need a request per file to list and open; the HDFS NameNode holds metadata per file in memory.</li><li><strong>Task overhead</strong>: engines create one task per file or split, so thousands of tiny tasks spend more time starting than working.</li><li>Poor compression and fewer opportunities for column statistics to skip data.</li></ul>
+<h4>Fixes</h4>
+<ol start="1"><li><strong>Compaction</strong>: a periodic job rewrites small files into larger ones, for example 128 MB to 512 MB each.</li></ol>
+<ul><li>Iceberg: <code>CALL system.rewrite_data_files(table =&gt; &#39;db.events&#39;)</code></li><li>Delta Lake: <code>OPTIMIZE events</code> (with optional <code>ZORDER BY</code>)</li><li>Hudi: built-in clustering and compaction.</li></ul>
+<p>   Table formats do this with snapshot isolation, so readers are not disrupted.</p>
+<ol start="2"><li><strong>Write fewer files</strong>: <code>coalesce</code> or <code>repartition</code> before writing, set <code>maxRecordsPerFile</code>, use adaptive query execution (AQE) coalescing, and choose partition columns with low cardinality (date, not timestamp).</li><li><strong>Buffer in streaming</strong>: use longer trigger intervals or write to a message layer first, then batch.</li><li><strong>Clean up</strong> with expiry of old snapshots and orphan files.</li></ol>
+<h4>Likely follow-ups</h4>
+<ul><li>How does Iceberg or Delta handle compaction without breaking readers?</li><li>What target file size would you choose and why?</li><li>How can you prevent small files at write time in Spark?</li></ul>
+<p><a class="btn primary" href="../#/q/de-33">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-33%3A+What+causes+the+small+files+problem+in+data+lakes+and+what%E2%80%A6&amp;question-id=de-33&amp;context=Data+engineer%2C+Gear+2%2C+topic%3A+Lakehouse%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-33.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

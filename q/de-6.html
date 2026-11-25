@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Design a clickstream analytics pipeline. | InterviewGearUp</title>
+<meta name="description" content="Collect events with an SDK into a durable log (Kafka or a managed equivalent), validate against a schema, land raw data in object storage, process in…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-6.html">
+<meta property="og:title" content="Design a clickstream analytics pipeline. | InterviewGearUp">
+<meta property="og:description" content="Collect events with an SDK into a durable log (Kafka or a managed equivalent), validate against a schema, land raw data in object storage, process in…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-6.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Design a clickstream analytics pipeline.</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · System design · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Collect events with an SDK into a durable log (Kafka or a managed equivalent), validate against a schema, land raw data in object storage, process in streaming for fresh metrics and in batch for authoritative history, and serve through a warehouse or OLAP store.</p></div>
+<h4>Explained in depth</h4>
+<p><strong>Clarify</strong>: event volume (say 50,000 per second), freshness (seconds or hours), consumers (dashboards, ML features, ad-hoc analysis), retention, privacy.</p>
+<h4>Architecture</h4>
+<p>Client SDK, then a stateless collector that batches events, then Kafka topics (partitioned by user or session id). From there:</p>
+<ul><li>A <strong>stream processor</strong> (Flink or Spark Structured Streaming) for sessionisation, enrichment and near-real-time aggregates, serving a store such as ClickHouse, Druid or Pinot.</li><li>A <strong>sink to object storage</strong> as Parquet partitioned by date and hour, feeding batch models (for example dbt) for authoritative tables.</li></ul>
+<h4>Data quality</h4>
+<p>Schema registry with Avro or Protobuf, a dead-letter topic for bad events, deduplication by <code>event_id</code>, watermarks for late events, bot filtering.</p>
+<h4>Privacy</h4>
+<p>Consent handling, hashing or removing PII, retention limits, and a way to honour deletion requests.</p>
+<h4>Operations</h4>
+<p>Replay from Kafka or the raw lake, monitoring of consumer lag, freshness and volume anomalies, and compaction of small files to control cost.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you handle duplicates and late events?</li><li>How would you sessionise clicks?</li><li>How would you honour a GDPR deletion request?</li></ul>
+<p><a class="btn primary" href="../#/q/de-6">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-6%3A+Design+a+clickstream+analytics+pipeline.&amp;question-id=de-6&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+System+design%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-6.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

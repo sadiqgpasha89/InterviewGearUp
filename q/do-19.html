@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Walk through the end-to-end DNS resolution flow from stub resolver to authoritative nameservers. | InterviewGearUp</title>
+<meta name="description" content="The application asks the OS stub resolver, which checks its cache and then sends a recursive query to a configured resolver (often the ISP or cloud…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-19.html">
+<meta property="og:title" content="Walk through the end-to-end DNS resolution flow from stub resolver to authoritative nameservers. | InterviewGearUp">
+<meta property="og:description" content="The application asks the OS stub resolver, which checks its cache and then sends a recursive query to a configured resolver (often the ISP or cloud…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-19.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Walk through the end-to-end DNS resolution flow from stub resolver to authoritative nameservers.</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 2 (Mid-level) · Networking · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>The application asks the OS stub resolver, which checks its cache and then sends a recursive query to a configured resolver (often the ISP or cloud resolver). That resolver, on a cache miss, queries a root server, then the TLD server, then the domain&#39;s authoritative nameserver, follows the referrals and returns the answer, caching each result according to its TTL.</p></div>
+<h4>Explained in depth</h4>
+<h4>Flow for <code>www.example.com</code></h4>
+<ol start="1"><li><strong>Application</strong> calls <code>getaddrinfo()</code>. The <strong>stub resolver</strong> checks the local cache and <code>/etc/hosts</code>.</li><li>It sends a <strong>recursive query</strong> to the configured resolver from <code>/etc/resolv.conf</code> (home router, ISP, corporate or cloud, such as the VPC resolver).</li><li>The <strong>recursive resolver</strong> checks its own cache. On a miss it works <strong>iteratively</strong>:</li></ol>
+<ul><li>Asks a <strong>root server</strong>: &quot;who handles <code>.com</code>?&quot; and gets a referral to the <code>.com</code> TLD nameservers.</li><li>Asks a <strong>TLD server</strong>: &quot;who handles <code>example.com</code>?&quot; and gets the NS records for the domain.</li><li>Asks the <strong>authoritative nameserver</strong> for the domain: &quot;what is <code>www.example.com</code>?&quot; and gets the A or AAAA record (or a CNAME to follow).</li></ul>
+<ol start="4"><li>The resolver <strong>caches</strong> each answer for its <strong>TTL</strong> and returns the IP to the stub, which caches it and hands it to the application, which connects.</li></ol>
+<h4>Record types</h4>
+<p><code>A</code> (IPv4), <code>AAAA</code> (IPv6), <code>CNAME</code> (alias to another name), <code>NS</code> (delegation), <code>MX</code> (mail), <code>TXT</code> (verification, SPF), <code>SOA</code> and <code>PTR</code> (reverse lookup).</p>
+<h4>Practical points</h4>
+<ul><li>Low TTLs speed up failover and migrations but increase query load; plan to lower the TTL before a planned change.</li><li>Some clients and resolvers ignore TTLs or cache negative answers (NXDOMAIN).</li><li>DNSSEC signs records; DNS over HTTPS or TLS encrypts the stub-to-resolver hop.</li></ul>
+<h4>Debugging</h4>
+<pre><code>dig www.example.com +trace      # shows the iterative path from the root
+dig @8.8.8.8 example.com A</code></pre>
+<h4>Likely follow-ups</h4>
+<ul><li>What are CNAME, A, AAAA and NS records and how do they chain?</li><li>How does DNS caching and TTL choice affect failover?</li><li>What is the difference between recursive and iterative queries?</li></ul>
+<p><a class="btn primary" href="../#/q/do-19">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-19%3A+Walk+through+the+end-to-end+DNS+resolution+flow+from+stub+resolver%E2%80%A6&amp;question-id=do-19&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+2%2C+topic%3A+Networking%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-19.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

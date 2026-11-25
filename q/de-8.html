@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare Kimball Star Schema and Snowflake Schema in dimensional data warehousing. | InterviewGearUp</title>
+<meta name="description" content="A star schema has one central fact table joined directly to denormalised dimension tables, so queries need few joins and are simple and fast. A snowflake…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-8.html">
+<meta property="og:title" content="Compare Kimball Star Schema and Snowflake Schema in dimensional data warehousing. | InterviewGearUp">
+<meta property="og:description" content="A star schema has one central fact table joined directly to denormalised dimension tables, so queries need few joins and are simple and fast. A snowflake…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-8.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare Kimball Star Schema and Snowflake Schema in dimensional data warehousing.</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 2 (Mid-level) · Data Modeling · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A star schema has one central fact table joined directly to denormalised dimension tables, so queries need few joins and are simple and fast. A snowflake schema normalises dimensions into sub-tables (product, category, department), which saves some storage and avoids repeated values but needs more joins and is harder to query. Star is the usual default in modern warehouses.</p></div>
+<h4>Explained in depth</h4>
+<h4>Star schema</h4>
+<p>A <strong>fact table</strong> (sales: date key, product key, store key, quantity, amount) surrounded by <strong>dimension tables</strong> (date, product, store, customer) that hold descriptive attributes. Each dimension is one wide, denormalised table.</p>
+<pre><code>SELECT d.year, p.category, SUM(f.amount)
+FROM fact_sales f
+JOIN dim_date d ON f.date_key = d.date_key
+JOIN dim_product p ON f.product_key = p.product_key
+GROUP BY d.year, p.category;</code></pre>
+<h4>Snowflake schema</h4>
+<p>Dimensions are normalised: <code>dim_product</code> points to <code>dim_category</code>, which points to <code>dim_department</code>. Repeated text moves into small lookup tables.</p>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th></th><th>Star</th><th>Snowflake</th></tr></thead><tbody><tr><td>Joins per query</td><td>Few</td><td>More</td></tr><tr><td>Query speed and simplicity</td><td>Better</td><td>Slower, more complex SQL</td></tr><tr><td>Storage</td><td>More redundancy</td><td>Less redundancy</td></tr><tr><td>Maintenance of attribute changes</td><td>Update repeated values</td><td>Update one place</td></tr><tr><td>BI tool friendliness</td><td>High</td><td>Lower</td></tr></tbody></table></div>
+<h4>Guidance</h4>
+<p>Columnar warehouses compress repeated values very well and storage is cheap, so the storage savings of snowflaking rarely matter. Use <strong>star</strong> by default for simplicity and performance; snowflake only for very large or frequently changing hierarchies, or when sub-dimensions are shared across several dimensions. Use <strong>conformed dimensions</strong> (the same date or customer dimension across fact tables) to compare business processes consistently.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>When would you choose snowflaking a dimension?</li><li>How does a star schema help BI tools?</li><li>What is a conformed dimension?</li></ul>
+<p><a class="btn primary" href="../#/q/de-8">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-8%3A+Compare+Kimball+Star+Schema+and+Snowflake+Schema+in+dimensional+data%E2%80%A6&amp;question-id=de-8&amp;context=Data+engineer%2C+Gear+2%2C+topic%3A+Data+Modeling%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-8.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain Event Sourcing. How are current entity states reconstructed from append-only event logs? | InterviewGearUp</title>
+<meta name="description" content="Event sourcing stores every state change as an immutable event in an append-only log, instead of storing only the current state. The current state of an…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-46.html">
+<meta property="og:title" content="Explain Event Sourcing. How are current entity states reconstructed from append-only event logs? | InterviewGearUp">
+<meta property="og:description" content="Event sourcing stores every state change as an immutable event in an append-only log, instead of storing only the current state. The current state of an…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-46.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain Event Sourcing. How are current entity states reconstructed from append-only event logs?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 4 (Lead / Staff) · Architecture · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Event sourcing stores every state change as an immutable event in an append-only log, instead of storing only the current state. The current state of an entity is rebuilt by replaying (folding) its events in order, usually from a snapshot. It gives a full audit trail and the ability to rebuild read models, at the price of complexity.</p></div>
+<h4>Explained in depth</h4>
+<h4>Core idea</h4>
+<p>Instead of <code>UPDATE accounts SET balance = 80</code>, record facts: <code>AccountOpened</code>, <code>MoneyDeposited(100)</code>, <code>MoneyWithdrawn(20)</code>. Events are named in the past tense and are never edited.</p>
+<pre><code>const state = events.reduce(apply, initialState);   // rebuild by replay
+function apply(s, e) {
+  switch (e.type) {
+    case &#39;MoneyDeposited&#39;: return { ...s, balance: s.balance + e.amount };
+    case &#39;MoneyWithdrawn&#39;: return { ...s, balance: s.balance - e.amount };
+    default: return s;
+  }
+}</code></pre>
+<h4>How it works in practice</h4>
+<ul><li>A <strong>command</strong> (Withdraw 20) is validated against the current state rebuilt from the aggregate&#39;s events. If valid, it produces new events.</li><li>Appending uses <strong>optimistic concurrency</strong>: write with the expected version, and fail if another event was added meanwhile.</li><li><strong>Snapshots</strong> every N events avoid replaying a long history.</li><li><strong>Projections</strong> (read models) are built by consuming the event stream, which is why event sourcing is often paired with CQRS. They are eventually consistent and can be rebuilt from scratch.</li></ul>
+<h4>Benefits</h4>
+<p>Complete audit history, temporal queries (&#39;what was the balance last Tuesday&#39;), debugging by replay, and new read models built later from old events.</p>
+<h4>Costs</h4>
+<ul><li><strong>Schema evolution</strong>: old events live forever, so you need versioning and upcasting.</li><li>Eventual consistency for read models, and harder ad hoc queries.</li><li><strong>Privacy</strong>: deleting personal data from immutable events is hard; crypto-shredding (deleting the encryption key) is one approach.</li><li>Steeper learning curve and operational tooling. It is a poor fit for simple CRUD.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you evolve the schema of events that were written years ago?</li><li>How do snapshots work and when should you take them?</li><li>How would you handle a GDPR erasure request in an event-sourced system?</li></ul>
+<p><a class="btn primary" href="../#/q/be-46">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-46%3A+Explain+Event+Sourcing.+How+are+current+entity+states+reconstructed%E2%80%A6&amp;question-id=be-46&amp;context=Backend+engineer%2C+Gear+4%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-46.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

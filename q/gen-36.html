@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain the sliding window pattern: Fixed-size window versus dynamic-size window with two pointers. | InterviewGearUp</title>
+<meta name="description" content="A sliding window keeps a contiguous range of an array or string and moves it forward instead of recomputing. A fixed-size window adds the new element and…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-36.html">
+<meta property="og:title" content="Explain the sliding window pattern: Fixed-size window versus dynamic-size window with two pointers. | InterviewGearUp">
+<meta property="og:description" content="A sliding window keeps a contiguous range of an array or string and moves it forward instead of recomputing. A fixed-size window adds the new element and…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-36.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain the sliding window pattern: Fixed-size window versus dynamic-size window with two pointers.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 2 (Mid-level) · Algorithms · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A sliding window keeps a contiguous range of an array or string and moves it forward instead of recomputing. A fixed-size window adds the new element and removes the oldest. A dynamic window expands the right end until a condition holds and shrinks the left end while it stays valid. Each element enters and leaves once, so it is O(N).</p></div>
+<h4>Explained in depth</h4>
+<h4>Fixed-size window</h4>
+<p>Maximum sum of any k consecutive numbers:</p>
+<pre><code>def max_sum(nums, k):
+    window = sum(nums[:k])
+    best = window
+    for i in range(k, len(nums)):
+        window += nums[i] - nums[i - k]    # add new, drop oldest
+        best = max(best, window)
+    return best</code></pre>
+<h4>Dynamic window</h4>
+<p>Shortest subarray with sum at least target (positive numbers):</p>
+<pre><code>def min_len(nums, target):
+    left = total = 0
+    best = float(&#39;inf&#39;)
+    for right, x in enumerate(nums):
+        total += x
+        while total &gt;= target:             # shrink while valid
+            best = min(best, right - left + 1)
+            total -= nums[left]
+            left += 1
+    return 0 if best == float(&#39;inf&#39;) else best</code></pre>
+<h4>When to use it</h4>
+<p>Look for a contiguous subarray or substring with a condition on its contents (sum, distinct characters, counts) and a window that grows or shrinks monotonically. The <code>while</code> loop inside <code>for</code> is still O(N) because <code>left</code> only moves forward.</p>
+<h4>Limits</h4>
+<p>Negative numbers break the shrink logic for sum conditions, because shrinking might not reduce the sum; use prefix sums with a hash map instead. Window maximum needs a monotonic deque.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you tell when a problem fits a sliding window?</li><li>What breaks the technique when the array has negative numbers?</li><li>How do you find the maximum of every window of size k efficiently?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-36">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-36%3A+Explain+the+sliding+window+pattern%3A+Fixed-size+window+versus%E2%80%A6&amp;question-id=gen-36&amp;context=Software+engineer+%28core%29%2C+Gear+2%2C+topic%3A+Algorithms%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-36.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

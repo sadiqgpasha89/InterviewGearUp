@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you migrate a batch ETL platform to streaming without disrupting downstream consumers? | InterviewGearUp</title>
+<meta name="description" content="Move incrementally by use case, not all at once. Capture the source as an event stream with CDC, run the streaming pipeline in parallel with the batch…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-118.html">
+<meta property="og:title" content="How do you migrate a batch ETL platform to streaming without disrupting downstream consumers? | InterviewGearUp">
+<meta property="og:description" content="Move incrementally by use case, not all at once. Capture the source as an event stream with CDC, run the streaming pipeline in parallel with the batch…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-118.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you migrate a batch ETL platform to streaming without disrupting downstream consumers?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 4 (Lead / Staff) · Migration · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Move incrementally by use case, not all at once. Capture the source as an event stream with CDC, run the streaming pipeline in parallel with the batch one, compare outputs until they match, then switch consumers gradually while keeping batch as fallback. Keep contracts and schemas stable, design for idempotency and late data, and retire the old jobs only after proven parity.</p></div>
+<h4>Explained in depth</h4>
+<h4>Decide why and where</h4>
+<p>Streaming costs more to build and operate. Migrate only the pipelines whose <strong>business value depends on freshness</strong> (fraud, operations, personalisation, near-real-time reporting). Leave daily reporting in batch.</p>
+<h4>Target architecture</h4>
+<ul><li><strong>CDC</strong> (Debezium) or application events into a durable log (Kafka), with schemas in a registry.</li><li>A stream processor (Flink, Spark Structured Streaming, Kafka Streams) that does the same business logic as the batch job, writing to lakehouse tables (Iceberg, Delta, Hudi) or the warehouse using upserts.</li><li>Idempotent sinks and <strong>exactly-once</strong> or effectively-once semantics.</li></ul>
+<h4>Migration steps</h4>
+<ol start="1"><li><strong>Baseline and contracts</strong>: document the batch job&#39;s inputs, outputs, schema, SLA and consumers. Freeze the output contract (table names, columns, semantics) so consumers do not need to change.</li><li><strong>Build the stream path in parallel</strong> (shadow mode) writing to separate tables.</li><li><strong>Validate</strong>: compare against the batch output for several weeks with automated reconciliation (row counts, sums, distinct keys, sample diffs). Investigate differences caused by late data, ordering or time boundaries.</li><li><strong>Switch gradually</strong>: point one consumer, then more, to the new tables (or swap through views), watching quality and latency; keep batch running as a fallback and a periodic <strong>correction</strong> job to fix late changes if needed.</li><li><strong>Decommission</strong> the batch job after a stable period, update documentation and alerts.</li></ol>
+<h4>Design points that differ from batch</h4>
+<ul><li><strong>Event time and watermarks</strong> to handle late and out-of-order data; decide allowed lateness and what happens to very late events.</li><li><strong>State management</strong>: checkpoints, state size, TTL, and recovery time.</li><li><strong>Schema evolution</strong> and compatibility rules with the registry.</li><li><strong>Backfill and replay</strong>: keep enough log retention or a lake copy to reprocess; make jobs able to replay without duplicates.</li><li><strong>Operations</strong>: always-on monitoring (consumer lag, checkpoint duration, watermark delay), on-call and runbooks, and cost of continuous compute.</li><li><strong>Testing</strong>: replay production traffic in staging, and chaos tests for restarts and rebalances.</li></ul>
+<h4>Communication</h4>
+<p>Agree freshness SLAs with consumers, announce the plan and cutover dates, and measure improvements in latency and incident rates after migration.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you validate that streaming and batch outputs match?</li><li>What new failure modes does streaming add that batch did not have?</li><li>How do you handle reprocessing and backfills in a streaming system?</li></ul>
+<p><a class="btn primary" href="../#/q/de-118">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-118%3A+How+do+you+migrate+a+batch+ETL+platform+to+streaming+without%E2%80%A6&amp;question-id=de-118&amp;context=Data+engineer%2C+Gear+4%2C+topic%3A+Migration%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-118.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

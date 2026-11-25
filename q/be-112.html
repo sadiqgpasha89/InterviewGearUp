@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is middleware in a web framework, and what are typical uses? | InterviewGearUp</title>
+<meta name="description" content="Middleware is a chain of functions that wrap request handling: each can inspect or modify the request, short-circuit with a response, call the next…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-112.html">
+<meta property="og:title" content="What is middleware in a web framework, and what are typical uses? | InterviewGearUp">
+<meta property="og:description" content="Middleware is a chain of functions that wrap request handling: each can inspect or modify the request, short-circuit with a response, call the next…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-112.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is middleware in a web framework, and what are typical uses?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 1 (Junior) · Architecture · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Middleware is a chain of functions that wrap request handling: each can inspect or modify the request, short-circuit with a response, call the next function, then process the response on the way back. It keeps cross-cutting concerns such as logging, authentication, CORS, compression, rate limiting and error handling out of business handlers.</p></div>
+<h4>Explained in depth</h4>
+<h4>The pipeline model</h4>
+<p>A request passes through an ordered list of middleware before reaching the handler, and the response travels back through them in reverse.</p>
+<pre><code>// Express example
+app.use((req, res, next) =&gt; {
+  const start = Date.now();
+  res.on(&#39;finish&#39;, () =&gt; console.log(req.method, req.url, res.statusCode, Date.now() - start + &#39;ms&#39;));
+  next();                       // pass control to the next middleware
+});
+
+app.use(authenticate);          // may respond 401 and stop the chain
+app.use(express.json());        // parse the body
+app.get(&#39;/orders&#39;, handler);
+app.use(errorHandler);          // error-handling middleware at the end</code></pre>
+<p>Each middleware chooses to <strong>continue</strong> (<code>next()</code>), <strong>respond</strong> itself, or <strong>fail</strong> with an error.</p>
+<h4>Typical uses</h4>
+<ul><li>Request <strong>logging</strong>, request IDs and tracing context.</li><li><strong>Authentication and authorisation</strong> (verify the token, attach <code>req.user</code>).</li><li>Body parsing, validation and sanitising.</li><li><strong>CORS</strong> headers, security headers (Helmet), HTTPS redirects.</li><li><strong>Rate limiting</strong>, compression, caching headers.</li><li>Centralised <strong>error handling</strong> that converts exceptions to consistent responses.</li><li>Metrics and timing.</li></ul>
+<h4>Order matters</h4>
+<p>Security and logging usually come first, parsing before validation, authentication before handlers, and the error handler last. For example, a rate limiter placed after an expensive step does not protect it.</p>
+<h4>Same idea elsewhere</h4>
+<p>ASP.NET Core middleware, Django middleware, Koa, Rack (Ruby), Go <code>http.Handler</code> wrappers, and interceptors or filters in Spring and NestJS.</p>
+<h4>Cautions</h4>
+<p>Keep middleware small and focused; avoid heavy synchronous work; handle async errors properly (unhandled promise rejections can hang requests); and do not put business logic in middleware, since it makes behaviour hard to find and test.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does the order of middleware matter?</li><li>How do you handle errors thrown inside middleware?</li><li>How does middleware differ from an API gateway?</li></ul>
+<p><a class="btn primary" href="../#/q/be-112">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-112%3A+What+is+middleware+in+a+web+framework%2C+and+what+are+typical+uses%3F&amp;question-id=be-112&amp;context=Backend+engineer%2C+Gear+1%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-112.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

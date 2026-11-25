@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare L1 Lasso regularization and L2 Ridge regularization: Why does L1 produce sparse weights? | InterviewGearUp</title>
+<meta name="description" content="L1 (Lasso) adds the sum of absolute weights to the loss, L2 (Ridge) the sum of squares. L1 applies a constant-size pull toward zero and sets many weights…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-10.html">
+<meta property="og:title" content="Compare L1 Lasso regularization and L2 Ridge regularization: Why does L1 produce sparse weights? | InterviewGearUp">
+<meta property="og:description" content="L1 (Lasso) adds the sum of absolute weights to the loss, L2 (Ridge) the sum of squares. L1 applies a constant-size pull toward zero and sets many weights…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-10.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare L1 Lasso regularization and L2 Ridge regularization: Why does L1 produce sparse weights?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 2 (Mid-level) · Fundamentals · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>L1 (Lasso) adds the sum of absolute weights to the loss, L2 (Ridge) the sum of squares. L1 applies a constant-size pull toward zero and sets many weights exactly to zero, giving sparse models and feature selection; L2 shrinks all weights smoothly and rarely makes any exactly zero.</p></div>
+<h4>Explained in depth</h4>
+<pre><code>L1:  loss + lambda * sum(|w_j|)        L2:  loss + lambda * sum(w_j^2)</code></pre>
+<h4>Why L1 gives sparsity</h4>
+<ul><li><strong>Gradient view</strong>: the L1 penalty has a gradient of constant magnitude, lambda * sign(w), that keeps pushing a small weight toward zero at the same speed, so it can land on exactly zero. The L2 gradient, 2 * lambda * w, shrinks as w shrinks, so weights approach zero but seldom reach it.</li><li><strong>Geometry view</strong>: the L1 constraint region is a diamond with corners on the axes. The loss contours tend to touch it at a corner, where some coordinates are zero. The L2 region is a smooth sphere with no corners.</li><li><strong>Optimisation view</strong>: solvers apply soft-thresholding for L1, which zeroes weights whose gradient is smaller than lambda.</li></ul>
+<h4>Practical differences</h4>
+<div class="md-table"><table><thead><tr><th></th><th>L1 / Lasso</th><th>L2 / Ridge</th></tr></thead><tbody><tr><td>Sparse solution</td><td>Yes</td><td>No</td></tr><tr><td>Correlated features</td><td>Tends to pick one arbitrarily</td><td>Spreads weight among them</td></tr><tr><td>Closed-form solution</td><td>No</td><td>Yes (linear regression)</td></tr><tr><td>Good for</td><td>Feature selection, interpretability</td><td>Stability, many small effects</td></tr></tbody></table></div>
+<p><strong>Elastic Net</strong> mixes both and is helpful when features are correlated and you still want sparsity.</p>
+<h4>Tips</h4>
+<p>Standardise features first, because the penalty depends on scale. Do not penalise the intercept. Choose lambda by cross-validation. From a Bayesian view, L2 is a Gaussian prior on weights and L1 a Laplace prior. In neural networks, L2 is often applied as weight decay.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why must features be standardised before regularising?</li><li>When would you choose Elastic Net over Lasso?</li><li>How does the regularisation strength relate to bias and variance?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-10">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-10%3A+Compare+L1+Lasso+regularization+and+L2+Ridge+regularization%3A+Why%E2%80%A6&amp;question-id=ml-10&amp;context=ML+%2F+AI+engineer%2C+Gear+2%2C+topic%3A+Fundamentals%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-10.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

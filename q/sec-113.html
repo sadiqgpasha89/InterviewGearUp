@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How would you design a workforce identity architecture with single sign-on, strong authentication and conditional access? | InterviewGearUp</title>
+<meta name="description" content="Centralise identities in one identity provider with lifecycle automation from HR, federate all applications through SAML or OIDC with SSO, enforce…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-113.html">
+<meta property="og:title" content="How would you design a workforce identity architecture with single sign-on, strong authentication and conditional access? | InterviewGearUp">
+<meta property="og:description" content="Centralise identities in one identity provider with lifecycle automation from HR, federate all applications through SAML or OIDC with SSO, enforce…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-113.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How would you design a workforce identity architecture with single sign-on, strong authentication and conditional access?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 4 (Lead / Staff) · Identity · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Centralise identities in one identity provider with lifecycle automation from HR, federate all applications through SAML or OIDC with SSO, enforce phishing-resistant MFA and conditional access based on user, device and risk signals, manage privileged access with just-in-time elevation, apply least-privilege roles and access reviews, and log and monitor everything. Plan break-glass accounts and resilience.</p></div>
+<h4>Explained in depth</h4>
+<h4>Principles</h4>
+<p>Identity is the new perimeter: authenticate strongly, authorise narrowly, verify continuously, and automate the lifecycle.</p>
+<h4>Architecture</h4>
+<ol start="1"><li><strong>Source of truth and lifecycle</strong>: HR system (Workday, SAP) drives <strong>joiner, mover, leaver</strong> events. Provisioning through <strong>SCIM</strong> and connectors creates, updates and removes accounts and group memberships automatically, so access disappears at termination.</li><li><strong>Identity provider (IdP)</strong> such as Entra ID, Okta or Google Workspace: one directory, groups and roles, and a single place for policy and audit.</li><li><strong>SSO and federation</strong>: applications authenticate via <strong>OIDC or SAML</strong>; legacy apps via a proxy or gateway; cloud consoles and servers via federation and short-lived credentials. Retire local passwords.</li><li><strong>Strong authentication</strong>: <strong>phishing-resistant MFA</strong> (FIDO2 security keys, passkeys, certificate-based) for all workers, with stricter requirements for administrators; avoid SMS. Passwordless where possible.</li><li><strong>Conditional access</strong> (policy engine): decide per sign-in using user and group, <strong>device posture</strong> (managed, encrypted, patched, EDR running), location, network, application sensitivity, and <strong>risk signals</strong> (impossible travel, leaked credentials, anomaly detection). Outcomes: allow, require MFA, step-up, limit session, or block.</li><li><strong>Authorisation</strong>: role-based access with groups per job function, attribute-based rules for finer cases, <strong>least privilege</strong>, and entitlement management with request and approval workflows and expiry.</li><li><strong>Privileged access</strong>: separate admin accounts, <strong>just-in-time elevation</strong> (PIM), session recording, PAM vaults for shared secrets, and no standing domain-admin rights.</li><li><strong>Non-human identities</strong>: service accounts and workload identities with short-lived tokens and ownership.</li><li><strong>External identities</strong>: guest accounts with limited scope, B2B federation, and time-bound access.</li></ol>
+<h4>Governance and monitoring</h4>
+<ul><li>Periodic <strong>access reviews</strong> (certifications) by managers and owners; segregation-of-duties checks.</li><li>Central logging of sign-ins and admin actions to the SIEM, alerts for risky patterns, and identity threat detection and response.</li><li>Session lifetime policies, token binding, and continuous access evaluation to revoke quickly.</li></ul>
+<h4>Resilience</h4>
+<p>Two or more <strong>break-glass</strong> emergency accounts (excluded from conditional access, very strong credentials stored offline, monitored and tested), IdP redundancy planning, documented recovery, and regular drills.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is conditional access and what signals does it use?</li><li>How do you handle contractors and external partners?</li><li>How do you design break-glass accounts safely?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-113">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-113%3A+How+would+you+design+a+workforce+identity+architecture+with+single%E2%80%A6&amp;question-id=sec-113&amp;context=Security+engineer%2C+Gear+4%2C+topic%3A+Identity%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-113.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

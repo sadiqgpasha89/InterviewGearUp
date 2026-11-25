@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you find the longest substring without repeating characters using a sliding window and hash map? | InterviewGearUp</title>
+<meta name="description" content="Use a sliding window with a hash map that stores the last index of each character. Move the right end across the string; when a character repeats inside…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-37.html">
+<meta property="og:title" content="How do you find the longest substring without repeating characters using a sliding window and hash map? | InterviewGearUp">
+<meta property="og:description" content="Use a sliding window with a hash map that stores the last index of each character. Move the right end across the string; when a character repeats inside…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-37.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you find the longest substring without repeating characters using a sliding window and hash map?</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 2 (Mid-level) · Algorithms · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Use a sliding window with a hash map that stores the last index of each character. Move the right end across the string; when a character repeats inside the window, jump the left end to just after its previous position. The window always holds distinct characters, and the best length is tracked in a single O(N) pass.</p></div>
+<h4>Explained in depth</h4>
+<h4>Approach</h4>
+<pre><code>def longest_unique(s):
+    last = {}                  # char -&gt; last index seen
+    left = best = 0
+    for right, ch in enumerate(s):
+        if ch in last and last[ch] &gt;= left:
+            left = last[ch] + 1          # skip past the earlier copy
+        last[ch] = right
+        best = max(best, right - left + 1)
+    return best
+
+# &#39;abcabcbb&#39; -&gt; 3 (&#39;abc&#39;),  &#39;bbbbb&#39; -&gt; 1,  &#39;pwwkew&#39; -&gt; 3 (&#39;wke&#39;)</code></pre>
+<h4>Why <code>last[ch] &gt;= left</code> matters</h4>
+<p>An earlier occurrence of the character that lies before <code>left</code> is outside the window and must not move <code>left</code> backwards. Without this check you get wrong answers on inputs like <code>abba</code>.</p>
+<h4>Complexity</h4>
+<ul><li>Time O(N): <code>right</code> visits each position once and <code>left</code> never moves backwards.</li><li>Space O(min(N, alphabet size)) for the map.</li></ul>
+<h4>Variation</h4>
+<p>A set-based version shrinks the window one step at a time with a <code>while</code> loop while the new character is in the set. It has the same O(N) bound but more steps. To return the substring, record the start of the best window.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What changes if the string can contain any Unicode character?</li><li>How would you return the substring instead of its length?</li><li>How would you allow at most k distinct characters?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-37">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-37%3A+How+do+you+find+the+longest+substring+without+repeating+characters%E2%80%A6&amp;question-id=gen-37&amp;context=Software+engineer+%28core%29%2C+Gear+2%2C+topic%3A+Algorithms%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-37.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

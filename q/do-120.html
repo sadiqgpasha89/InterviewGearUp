@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you design an observability architecture that scales to thousands of services while controlling cost? | InterviewGearUp</title>
+<meta name="description" content="Standardise instrumentation on OpenTelemetry with a collector tier, then set telemetry budgets: cap metric cardinality, sample traces with tail-based…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-120.html">
+<meta property="og:title" content="How do you design an observability architecture that scales to thousands of services while controlling cost? | InterviewGearUp">
+<meta property="og:description" content="Standardise instrumentation on OpenTelemetry with a collector tier, then set telemetry budgets: cap metric cardinality, sample traces with tail-based…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-120.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you design an observability architecture that scales to thousands of services while controlling cost?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 4 (Lead / Staff) · Observability · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Standardise instrumentation on OpenTelemetry with a collector tier, then set telemetry budgets: cap metric cardinality, sample traces with tail-based rules to keep errors and slow requests, log less and structure more with tiered retention, aggregate at the edge, and route data to cost-appropriate backends. Make owners see their cost, and keep alerting tied to SLOs.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why costs explode</h4>
+<p>Telemetry volume grows with services, traffic and developer enthusiasm: debug logs at scale, high-cardinality labels (user ID, request ID in metrics), and 100 percent trace capture. Vendor pricing per GB, per series or per span makes this visible fast.</p>
+<h4>Architecture</h4>
+<ol start="1"><li><strong>Standard instrumentation</strong>: <strong>OpenTelemetry</strong> SDKs and auto-instrumentation, common semantic conventions, and shared libraries, so signals are consistent and backends can change.</li><li><strong>Collector tier</strong>: OpenTelemetry Collectors as agents (per node) and gateways (central) that batch, enrich (service, team, environment), filter, redact PII, sample and route. This is the main control point for cost.</li><li><strong>Backends by signal</strong>: metrics (Prometheus-compatible, Mimir, Thanos, VictoriaMetrics), logs (Loki, ClickHouse, OpenSearch), traces (Tempo, Jaeger), with object storage for cheap retention. Or a vendor with strict budgets.</li><li><strong>Correlation</strong>: trace ID in logs, exemplars linking metrics to traces.</li></ol>
+<h4>Cost controls</h4>
+<ul><li><strong>Metrics</strong>: limit labels, drop high-cardinality dimensions, use recording rules and downsampling, and set per-team series quotas.</li><li><strong>Traces</strong>: <strong>head-based sampling</strong> for steady baseline and <strong>tail-based sampling</strong> (keep all errors and slow traces, a small share of the rest), which needs a collector tier that sees whole traces.</li><li><strong>Logs</strong>: structured, with levels; sample or drop noisy debug logs; keep hot retention short (days), warm and cold in object storage; avoid logging payloads.</li><li><strong>Retention tiers</strong> by value, and aggregation of raw events into metrics where possible.</li></ul>
+<h4>Governance</h4>
+<ul><li><strong>Ownership and showback</strong>: attribute telemetry cost to teams using the labels added at collection, with dashboards and alerts on spikes.</li><li>Standards for naming, dashboards and alerts, and a review for new high-volume sources.</li><li><strong>Alert on SLOs and symptoms</strong>, which reduces the need to retain every raw signal. Keep a quick way to turn on debug sampling temporarily during incidents.</li><li>Evaluate build versus buy on total cost including engineers&#39; time to run backends.</li></ul>
+<h4>Reliability</h4>
+<p>Make the observability pipeline itself resilient (queues and backpressure, multiple collectors, monitoring of the monitoring), and ensure incident tooling works when the main platform is down.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is tail-based sampling and what does it require?</li><li>How do you control metric cardinality?</li><li>When should you consider self-hosting versus a vendor?</li></ul>
+<p><a class="btn primary" href="../#/q/do-120">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-120%3A+How+do+you+design+an+observability+architecture+that+scales+to%E2%80%A6&amp;question-id=do-120&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+4%2C+topic%3A+Observability%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-120.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

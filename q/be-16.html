@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does database sharding work, and what are the trade-offs between range-based and hash-based sharding? | InterviewGearUp</title>
+<meta name="description" content="Sharding splits data across several databases by a shard key so each holds a subset. Range-based sharding assigns contiguous key ranges, which makes…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-16.html">
+<meta property="og:title" content="How does database sharding work, and what are the trade-offs between range-based and hash-based sharding? | InterviewGearUp">
+<meta property="og:description" content="Sharding splits data across several databases by a shard key so each holds a subset. Range-based sharding assigns contiguous key ranges, which makes…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-16.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does database sharding work, and what are the trade-offs between range-based and hash-based sharding?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · Databases · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Sharding splits data across several databases by a shard key so each holds a subset. Range-based sharding assigns contiguous key ranges, which makes range queries efficient but risks hot spots. Hash-based sharding spreads keys evenly but scatters ranges across shards. The shard key choice and resharding strategy are the hardest parts.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why shard</h4>
+<p>One database eventually hits limits in storage, write throughput or memory. <strong>Replication</strong> scales reads; <strong>sharding</strong> scales writes and data size by splitting data horizontally.</p>
+<h4>Strategies</h4>
+<ul><li><strong>Range-based</strong>: shard 1 holds user ids 1 to 1M, shard 2 holds 1M to 2M, and so on.</li><li>Pros: range scans stay on one shard, easy to understand.</li><li>Cons: <strong>hot spots</strong> (new users or recent timestamps all land on the last shard) and uneven sizes.</li><li><strong>Hash-based</strong>: <code>shard = hash(key) % N</code>.</li><li>Pros: even distribution of load and data.</li><li>Cons: range queries need all shards; changing N remaps most keys unless you use <strong>consistent hashing</strong> or many virtual buckets.</li><li><strong>Directory (lookup) based</strong>: a mapping service tracks which shard holds what. Flexible, but the directory is a dependency.</li></ul>
+<h4>Choosing the shard key</h4>
+<p>It should have high cardinality, even access distribution and match the main query pattern (for example <code>tenant_id</code> so a tenant&#39;s data stays together). A bad key (country, status) creates skew.</p>
+<h4>Costs of sharding</h4>
+<ul><li><strong>Cross-shard queries and joins</strong> become scatter-gather, slower and more complex.</li><li><strong>Distributed transactions</strong> need two-phase commit or sagas.</li><li>Global unique ids need a generator (snowflake ids, UUIDs).</li><li><strong>Resharding</strong> (moving data online) is operationally hard; plan with many logical shards mapped onto fewer physical ones.</li><li>Schema changes and backups multiply.</li></ul>
+<h4>Before sharding</h4>
+<p>Try indexing, caching, read replicas, partitioning inside one database, archiving old data and vertical scaling. Many systems never need sharding.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What makes a good shard key?</li><li>How does consistent hashing reduce data movement when adding shards?</li><li>How do you handle queries or transactions that span shards?</li></ul>
+<p><a class="btn primary" href="../#/q/be-16">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-16%3A+How+does+database+sharding+work%2C+and+what+are+the+trade-offs+between%E2%80%A6&amp;question-id=be-16&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+Databases%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-16.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

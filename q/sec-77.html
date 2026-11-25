@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain the SLSA (Supply-chain Levels for Software Artifacts) framework and Software Bill of Materials (SBOM). | InterviewGearUp</title>
+<meta name="description" content="SLSA (Supply-chain Levels for Software Artifacts) is a framework of increasing build-integrity guarantees, such as a scripted build, a hosted build…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-77.html">
+<meta property="og:title" content="Explain the SLSA (Supply-chain Levels for Software Artifacts) framework and Software Bill of Materials (SBOM). | InterviewGearUp">
+<meta property="og:description" content="SLSA (Supply-chain Levels for Software Artifacts) is a framework of increasing build-integrity guarantees, such as a scripted build, a hosted build…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-77.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain the SLSA (Supply-chain Levels for Software Artifacts) framework and Software Bill of Materials (SBOM).</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 4 (Lead / Staff) · Supply Chain · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>SLSA (Supply-chain Levels for Software Artifacts) is a framework of increasing build-integrity guarantees, such as a scripted build, a hosted build platform and signed provenance showing how and from what source an artifact was produced. An SBOM is an inventory of the components inside software. SLSA shows how it was built; an SBOM shows what is in it.</p></div>
+<h4>Explained in depth</h4>
+<h4>SLSA</h4>
+<p>The build track defines levels that raise the cost of tampering: from documented, scripted builds, through a hosted build service that generates signed <strong>provenance</strong> (which source, which builder, which parameters), to hardened, isolated builds where the provenance cannot be forged by the project&#39;s own users. Consumers verify provenance before deploying, so a compromised developer laptop or a swapped artifact is detected.</p>
+<h4>SBOM</h4>
+<p>A machine-readable list of components and versions, in formats such as SPDX or CycloneDX. It lets you answer &#39;are we affected?&#39; within minutes when a vulnerability like Log4Shell appears, and supports license and compliance checks. Pair it with vulnerability data, and with VEX statements that say which CVEs are actually exploitable.</p>
+<h4>Putting it together</h4>
+<ul><li>Generate an SBOM in CI for each release, store it with the artifact and monitor it against vulnerability feeds.</li><li>Build on a hosted, ephemeral runner, sign artifacts (Sigstore and cosign), and verify signatures and provenance at deploy time with admission policies.</li><li>Pin and review dependencies, use a private registry or proxy, and require code review and protected branches.</li></ul>
+<p>Limit: an SBOM can be incomplete or out of date, and provenance proves the process, not that the code is free of vulnerabilities.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What does signed provenance protect against that an SBOM does not?</li><li>How would you enforce signature verification in a Kubernetes cluster?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-77">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-77%3A+Explain+the+SLSA+%28Supply-chain+Levels+for+Software+Artifacts%29%E2%80%A6&amp;question-id=sec-77&amp;context=Security+engineer%2C+Gear+4%2C+topic%3A+Supply+Chain%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-77.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

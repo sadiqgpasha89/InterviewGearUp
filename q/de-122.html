@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you define SLAs and SLOs for data products and manage data incidents? | InterviewGearUp</title>
+<meta name="description" content="Treat datasets as products with measurable objectives for freshness, completeness, accuracy and availability, agreed with consumers and monitored…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-122.html">
+<meta property="og:title" content="How do you define SLAs and SLOs for data products and manage data incidents? | InterviewGearUp">
+<meta property="og:description" content="Treat datasets as products with measurable objectives for freshness, completeness, accuracy and availability, agreed with consumers and monitored…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-122.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you define SLAs and SLOs for data products and manage data incidents?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 4 (Lead / Staff) · Reliability · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Treat datasets as products with measurable objectives for freshness, completeness, accuracy and availability, agreed with consumers and monitored automatically. Alert on SLO burn, route incidents to owners with severity levels and runbooks, communicate impact on downstream consumers using lineage, and run blameless postmortems that produce preventive checks and contracts.</p></div>
+<h4>Explained in depth</h4>
+<h4>Define the objectives</h4>
+<p>For each <strong>critical data product</strong> agree with consumers:</p>
+<ul><li><strong>Freshness</strong>: &quot;the orders table is updated within 30 minutes of source commits, 99 percent of the time&quot;.</li><li><strong>Completeness and volume</strong>: expected row counts and null rates within tolerance.</li><li><strong>Accuracy and consistency</strong>: reconciles with the source of truth within a threshold.</li><li><strong>Availability</strong>: query access and pipeline success rate.</li><li><strong>Schema stability</strong>: no breaking changes without notice.</li></ul>
+<p>SLIs are the measured metrics; <strong>SLOs</strong> are targets over a window; SLAs are agreements with consequences. Tier datasets by criticality so effort matches impact.</p>
+<h4>Monitor</h4>
+<ul><li>Automated checks inside pipelines (tests, expectations) plus <strong>data observability</strong> (freshness, volume, schema and distribution anomaly detection; tools such as Monte Carlo, Soda, or custom monitors).</li><li>A dashboard of SLO status per product, with <strong>error budget</strong> consumption and burn-rate alerts.</li><li>Use <strong>lineage</strong> (OpenLineage, catalog) to know downstream dashboards, models and teams.</li></ul>
+<h4>Prevent propagation</h4>
+<p>Circuit-breaker patterns: failing critical checks <strong>stop publishing</strong> (write-audit-publish with staging tables and branch-based table formats), quarantine bad records, and mark datasets as stale with a visible banner in BI. Data contracts catch breaking upstream changes early.</p>
+<h4>Incident management</h4>
+<ol start="1"><li><strong>Detect and triage</strong>: severity levels based on consumers and decisions affected (executive report, customer-facing features, ML models).</li><li><strong>Assign</strong> an incident lead and communicate in a channel: what is known, impact, who is affected, next update time. Use lineage to notify downstream owners.</li><li><strong>Mitigate</strong>: roll back to the last good snapshot (time travel), pause downstream jobs, rerun or backfill after the fix.</li><li><strong>Recover and verify</strong> with reconciliation, then confirm to consumers.</li><li><strong>Postmortem</strong> (blameless): timeline, root and contributing causes, detection gaps, and action items such as new tests, contracts, alerts or design changes, tracked to completion.</li></ol>
+<h4>Culture</h4>
+<p>Make data reliability visible in team goals, include data on-call, and review incident trends monthly.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What would you choose as the SLIs for a critical daily revenue table?</li><li>How does lineage help during a data incident?</li><li>How do you stop bad data from propagating downstream?</li></ul>
+<p><a class="btn primary" href="../#/q/de-122">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-122%3A+How+do+you+define+SLAs+and+SLOs+for+data+products+and+manage+data%E2%80%A6&amp;question-id=de-122&amp;context=Data+engineer%2C+Gear+4%2C+topic%3A+Reliability%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-122.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

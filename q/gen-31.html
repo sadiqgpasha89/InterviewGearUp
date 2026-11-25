@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain the Floyd-Warshall dynamic programming algorithm for all-pairs shortest paths. | InterviewGearUp</title>
+<meta name="description" content="Floyd-Warshall computes shortest paths between all pairs of vertices with dynamic programming: for each intermediate vertex k, it checks whether going…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-31.html">
+<meta property="og:title" content="Explain the Floyd-Warshall dynamic programming algorithm for all-pairs shortest paths. | InterviewGearUp">
+<meta property="og:description" content="Floyd-Warshall computes shortest paths between all pairs of vertices with dynamic programming: for each intermediate vertex k, it checks whether going…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-31.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain the Floyd-Warshall dynamic programming algorithm for all-pairs shortest paths.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 3 (Senior) · Graphs · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Floyd-Warshall computes shortest paths between all pairs of vertices with dynamic programming: for each intermediate vertex k, it checks whether going through k improves the distance from i to j. It uses three nested loops, so it runs in O(V^3) time and O(V^2) space, and it handles negative edges but not negative cycles.</p></div>
+<h4>Explained in depth</h4>
+<h4>Idea</h4>
+<p>Let <code>dist[i][j]</code> be the best known distance from i to j using only vertices from the first k as intermediates. Adding vertex k as an allowed intermediate gives:</p>
+<p><code>dist[i][j] = min(dist[i][j], dist[i][k] + dist[k][j])</code></p>
+<pre><code>def floyd_warshall(dist):              # dist[i][j]: edge weight, inf if none, 0 on the diagonal
+    n = len(dist)
+    for k in range(n):                 # the intermediate vertex must be the OUTER loop
+        for i in range(n):
+            for j in range(n):
+                if dist[i][k] + dist[k][j] &lt; dist[i][j]:
+                    dist[i][j] = dist[i][k] + dist[k][j]
+    return dist</code></pre>
+<h4>Key points</h4>
+<ul><li><strong>Loop order matters</strong>: k must be the outermost loop, because the recurrence builds on results for smaller sets of intermediates.</li><li><strong>Negative cycles</strong>: after the run, if any <code>dist[i][i] &lt; 0</code>, a negative cycle exists.</li><li><strong>Path reconstruction</strong>: keep a <code>next[i][j]</code> matrix that is updated whenever a distance improves.</li><li>Complexity: O(V^3) time and O(V^2) space; it can run in place.</li></ul>
+<h4>Choosing it</h4>
+<p>Use it for dense graphs with a few hundred vertices, transitive closure (with booleans) and simple code. For sparse graphs, running Dijkstra from every vertex costs O(V * E log V), which is faster; with negative edges use Johnson&#39;s algorithm.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you detect a negative cycle with it?</li><li>How do you reconstruct the actual path, not just the distance?</li><li>When is running Dijkstra from every vertex better?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-31">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-31%3A+Explain+the+Floyd-Warshall+dynamic+programming+algorithm+for%E2%80%A6&amp;question-id=gen-31&amp;context=Software+engineer+%28core%29%2C+Gear+3%2C+topic%3A+Graphs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-31.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

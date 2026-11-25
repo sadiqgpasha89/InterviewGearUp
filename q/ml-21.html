@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do Decision Trees choose splits using Gini Impurity versus Entropy and Information Gain? | InterviewGearUp</title>
+<meta name="description" content="A decision tree picks, at each node, the split that makes the child nodes as pure as possible. Gini impurity is 1 minus the sum of squared class…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-21.html">
+<meta property="og:title" content="How do Decision Trees choose splits using Gini Impurity versus Entropy and Information Gain? | InterviewGearUp">
+<meta property="og:description" content="A decision tree picks, at each node, the split that makes the child nodes as pure as possible. Gini impurity is 1 minus the sum of squared class…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-21.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do Decision Trees choose splits using Gini Impurity versus Entropy and Information Gain?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 1 (Junior) · Tree Models · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A decision tree picks, at each node, the split that makes the child nodes as pure as possible. Gini impurity is 1 minus the sum of squared class proportions; entropy is the negative sum of p log p. Information gain is the parent&#39;s entropy minus the weighted entropy of the children. Gini and entropy usually pick very similar splits, and Gini is slightly cheaper to compute.</p></div>
+<h4>Explained in depth</h4>
+<h4>Impurity measures</h4>
+<p>With class proportions <code>p_k</code> at a node:</p>
+<ul><li><strong>Gini</strong> = 1 - sum(p_k^2). It is 0 for a pure node and 0.5 for a 50/50 binary node.</li><li><strong>Entropy</strong> = - sum(p_k * log2(p_k)). It is 0 for pure and 1 bit for 50/50.</li></ul>
+<h4>Information gain</h4>
+<p><code>Gain = Impurity(parent) - sum( (n_child / n_parent) * Impurity(child) )</code> The tree evaluates candidate splits (for each feature, each threshold between sorted values) and chooses the one with the highest gain, or the largest drop in weighted Gini. It then repeats recursively on each child.</p>
+<h4>Example</h4>
+<p>Parent has 10 samples, 5 positive and 5 negative: Gini = 0.5. A split sends (4 positive, 1 negative) left and (1 positive, 4 negative) right. Each child has Gini = 1 - (0.8^2 + 0.2^2) = 0.32, so the weighted Gini is 0.32 and the gain is 0.18.</p>
+<h4>Gini versus entropy</h4>
+<p>In practice they give almost the same trees. Gini is a little faster (no logarithm); entropy penalises mixed nodes slightly more. Information gain with raw entropy favours features with many distinct values, which is why C4.5 uses <strong>gain ratio</strong>.</p>
+<h4>Controlling overfitting</h4>
+<p>Unlimited trees memorise the training data. Use <code>max_depth</code>, <code>min_samples_leaf</code>, <code>min_impurity_decrease</code> or cost-complexity pruning. Ensembles (random forests, gradient boosting) combine many trees to reduce variance.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do trees handle continuous features when searching for thresholds?</li><li>How does pruning or max_depth prevent overfitting?</li><li>Why do random forests and boosting improve single trees?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-21">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-21%3A+How+do+Decision+Trees+choose+splits+using+Gini+Impurity+versus%E2%80%A6&amp;question-id=ml-21&amp;context=ML+%2F+AI+engineer%2C+Gear+1%2C+topic%3A+Tree+Models%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-21.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

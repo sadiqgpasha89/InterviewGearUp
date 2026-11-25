@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is feature engineering and what are common techniques? | InterviewGearUp</title>
+<meta name="description" content="Feature engineering transforms raw data into inputs that make patterns easier for a model to learn. Common techniques include encoding categories,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-104.html">
+<meta property="og:title" content="What is feature engineering and what are common techniques? | InterviewGearUp">
+<meta property="og:description" content="Feature engineering transforms raw data into inputs that make patterns easier for a model to learn. Common techniques include encoding categories,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-104.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is feature engineering and what are common techniques?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 1 (Junior) · Preprocessing · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Feature engineering transforms raw data into inputs that make patterns easier for a model to learn. Common techniques include encoding categories, scaling numbers, creating ratios and aggregations, extracting date and text features, handling missing values and outliers, and selecting features. Good features often beat switching algorithms, but every step must be fit on training data only.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why it matters</h4>
+<p>Models learn from the representation you give them. A raw timestamp means little, while &quot;hour of day&quot;, &quot;is weekend&quot; and &quot;days since last purchase&quot; expose real signals.</p>
+<h4>Common techniques</h4>
+<ul><li><strong>Categorical encoding</strong>: one-hot (few categories), ordinal (ordered categories), <strong>target or frequency encoding</strong> (many categories, with cross-validated fitting to avoid leakage), and embeddings for high-cardinality IDs.</li><li><strong>Numeric transformations</strong>: log or square-root for skewed values, binning into ranges, scaling (standardisation, min-max) for distance-based and gradient-based models, and clipping or winsorising outliers.</li><li><strong>Missing values</strong>: impute (median, mode, model-based) and add a <strong>missing indicator</strong> feature, since missingness can be informative.</li><li><strong>Interactions and ratios</strong>: price per square metre, clicks divided by impressions, products and differences of features.</li><li><strong>Date and time</strong>: hour, day of week, month, holiday flags, cyclical encoding with sine and cosine, and elapsed time.</li><li><strong>Aggregations</strong>: per-user counts, averages and recency over windows (last 7 and 30 days) from event data.</li><li><strong>Text</strong>: TF-IDF, n-grams, or embeddings; <strong>images</strong> and <strong>audio</strong> use learned or extracted features.</li><li><strong>Feature selection</strong>: remove constant, highly correlated or low-importance features using filters, regularisation (L1), or model-based importance.</li></ul>
+<h4>Rules to avoid mistakes</h4>
+<ol start="1"><li>Split data first and <strong>fit every transform on the training set only</strong> (use pipelines), to prevent leakage.</li><li>Build time-based features using only information available <strong>at prediction time</strong>.</li><li>Apply exactly the same transformations in training and serving (a feature store or shared code avoids training-serving skew).</li><li>Validate each new feature with cross-validation and ablation, and keep features documented and monitored for drift.</li></ol>
+<p>Deep learning learns many representations automatically, but on tabular data, careful feature engineering with gradient boosting remains very competitive.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>When would you use target encoding and what is its risk?</li><li>How do you create time-based features without leaking the future?</li><li>Why do tree models need less feature scaling than linear models?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-104">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-104%3A+What+is+feature+engineering+and+what+are+common+techniques%3F&amp;question-id=ml-104&amp;context=ML+%2F+AI+engineer%2C+Gear+1%2C+topic%3A+Preprocessing%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-104.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

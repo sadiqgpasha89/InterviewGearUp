@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare Recurrent Neural Networks (RNN), LSTMs, and GRUs in managing long-term temporal dependencies. | InterviewGearUp</title>
+<meta name="description" content="A vanilla RNN passes a hidden state from step to step, but repeated multiplication makes gradients vanish or explode over long sequences, so it forgets…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-34.html">
+<meta property="og:title" content="Compare Recurrent Neural Networks (RNN), LSTMs, and GRUs in managing long-term temporal dependencies. | InterviewGearUp">
+<meta property="og:description" content="A vanilla RNN passes a hidden state from step to step, but repeated multiplication makes gradients vanish or explode over long sequences, so it forgets…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-34.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare Recurrent Neural Networks (RNN), LSTMs, and GRUs in managing long-term temporal dependencies.</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 2 (Mid-level) · Deep Learning · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A vanilla RNN passes a hidden state from step to step, but repeated multiplication makes gradients vanish or explode over long sequences, so it forgets distant context. LSTMs add a cell state with input, forget and output gates that let information and gradients flow across many steps; GRUs merge these into two gates, giving similar results with fewer parameters.</p></div>
+<h4>Explained in depth</h4>
+<h4>Vanilla RNN</h4>
+<p><code>h_t = tanh(W_h h_{t-1} + W_x x_t + b)</code>. Training uses backpropagation through time, which multiplies by <code>W_h</code> and tanh derivatives at every step. Gradients <strong>vanish</strong> (so the model cannot learn dependencies more than about 10 to 20 steps back) or <strong>explode</strong> (fixed by gradient clipping).</p>
+<h4>LSTM</h4>
+<p>Adds a <strong>cell state</strong> <code>c_t</code>, a memory line with additive updates, controlled by gates (sigmoid outputs between 0 and 1):</p>
+<ul><li><strong>Forget gate</strong> <code>f_t</code>: how much of the old cell to keep.</li><li><strong>Input gate</strong> <code>i_t</code> with candidate <code>g_t</code>: what new information to write.</li><li><strong>Output gate</strong> <code>o_t</code>: how much of the cell to expose as hidden state.</li></ul>
+<p><code>c_t = f_t * c_{t-1} + i_t * g_t</code>, <code>h_t = o_t * tanh(c_t)</code> Because the cell update is mostly <strong>additive</strong> and the forget gate can stay near 1, gradients can flow across many time steps (a constant error carousel).</p>
+<h4>GRU</h4>
+<p>Two gates: an <strong>update gate</strong> (how much of the old state to keep) and a <strong>reset gate</strong> (how much past to use when proposing the new state). No separate cell state. About 25 percent fewer parameters than an LSTM and often equally accurate.</p>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th></th><th>RNN</th><th>LSTM</th><th>GRU</th></tr></thead><tbody><tr><td>Gates</td><td>None</td><td>3</td><td>2</td></tr><tr><td>Memory</td><td>Hidden state only</td><td>Hidden and cell state</td><td>Hidden state</td></tr><tr><td>Long dependencies</td><td>Poor</td><td>Good</td><td>Good</td></tr><tr><td>Parameters per unit</td><td>Fewest</td><td>Most</td><td>Between</td></tr></tbody></table></div>
+<h4>Limits</h4>
+<p>Sequential computation prevents parallelism over time steps, and very long contexts are still hard. <strong>Transformers</strong> use attention to connect any two positions directly and train in parallel, so they replaced LSTMs in most NLP tasks; RNN-style models still appear in small, streaming and low-latency settings.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does a gate that is close to 1 on the cell path help gradients?</li><li>Why have transformers largely replaced LSTMs for long-range dependencies?</li><li>When might a GRU be preferred over an LSTM?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-34">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-34%3A+Compare+Recurrent+Neural+Networks+%28RNN%29%2C+LSTMs%2C+and+GRUs+in+managing%E2%80%A6&amp;question-id=ml-34&amp;context=ML+%2F+AI+engineer%2C+Gear+2%2C+topic%3A+Deep+Learning%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-34.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

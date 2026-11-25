@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does virtualized list rendering (DOM windowing) enable smooth scrolling over 100,000 items? | InterviewGearUp</title>
+<meta name="description" content="Virtualization (windowing) renders only the rows that are visible in the viewport plus a small buffer, inside a container whose scroll height is set to…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-44.html">
+<meta property="og:title" content="How does virtualized list rendering (DOM windowing) enable smooth scrolling over 100,000 items? | InterviewGearUp">
+<meta property="og:description" content="Virtualization (windowing) renders only the rows that are visible in the viewport plus a small buffer, inside a container whose scroll height is set to…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-44.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does virtualized list rendering (DOM windowing) enable smooth scrolling over 100,000 items?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 3 (Senior) · Performance · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Virtualization (windowing) renders only the rows that are visible in the viewport plus a small buffer, inside a container whose scroll height is set to the full list size. As the user scrolls, it reuses and repositions a few dozen DOM nodes, so 100,000 items cost as little as 30 elements instead of 100,000.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why it is needed</h4>
+<p>Each DOM node costs memory and layout time. Rendering 100,000 rows makes the page slow to load, scroll and update. Browsers only show a screenful at a time, so rendering the rest is wasted work.</p>
+<h4>How it works</h4>
+<ol start="1"><li>The scroll container has a fixed height and an inner spacer whose height is <code>itemCount * itemHeight</code>, so the scrollbar looks correct.</li><li>On scroll, compute the visible range: <code>start = floor(scrollTop / itemHeight)</code> and <code>end = start + visibleCount</code>, plus <strong>overscan</strong> rows above and below to avoid blank flashes.</li><li>Render only those items, each positioned absolutely with <code>transform: translateY(index * itemHeight)</code> (or use padding above and below).</li></ol>
+<pre><code>// react-window
+&lt;FixedSizeList height={600} itemCount={100000} itemSize={40} width=&quot;100%&quot;&gt;
+  {({ index, style }) =&gt; &lt;div style={style}&gt;Row {index}&lt;/div&gt;}
+&lt;/FixedSizeList&gt;</code></pre>
+<h4>Harder cases</h4>
+<ul><li><strong>Variable heights</strong>: measure rows after rendering and cache sizes (react-virtuoso, TanStack Virtual), or estimate then correct.</li><li><strong>Grids and two-dimensional lists</strong> use the same idea in both axes.</li><li>Keep row components cheap, memoised and keyed by id.</li></ul>
+<h4>Costs</h4>
+<ul><li>Native find-in-page cannot see unrendered rows, and screen readers may not know the list size unless you set <code>aria-rowcount</code>, <code>aria-setsize</code> and <code>aria-posinset</code>.</li><li>Keyboard focus and scroll-to-item need extra logic, and fast scrolling can show blank areas.</li></ul>
+<h4>Alternatives</h4>
+<p>Pagination, infinite scroll with a cap, or CSS <code>content-visibility: auto</code>, which skips rendering of off-screen sections without JavaScript but still keeps all nodes in the DOM.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you handle rows with variable or unknown heights?</li><li>What accessibility and find-in-page problems does virtualization create?</li><li>When is content-visibility: auto enough instead?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-44">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-44%3A+How+does+virtualized+list+rendering+%28DOM+windowing%29+enable+smooth%E2%80%A6&amp;question-id=fe-44&amp;context=Frontend+engineer%2C+Gear+3%2C+topic%3A+Performance%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-44.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

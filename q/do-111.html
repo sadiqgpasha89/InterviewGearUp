@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are the basics of cloud IAM: users, groups, roles and policies, and how do you apply least privilege? | InterviewGearUp</title>
+<meta name="description" content="IAM controls who can do what on which resources. Users or workloads authenticate as identities, policies list allowed or denied actions on resources, and…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-111.html">
+<meta property="og:title" content="What are the basics of cloud IAM: users, groups, roles and policies, and how do you apply least privilege? | InterviewGearUp">
+<meta property="og:description" content="IAM controls who can do what on which resources. Users or workloads authenticate as identities, policies list allowed or denied actions on resources, and…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-111.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are the basics of cloud IAM: users, groups, roles and policies, and how do you apply least privilege?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 1 (Junior) · Cloud · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>IAM controls who can do what on which resources. Users or workloads authenticate as identities, policies list allowed or denied actions on resources, and roles let a service or person temporarily assume permissions without long-lived keys. Apply least privilege by granting only needed actions, using roles instead of shared credentials, adding conditions, and reviewing access regularly.</p></div>
+<h4>Explained in depth</h4>
+<h4>Core concepts (AWS terms, similar elsewhere)</h4>
+<ul><li><strong>Identity</strong>: a user (person), group (collection of users), or <strong>role</strong> (an identity with permissions that is assumed temporarily by a person, service or another account).</li><li><strong>Policy</strong>: a JSON document with statements: <code>Effect</code> (Allow or Deny), <code>Action</code> (such as <code>s3:GetObject</code>), <code>Resource</code> (what it applies to), and optional <code>Condition</code> (source IP, MFA, tags).</li><li><strong>Authentication</strong> proves who you are; <strong>authorisation</strong> (policies) decides what you may do. By default everything is <strong>denied</strong>; an explicit deny always wins.</li></ul>
+<pre><code>{
+  &quot;Effect&quot;: &quot;Allow&quot;,
+  &quot;Action&quot;: [&quot;s3:GetObject&quot;],
+  &quot;Resource&quot;: &quot;arn:aws:s3:::reports-bucket/finance/*&quot;
+}</code></pre>
+<h4>Roles instead of keys</h4>
+<p>Applications on a server, container or function should use an <strong>attached role</strong> (instance profile, IRSA for Kubernetes, workload identity), which provides <strong>short-lived, automatically rotated credentials</strong>. Long-lived access keys are a common source of breaches.</p>
+<h4>Least privilege in practice</h4>
+<ol start="1"><li>Start with <strong>no access</strong>, add what is needed. Avoid <code>*</code> for actions and resources and avoid admin policies for applications.</li><li>Use groups or roles by job function, not per-user policies, and separate duties (developers cannot change production IAM).</li><li>Require <strong>MFA</strong>, use SSO with a central identity provider, and protect the root account.</li><li>Add <strong>conditions</strong> (tags, networks, time) and permission boundaries or service control policies for guardrails across accounts.</li><li><strong>Review regularly</strong>: use access analyzers and &quot;last accessed&quot; data to remove unused permissions, and alert on risky changes.</li><li>Log all API activity (CloudTrail) for audit.</li></ol>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the difference between an identity-based and a resource-based policy?</li><li>Why prefer roles over access keys for applications?</li><li>How do you find and remove unused permissions?</li></ul>
+<p><a class="btn primary" href="../#/q/do-111">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-111%3A+What+are+the+basics+of+cloud+IAM%3A+users%2C+groups%2C+roles+and+policies%2C%E2%80%A6&amp;question-id=do-111&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+1%2C+topic%3A+Cloud%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-111.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

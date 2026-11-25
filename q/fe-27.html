@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are CSS Container Queries and how do they differ from viewport Media Queries? | InterviewGearUp</title>
+<meta name="description" content="Container queries apply styles based on the size of a component&#39;s containing element, not the viewport. You mark a parent with container-type and then…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-27.html">
+<meta property="og:title" content="What are CSS Container Queries and how do they differ from viewport Media Queries? | InterviewGearUp">
+<meta property="og:description" content="Container queries apply styles based on the size of a component&#39;s containing element, not the viewport. You mark a parent with container-type and then…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-27.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are CSS Container Queries and how do they differ from viewport Media Queries?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 3 (Senior) · CSS · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Container queries apply styles based on the size of a component&#39;s containing element, not the viewport. You mark a parent with container-type and then write @container rules, so a card can switch layout depending on the space it is given wherever it is placed. Media queries only know the viewport, so they cannot adapt a reusable component to its context.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why they exist</h4>
+<p>A card in a wide main column and the same card in a narrow sidebar need different layouts, but the viewport width is identical. Media queries cannot distinguish them; container queries can.</p>
+<h4>Usage</h4>
+<pre><code>.card-wrapper {
+  container-type: inline-size;   /* make this element a query container */
+  container-name: card;          /* optional */
+}
+
+.card { display: grid; gap: 8px; }
+
+@container card (min-width: 480px) {
+  .card { grid-template-columns: 160px 1fr; }   /* side-by-side when there is room */
+}</code></pre>
+<h4>Details</h4>
+<ul><li><code>container-type: inline-size</code> lets descendants query the container&#39;s <strong>width</strong> (the inline axis). The container&#39;s own size must not depend on its contents along that axis, which is why the property creates containment.</li><li>Container query units (<code>cqw</code>, <code>cqh</code>, <code>cqi</code>) size things relative to the container.</li><li>Style queries (<code>@container style(--theme: dark)</code>) are a newer, separate feature with narrower support.</li><li>Support is broad in current browsers; older ones need a fallback layout.</li></ul>
+<h4>Media versus container</h4>
+<ul><li><strong>Media queries</strong>: page-level decisions such as navigation layout, global typography and user preferences (<code>prefers-color-scheme</code>, print).</li><li><strong>Container queries</strong>: component-level responsiveness in design systems, where placement varies.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>What does container-type: inline-size actually do?</li><li>What are container query length units like cqw?</li><li>When are media queries still the right tool?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-27">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-27%3A+What+are+CSS+Container+Queries+and+how+do+they+differ+from+viewport%E2%80%A6&amp;question-id=fe-27&amp;context=Frontend+engineer%2C+Gear+3%2C+topic%3A+CSS%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-27.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

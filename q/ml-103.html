@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does logistic regression work, and why is it used for classification despite the name? | InterviewGearUp</title>
+<meta name="description" content="Logistic regression computes a weighted sum of the features, passes it through the sigmoid function to get a probability between 0 and 1, and classifies…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-103.html">
+<meta property="og:title" content="How does logistic regression work, and why is it used for classification despite the name? | InterviewGearUp">
+<meta property="og:description" content="Logistic regression computes a weighted sum of the features, passes it through the sigmoid function to get a probability between 0 and 1, and classifies…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-103.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does logistic regression work, and why is it used for classification despite the name?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 1 (Junior) · Models · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Logistic regression computes a weighted sum of the features, passes it through the sigmoid function to get a probability between 0 and 1, and classifies by comparing that probability to a threshold. It is trained by minimising log loss, gives interpretable coefficients, and is a strong baseline for binary classification, with softmax extending it to several classes.</p></div>
+<h4>Explained in depth</h4>
+<h4>Model</h4>
+<ol start="1"><li>Compute a linear score: <code>z = w1*x1 + w2*x2 + ... + b</code>.</li><li>Apply the <strong>sigmoid</strong> function: <code>p = 1 / (1 + e^(-z))</code>. This squashes any number into the range 0 to 1, interpreted as the probability that the example belongs to the positive class.</li><li>Predict class 1 if <code>p &gt;= threshold</code> (0.5 by default).</li></ol>
+<p>The name comes from the <strong>logit</strong> (log-odds): <code>log(p / (1 - p)) = z</code>, so the model is linear in the log-odds.</p>
+<h4>Training</h4>
+<ul><li>The loss is <strong>binary cross-entropy (log loss)</strong>: <code>-[y log p + (1-y) log(1-p)]</code>, averaged over examples. It heavily penalises confident wrong predictions.</li><li>It is convex, so gradient descent (or solvers like L-BFGS) finds the global optimum.</li><li>Add <strong>L1 or L2 regularisation</strong> to prevent overfitting; in scikit-learn, parameter <code>C</code> is the inverse of regularisation strength.</li></ul>
+<h4>Interpretation</h4>
+<p>Each coefficient is the change in log-odds for a one-unit increase in a feature (holding others fixed); <code>exp(w)</code> is the <strong>odds ratio</strong>. This is why it is popular in medicine, credit and other regulated settings.</p>
+<h4>Practical points</h4>
+<ul><li><strong>Scale</strong> features for faster convergence and fair regularisation.</li><li>It assumes a <strong>linear decision boundary</strong> in the feature space; add interactions or polynomial features, or use trees and neural networks for non-linear patterns.</li><li>For <strong>imbalanced</strong> data, use class weights, and evaluate with precision, recall and PR-AUC; pick the threshold based on business costs.</li><li>Probabilities are usually reasonably <strong>calibrated</strong>, which is useful for ranking and decision making.</li><li>Multiclass: one-vs-rest or <strong>softmax (multinomial) regression</strong>.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How is logistic regression different from linear regression?</li><li>How do you interpret a coefficient in logistic regression?</li><li>How do you choose the decision threshold?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-103">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-103%3A+How+does+logistic+regression+work%2C+and+why+is+it+used+for%E2%80%A6&amp;question-id=ml-103&amp;context=ML+%2F+AI+engineer%2C+Gear+1%2C+topic%3A+Models%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-103.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

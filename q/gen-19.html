@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare AVL trees and Red-Black trees: Rotations, height balance invariants, and read vs write trade-offs. | InterviewGearUp</title>
+<meta name="description" content="Both are self-balancing binary search trees with O(log N) operations. AVL trees keep subtree heights within 1 of each other, so they are shallower and…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-19.html">
+<meta property="og:title" content="Compare AVL trees and Red-Black trees: Rotations, height balance invariants, and read vs write trade-offs. | InterviewGearUp">
+<meta property="og:description" content="Both are self-balancing binary search trees with O(log N) operations. AVL trees keep subtree heights within 1 of each other, so they are shallower and…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-19.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare AVL trees and Red-Black trees: Rotations, height balance invariants, and read vs write trade-offs.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 3 (Senior) · Data structures · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Both are self-balancing binary search trees with O(log N) operations. AVL trees keep subtree heights within 1 of each other, so they are shallower and faster to search; red-black trees use looser colour rules, so inserts and deletes need fewer rotations. Pick AVL for read-heavy workloads and red-black for mixed or write-heavy ones.</p></div>
+<h4>Explained in depth</h4>
+<h4>Invariants</h4>
+<ul><li><strong>AVL</strong>: for every node the heights of the left and right subtrees differ by at most 1. Height is at most about 1.44 log2 N.</li><li><strong>Red-black</strong>: the root is black, a red node never has a red child, and every path from a node to its null leaves has the same number of black nodes. Height is at most 2 log2(N + 1).</li></ul>
+<h4>Rebalancing</h4>
+<ul><li>AVL uses four rotation cases (left-left, right-right, left-right, right-left), based on the balance factor. An insert needs at most one single or double rotation; a delete may need rotations all the way up, O(log N).</li><li>Red-black fixes violations mostly by <strong>recolouring</strong>, with at most two rotations on insert and three on delete. Recolouring can propagate up the tree, but the structural change stays small.</li></ul>
+<h4>Trade-offs</h4>
+<div class="md-table"><table><thead><tr><th></th><th>AVL</th><th>Red-black</th></tr></thead><tbody><tr><td>Lookup</td><td>Slightly faster (shallower)</td><td>Slightly slower</td></tr><tr><td>Insert and delete</td><td>More rotations</td><td>Fewer rotations</td></tr><tr><td>Extra data per node</td><td>Height or balance factor</td><td>One colour bit</td></tr><tr><td>Typical use</td><td>Read-heavy indexes</td><td>General-purpose maps and sets</td></tr></tbody></table></div>
+<p>Common library maps such as Java&#39;s TreeMap and typical C++ std::map implementations use red-black trees, because they balance lookup speed against update cost. Both guarantee O(log N); the difference is a constant factor that depends on the read and write mix.</p>
+<p>In practice, for in-memory ordered maps, B-trees or skip lists are often faster because of cache behaviour, and database indexes use B-trees to reduce disk reads.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Walk through a left-right case rotation in an AVL tree.</li><li>Why do database indexes use B-trees instead of AVL or red-black trees?</li><li>What is the minimum number of nodes in an AVL tree of height h?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-19">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-19%3A+Compare+AVL+trees+and+Red-Black+trees%3A+Rotations%2C+height+balance%E2%80%A6&amp;question-id=gen-19&amp;context=Software+engineer+%28core%29%2C+Gear+3%2C+topic%3A+Data+structures%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-19.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

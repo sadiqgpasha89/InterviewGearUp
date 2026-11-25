@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you design a backend to degrade gracefully and shed load when it is overloaded? | InterviewGearUp</title>
+<meta name="description" content="Protect the system by limiting concurrency and queue length, rejecting excess work early with 429 or 503, prioritising critical requests, using timeouts,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-114.html">
+<meta property="og:title" content="How do you design a backend to degrade gracefully and shed load when it is overloaded? | InterviewGearUp">
+<meta property="og:description" content="Protect the system by limiting concurrency and queue length, rejecting excess work early with 429 or 503, prioritising critical requests, using timeouts,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-114.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you design a backend to degrade gracefully and shed load when it is overloaded?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 4 (Lead / Staff) · Reliability · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Protect the system by limiting concurrency and queue length, rejecting excess work early with 429 or 503, prioritising critical requests, using timeouts, circuit breakers and bulkheads, serving cached or reduced responses when dependencies fail, and applying adaptive controls such as backpressure and autoscaling. Test with load and chaos experiments so overload becomes a controlled degradation, not a collapse.</p></div>
+<h4>Explained in depth</h4>
+<h4>The failure mode</h4>
+<p>When demand exceeds capacity, latency rises, queues grow, timeouts trigger <strong>retries</strong>, which add more load (a retry storm), and the service enters a <strong>metastable failure</strong> where it stays down even after the original spike ends. Goodput (useful work) collapses.</p>
+<h4>Principles</h4>
+<ol start="1"><li><strong>Bound everything</strong>: limit concurrent requests, thread pools and queue sizes. An unbounded queue just converts overload into long latency, and requests are often abandoned by clients before being processed.</li><li><strong>Fail fast</strong>: reject excess work <strong>early and cheaply</strong> with <code>429</code> or <code>503</code> and <code>Retry-After</code>, rather than accepting and timing out.</li><li><strong>Timeouts and deadlines</strong>: every call has a timeout, and the remaining <strong>deadline</strong> is propagated downstream so work no one is waiting for is cancelled.</li><li><strong>Retries with discipline</strong>: exponential backoff with jitter, retry budgets (for example at most 10 percent extra traffic), and retries only at one layer.</li></ol>
+<h4>Load shedding strategies</h4>
+<ul><li><strong>Priority classes</strong>: protect critical paths (checkout, login) and drop low-value traffic (recommendations, analytics, batch) first.</li><li><strong>Adaptive concurrency limits</strong> (such as gradient-based limiters, CoDel-style queue delay) that find capacity automatically.</li><li><strong>Per-client quotas and rate limits</strong> so one tenant cannot consume everything.</li><li>Shed based on cost: reject expensive requests when CPU is high.</li></ul>
+<h4>Isolation and degradation</h4>
+<ul><li><strong>Bulkheads</strong>: separate thread or connection pools per dependency, so a slow one cannot exhaust all resources.</li><li><strong>Circuit breakers</strong>: stop calling a failing dependency, return a fallback, and probe for recovery.</li><li><strong>Graceful degradation</strong>: serve cached or stale data, disable optional features (feature flags), simplify responses, or queue non-urgent work.</li><li><strong>Backpressure</strong>: propagate slowness upstream through bounded queues and streaming flow control.</li></ul>
+<h4>Capacity and operations</h4>
+<p>Autoscaling (scale on queue depth or latency, with warm-up time), headroom for spikes, and load tests beyond expected peak. Alert on saturation signals (queue time, CPU, pool usage), keep runbooks, and run game days to verify the breakers and shedding rules behave.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why do unbounded queues make overload worse?</li><li>How do you decide which requests to drop first?</li><li>What is the difference between a circuit breaker and a bulkhead?</li></ul>
+<p><a class="btn primary" href="../#/q/be-114">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-114%3A+How+do+you+design+a+backend+to+degrade+gracefully+and+shed+load+when%E2%80%A6&amp;question-id=be-114&amp;context=Backend+engineer%2C+Gear+4%2C+topic%3A+Reliability%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-114.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

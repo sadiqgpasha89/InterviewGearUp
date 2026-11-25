@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Design a real-time typeahead (search suggestion) service that answers in under 100 ms. | InterviewGearUp</title>
+<meta name="description" content="Precompute the most popular completions for each prefix from query logs, store them in a trie or prefix-keyed cache with the top suggestions at each…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-110.html">
+<meta property="og:title" content="Design a real-time typeahead (search suggestion) service that answers in under 100 ms. | InterviewGearUp">
+<meta property="og:description" content="Precompute the most popular completions for each prefix from query logs, store them in a trie or prefix-keyed cache with the top suggestions at each…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-110.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Design a real-time typeahead (search suggestion) service that answers in under 100 ms.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 4 (Lead / Staff) · System design · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Precompute the most popular completions for each prefix from query logs, store them in a trie or prefix-keyed cache with the top suggestions at each node, serve them from memory behind a CDN and local caches, and refresh the data in batches or near real time. Debounce on the client, personalise lightly, and filter unsafe suggestions.</p></div>
+<h4>Explained in depth</h4>
+<h4>Requirements</h4>
+<p>Return the top 5 to 10 suggestions for a typed prefix in <strong>under 100 ms</strong>, at very high read volume (every keystroke), with suggestions reflecting popularity and freshness.</p>
+<h4>Data structure</h4>
+<p>A <strong>trie (prefix tree)</strong> where each node stores the <strong>top-k completions</strong> with scores for the prefix ending there. Lookup is O(length of prefix) plus constant time to read the cached top-k, because we avoid traversing the subtree at query time. Alternatives: a key-value store keyed by prefix (<code>&quot;ca&quot;</code> to <code>[&quot;cat&quot;, &quot;car&quot;, ...]</code>), or a search engine with edge n-grams, which is simpler to run.</p>
+<h4>Offline and online pipeline</h4>
+<ol start="1"><li><strong>Log collection</strong>: queries from the search service flow through Kafka.</li><li><strong>Aggregation</strong>: batch jobs (hourly or daily) count queries with time decay and filters (remove spam, adult content, personal data and rare queries).</li><li><strong>Trie builder</strong>: builds a new trie or prefix map snapshot and publishes it to the serving fleet, which swaps it in atomically.</li><li><strong>Trending</strong>: a streaming path (Flink or Spark Streaming) updates scores for fast-rising queries within minutes.</li></ol>
+<h4>Serving</h4>
+<ul><li><strong>In-memory</strong> serving nodes, sharded by prefix range (for example by first one or two characters, balanced for load) and replicated.</li><li><strong>Caching</strong>: CDN or edge for common short prefixes, a browser cache, and Redis.</li><li>Client: <strong>debounce</strong> requests (wait 100 to 200 ms after typing stops), cancel outdated requests, and prefetch.</li><li>Handle typos with fuzzy matching on the long tail.</li></ul>
+<h4>Personalisation and safety</h4>
+<p>Blend global popularity with the user&#39;s recent searches and location, computed from a small profile fetched in parallel. Block offensive suggestions with deny lists, and respect privacy settings.</p>
+<h4>Metrics</h4>
+<p>Latency percentiles, suggestion click-through, keystrokes saved, and freshness lag.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you update suggestions for trending queries quickly?</li><li>How do you shard a trie across servers?</li><li>How do you personalise suggestions without hurting latency?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-110">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-110%3A+Design+a+real-time+typeahead+%28search+suggestion%29+service+that%E2%80%A6&amp;question-id=gen-110&amp;context=Software+engineer+%28core%29%2C+Gear+4%2C+topic%3A+System+design%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-110.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

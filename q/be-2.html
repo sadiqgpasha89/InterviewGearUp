@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is the difference between INNER JOIN and LEFT JOIN? | InterviewGearUp</title>
+<meta name="description" content="INNER JOIN returns only rows with a match in both tables. LEFT JOIN returns every row from the left table and fills the right side with NULLs where there…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-2.html">
+<meta property="og:title" content="What is the difference between INNER JOIN and LEFT JOIN? | InterviewGearUp">
+<meta property="og:description" content="INNER JOIN returns only rows with a match in both tables. LEFT JOIN returns every row from the left table and fills the right side with NULLs where there…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-2.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is the difference between INNER JOIN and LEFT JOIN?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 1 (Junior) · SQL · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>INNER JOIN returns only rows with a match in both tables. LEFT JOIN returns every row from the left table and fills the right side with NULLs where there is no match.</p></div>
+<h4>Explained in depth</h4>
+<pre><code>-- customers who placed orders
+SELECT c.name, o.id FROM customers c JOIN orders o ON o.customer_id = c.id;
+
+-- all customers; order columns are NULL when none exist
+SELECT c.name, o.id FROM customers c LEFT JOIN orders o ON o.customer_id = c.id;
+
+-- customers who never ordered
+SELECT c.name FROM customers c LEFT JOIN orders o ON o.customer_id = c.id WHERE o.id IS NULL;</code></pre>
+<p><strong>Gotcha 1</strong>: a condition on the right table in the <code>WHERE</code> clause of a LEFT JOIN removes the NULL rows and turns it into an inner join. Put such conditions in the <code>ON</code> clause.</p>
+<p><strong>Gotcha 2</strong>: joining a one-to-many relationship multiplies rows, so aggregates over the parent can double count. Aggregate first or use <code>COUNT(DISTINCT ...)</code>.</p>
+<p>A primary key uniquely identifies a row; a foreign key refers to another table&#39;s primary key and enforces referential integrity.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you find customers who never placed an order?</li><li>What does a FULL OUTER JOIN do?</li><li>Why did my SUM double after adding a join?</li></ul>
+<p><a class="btn primary" href="../#/q/be-2">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-2%3A+What+is+the+difference+between+INNER+JOIN+and+LEFT+JOIN%3F&amp;question-id=be-2&amp;context=Backend+engineer%2C+Gear+1%2C+topic%3A+SQL%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-2.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

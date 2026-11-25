@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Warehouse or lakehouse? How do you choose, and how do you govern data quality across teams? | InterviewGearUp</title>
+<meta name="description" content="A warehouse gives managed, fast SQL on curated data. A lake gives cheap, flexible storage. A lakehouse adds table formats (Delta, Iceberg, Hudi) with…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-7.html">
+<meta property="og:title" content="Warehouse or lakehouse? How do you choose, and how do you govern data quality across teams? | InterviewGearUp">
+<meta property="og:description" content="A warehouse gives managed, fast SQL on curated data. A lake gives cheap, flexible storage. A lakehouse adds table formats (Delta, Iceberg, Hudi) with…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-7.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Warehouse or lakehouse? How do you choose, and how do you govern data quality across teams?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 4 (Lead / Staff) · Strategy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A warehouse gives managed, fast SQL on curated data. A lake gives cheap, flexible storage. A lakehouse adds table formats (Delta, Iceberg, Hudi) with ACID guarantees on open files, so one copy serves BI and ML. Choose by workloads, governance needs, skills and lock-in tolerance.</p></div>
+<h4>Explained in depth</h4>
+<h4>Decision factors</h4>
+<p>Data variety (unstructured data and ML versus mostly relational BI), concurrency and latency needs, cost model (separation of storage and compute), open formats and portability (Iceberg is engine-neutral), governance features (catalog, lineage, row and column security), and team skills. Many organisations run both: a lakehouse for raw and large data, a warehouse for serving.</p>
+<h4>Governance at scale</h4>
+<ul><li><strong>Data contracts</strong> between producers and consumers: schema, semantics, SLAs and named owners.</li><li><strong>Quality tests at ingestion</strong>, with freshness and completeness SLAs.</li><li><strong>Ownership by domain</strong>, with a central platform providing paved roads (data mesh only works if the organisation is big enough to staff it).</li><li>Cataloguing, PII classification and access policies.</li><li>Cost controls: tagging, query limits, lifecycle rules.</li></ul>
+<h4>Migration</h4>
+<p>Move domain by domain, run old and new in parallel, and reconcile outputs before cutover. Avoid big-bang migrations.</p>
+<p>Success metrics: freshness, number of trusted datasets in use, data incidents, cost per query.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What do Iceberg or Delta give you over plain Parquet files?</li><li>What is a data contract?</li><li>When is data mesh a bad idea?</li></ul>
+<p><a class="btn primary" href="../#/q/de-7">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-7%3A+Warehouse+or+lakehouse%3F+How+do+you+choose%2C+and+how+do+you+govern%E2%80%A6&amp;question-id=de-7&amp;context=Data+engineer%2C+Gear+4%2C+topic%3A+Strategy%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-7.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

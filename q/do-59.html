@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does OpenTelemetry collect, process, and export distributed traces, metrics, and logs? | InterviewGearUp</title>
+<meta name="description" content="OpenTelemetry is a vendor-neutral standard and SDK for generating traces, metrics and logs. Applications use the API and SDK or auto-instrumentation to…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-59.html">
+<meta property="og:title" content="How does OpenTelemetry collect, process, and export distributed traces, metrics, and logs? | InterviewGearUp">
+<meta property="og:description" content="OpenTelemetry is a vendor-neutral standard and SDK for generating traces, metrics and logs. Applications use the API and SDK or auto-instrumentation to…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-59.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does OpenTelemetry collect, process, and export distributed traces, metrics, and logs?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · Observability · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>OpenTelemetry is a vendor-neutral standard and SDK for generating traces, metrics and logs. Applications use the API and SDK or auto-instrumentation to create telemetry with context propagation, send it via OTLP to a Collector, which receives, processes (batching, filtering, sampling, enriching) and exports it to one or more backends such as Jaeger, Prometheus or a commercial platform.</p></div>
+<h4>Explained in depth</h4>
+<h4>The pieces</h4>
+<ul><li><strong>API and SDK</strong> (per language): create <strong>spans</strong> (timed operations with attributes), <strong>metrics</strong> and <strong>logs</strong>, with resource attributes such as <code>service.name</code>.</li><li><strong>Instrumentation</strong>: automatic for common libraries (HTTP, database drivers) or manual for business operations.</li><li><strong>OTLP</strong>: the standard protocol (gRPC or HTTP) for sending telemetry.</li><li><strong>Collector</strong>: a separate agent or gateway with a pipeline of <strong>receivers</strong>, <strong>processors</strong> and <strong>exporters</strong>.</li></ul>
+<pre><code># OpenTelemetry Collector pipeline (simplified)
+receivers:
+  otlp: { protocols: { grpc: {}, http: {} } }
+processors:
+  batch: {}
+  memory_limiter: { check_interval: 1s, limit_mib: 512 }
+exporters:
+  otlphttp: { endpoint: https://tracing-backend.example.com }
+service:
+  pipelines:
+    traces: { receivers: [otlp], processors: [memory_limiter, batch], exporters: [otlphttp] }</code></pre>
+<h4>Distributed tracing</h4>
+<p>A trace is a tree of spans for one request. <strong>Context propagation</strong> passes the trace id and parent span id between services in headers (W3C <code>traceparent</code>), so a span in service B attaches to the correct parent in service A.</p>
+<h4>Why use a Collector</h4>
+<p>It offloads batching, retries and compression from the app, lets you change backends or add destinations without redeploying code, and centralises <strong>sampling</strong>, redaction of sensitive attributes and enrichment (such as Kubernetes metadata).</p>
+<h4>Sampling</h4>
+<ul><li><strong>Head-based</strong>: decided at the start of the trace (cheap, but may miss rare errors).</li><li><strong>Tail-based</strong>: decided after the trace completes in the Collector (keep errors and slow traces), but needs buffering and routing all spans of a trace to the same collector.</li></ul>
+<h4>Benefits</h4>
+<p>One instrumentation standard, no vendor lock-in, and correlated traces, metrics and logs through shared trace ids.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the difference between head-based and tail-based sampling?</li><li>How does context propagation link spans across services?</li><li>Why run a Collector instead of exporting directly from the application?</li></ul>
+<p><a class="btn primary" href="../#/q/do-59">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-59%3A+How+does+OpenTelemetry+collect%2C+process%2C+and+export+distributed%E2%80%A6&amp;question-id=do-59&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+Observability%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-59.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

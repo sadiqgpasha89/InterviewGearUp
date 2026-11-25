@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does the Bellman-Ford algorithm compute shortest paths and detect negative weight cycles? | InterviewGearUp</title>
+<meta name="description" content="Bellman-Ford relaxes every edge V-1 times, because a shortest simple path has at most V-1 edges. It handles negative edge weights in O(V*E). If a further…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-30.html">
+<meta property="og:title" content="How does the Bellman-Ford algorithm compute shortest paths and detect negative weight cycles? | InterviewGearUp">
+<meta property="og:description" content="Bellman-Ford relaxes every edge V-1 times, because a shortest simple path has at most V-1 edges. It handles negative edge weights in O(V*E). If a further…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-30.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does the Bellman-Ford algorithm compute shortest paths and detect negative weight cycles?</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 3 (Senior) · Graphs · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Bellman-Ford relaxes every edge V-1 times, because a shortest simple path has at most V-1 edges. It handles negative edge weights in O(V*E). If a further pass can still relax an edge, there is a negative cycle reachable from the source.</p></div>
+<h4>Explained in depth</h4>
+<pre><code>def bellman_ford(n, edges, src):          # edges = [(u, v, w), ...]
+    INF = float(&#39;inf&#39;)
+    dist = [INF] * n
+    dist[src] = 0
+    for _ in range(n - 1):
+        changed = False
+        for u, v, w in edges:
+            if dist[u] != INF and dist[u] + w &lt; dist[v]:
+                dist[v] = dist[u] + w
+                changed = True
+        if not changed:
+            break                          # early exit
+    for u, v, w in edges:                  # one more pass
+        if dist[u] != INF and dist[u] + w &lt; dist[v]:
+            return None                    # negative cycle reachable
+    return dist</code></pre>
+<h4>Why V-1 rounds</h4>
+<p>After round k, every vertex whose shortest path uses at most k edges has its correct distance. Without negative cycles, shortest paths are simple and use at most V-1 edges, so V-1 rounds are enough.</p>
+<h4>Detecting a negative cycle</h4>
+<p>A negative cycle lets you keep lowering distances forever. If any edge can still be relaxed in round V, a negative cycle is reachable from the source. To list the cycle, follow predecessor links back from that vertex V times to land inside it.</p>
+<h4>Notes</h4>
+<ul><li>Cost O(V*E), slower than Dijkstra, but it works with negative edges.</li><li>An undirected edge with negative weight is itself a negative cycle.</li><li>Uses: currency arbitrage (use the negative log of exchange rates), distance-vector routing, and as a step in Johnson&#39;s algorithm. The queue-based variant (SPFA) is often faster in practice but has the same worst case.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is the distance array not final if a negative cycle exists?</li><li>How would you detect currency arbitrage with Bellman-Ford?</li><li>How does Johnson&#39;s algorithm use Bellman-Ford?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-30">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-30%3A+How+does+the+Bellman-Ford+algorithm+compute+shortest+paths+and%E2%80%A6&amp;question-id=gen-30&amp;context=Software+engineer+%28core%29%2C+Gear+3%2C+topic%3A+Graphs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-30.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

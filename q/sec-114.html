@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you design a secrets and encryption key management strategy across multiple clouds and teams? | InterviewGearUp</title>
+<meta name="description" content="Centralise policy but not necessarily storage: use a managed secrets manager and KMS in each environment, issue short-lived workload credentials through…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-114.html">
+<meta property="og:title" content="How do you design a secrets and encryption key management strategy across multiple clouds and teams? | InterviewGearUp">
+<meta property="og:description" content="Centralise policy but not necessarily storage: use a managed secrets manager and KMS in each environment, issue short-lived workload credentials through…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-114.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you design a secrets and encryption key management strategy across multiple clouds and teams?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 4 (Lead / Staff) · Cryptography · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Centralise policy but not necessarily storage: use a managed secrets manager and KMS in each environment, issue short-lived workload credentials through identity federation instead of static keys, apply envelope encryption with separated key hierarchy and rotation, enforce least privilege and audit logging, automate rotation and detection of leaked secrets, and plan for recovery and key custody requirements.</p></div>
+<h4>Explained in depth</h4>
+<h4>Goals</h4>
+<p>No secrets in code or config repositories, minimal long-lived credentials, clear ownership, strong cryptographic hygiene, auditability, and the ability to rotate and revoke quickly.</p>
+<h4>Secrets management</h4>
+<ul><li><strong>Eliminate secrets where possible</strong>: use <strong>workload identity</strong> (IAM roles, Kubernetes service accounts with OIDC, SPIFFE) so applications authenticate to cloud services and databases without stored keys.</li><li>For remaining secrets, use a <strong>secrets manager</strong> (HashiCorp Vault, AWS Secrets Manager, Azure Key Vault, GCP Secret Manager). Prefer <strong>dynamic secrets</strong> (database credentials generated per application with short TTLs) over static ones.</li><li>Delivery: applications fetch at runtime (sidecar, CSI driver, external secrets operator), cache briefly, and never log them. CI/CD uses <strong>OIDC federation</strong> to clouds.</li><li><strong>Rotation</strong>: automated schedules, dual-credential or versioned secrets so clients can pick up the new value before the old one expires (zero downtime), and an emergency rotation runbook.</li><li><strong>Detection</strong>: secret scanning in repositories, CI logs and container images; alerts and automated revocation on exposure.</li></ul>
+<h4>Key management for encryption</h4>
+<ul><li><strong>KMS-backed envelope encryption</strong>: data is encrypted with a data encryption key (DEK), which is encrypted by a key encryption key (KEK) held in a KMS or HSM; this scales and keeps master keys out of applications.</li><li><strong>Key hierarchy and separation</strong>: separate keys by environment, data classification and tenant, with distinct administrators and users (key admins cannot decrypt data).</li><li><strong>Policies</strong>: least-privilege key policies, grants scoped to services, conditions on source, mandatory audit logging (CloudTrail, Cloud Audit Logs) and alerts for unusual use.</li><li><strong>Rotation and lifecycle</strong>: automatic annual rotation, key versions retained for decryption, controlled destruction with waiting periods, and crypto-agility to change algorithms.</li><li>Use approved algorithms (AES-256-GCM, ECDSA, RSA 3072 or more) and FIPS-validated HSMs where regulation requires.</li></ul>
+<h4>Multi-cloud design</h4>
+<ul><li>A <strong>common policy and abstraction layer</strong> (Vault as a control plane, or consistent standards per cloud) with provider-native services in each cloud for performance and availability.</li><li>Options for <strong>bring your own key (BYOK)</strong> or <strong>hold your own key (external key store)</strong> when customers or regulators require control; understand availability trade-offs.</li><li>Consistent naming, tagging and ownership metadata, and shared libraries for access.</li></ul>
+<h4>Operations and governance</h4>
+<p>Ownership per secret and key, inventory and lifecycle reports, access reviews, break-glass procedures, backup and disaster recovery of the secrets platform (Vault unseal, replication across regions), and regular drills. Measure the number of static secrets, rotation age, and incidents.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is envelope encryption and why is it used?</li><li>When would you use customer-managed keys or external key management?</li><li>How do you rotate a secret used by many applications with zero downtime?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-114">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-114%3A+How+do+you+design+a+secrets+and+encryption+key+management+strategy%E2%80%A6&amp;question-id=sec-114&amp;context=Security+engineer%2C+Gear+4%2C+topic%3A+Cryptography%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-114.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

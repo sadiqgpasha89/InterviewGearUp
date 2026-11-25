@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do GraphQL and REST compare, and how do you resolve the GraphQL N+1 problem? | InterviewGearUp</title>
+<meta name="description" content="REST exposes many resource URLs with fixed response shapes, while GraphQL exposes one endpoint where the client asks for exactly the fields it needs.…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-10.html">
+<meta property="og:title" content="How do GraphQL and REST compare, and how do you resolve the GraphQL N+1 problem? | InterviewGearUp">
+<meta property="og:description" content="REST exposes many resource URLs with fixed response shapes, while GraphQL exposes one endpoint where the client asks for exactly the fields it needs.…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-10.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do GraphQL and REST compare, and how do you resolve the GraphQL N+1 problem?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 2 (Mid-level) · APIs · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>REST exposes many resource URLs with fixed response shapes, while GraphQL exposes one endpoint where the client asks for exactly the fields it needs. GraphQL avoids over-fetching and extra round trips but needs query cost control and caching work. Its N+1 problem, where a list resolver triggers one query per item, is solved by batching with DataLoader.</p></div>
+<h4>Explained in depth</h4>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th></th><th>REST</th><th>GraphQL</th></tr></thead><tbody><tr><td>Endpoints</td><td>Many (<code>/users/1</code>, <code>/users/1/orders</code>)</td><td>Usually one (<code>/graphql</code>)</td></tr><tr><td>Response shape</td><td>Fixed by the server</td><td>Chosen by the client query</td></tr><tr><td>Over- and under-fetching</td><td>Common, may need several calls</td><td>Avoided, one request can span resources</td></tr><tr><td>Caching</td><td>Easy with HTTP and CDNs (GET and URL)</td><td>Harder; needs persisted queries or client caches</td></tr><tr><td>Versioning</td><td>URL or header versions</td><td>Evolve the schema, deprecate fields</td></tr><tr><td>Typing</td><td>Optional (OpenAPI)</td><td>Built in (schema and introspection)</td></tr><tr><td>Errors</td><td>HTTP status codes</td><td>Usually 200 with an <code>errors</code> array</td></tr></tbody></table></div>
+<h4>The N+1 problem</h4>
+<pre><code>{ posts { title author { name } } }</code></pre>
+<p>The posts resolver runs 1 query for the list, then the <code>author</code> resolver runs once <strong>per post</strong> (N queries). With 100 posts that is 101 queries.</p>
+<h4>Fix with batching</h4>
+<p><strong>DataLoader</strong> collects all author ids requested in the same tick and fetches them with one query (<code>WHERE id IN (...)</code>), then maps results back to each caller, plus per-request caching. Other fixes: join or prefetch in the parent resolver, or look-ahead on the requested fields.</p>
+<h4>Operational concerns</h4>
+<p>Limit query depth and complexity, set timeouts, use persisted queries, and add per-field authorisation. Choose REST for simple, cacheable, public APIs and GraphQL for varied clients with complex data needs.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you protect a GraphQL API from expensive or deeply nested queries?</li><li>How does HTTP caching differ between REST and GraphQL?</li><li>When is REST still the better choice?</li></ul>
+<p><a class="btn primary" href="../#/q/be-10">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-10%3A+How+do+GraphQL+and+REST+compare%2C+and+how+do+you+resolve+the+GraphQL%E2%80%A6&amp;question-id=be-10&amp;context=Backend+engineer%2C+Gear+2%2C+topic%3A+APIs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-10.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

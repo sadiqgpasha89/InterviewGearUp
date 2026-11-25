@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you test features powered by machine learning or LLMs, where outputs are non-deterministic? | InterviewGearUp</title>
+<meta name="description" content="Replace exact-match assertions with evaluation: build curated datasets of inputs with expected properties or reference answers, score outputs with…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-115.html">
+<meta property="og:title" content="How do you test features powered by machine learning or LLMs, where outputs are non-deterministic? | InterviewGearUp">
+<meta property="og:description" content="Replace exact-match assertions with evaluation: build curated datasets of inputs with expected properties or reference answers, score outputs with…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-115.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you test features powered by machine learning or LLMs, where outputs are non-deterministic?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 4 (Lead / Staff) · AI · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Replace exact-match assertions with evaluation: build curated datasets of inputs with expected properties or reference answers, score outputs with metrics, rules and rubric-based judges, test safety, format and groundedness, compare versions statistically against thresholds, red-team adversarial cases, and monitor production. Treat prompts and models as versioned code.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why traditional tests fall short</h4>
+<p>The same input may produce different valid outputs; quality is a matter of degree (a helpful answer), and behaviour changes when the model, prompt, data or retrieval changes. You test <strong>distributions and properties</strong>, not single outputs.</p>
+<h4>Test layers</h4>
+<ol start="1"><li><strong>Component tests</strong>: deterministic parts around the model: input validation, prompt templates, parsers, retrieval, tool calls, caching, guardrails. Use mocked model responses to test the surrounding logic and error handling (timeouts, malformed output).</li><li><strong>Model evaluation with datasets</strong>: a <strong>golden dataset</strong> of representative and edge-case inputs with labels or reference answers, versioned. Compute metrics: accuracy, precision and recall, F1, calibration for classifiers; for generation, rubric scores, semantic similarity, factuality, citation accuracy, or task success.</li><li><strong>Property-based and rule checks</strong>: output matches a schema; no prohibited content or personal data; length limits; the answer cites sources from provided context; the refusal behaviour for unsafe requests.</li><li><strong>LLM-as-judge</strong>: a model scores outputs against criteria. Calibrate it against human labels, guard against position and verbosity bias, use clear rubrics, and spot-check.</li><li><strong>Human evaluation</strong> on samples for subjective quality, with guidelines and agreement tracking.</li></ol>
+<h4>Specific risks</h4>
+<ul><li><strong>Robustness</strong>: paraphrases, typos, languages, long inputs, adversarial and <strong>prompt injection</strong> inputs.</li><li><strong>Bias and fairness</strong>: compare performance across groups and slices.</li><li><strong>Safety and security</strong>: jailbreaks, data leakage, harmful content; red-team sessions.</li><li><strong>Non-functional</strong>: latency, cost per request, rate limits.</li></ul>
+<h4>Handling non-determinism</h4>
+<p>Set temperature to zero where determinism helps, fix seeds when available, <strong>run each case several times</strong> and assert pass-rate thresholds (for example 95 percent of 20 samples meet the rubric), and compare versions with statistical tests and confidence intervals rather than single runs.</p>
+<h4>Regression and release process</h4>
+<p>Treat prompts, retrieval settings, tools and model versions as <strong>versioned artifacts</strong>: run the evaluation suite in CI, block on regressions in critical categories, and use shadow mode, canaries and A/B tests. Add failures found in production to the dataset.</p>
+<h4>Production monitoring</h4>
+<p>Sample and review outputs, collect user feedback, track drift in input and output distributions, refusal and error rates, and quality scores over time, with alerts and a rollback option.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you use an LLM as a judge reliably?</li><li>How do you test for bias and fairness in an ML model?</li><li>How do you detect that model quality has drifted in production?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-115">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-115%3A+How+do+you+test+features+powered+by+machine+learning+or+LLMs%2C+where%E2%80%A6&amp;question-id=qa-115&amp;context=QA+%2F+SDET%2C+Gear+4%2C+topic%3A+AI%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-115.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

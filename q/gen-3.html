@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is the difference between a process and a thread? | InterviewGearUp</title>
+<meta name="description" content="A process is an isolated program instance with its own memory; threads are lightweight execution units inside a process that share its memory. Threads…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-3.html">
+<meta property="og:title" content="What is the difference between a process and a thread? | InterviewGearUp">
+<meta property="og:description" content="A process is an isolated program instance with its own memory; threads are lightweight execution units inside a process that share its memory. Threads…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-3.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is the difference between a process and a thread?</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 2 (Mid-level) · Operating systems · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A process is an isolated program instance with its own memory; threads are lightweight execution units inside a process that share its memory. Threads are cheaper and communicate easily but need synchronisation; processes give isolation and fault containment.</p></div>
+<h4>Explained in depth</h4>
+<ul><li><strong>Memory</strong>: each process has its own address space. Threads of one process share the heap and globals but each has its own stack.</li><li><strong>Cost</strong>: creating a process and switching between processes is heavier than for threads.</li><li><strong>Communication</strong>: processes use IPC (pipes, sockets, shared memory). Threads just read and write shared variables, which is fast but causes race conditions unless guarded by locks or atomics.</li><li><strong>Failure</strong>: a crashing process does not take down others. A crashing thread, or memory corruption in one, can bring down the whole process.</li></ul>
+<p>Real-world use: browsers run one process per site for security and stability. Servers use thread pools or event loops to handle many connections.</p>
+<p>Language detail worth knowing: in standard CPython the Global Interpreter Lock prevents threads from running Python bytecode in parallel, so CPU-bound Python work uses multiple processes, while threads still help with I/O-bound work.</p>
+<p>Related problems to be ready for: race conditions, deadlocks (four conditions: mutual exclusion, hold and wait, no preemption, circular wait) and how consistent lock ordering avoids them.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What causes a deadlock and how do you prevent one?</li><li>How would you size a thread pool for CPU-bound versus I/O-bound work?</li><li>What happens during a context switch?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-3">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-3%3A+What+is+the+difference+between+a+process+and+a+thread%3F&amp;question-id=gen-3&amp;context=Software+engineer+%28core%29%2C+Gear+2%2C+topic%3A+Operating+systems%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-3.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

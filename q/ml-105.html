@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Design a large-scale recommendation system for an e-commerce platform, from candidate generation to ranking and serving. | InterviewGearUp</title>
+<meta name="description" content="Use a multi-stage funnel: fast candidate generation from collaborative filtering, two-tower retrieval and popularity sources narrows millions of items to…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-105.html">
+<meta property="og:title" content="Design a large-scale recommendation system for an e-commerce platform, from candidate generation to ranking and serving. | InterviewGearUp">
+<meta property="og:description" content="Use a multi-stage funnel: fast candidate generation from collaborative filtering, two-tower retrieval and popularity sources narrows millions of items to…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-105.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Design a large-scale recommendation system for an e-commerce platform, from candidate generation to ranking and serving.</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 4 (Lead / Staff) · System design · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Use a multi-stage funnel: fast candidate generation from collaborative filtering, two-tower retrieval and popularity sources narrows millions of items to hundreds, a feature-rich ranking model scores them, and re-ranking applies business rules, diversity and freshness. Serve with precomputed embeddings, a feature store and caching, train on logged interactions, and evaluate offline then with A/B tests.</p></div>
+<h4>Explained in depth</h4>
+<h4>Requirements and metrics</h4>
+<p>Personalised homepage, product pages and emails with latency under about 100 to 200 ms, millions of items and users. Business goals: conversion, revenue, engagement, and also diversity and long-term satisfaction. Guardrails: latency, inventory, fairness, and no recommendations the user should not see.</p>
+<h4>Funnel architecture</h4>
+<ol start="1"><li><strong>Candidate generation (recall)</strong>: choose about 500 to 1000 items from millions using several sources merged together:</li></ol>
+<ul><li><strong>Two-tower model</strong>: user tower and item tower produce embeddings; approximate nearest neighbour search (FAISS, ScaNN, HNSW) retrieves items near the user vector.</li><li>Item-to-item collaborative filtering (&quot;people who bought this also bought&quot;), co-visitation, recently viewed, trending and popular items, content-based similarity, and category affinities.</li></ul>
+<ol start="2"><li><strong>Ranking</strong>: a heavier model (gradient boosting, or a deep network such as Wide and Deep, DLRM, or transformer-based sequence models) scores each candidate for a target such as click or purchase probability, using rich features: user history and context, item attributes, price, freshness, and cross features. Often <strong>multi-objective</strong> (click, add to cart, purchase, return).</li><li><strong>Re-ranking</strong>: business rules and constraints: stock availability, diversity (avoid ten similar items), exploration (inject new items), sponsored placements, deduplication, and fairness.</li></ol>
+<h4>Data and features</h4>
+<ul><li>Event pipeline (impressions, clicks, purchases) through Kafka into a lake; training labels built from logged outcomes with <strong>point-in-time correct</strong> features.</li><li><strong>Feature store</strong>: offline for training, online (Redis, DynamoDB) for serving, ensuring consistent computation.</li><li>Real-time features from the session (recent clicks) alongside batch features.</li></ul>
+<h4>Serving</h4>
+<p>Request path: fetch user features, retrieve candidates, rank, re-rank, return in time budget. Precompute item embeddings and index offline, cache popular lists, run models on CPU or GPU with batching, and fall back to popularity if a component fails.</p>
+<h4>Training and evaluation</h4>
+<ul><li>Negative sampling for retrieval; calibrated probabilities for ranking.</li><li><strong>Offline</strong>: recall at K, NDCG, MAP, AUC, calibration, on time-based splits. Offline gains do not guarantee online wins because of logging bias.</li><li><strong>Online A/B tests</strong> with business and guardrail metrics; interleaving for faster ranking comparisons.</li></ul>
+<h4>Hard problems</h4>
+<ul><li><strong>Cold start</strong>: use content features, popularity and exploration for new items and users; contextual bandits.</li><li><strong>Feedback loops and popularity bias</strong>: log exploration traffic, use inverse propensity weighting.</li><li><strong>Freshness</strong>: incremental training and near-real-time embeddings updates.</li><li><strong>Monitoring</strong>: drift, coverage, diversity, latency, and model rollback.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you address cold start for new users and new items?</li><li>How do you avoid feedback loops and popularity bias?</li><li>What offline metrics predict online success, and where do they fail?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-105">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-105%3A+Design+a+large-scale+recommendation+system+for+an+e-commerce%E2%80%A6&amp;question-id=ml-105&amp;context=ML+%2F+AI+engineer%2C+Gear+4%2C+topic%3A+System+design%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-105.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

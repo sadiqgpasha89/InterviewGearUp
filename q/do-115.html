@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How would you design a cloud landing zone and multi-account structure for a growing company? | InterviewGearUp</title>
+<meta name="description" content="Use multiple accounts or subscriptions to isolate environments, workloads and security functions, organised in an organisation hierarchy with guardrails…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-115.html">
+<meta property="og:title" content="How would you design a cloud landing zone and multi-account structure for a growing company? | InterviewGearUp">
+<meta property="og:description" content="Use multiple accounts or subscriptions to isolate environments, workloads and security functions, organised in an organisation hierarchy with guardrails…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-115.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How would you design a cloud landing zone and multi-account structure for a growing company?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 4 (Lead / Staff) · Cloud · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Use multiple accounts or subscriptions to isolate environments, workloads and security functions, organised in an organisation hierarchy with guardrails from service control policies. Centralise identity with SSO, logging, networking and security tooling in dedicated accounts, automate provisioning with infrastructure as code, and define baselines for tagging, cost and compliance.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why multiple accounts</h4>
+<p>An account is the strongest <strong>blast-radius and permission boundary</strong>: separate bills, quotas, IAM, and compromise containment. Environments and workloads should not share one account.</p>
+<h4>A typical AWS structure (similar in Azure subscriptions and GCP projects)</h4>
+<pre><code>Organization (management account: billing only)
+  Security OU      -&gt; log-archive account, security-tooling account, audit
+  Infrastructure OU -&gt; network (transit gateway, DNS), shared services
+  Workloads OU
+     Prod OU        -&gt; app-a-prod, app-b-prod
+     NonProd OU     -&gt; app-a-dev, app-a-staging
+  Sandbox OU        -&gt; experimentation with budgets
+  Suspended OU      -&gt; closed accounts</code></pre>
+<h4>Guardrails</h4>
+<ul><li><strong>Service control policies</strong> (or Azure Policy, GCP organisation policies): deny disabling logs, leaving approved regions, public S3 buckets, or root account use.</li><li><strong>Preventive</strong> controls (policies), <strong>detective</strong> controls (AWS Config, Security Hub, GuardDuty), and automated remediation.</li></ul>
+<h4>Foundations</h4>
+<ol start="1"><li><strong>Identity</strong>: SSO with the corporate identity provider, groups mapped to permission sets, no IAM users, MFA, break-glass access.</li><li><strong>Logging and audit</strong>: organisation-wide CloudTrail and config data into an immutable log archive account.</li><li><strong>Networking</strong>: hub-and-spoke with transit gateway, central egress and inspection, private connectivity, DNS design and non-overlapping IP ranges planned up front.</li><li><strong>Security tooling</strong> in a separate account with delegated admin.</li><li><strong>Account vending</strong>: self-service creation of new accounts via a pipeline (Control Tower Account Factory, Terraform) that applies the baseline, tags, budgets and alerts.</li><li><strong>Cost management</strong>: tagging policy, budgets, cost allocation, anomaly alerts.</li></ol>
+<h4>Operating practices</h4>
+<p>Everything as code with reviewed changes, a platform team owning the landing zone, regular compliance reports, disaster recovery for the foundations, and documentation of how teams request exceptions.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why use separate accounts instead of separate VPCs?</li><li>How do you centralise logs and security findings?</li><li>How do you give teams autonomy while keeping guardrails?</li></ul>
+<p><a class="btn primary" href="../#/q/do-115">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-115%3A+How+would+you+design+a+cloud+landing+zone+and+multi-account%E2%80%A6&amp;question-id=do-115&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+4%2C+topic%3A+Cloud%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-115.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

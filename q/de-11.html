@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does Data Vault 2.0 structure data into Hubs, Links, and Satellites? | InterviewGearUp</title>
+<meta name="description" content="Data Vault 2.0 models the warehouse with three table types: Hubs hold unique business keys, Links record relationships between hubs, and Satellites store…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-11.html">
+<meta property="og:title" content="How does Data Vault 2.0 structure data into Hubs, Links, and Satellites? | InterviewGearUp">
+<meta property="og:description" content="Data Vault 2.0 models the warehouse with three table types: Hubs hold unique business keys, Links record relationships between hubs, and Satellites store…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-11.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does Data Vault 2.0 structure data into Hubs, Links, and Satellites?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Data Modeling · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Data Vault 2.0 models the warehouse with three table types: Hubs hold unique business keys, Links record relationships between hubs, and Satellites store descriptive attributes with full history, each with load date and record source. This separates keys from changing context, supports parallel loads, tracks everything for audit and absorbs source changes without redesign.</p></div>
+<h4>Explained in depth</h4>
+<h4>The three building blocks</h4>
+<ul><li><strong>Hub</strong>: one row per unique <strong>business key</strong> (customer number, product code), with a hash key, the business key, a load date and a record source. Hubs rarely change.</li><li><strong>Link</strong>: the relationship between two or more hubs (a customer places an order), holding the hash keys of the hubs. It models many-to-many relationships naturally.</li><li><strong>Satellite</strong>: descriptive attributes and context for a hub or link (name, address, status). <strong>Every change adds a new row</strong> with a load date, so the full history is kept. Typically one satellite per source system or rate of change.</li></ul>
+<pre><code>HUB_CUSTOMER  &lt;--  LINK_ORDER  --&gt;  HUB_PRODUCT
+     |                 |
+SAT_CUSTOMER_CRM  SAT_ORDER_DETAILS</code></pre>
+<h4>Why teams use it</h4>
+<ul><li><strong>Auditability and traceability</strong>: raw data is loaded unchanged with source and time, so you can reproduce history.</li><li><strong>Parallel, insert-only loading</strong>: hubs, links and satellites load independently and fast, with hash keys avoiding lookups.</li><li><strong>Resilience to change</strong>: a new source attribute means a new satellite, with no rebuild of existing tables.</li><li>Works for many sources and enterprise-scale integration.</li></ul>
+<h4>Drawbacks</h4>
+<ul><li>Many tables and joins; not designed for direct reporting.</li><li>More modelling effort and a steeper learning curve than a star schema.</li></ul>
+<h4>Typical architecture</h4>
+<p>Source, then <strong>raw vault</strong>, then optional <strong>business vault</strong> (derived rules), then <strong>information marts</strong> (star schemas or wide tables) for BI. The vault is the integration layer, and the marts serve users.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does Data Vault compare to Kimball for a small team?</li><li>What is a business vault versus a raw vault?</li><li>How do you query Data Vault efficiently for reporting?</li></ul>
+<p><a class="btn primary" href="../#/q/de-11">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-11%3A+How+does+Data+Vault+2.0+structure+data+into+Hubs%2C+Links%2C+and%E2%80%A6&amp;question-id=de-11&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Data+Modeling%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-11.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

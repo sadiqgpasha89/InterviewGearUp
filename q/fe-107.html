@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is responsive design, and how do media queries and a mobile-first approach work? | InterviewGearUp</title>
+<meta name="description" content="Responsive design makes one codebase adapt to any screen size using fluid layouts, flexible images and media queries. Mobile-first means writing the base…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-107.html">
+<meta property="og:title" content="What is responsive design, and how do media queries and a mobile-first approach work? | InterviewGearUp">
+<meta property="og:description" content="Responsive design makes one codebase adapt to any screen size using fluid layouts, flexible images and media queries. Mobile-first means writing the base…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-107.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is responsive design, and how do media queries and a mobile-first approach work?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 1 (Junior) · CSS · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Responsive design makes one codebase adapt to any screen size using fluid layouts, flexible images and media queries. Mobile-first means writing the base styles for small screens and adding min-width media queries as space grows, which keeps CSS simpler and loads less on phones. Set the viewport meta tag and test on real devices.</p></div>
+<h4>Explained in depth</h4>
+<h4>Ingredients</h4>
+<ol start="1"><li><strong>Viewport meta tag</strong>: <code>&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1&quot;&gt;</code>. Without it, phones render a wide virtual page and shrink it.</li><li><strong>Fluid layouts</strong>: use relative units (<code>%</code>, <code>rem</code>, <code>fr</code>, <code>vw</code>), Flexbox and Grid with <code>auto-fit</code> and <code>minmax()</code>, rather than fixed pixel widths.</li><li><strong>Flexible media</strong>: <code>img { max-width: 100%; height: auto; }</code>, and <code>srcset</code> and <code>sizes</code> (or <code>&lt;picture&gt;</code>) so the browser downloads an appropriately sized image.</li><li><strong>Media queries</strong>: apply styles when conditions match.</li></ol>
+<pre><code>/* mobile first: base styles are for small screens */
+.layout { display: grid; gap: 16px; }
+
+@media (min-width: 768px) {
+  .layout { grid-template-columns: 1fr 2fr; }
+}
+@media (min-width: 1200px) {
+  .layout { max-width: 1100px; margin-inline: auto; }
+}</code></pre>
+<h4>Why mobile-first</h4>
+<ul><li>Small-screen layout is usually the simplest (one column), so base CSS stays small, and larger screens add enhancements.</li><li>Phones do not parse or override large desktop rules.</li><li>It encourages prioritising content and performance.</li></ul>
+<h4>Choosing breakpoints</h4>
+<p>Base them on <strong>where your content breaks</strong>, not on specific devices. Typical starting points are 600, 768, 1024 and 1280 px.</p>
+<h4>Beyond viewport width</h4>
+<p><strong>Container queries</strong> (<code>@container</code>) let a component adapt to its own container; <code>clamp()</code> gives fluid typography (<code>font-size: clamp(1rem, 2.5vw, 1.5rem)</code>); <code>prefers-reduced-motion</code> and <code>prefers-color-scheme</code> respond to user settings. Tap targets should be at least about 44 px, and always test on real devices and with zoom.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the viewport meta tag and why is it required?</li><li>When would you use container queries instead of media queries?</li><li>How do you serve different image sizes for different screens?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-107">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-107%3A+What+is+responsive+design%2C+and+how+do+media+queries+and+a%E2%80%A6&amp;question-id=fe-107&amp;context=Frontend+engineer%2C+Gear+1%2C+topic%3A+CSS%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-107.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

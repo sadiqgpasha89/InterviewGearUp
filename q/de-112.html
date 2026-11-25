@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do NULLs behave in SQL comparisons, aggregates and joins, and how do you handle them? | InterviewGearUp</title>
+<meta name="description" content="NULL means unknown, so any comparison with it using = or &lt;&gt; yields unknown rather than true, which means rows are filtered out unexpectedly. Use IS NULL…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-112.html">
+<meta property="og:title" content="How do NULLs behave in SQL comparisons, aggregates and joins, and how do you handle them? | InterviewGearUp">
+<meta property="og:description" content="NULL means unknown, so any comparison with it using = or &lt;&gt; yields unknown rather than true, which means rows are filtered out unexpectedly. Use IS NULL…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-112.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do NULLs behave in SQL comparisons, aggregates and joins, and how do you handle them?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 1 (Junior) · SQL · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>NULL means unknown, so any comparison with it using = or &lt;&gt; yields unknown rather than true, which means rows are filtered out unexpectedly. Use IS NULL and IS NOT NULL, COALESCE to supply defaults, and remember that aggregates like SUM and AVG ignore NULLs while COUNT of a column skips them but COUNT star counts all rows. NULLs also never match in joins on equality.</p></div>
+<h4>Explained in depth</h4>
+<h4>Three-valued logic</h4>
+<p>A comparison can be <strong>TRUE, FALSE or UNKNOWN</strong>. Anything compared with <code>NULL</code> is unknown:</p>
+<pre><code>SELECT NULL = NULL;     -- NULL (unknown), not TRUE
+SELECT 5 &lt;&gt; NULL;       -- NULL
+SELECT * FROM users WHERE phone = NULL;     -- returns nothing
+SELECT * FROM users WHERE phone IS NULL;    -- correct</code></pre>
+<p><code>WHERE</code> and <code>ON</code> keep only rows evaluating to TRUE, so rows with unknown results disappear.</p>
+<h4>Operators and functions</h4>
+<ul><li>Arithmetic with NULL gives NULL (<code>1 + NULL</code>). String concatenation with NULL often gives NULL (except in Oracle and a few others).</li><li><code>AND</code> and <code>OR</code> follow rules: <code>FALSE AND NULL</code> is false, <code>TRUE OR NULL</code> is true, <code>TRUE AND NULL</code> is NULL.</li><li><code>COALESCE(a, b, 0)</code> returns the first non-NULL; <code>NULLIF(a, b)</code> returns NULL when equal (useful to avoid division by zero: <code>x / NULLIF(y, 0)</code>). <code>IS DISTINCT FROM</code> compares treating NULLs as equal.</li></ul>
+<h4>Aggregates</h4>
+<ul><li><code>SUM</code>, <code>AVG</code>, <code>MIN</code>, <code>MAX</code> <strong>ignore</strong> NULLs. An average over <code>(10, NULL, 20)</code> is 15, not 10.</li><li><code>COUNT(column)</code> counts non-NULL values; <code>COUNT(*)</code> counts rows.</li><li>A group of all NULLs gives a NULL sum (use <code>COALESCE(SUM(x), 0)</code>).</li><li><code>GROUP BY</code> and <code>DISTINCT</code> treat NULLs as one group.</li></ul>
+<h4>Joins and sets</h4>
+<ul><li>Join on <code>a.key = b.key</code> never matches NULL keys; in a <code>LEFT JOIN</code>, unmatched rows produce NULLs, so be careful distinguishing &quot;no match&quot; from &quot;matched with a NULL value&quot;.</li><li><strong><code>NOT IN</code> with a NULL in the list returns no rows</strong> (every comparison becomes unknown); use <code>NOT EXISTS</code> instead.</li></ul>
+<h4>Practices</h4>
+<p>Declare <code>NOT NULL</code> where a value is required, use defaults, document the meaning of NULL (unknown, not applicable, not yet provided), and test for unexpected NULL rates in pipelines.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does NOT IN return no rows when the list contains a NULL?</li><li>How do NULLs sort and group?</li><li>What is the difference between COUNT(*) and COUNT(column)?</li></ul>
+<p><a class="btn primary" href="../#/q/de-112">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-112%3A+How+do+NULLs+behave+in+SQL+comparisons%2C+aggregates+and+joins%2C+and%E2%80%A6&amp;question-id=de-112&amp;context=Data+engineer%2C+Gear+1%2C+topic%3A+SQL%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-112.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is the difference between var, let and const in JavaScript, and what is hoisting? | InterviewGearUp</title>
+<meta name="description" content="var is function-scoped and hoisted with an initial value of undefined, while let and const are block-scoped and sit in the temporal dead zone until their…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-102.html">
+<meta property="og:title" content="What is the difference between var, let and const in JavaScript, and what is hoisting? | InterviewGearUp">
+<meta property="og:description" content="var is function-scoped and hoisted with an initial value of undefined, while let and const are block-scoped and sit in the temporal dead zone until their…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-102.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is the difference between var, let and const in JavaScript, and what is hoisting?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 1 (Junior) · JavaScript · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>var is function-scoped and hoisted with an initial value of undefined, while let and const are block-scoped and sit in the temporal dead zone until their declaration runs. const prevents reassigning the binding but not mutating an object it points to. Prefer const by default, let when you must reassign, and avoid var.</p></div>
+<h4>Explained in depth</h4>
+<h4>Scope</h4>
+<ul><li><strong><code>var</code></strong> is scoped to the nearest <strong>function</strong> (or global), ignoring blocks such as <code>if</code> and <code>for</code>.</li><li><strong><code>let</code> and <code>const</code></strong> are scoped to the nearest <strong>block</strong> <code>{ ... }</code>.</li></ul>
+<pre><code>if (true) { var a = 1; let b = 2; }
+console.log(a); // 1
+console.log(b); // ReferenceError</code></pre>
+<h4>Hoisting</h4>
+<p>Declarations are processed before code runs.</p>
+<ul><li><code>var x</code> is hoisted and initialised to <code>undefined</code>, so reading it early gives <code>undefined</code>.</li><li><code>let</code>, <code>const</code> and <code>class</code> are hoisted too, but stay <strong>uninitialised</strong> in the <strong>temporal dead zone (TDZ)</strong> until the line that declares them, and reading them early throws a <code>ReferenceError</code>.</li><li>Function declarations are hoisted completely, so you can call them before they appear.</li></ul>
+<h4>Reassignment</h4>
+<p><code>let</code> can be reassigned; <code>const</code> cannot be rebound, but an object or array it refers to can still be changed (<code>const list = []; list.push(1)</code> works). Use <code>Object.freeze</code> for shallow immutability.</p>
+<h4>Classic loop example</h4>
+<pre><code>for (var i = 0; i &lt; 3; i++) setTimeout(() =&gt; console.log(i));  // 3 3 3
+for (let j = 0; j &lt; 3; j++) setTimeout(() =&gt; console.log(j));  // 0 1 2</code></pre>
+<p><code>let</code> creates a new binding per iteration, so each callback keeps its own value.</p>
+<h4>Recommendation</h4>
+<p>Use <code>const</code> by default, <code>let</code> when the value changes, and avoid <code>var</code>. Redeclaring a <code>var</code> in the same scope is allowed (and bug-prone), while redeclaring <code>let</code> or <code>const</code> is a syntax error.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the temporal dead zone?</li><li>Can you change an object declared with const?</li><li>Why do closures in a for loop behave differently with var and let?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-102">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-102%3A+What+is+the+difference+between+var%2C+let+and+const+in+JavaScript%2C+and%E2%80%A6&amp;question-id=fe-102&amp;context=Frontend+engineer%2C+Gear+1%2C+topic%3A+JavaScript%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-102.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

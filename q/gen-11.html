@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain Floyd&#39;s cycle-finding algorithm (Fast and Slow pointers) to detect loops in a linked list. | InterviewGearUp</title>
+<meta name="description" content="Move a slow pointer one step and a fast pointer two steps at a time. If the list has a cycle they must meet inside it; if the fast pointer reaches null…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-11.html">
+<meta property="og:title" content="Explain Floyd&#39;s cycle-finding algorithm (Fast and Slow pointers) to detect loops in a linked list. | InterviewGearUp">
+<meta property="og:description" content="Move a slow pointer one step and a fast pointer two steps at a time. If the list has a cycle they must meet inside it; if the fast pointer reaches null…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-11.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain Floyd&#39;s cycle-finding algorithm (Fast and Slow pointers) to detect loops in a linked list.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 1 (Junior) · Algorithms · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Move a slow pointer one step and a fast pointer two steps at a time. If the list has a cycle they must meet inside it; if the fast pointer reaches null there is no cycle. It runs in O(n) time and O(1) space, unlike a hash set that costs O(n) space.</p></div>
+<h4>Explained in depth</h4>
+<h4>Detecting a cycle</h4>
+<pre><code>def has_cycle(head):
+    slow = fast = head
+    while fast and fast.next:
+        slow = slow.next
+        fast = fast.next.next
+        if slow is fast:
+            return True
+    return False</code></pre>
+<p><strong>Why they meet</strong>: once both are inside the cycle, the gap between them shrinks by one each step (the fast pointer gains one node per iteration), so it reaches zero without jumping over the slow pointer.</p>
+<h4>Finding where the cycle starts</h4>
+<p>Let a be the distance from the head to the cycle entry and c the cycle length. When they meet, slow has walked a + b steps and fast has walked 2(a + b), where b is how far into the cycle they meet. The difference, a + b, is a whole number of laps: a + b = k·c, so a = k·c − b. Reset one pointer to the head and advance both one step at a time; they meet at the entry node.</p>
+<h4>Edge cases</h4>
+<p>An empty list, a single node pointing to itself, and two nodes. Always test <code>fast and fast.next</code> before reading <code>fast.next.next</code>.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How would you find the length of the cycle?</li><li>How would you detect a cycle if you were allowed to modify nodes, and what are the risks of marking them?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-11">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-11%3A+Explain+Floyd%27s+cycle-finding+algorithm+%28Fast+and+Slow+pointers%29+to%E2%80%A6&amp;question-id=gen-11&amp;context=Software+engineer+%28core%29%2C+Gear+1%2C+topic%3A+Algorithms%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-11.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain Hierarchical Navigable Small World (HNSW) graph indexing for approximate nearest neighbor search. | InterviewGearUp</title>
+<meta name="description" content="HNSW builds a multi-layer graph where the top layers are sparse long-range links and the bottom layer contains every vector with short links. A search…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-53.html">
+<meta property="og:title" content="Explain Hierarchical Navigable Small World (HNSW) graph indexing for approximate nearest neighbor search. | InterviewGearUp">
+<meta property="og:description" content="HNSW builds a multi-layer graph where the top layers are sparse long-range links and the bottom layer contains every vector with short links. A search…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-53.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain Hierarchical Navigable Small World (HNSW) graph indexing for approximate nearest neighbor search.</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · RAG · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>HNSW builds a multi-layer graph where the top layers are sparse long-range links and the bottom layer contains every vector with short links. A search enters at the top, greedily moves toward the query to the closest node, drops a layer and repeats, ending with a best-first search of width ef at the bottom layer. It gives high recall with roughly logarithmic query time, at the cost of memory.</p></div>
+<h4>Explained in depth</h4>
+<h4>Idea</h4>
+<p>Exact nearest-neighbour search compares the query with all vectors (O(N)), too slow at millions of vectors. HNSW (Hierarchical Navigable Small World) combines two ideas:</p>
+<ul><li><strong>Navigable small-world graphs</strong>: each vector links to nearby neighbours (plus some longer links), so a greedy walk reaches the target in few hops.</li><li><strong>Hierarchy</strong> like a skip list: each vector is assigned a random maximum layer (exponentially fewer nodes in higher layers).</li></ul>
+<h4>Search</h4>
+<ol start="1"><li>Start at an entry point in the <strong>top layer</strong>.</li><li>Greedily move to the neighbour closest to the query until no neighbour is closer.</li><li>Use that node as the entry for the <strong>next layer down</strong>.</li><li>At layer 0 (all points), do a best-first search keeping <code>efSearch</code> candidates, and return the top k.</li></ol>
+<p>Expected cost is about <strong>O(log N)</strong> hops.</p>
+<h4>Insertion</h4>
+<p>A new vector chooses its top layer randomly, descends from the entry point, and at each layer up to its level finds <code>efConstruction</code> nearest candidates and connects to up to <code>M</code> of them (pruned by a heuristic that favours diverse neighbours).</p>
+<h4>Parameters</h4>
+<ul><li><strong>M</strong>: links per node; higher means better recall and more memory.</li><li><strong>efConstruction</strong>: build-time search width; higher builds a better graph more slowly.</li><li><strong>efSearch</strong>: query-time width; trades recall against latency, tunable per query.</li></ul>
+<h4>Trade-offs</h4>
+<ul><li>Excellent recall and speed, which is why it is the default in many vector databases.</li><li><strong>Memory heavy</strong>: the full vectors plus graph links must be held in RAM (each node stores about 2 * M links).</li><li>Deletes and updates are awkward (graph repair or tombstones, periodic rebuilds).</li><li>Building is slower than IVF, and the graph is not easily compressed. For billion-scale data, combine with quantisation or use disk-based variants (DiskANN), or IVF-PQ.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>What do the M, efConstruction and efSearch parameters control?</li><li>Why does HNSW use a lot of memory and how does it handle deletes?</li><li>How does HNSW compare with IVF-based indexes?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-53">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-53%3A+Explain+Hierarchical+Navigable+Small+World+%28HNSW%29+graph+indexing+for%E2%80%A6&amp;question-id=ml-53&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+RAG%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-53.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

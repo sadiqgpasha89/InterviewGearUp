@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you solve the N-Queens problem using backtracking with column and diagonal constraint bitsets? | InterviewGearUp</title>
+<meta name="description" content="N-Queens places N queens so none attack each other. Backtracking places one queen per row, and for each column it checks whether the column and both…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-43.html">
+<meta property="og:title" content="How do you solve the N-Queens problem using backtracking with column and diagonal constraint bitsets? | InterviewGearUp">
+<meta property="og:description" content="N-Queens places N queens so none attack each other. Backtracking places one queen per row, and for each column it checks whether the column and both…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-43.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you solve the N-Queens problem using backtracking with column and diagonal constraint bitsets?</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 3 (Senior) · Algorithms · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>N-Queens places N queens so none attack each other. Backtracking places one queen per row, and for each column it checks whether the column and both diagonals are free. Encoding those three sets as bitmasks makes the check and update O(1), and a solution is counted when all N rows are filled.</p></div>
+<h4>Explained in depth</h4>
+<h4>Constraint sets</h4>
+<p>Queens at (r, c) conflict if they share a column, a <strong>main diagonal</strong> (<code>r - c</code> equal) or an <strong>anti-diagonal</strong> (<code>r + c</code> equal). Place one queen per row, so rows never conflict.</p>
+<h4>Bitmask version</h4>
+<p>Track three bitmasks: occupied columns, and occupied diagonals shifted one step per row.</p>
+<pre><code>def total_n_queens(n):
+    full = (1 &lt;&lt; n) - 1
+    def solve(cols, d1, d2):
+        if cols == full:
+            return 1
+        count = 0
+        free = full &amp; ~(cols | d1 | d2)         # columns still safe in this row
+        while free:
+            bit = free &amp; -free                  # lowest free column
+            free ^= bit
+            count += solve(cols | bit,
+                           ((d1 | bit) &lt;&lt; 1) &amp; full,
+                           (d2 | bit) &gt;&gt; 1)
+        return count
+    return solve(0, 0, 0)
+
+# n = 8 -&gt; 92 solutions</code></pre>
+<h4>Why it is fast</h4>
+<ul><li>The bit operations test and update all columns at once in O(1).</li><li>Pruning stops a branch as soon as a row has no safe column.</li><li>The search visits far fewer than N^N nodes; the exact growth is roughly factorial but heavily pruned.</li></ul>
+<h4>Extras</h4>
+<p>Mirror symmetry halves the work (search only half of the first row and double). The pattern is a template for backtracking problems such as Sudoku and permutations with constraints.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do the diagonal indexes row-col and row+col work?</li><li>How does symmetry cut the search in half?</li><li>What is the time complexity, and why is it far less than N^N?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-43">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-43%3A+How+do+you+solve+the+N-Queens+problem+using+backtracking+with+column%E2%80%A6&amp;question-id=gen-43&amp;context=Software+engineer+%28core%29%2C+Gear+3%2C+topic%3A+Algorithms%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-43.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

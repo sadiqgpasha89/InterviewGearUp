@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does hydration work in SSR applications, and what causes hydration mismatch errors? | InterviewGearUp</title>
+<meta name="description" content="Hydration attaches event handlers and component state to HTML the server already rendered, instead of rebuilding the DOM. A mismatch happens when the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-37.html">
+<meta property="og:title" content="How does hydration work in SSR applications, and what causes hydration mismatch errors? | InterviewGearUp">
+<meta property="og:description" content="Hydration attaches event handlers and component state to HTML the server already rendered, instead of rebuilding the DOM. A mismatch happens when the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-37.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does hydration work in SSR applications, and what causes hydration mismatch errors?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 3 (Senior) · React · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Hydration attaches event handlers and component state to HTML the server already rendered, instead of rebuilding the DOM. A mismatch happens when the client&#39;s first render differs from the server HTML, for example from dates, randomness, browser-only checks or invalid HTML nesting, and React then discards server markup and re-renders on the client.</p></div>
+<h4>Explained in depth</h4>
+<h4>What happens</h4>
+<ol start="1"><li>The server renders the component tree to HTML, so the user sees content quickly.</li><li>The browser downloads the JavaScript bundle.</li><li>On the client, React renders the same tree and <strong>reuses the existing DOM nodes</strong>, attaching listeners and state. Until then the page looks ready but is not interactive.</li></ol>
+<h4>Common causes of mismatch</h4>
+<ul><li>Values that differ per render: <code>Date.now()</code>, <code>Math.random()</code>, ids generated without <code>useId</code>.</li><li>Browser-only branches such as <code>typeof window !== &#39;undefined&#39;</code> or reading <code>localStorage</code> during render.</li><li>Locale or timezone formatting that differs between server and browser.</li><li>Invalid HTML nesting (a <code>div</code> inside a <code>p</code>) that the browser silently repairs before React sees it.</li><li>Browser extensions or third-party scripts that modify the DOM.</li></ul>
+<h4>What React does</h4>
+<p>It logs a hydration error and, in React 18, falls back to client rendering for the affected Suspense boundary or the whole root. You pay for the work twice and may see a flash.</p>
+<h4>Fixes</h4>
+<pre><code>const [now, setNow] = useState(null);          // same on server and first client render
+useEffect(() =&gt; setNow(new Date()), []);       // client-only value after hydration</code></pre>
+<ul><li>Render the same output on the server and in the first client render, and move client-only values into <code>useEffect</code>.</li><li>Use <code>useId</code> for ids, and pass a fixed locale and timezone for formatting.</li><li><code>suppressHydrationWarning</code> only silences one element&#39;s text mismatch; use it sparingly.</li></ul>
+<h4>Why it matters</h4>
+<p>Hydration cost grows with component count and hurts Time to Interactive and INP. Streaming with Suspense allows <strong>selective hydration</strong>, and server components, islands and partial hydration reduce how much JavaScript has to hydrate at all.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does streaming SSR with Suspense change when parts of the page hydrate?</li><li>How would you debug a hydration mismatch that only happens in production?</li><li>What are islands, and how do they reduce hydration cost?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-37">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-37%3A+How+does+hydration+work+in+SSR+applications%2C+and+what+causes%E2%80%A6&amp;question-id=fe-37&amp;context=Frontend+engineer%2C+Gear+3%2C+topic%3A+React%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-37.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

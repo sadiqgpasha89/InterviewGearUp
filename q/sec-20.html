@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain the STRIDE threat modeling framework: Spoofing, Tampering, Repudiation, Info Disclosure, DoS, Elevation. | InterviewGearUp</title>
+<meta name="description" content="STRIDE is a threat modelling checklist that classifies threats into Spoofing, Tampering, Repudiation, Information disclosure, Denial of service and…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-20.html">
+<meta property="og:title" content="Explain the STRIDE threat modeling framework: Spoofing, Tampering, Repudiation, Info Disclosure, DoS, Elevation. | InterviewGearUp">
+<meta property="og:description" content="STRIDE is a threat modelling checklist that classifies threats into Spoofing, Tampering, Repudiation, Information disclosure, Denial of service and…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-20.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain the STRIDE threat modeling framework: Spoofing, Tampering, Repudiation, Info Disclosure, DoS, Elevation.</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · Threat Modeling · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>STRIDE is a threat modelling checklist that classifies threats into Spoofing, Tampering, Repudiation, Information disclosure, Denial of service and Elevation of privilege. You draw a data flow diagram with trust boundaries, apply the six categories to each element and flow, and record mitigations such as authentication, integrity checks, logging, encryption, rate limiting and authorisation.</p></div>
+<h4>Explained in depth</h4>
+<h4>The six categories and the property they violate</h4>
+<div class="md-table"><table><thead><tr><th>Threat</th><th>Violates</th><th>Example</th><th>Typical mitigation</th></tr></thead><tbody><tr><td><strong>S</strong>poofing</td><td>Authenticity</td><td>Attacker logs in as another user, forged service identity</td><td>Strong authentication, MFA, mTLS</td></tr><tr><td><strong>T</strong>ampering</td><td>Integrity</td><td>Changing a price in a request or modifying a stored record</td><td>Signatures, MACs, input validation, access control</td></tr><tr><td><strong>R</strong>epudiation</td><td>Non-repudiation</td><td>User denies making a transfer, no audit trail</td><td>Secure audit logs, signed events, time stamps</td></tr><tr><td><strong>I</strong>nformation disclosure</td><td>Confidentiality</td><td>Leaked database, verbose errors, unencrypted traffic</td><td>Encryption, least privilege, data minimisation</td></tr><tr><td><strong>D</strong>enial of service</td><td>Availability</td><td>Flooding an API, resource exhaustion</td><td>Rate limits, quotas, autoscaling, timeouts</td></tr><tr><td><strong>E</strong>levation of privilege</td><td>Authorisation</td><td>Normal user gains admin rights</td><td>Authorisation checks, least privilege, sandboxing</td></tr></tbody></table></div>
+<h4>Process</h4>
+<ol start="1"><li><strong>Model the system</strong>: draw a data flow diagram with external entities, processes, data stores, data flows and <strong>trust boundaries</strong> (where privilege or ownership changes).</li><li><strong>Identify threats</strong>: for each element and each flow crossing a boundary, ask which STRIDE categories apply (processes are open to all six, data stores to T, R, I and D, and so on).</li><li><strong>Rate and prioritise</strong> by impact and likelihood.</li><li><strong>Mitigate</strong>: choose controls, accept or transfer the risk, and record decisions.</li><li><strong>Validate</strong>: test the mitigations and revisit when the design changes.</li></ol>
+<h4>Practices</h4>
+<p>Do it early in design, with developers and security together, keep the model as a living document, and track resulting tasks in the backlog. Tools: Microsoft Threat Modeling Tool, OWASP Threat Dragon and diagrams as code.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you decide which threats to fix first?</li><li>How does STRIDE map to security properties?</li><li>What is the difference between STRIDE and attack trees?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-20">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-20%3A+Explain+the+STRIDE+threat+modeling+framework%3A+Spoofing%2C+Tampering%2C%E2%80%A6&amp;question-id=sec-20&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+Threat+Modeling%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-20.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

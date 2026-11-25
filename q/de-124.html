@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you design a multi-tenant data platform with isolation, chargeback and fair resource sharing? | InterviewGearUp</title>
+<meta name="description" content="Separate tenants with logical or physical boundaries chosen by risk: projects or accounts, schemas, row and column policies, and dedicated compute pools.…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-124.html">
+<meta property="og:title" content="How do you design a multi-tenant data platform with isolation, chargeback and fair resource sharing? | InterviewGearUp">
+<meta property="og:description" content="Separate tenants with logical or physical boundaries chosen by risk: projects or accounts, schemas, row and column policies, and dedicated compute pools.…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-124.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you design a multi-tenant data platform with isolation, chargeback and fair resource sharing?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 4 (Lead / Staff) · Governance · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Separate tenants with logical or physical boundaries chosen by risk: projects or accounts, schemas, row and column policies, and dedicated compute pools. Meter usage per tenant with tags and query attribution, enforce quotas and workload management so no tenant starves others, apply per-tenant encryption and audit, and report chargeback costs transparently.</p></div>
+<h4>Explained in depth</h4>
+<h4>Isolation options</h4>
+<div class="md-table"><table><thead><tr><th>Level</th><th>Mechanism</th><th>Strength</th><th>Cost and ops</th></tr></thead><tbody><tr><td>Row or column level</td><td>Row access policies, secure views, tenant ID filters</td><td>Logical</td><td>Cheapest, but one mistake leaks data</td></tr><tr><td>Schema or database per tenant</td><td>Separate namespaces and roles</td><td>Moderate</td><td>Many objects to manage</td></tr><tr><td><strong>Compute isolation</strong></td><td>Dedicated warehouse, cluster or slot reservation per tenant</td><td>Moderate to strong for performance</td><td>Higher</td></tr><tr><td><strong>Account, project or subscription per tenant</strong></td><td>Separate cloud accounts</td><td>Strongest (blast radius, compliance)</td><td>Highest, needs automation</td></tr></tbody></table></div>
+<p>Choose by risk: regulated or very sensitive tenants, large customers with contractual isolation, and very different workloads justify stronger separation. Internal business units often work with shared platform and logical isolation.</p>
+<h4>Security</h4>
+<ul><li>Tenant-aware <strong>RBAC and attribute-based access</strong>, with mandatory tenant filters enforced by policies, not just application code.</li><li><strong>Per-tenant encryption keys</strong> (customer-managed keys), so deletion or revocation is possible.</li><li>Network controls (private endpoints), audit logging of access, and automated tests that attempt cross-tenant reads.</li></ul>
+<h4>Fair resource sharing</h4>
+<ul><li><strong>Workload management</strong>: queues or resource pools with priorities (ETL, BI, ad hoc, ML), concurrency limits, query timeouts and per-query scan limits.</li><li><strong>Quotas</strong> per tenant (storage, compute credits, concurrent queries) and autoscaling bounded by budget.</li><li>Detect <strong>noisy neighbours</strong> through query attribution and throttle or move heavy workloads to dedicated compute.</li></ul>
+<h4>Metering and chargeback</h4>
+<ul><li><strong>Tagging and query attribution</strong>: every job and query labelled with tenant or team; storage attributed by dataset owner.</li><li>Aggregate costs in a billing model: compute (credits, slot hours), storage, data transfer, plus an allocated share of shared services (platform team, governance tooling) with documented rules.</li><li><strong>Showback first</strong>, then chargeback; publish dashboards and monthly statements, with budgets and alerts.</li></ul>
+<h4>Operating model</h4>
+<p>Self-service onboarding that provisions the tenant&#39;s roles, policies, quotas and monitoring using infrastructure as code; versioned standards; and offboarding that deletes data and keys. Review utilisation to rebalance, and communicate changes in pricing clearly.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>When would you give a tenant a separate warehouse or account instead of a schema?</li><li>How do you prevent noisy neighbours in a shared warehouse?</li><li>How do you attribute shared platform costs fairly?</li></ul>
+<p><a class="btn primary" href="../#/q/de-124">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-124%3A+How+do+you+design+a+multi-tenant+data+platform+with+isolation%2C%E2%80%A6&amp;question-id=de-124&amp;context=Data+engineer%2C+Gear+4%2C+topic%3A+Governance%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-124.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

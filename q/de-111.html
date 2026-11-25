@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is Apache Spark, and why use it instead of a single-machine tool such as pandas? | InterviewGearUp</title>
+<meta name="description" content="Spark is a distributed engine that splits data into partitions and processes them in parallel across a cluster, with in-memory computation, a SQL and…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-111.html">
+<meta property="og:title" content="What is Apache Spark, and why use it instead of a single-machine tool such as pandas? | InterviewGearUp">
+<meta property="og:description" content="Spark is a distributed engine that splits data into partitions and processes them in parallel across a cluster, with in-memory computation, a SQL and…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-111.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is Apache Spark, and why use it instead of a single-machine tool such as pandas?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 1 (Junior) · Spark · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Spark is a distributed engine that splits data into partitions and processes them in parallel across a cluster, with in-memory computation, a SQL and DataFrame API, and fault tolerance through lineage. Use it when data or computation exceeds one machine&#39;s memory or time budget. For data that fits comfortably on one machine, pandas, DuckDB or Polars are simpler and often faster.</p></div>
+<h4>Explained in depth</h4>
+<h4>What Spark does</h4>
+<p>You write DataFrame or SQL code; Spark builds a <strong>logical plan</strong>, optimises it (Catalyst), and runs it as <strong>tasks</strong> on <strong>executors</strong> across a cluster. Data is divided into <strong>partitions</strong> processed in parallel.</p>
+<pre><code>df = spark.read.parquet(&quot;s3://lake/orders/&quot;)
+result = (df.filter(df.status == &quot;paid&quot;)
+            .groupBy(&quot;country&quot;)
+            .agg({&quot;amount&quot;: &quot;sum&quot;}))
+result.write.parquet(&quot;s3://lake/revenue_by_country/&quot;)</code></pre>
+<h4>Key concepts</h4>
+<ul><li><strong>Lazy evaluation</strong>: transformations (<code>filter</code>, <code>select</code>, <code>join</code>) only build a plan; <strong>actions</strong> (<code>count</code>, <code>write</code>, <code>collect</code>) trigger execution, which lets Spark optimise the whole job.</li><li><strong>Shuffle</strong>: moving data between partitions (joins, group by) over the network; the most expensive operation.</li><li><strong>Fault tolerance</strong>: lost partitions are recomputed from lineage.</li><li>Unified engine: batch, SQL, streaming (Structured Streaming), machine learning (MLlib), and graphs.</li></ul>
+<h4>Spark versus pandas</h4>
+<div class="md-table"><table><thead><tr><th></th><th>pandas</th><th>Spark</th></tr></thead><tbody><tr><td>Scale</td><td>One machine, data must fit in memory (roughly up to a few GB to tens of GB)</td><td>Cluster, terabytes to petabytes</td></tr><tr><td>Setup</td><td><code>pip install</code></td><td>Cluster, configuration and tuning (or managed services such as Databricks, EMR)</td></tr><tr><td>Latency for small data</td><td>Very fast</td><td>Startup and scheduling overhead</td></tr><tr><td>Fault tolerance</td><td>None</td><td>Yes</td></tr></tbody></table></div>
+<h4>Choosing</h4>
+<p>If data fits on a laptop or one large VM, use <strong>pandas, Polars or DuckDB</strong>; they are simple and quick. Use Spark when data size, parallelism or the need to integrate with a data lake and many jobs justify a cluster. Spark&#39;s <strong>pandas API</strong> helps migrate pandas code, but performance depends on understanding partitioning and shuffles.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the difference between a transformation and an action?</li><li>What is a shuffle and why is it expensive?</li><li>When would you choose DuckDB or Polars over Spark?</li></ul>
+<p><a class="btn primary" href="../#/q/de-111">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-111%3A+What+is+Apache+Spark%2C+and+why+use+it+instead+of+a+single-machine%E2%80%A6&amp;question-id=de-111&amp;context=Data+engineer%2C+Gear+1%2C+topic%3A+Spark%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-111.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How would you set up a monorepo and build system for 50 frontend engineers working on many apps and shared packages? | InterviewGearUp</title>
+<meta name="description" content="Use a workspace-based monorepo with a task orchestrator such as Nx or Turborepo, remote caching and affected-only builds so CI time stays flat as the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-112.html">
+<meta property="og:title" content="How would you set up a monorepo and build system for 50 frontend engineers working on many apps and shared packages? | InterviewGearUp">
+<meta property="og:description" content="Use a workspace-based monorepo with a task orchestrator such as Nx or Turborepo, remote caching and affected-only builds so CI time stays flat as the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-112.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How would you set up a monorepo and build system for 50 frontend engineers working on many apps and shared packages?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 4 (Lead / Staff) · Tooling · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Use a workspace-based monorepo with a task orchestrator such as Nx or Turborepo, remote caching and affected-only builds so CI time stays flat as the repo grows, clear package boundaries enforced by lint rules, code owners, shared tooling configs, and versioning through changesets. Invest in developer experience and keep the dependency graph acyclic.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why a monorepo</h4>
+<p>Atomic changes across apps and libraries, one version of each dependency, easy refactoring and shared tooling. The cost is that build, test and review processes must scale.</p>
+<h4>Structure</h4>
+<pre><code>apps/       web, admin, mobile-web
+packages/   ui, design-tokens, api-client, utils, eslint-config
+tools/      generators, scripts</code></pre>
+<p>Use <strong>pnpm workspaces</strong> (strict, fast, disk-efficient) or Yarn workspaces. Each package has its own <code>package.json</code>, explicit dependencies and a clear public entry point.</p>
+<h4>Build and test performance</h4>
+<ul><li><strong>Task orchestrator</strong> (Nx or Turborepo, Bazel for very large setups) builds a <strong>dependency graph</strong> and runs tasks in parallel in the right order.</li><li><strong>Affected-only</strong>: on a pull request, run lint, test and build only for projects changed or depending on changes.</li><li><strong>Remote caching</strong>: identical inputs reuse outputs from CI or other developers, so most tasks become cache hits.</li><li>Incremental TypeScript builds with project references, and fast compilers (SWC, esbuild, Vite).</li></ul>
+<h4>Boundaries and governance</h4>
+<ul><li><strong>Module boundary lint rules</strong> (Nx <code>enforce-module-boundaries</code>, or ESLint import restrictions): apps may depend on packages, packages must not depend on apps, no circular dependencies, and only public exports are importable.</li><li><strong>CODEOWNERS</strong> per directory for reviews, with templates and generators for new packages.</li><li>Shared config packages for ESLint, TypeScript, Prettier and test setup.</li><li><strong>Dependency management</strong>: single version policy, Renovate or Dependabot, and an allowlist for new libraries.</li></ul>
+<h4>Release and versioning</h4>
+<p>Apps deploy independently from CI using path-based triggers. Publish shared packages internally (or just consume source) with <strong>Changesets</strong> for changelogs and semantic versions.</p>
+<h4>Developer experience</h4>
+<p>Fast local startup (<code>pnpm dev</code> for a chosen app plus dependencies), documented onboarding, sparse checkout or git partial clone for a huge repository, and metrics on CI duration and cache hit rate.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you prevent teams from importing each other&#39;s internals?</li><li>Monorepo or polyrepo: how do you decide?</li><li>How do you keep CI fast as the repository grows?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-112">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-112%3A+How+would+you+set+up+a+monorepo+and+build+system+for+50+frontend%E2%80%A6&amp;question-id=fe-112&amp;context=Frontend+engineer%2C+Gear+4%2C+topic%3A+Tooling%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-112.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

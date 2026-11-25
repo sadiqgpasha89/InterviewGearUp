@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Derive the Self-Attention mechanism mathematically: Query, Key, Value matrices and Scaled Dot-Product. | InterviewGearUp</title>
+<meta name="description" content="Project the input X into queries, keys and values with learned matrices. Compute scores QK^T, scale by sqrt(d_k), softmax each row into attention…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-35.html">
+<meta property="og:title" content="Derive the Self-Attention mechanism mathematically: Query, Key, Value matrices and Scaled Dot-Product. | InterviewGearUp">
+<meta property="og:description" content="Project the input X into queries, keys and values with learned matrices. Compute scores QK^T, scale by sqrt(d_k), softmax each row into attention…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-35.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Derive the Self-Attention mechanism mathematically: Query, Key, Value matrices and Scaled Dot-Product.</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · Transformers · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Project the input X into queries, keys and values with learned matrices. Compute scores QK^T, scale by sqrt(d_k), softmax each row into attention weights, and multiply by V. Each output position becomes a weighted average of all value vectors, weighted by how well its query matches each key.</p></div>
+<h4>Explained in depth</h4>
+<h4>Steps</h4>
+<p>For a sequence of n tokens, X has shape n x d_model.</p>
+<pre><code>Q = X W_Q    (n x d_k)
+K = X W_K    (n x d_k)
+V = X W_V    (n x d_v)
+
+Attention(Q, K, V) = softmax( Q K^T / sqrt(d_k) ) V</code></pre>
+<ol start="1"><li><code>Q K^T</code> is an n x n matrix of dot-product similarities between every query and every key.</li><li>Divide by <code>sqrt(d_k)</code> to keep the logits at a stable scale.</li><li>Apply <strong>softmax across each row</strong>, so the weights for one query sum to 1.</li><li>Multiply by V: each output row is a weighted average of the value vectors.</li></ol>
+<h4>Intuition</h4>
+<p>The query says what a token is looking for, the key says what each token offers, and the value is the information that is passed on. A <strong>causal mask</strong> (setting scores above the diagonal to minus infinity before the softmax) stops decoder tokens from attending to the future.</p>
+<h4>Multi-head attention</h4>
+<p>Run h attention heads with smaller dimensions (d_k = d_model / h), each with its own projections, concatenate the outputs and apply an output matrix W_O. Different heads can learn different relationships.</p>
+<h4>Properties</h4>
+<ul><li>Cost is O(n^2 * d) time and O(n^2) memory for the score matrix, which is why long sequences are expensive (FlashAttention and sparse variants address this).</li><li>Attention treats the input as a set, so <strong>positional information</strong> has to be added through encodings.</li><li>Everything is matrix multiplication, so it parallelises well on GPUs.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is a causal mask applied before the softmax rather than after?</li><li>What is the memory cost of attention and how does FlashAttention reduce it?</li><li>Why do transformers need positional encodings?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-35">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-35%3A+Derive+the+Self-Attention+mechanism+mathematically%3A+Query%2C+Key%2C%E2%80%A6&amp;question-id=ml-35&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+Transformers%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-35.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

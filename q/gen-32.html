@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain Kruskal&#39;s algorithm for finding the Minimum Spanning Tree using a greedy approach and Union-Find. | InterviewGearUp</title>
+<meta name="description" content="Kruskal&#39;s algorithm builds a minimum spanning tree by sorting all edges by weight and adding each edge if it connects two different components, which…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-32.html">
+<meta property="og:title" content="Explain Kruskal&#39;s algorithm for finding the Minimum Spanning Tree using a greedy approach and Union-Find. | InterviewGearUp">
+<meta property="og:description" content="Kruskal&#39;s algorithm builds a minimum spanning tree by sorting all edges by weight and adding each edge if it connects two different components, which…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-32.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain Kruskal&#39;s algorithm for finding the Minimum Spanning Tree using a greedy approach and Union-Find.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 2 (Mid-level) · Graphs · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Kruskal&#39;s algorithm builds a minimum spanning tree by sorting all edges by weight and adding each edge if it connects two different components, which Union-Find checks in nearly constant time. It stops after V-1 edges. Time is O(E log E) from the sort.</p></div>
+<h4>Explained in depth</h4>
+<h4>Algorithm</h4>
+<ol start="1"><li>Sort edges by weight, smallest first.</li><li>For each edge (u, v): if <code>find(u) != find(v)</code>, add it to the tree and <code>union(u, v)</code>. Otherwise it would create a cycle, so skip it.</li><li>Stop when the tree has V - 1 edges.</li></ol>
+<pre><code>def kruskal(n, edges):                  # edges: (w, u, v)
+    parent = list(range(n))
+    def find(x):
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]   # path halving
+            x = parent[x]
+        return x
+    total, used = 0, 0
+    for w, u, v in sorted(edges):
+        ru, rv = find(u), find(v)
+        if ru != rv:
+            parent[ru] = rv
+            total += w
+            used += 1
+            if used == n - 1:
+                break
+    return total</code></pre>
+<h4>Why the greedy choice is correct</h4>
+<p>By the <strong>cut property</strong>, the lightest edge crossing any cut of the graph belongs to some minimum spanning tree. When Kruskal adds the lightest edge that joins two components, that edge is the lightest across the cut between them.</p>
+<h4>Complexity</h4>
+<p>Sorting dominates: O(E log E), which equals O(E log V). Union-Find with path compression and union by rank costs almost O(1) per operation. A disconnected graph yields a minimum spanning forest.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does the cut property prove the greedy choice is correct?</li><li>How do Kruskal&#39;s and Prim&#39;s algorithms compare on dense graphs?</li><li>What does the result look like for a disconnected graph?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-32">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-32%3A+Explain+Kruskal%27s+algorithm+for+finding+the+Minimum+Spanning+Tree%E2%80%A6&amp;question-id=gen-32&amp;context=Software+engineer+%28core%29%2C+Gear+2%2C+topic%3A+Graphs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-32.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain Lambda Architecture versus Kappa Architecture for stream and batch processing. | InterviewGearUp</title>
+<meta name="description" content="Lambda architecture runs a batch layer (accurate, reprocessable) and a speed layer (low-latency streaming) in parallel and merges their results in a…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-14.html">
+<meta property="og:title" content="Explain Lambda Architecture versus Kappa Architecture for stream and batch processing. | InterviewGearUp">
+<meta property="og:description" content="Lambda architecture runs a batch layer (accurate, reprocessable) and a speed layer (low-latency streaming) in parallel and merges their results in a…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-14.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain Lambda Architecture versus Kappa Architecture for stream and batch processing.</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Architecture · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Lambda architecture runs a batch layer (accurate, reprocessable) and a speed layer (low-latency streaming) in parallel and merges their results in a serving layer, which means maintaining two code paths. Kappa architecture uses only a streaming system with a replayable log, treating batch as reprocessing the stream with the same code, which is simpler but depends on a long-retention log.</p></div>
+<h4>Explained in depth</h4>
+<h4>Lambda architecture</h4>
+<p>Three layers:</p>
+<ol start="1"><li><strong>Batch layer</strong>: processes the full immutable dataset periodically (for example nightly Spark jobs), producing accurate <strong>batch views</strong>.</li><li><strong>Speed layer</strong>: processes recent events in real time (Flink, Spark Streaming) into approximate <strong>real-time views</strong>.</li><li><strong>Serving layer</strong>: merges batch and real-time views to answer queries.</li></ol>
+<p>Pros: accurate results over complete data plus low latency for recent data; batch can fix streaming errors. Cons: <strong>two code paths</strong> for the same logic (hard to keep consistent), more infrastructure, and merging complexity.</p>
+<h4>Kappa architecture</h4>
+<p>Everything is a stream. Events are stored in a durable, replayable log (Kafka with long retention), and a <strong>single stream processing job</strong> computes the views. To change logic or fix bugs, deploy a new version of the job and <strong>replay the log</strong> from the beginning into a new output table, then switch over.</p>
+<p>Pros: one codebase and simpler operations. Cons: needs very long retention or tiered storage of the log, reprocessing large histories can be slow and costly, and some complex historical computations fit batch better.</p>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th></th><th>Lambda</th><th>Kappa</th></tr></thead><tbody><tr><td>Code paths</td><td>Two</td><td>One</td></tr><tr><td>Reprocessing</td><td>Batch recompute</td><td>Replay the log</td></tr><tr><td>Complexity</td><td>Higher</td><td>Lower</td></tr><tr><td>Latency</td><td>Low (speed layer)</td><td>Low</td></tr></tbody></table></div>
+<h4>Today</h4>
+<p>Lakehouse formats (Delta, Iceberg, Hudi) with unified engines (Spark Structured Streaming, Flink) let one pipeline serve both batch and streaming reads, which makes the classic Lambda split less necessary.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What problems come from maintaining two codebases in Lambda?</li><li>How does replaying a Kafka topic implement reprocessing in Kappa?</li><li>How do modern lakehouse tables blur this distinction?</li></ul>
+<p><a class="btn primary" href="../#/q/de-14">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-14%3A+Explain+Lambda+Architecture+versus+Kappa+Architecture+for+stream+and%E2%80%A6&amp;question-id=de-14&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-14.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

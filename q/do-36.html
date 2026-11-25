@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are PodDisruptionBudgets (PDB) and why are they critical during node upgrades and drain events? | InterviewGearUp</title>
+<meta name="description" content="A PodDisruptionBudget sets how many pods of an application must stay available (minAvailable) or may be down (maxUnavailable) during voluntary…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-36.html">
+<meta property="og:title" content="What are PodDisruptionBudgets (PDB) and why are they critical during node upgrades and drain events? | InterviewGearUp">
+<meta property="og:description" content="A PodDisruptionBudget sets how many pods of an application must stay available (minAvailable) or may be down (maxUnavailable) during voluntary…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-36.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are PodDisruptionBudgets (PDB) and why are they critical during node upgrades and drain events?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · Kubernetes · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A PodDisruptionBudget sets how many pods of an application must stay available (minAvailable) or may be down (maxUnavailable) during voluntary disruptions. Node drains, upgrades and autoscaler scale-downs use the Eviction API, which respects the budget, so the app keeps serving while nodes are rolled.</p></div>
+<h4>Explained in depth</h4>
+<pre><code>apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: web-pdb
+spec:
+  maxUnavailable: 1          # or minAvailable: 2 / &#39;80%&#39;
+  selector:
+    matchLabels:
+      app: web</code></pre>
+<h4>What it covers</h4>
+<ul><li><strong>Voluntary disruptions</strong> that go through the Eviction API: <code>kubectl drain</code>, node upgrades, cluster autoscaler removing a node.</li><li>It does <strong>not</strong> stop involuntary disruptions such as a node crash, a kernel panic or an out-of-memory kill. Deleting a pod directly with <code>kubectl delete pod</code> also bypasses it.</li></ul>
+<h4>During a drain</h4>
+<p>The drain evicts pods one by one. If an eviction would drop the app below the budget, the API refuses it and the drain retries until another replica is ready. This lets a rolling node upgrade proceed without taking the service down.</p>
+<h4>Pitfalls</h4>
+<ul><li><code>minAvailable</code> equal to the replica count, or <code>maxUnavailable: 0</code>, <strong>blocks drains forever</strong> and stalls upgrades.</li><li>A single-replica deployment cannot be protected this way; run at least two replicas.</li><li>A PDB does not help if the replicas share one node or zone, so combine it with anti-affinity or topology spread constraints.</li><li>Pods that never become Ready can keep a budget exhausted; the <code>unhealthyPodEvictionPolicy</code> setting controls how unhealthy pods are treated.</li><li>Give containers a sensible <code>terminationGracePeriodSeconds</code> and a readiness probe so that traffic drains before the pod stops.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>Why can a drain hang when minAvailable equals the replica count?</li><li>How do PDBs interact with the cluster autoscaler?</li><li>What protects an app from node crashes, which PDBs do not cover?</li></ul>
+<p><a class="btn primary" href="../#/q/do-36">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-36%3A+What+are+PodDisruptionBudgets+%28PDB%29+and+why+are+they+critical+during%E2%80%A6&amp;question-id=do-36&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+Kubernetes%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-36.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

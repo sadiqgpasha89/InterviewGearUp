@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How would you set up an evaluation and governance programme for LLM applications across an organisation? | InterviewGearUp</title>
+<meta name="description" content="Define risk tiers and acceptance criteria per use case, build evaluation datasets and automated evals for quality, safety and cost, combine them with…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-107.html">
+<meta property="og:title" content="How would you set up an evaluation and governance programme for LLM applications across an organisation? | InterviewGearUp">
+<meta property="og:description" content="Define risk tiers and acceptance criteria per use case, build evaluation datasets and automated evals for quality, safety and cost, combine them with…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-107.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How would you set up an evaluation and governance programme for LLM applications across an organisation?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 4 (Lead / Staff) · LLMs · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Define risk tiers and acceptance criteria per use case, build evaluation datasets and automated evals for quality, safety and cost, combine them with human review and red teaming before launch, gate releases on regression tests, monitor production with feedback and sampling, and maintain policy, ownership, model inventory and incident processes aligned to regulations.</p></div>
+<h4>Explained in depth</h4>
+<h4>Governance foundation</h4>
+<ul><li><strong>Inventory</strong> of all LLM applications, models, data sources and owners. Each use case is <strong>risk-tiered</strong> (internal summarisation versus customer-facing advice versus decisions affecting people), with required controls per tier.</li><li><strong>Policies</strong>: acceptable use, data handling (no sensitive data to unapproved vendors), approved models and providers, human oversight requirements, transparency to users, and retention.</li><li>Align with frameworks and regulations (NIST AI RMF, ISO 42001, EU AI Act risk categories). Define roles: product owner, engineering, security, legal and privacy, and an AI review board for high-risk use cases.</li></ul>
+<h4>Evaluation before launch</h4>
+<ol start="1"><li><strong>Task-specific evaluation sets</strong> built from real queries, edge cases and adversarial examples, with reference answers or rubrics, versioned and growing over time.</li><li><strong>Automated metrics</strong>: exact or structured checks (schema, citations, tool call correctness), retrieval metrics for RAG (recall, context precision, faithfulness), and <strong>LLM-as-judge</strong> scoring against rubrics, calibrated against human labels, with checks for position and length bias.</li><li><strong>Human evaluation</strong> by domain experts on a sample, with clear guidelines and inter-rater agreement.</li><li><strong>Safety and security testing</strong>: <strong>red teaming</strong> for jailbreaks, prompt injection (direct and via documents or tools), data leakage, harmful content, bias, and excessive agency for tool-using agents.</li><li><strong>Non-functional</strong>: latency, cost per request, robustness to paraphrase, and multilingual behaviour.</li><li><strong>Release gates</strong>: minimum scores per tier, no regressions on critical cases, and sign-off by required reviewers.</li></ol>
+<h4>Change management</h4>
+<p>Treat <strong>prompts, models, retrieval settings and tools as versioned artifacts</strong>. Run the regression suite in CI on every change (including provider model updates), compare against the baseline, and use shadow or canary releases and A/B tests.</p>
+<h4>Production monitoring</h4>
+<ul><li>Log inputs and outputs (with privacy controls), sample for review, and track user feedback, escalation rates, refusal and error rates, groundedness, cost, and latency.</li><li>Detect drift in queries and quality; alert on safety policy violations.</li><li>Guardrails (input and output filters, PII redaction, tool permission limits, rate limits) and fallbacks to humans.</li></ul>
+<h4>Incidents and improvement</h4>
+<p>An <strong>incident process</strong> covering detection, containment (disable feature or tool), communication, root cause analysis and fix, then new test cases added to the evaluation set. Regular audits, training for builders and users, and reporting to leadership on risk and quality metrics.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you build a reliable LLM-as-judge and know when not to trust it?</li><li>How do you detect regressions when you change a prompt or model version?</li><li>What belongs in an LLM incident response plan?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-107">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-107%3A+How+would+you+set+up+an+evaluation+and+governance+programme+for+LLM%E2%80%A6&amp;question-id=ml-107&amp;context=ML+%2F+AI+engineer%2C+Gear+4%2C+topic%3A+LLMs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-107.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

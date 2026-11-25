@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain the Apache Spark driver, executor, and cluster manager architecture. | InterviewGearUp</title>
+<meta name="description" content="A Spark application has a driver that runs the main program, builds the execution plan, and schedules tasks; executors are processes on worker nodes that…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-15.html">
+<meta property="og:title" content="Explain the Apache Spark driver, executor, and cluster manager architecture. | InterviewGearUp">
+<meta property="og:description" content="A Spark application has a driver that runs the main program, builds the execution plan, and schedules tasks; executors are processes on worker nodes that…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-15.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain the Apache Spark driver, executor, and cluster manager architecture.</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 2 (Mid-level) · Spark · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A Spark application has a driver that runs the main program, builds the execution plan, and schedules tasks; executors are processes on worker nodes that run tasks and cache data; and a cluster manager (YARN, Kubernetes, standalone) allocates resources for the driver and executors. Work is split into jobs, stages and tasks.</p></div>
+<h4>Explained in depth</h4>
+<h4>Components</h4>
+<ul><li><strong>Driver</strong>: runs your <code>main</code>, creates the <code>SparkSession</code>, converts transformations into a DAG, plans and optimises it, and <strong>schedules tasks</strong> on executors. It also collects results (for actions like <code>collect()</code>), so it needs enough memory.</li><li><strong>Executors</strong>: JVM processes on worker nodes. They run <strong>tasks</strong> in parallel (one task per core slot), hold cached partitions, and write shuffle files. They live for the application&#39;s duration unless dynamic allocation is on.</li><li><strong>Cluster manager</strong>: provides resources. Options are Standalone, <strong>YARN</strong>, <strong>Kubernetes</strong> or Mesos (deprecated). It launches executors but does not understand Spark&#39;s logic.</li></ul>
+<h4>Execution hierarchy</h4>
+<ol start="1"><li>An <strong>action</strong> (<code>count</code>, <code>write</code>) triggers a <strong>job</strong>.</li><li>The job is split into <strong>stages</strong> at <strong>shuffle</strong> boundaries (wide dependencies such as <code>groupBy</code> and <code>join</code>).</li><li>Each stage has one <strong>task</strong> per partition, and tasks run on executors.</li></ol>
+<pre><code>Driver  --requests resources--&gt;  Cluster manager
+Driver  --schedules tasks----&gt;   Executors (on worker nodes)  &lt;--shuffle data--&gt;  Executors</code></pre>
+<h4>Deploy modes</h4>
+<ul><li><strong>Client mode</strong>: the driver runs where you submit (a laptop or edge node), good for interactive work.</li><li><strong>Cluster mode</strong>: the driver runs inside the cluster, better for production jobs, because it survives the submitting machine going away.</li></ul>
+<h4>Common issues</h4>
+<p>Driver out-of-memory from <code>collect()</code> or large broadcast variables, executor out-of-memory from skewed partitions, and too few or too many partitions for the cores available.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What decides the number of tasks in a stage?</li><li>What happens if the driver runs out of memory?</li><li>What is the difference between client and cluster deploy modes?</li></ul>
+<p><a class="btn primary" href="../#/q/de-15">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-15%3A+Explain+the+Apache+Spark+driver%2C+executor%2C+and+cluster+manager%E2%80%A6&amp;question-id=de-15&amp;context=Data+engineer%2C+Gear+2%2C+topic%3A+Spark%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-15.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

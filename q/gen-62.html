@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you implement an LFU (Least Frequently Used) cache in $O(1)$ time using frequency doubly linked lists? | InterviewGearUp</title>
+<meta name="description" content="Keep a hash map from key to node, a hash map from frequency to a doubly linked list of keys at that frequency (oldest first), and a minFreq variable. A…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-62.html">
+<meta property="og:title" content="How do you implement an LFU (Least Frequently Used) cache in $O(1)$ time using frequency doubly linked lists? | InterviewGearUp">
+<meta property="og:description" content="Keep a hash map from key to node, a hash map from frequency to a doubly linked list of keys at that frequency (oldest first), and a minFreq variable. A…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-62.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you implement an LFU (Least Frequently Used) cache in $O(1)$ time using frequency doubly linked lists?</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 4 (Lead / Staff) · Data structures · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Keep a hash map from key to node, a hash map from frequency to a doubly linked list of keys at that frequency (oldest first), and a minFreq variable. A get or put moves a key from list f to list f+1; eviction removes the oldest key in the minFreq list. Every operation is O(1).</p></div>
+<h4>Explained in depth</h4>
+<p><strong>The structure</strong></p>
+<ul><li><code>nodes</code>: key to its value, frequency and list node.</li><li><code>buckets</code>: frequency to a doubly linked list of keys at that frequency, ordered by recency, so ties are broken by least recently used.</li><li><code>minFreq</code>: the smallest frequency that currently has a non-empty bucket.</li></ul>
+<h4>Operations</h4>
+<ul><li><strong>get(key)</strong>: find the node, unlink it from <code>buckets[f]</code> and append it to <code>buckets[f+1]</code>. If <code>buckets[f]</code> is now empty and <code>f == minFreq</code>, increment <code>minFreq</code>.</li><li><strong>put(key, value)</strong>: if the key exists, update the value and bump it as in get. Otherwise, if the cache is full, evict the head of <code>buckets[minFreq]</code>, then insert the new key into <code>buckets[1]</code> and set <code>minFreq = 1</code>.</li></ul>
+<p><code>minFreq</code> never needs a scan: after a bump it either stays (other keys remain at that frequency) or moves up by exactly one, and after an insert it resets to 1.</p>
+<h4>Trade-offs and pitfalls</h4>
+<ul><li>Pure LFU keeps formerly popular items forever (cache pollution). Real systems add aging or a window, as in TinyLFU and W-TinyLFU, which use a compact frequency sketch to save memory.</li><li>Handle capacity 0, and evict before inserting.</li><li>Under concurrency a single lock serializes everything; shard by key hash.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How would you add time-based aging so that old popular keys can be evicted?</li><li>How does a Count-Min sketch reduce the memory needed for frequency tracking?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-62">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-62%3A+How+do+you+implement+an+LFU+%28Least+Frequently+Used%29+cache+in+%24O%281%29%24%E2%80%A6&amp;question-id=gen-62&amp;context=Software+engineer+%28core%29%2C+Gear+4%2C+topic%3A+Data+structures%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-62.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

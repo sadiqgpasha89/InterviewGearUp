@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain Cross-Site Request Forgery (CSRF): Attack mechanics, Anti-CSRF tokens, and `SameSite` cookie flags. | InterviewGearUp</title>
+<meta name="description" content="CSRF tricks a logged-in user&#39;s browser into sending a state-changing request to your site; the browser attaches the session cookie automatically, so the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-11.html">
+<meta property="og:title" content="Explain Cross-Site Request Forgery (CSRF): Attack mechanics, Anti-CSRF tokens, and `SameSite` cookie flags. | InterviewGearUp">
+<meta property="og:description" content="CSRF tricks a logged-in user&#39;s browser into sending a state-changing request to your site; the browser attaches the session cookie automatically, so the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-11.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain Cross-Site Request Forgery (CSRF): Attack mechanics, Anti-CSRF tokens, and `SameSite` cookie flags.</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 2 (Mid-level) · AppSec · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>CSRF tricks a logged-in user&#39;s browser into sending a state-changing request to your site; the browser attaches the session cookie automatically, so the server cannot tell it was not intended. Defend with anti-CSRF tokens, SameSite cookies, origin checks and by never changing state on GET.</p></div>
+<h4>Explained in depth</h4>
+<h4>How the attack works</h4>
+<p>The victim is signed in to <code>bank.example</code>. An attacker&#39;s page contains a hidden form that posts to <code>bank.example/transfer</code>. The browser sends the request with the victim&#39;s cookie, and the bank processes it as a legitimate action. The attacker cannot read the response; they only need the side effect.</p>
+<p>It depends on <strong>ambient credentials</strong> (cookies, HTTP auth). APIs authenticated with a token the page adds explicitly in a header are not vulnerable in the same way, though they have their own risks, such as XSS.</p>
+<h4>Defences</h4>
+<ul><li><strong>Synchronizer token</strong>: a random, unpredictable value tied to the session, put in a hidden form field or request header and checked on the server. The attacker&#39;s page cannot read it because of the same-origin policy.</li><li><strong>Double-submit cookie</strong>: send the token in both a cookie and a header or field and compare. It should be signed or bound to the session to resist cookie injection.</li><li><strong>SameSite cookies</strong>: <code>Strict</code> never sends the cookie cross-site; <code>Lax</code> sends it only for top-level navigations with safe methods. Modern browsers treat cookies without an attribute as Lax, but set it explicitly.</li><li><strong>Verify <code>Origin</code> or <code>Referer</code></strong> headers on state-changing requests.</li><li><strong>Custom headers</strong> such as <code>X-Requested-With</code> on AJAX calls force a CORS preflight, which cross-site pages cannot pass.</li><li>Use POST, PUT or DELETE for changes and never mutate state on GET. Re-authenticate for sensitive actions.</li></ul>
+<h4>Caveats</h4>
+<p>SameSite is about the <strong>site</strong>, not the origin: a subdomain, or an XSS flaw on any page of your site, still lets requests be sent in a same-site context. SameSite should complement tokens, not replace them. Also protect login forms against login CSRF.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does an XSS vulnerability defeat CSRF tokens?</li><li>How does SameSite=Lax still allow some cross-site requests?</li><li>Why are APIs that use a bearer token in a header not vulnerable to classic CSRF?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-11">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-11%3A+Explain+Cross-Site+Request+Forgery+%28CSRF%29%3A+Attack+mechanics%2C%E2%80%A6&amp;question-id=sec-11&amp;context=Security+engineer%2C+Gear+2%2C+topic%3A+AppSec%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-11.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

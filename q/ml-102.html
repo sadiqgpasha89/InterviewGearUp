@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Why do we split data into training, validation and test sets, and what is each used for? | InterviewGearUp</title>
+<meta name="description" content="The training set fits the model&#39;s parameters, the validation set is used to tune hyperparameters and choose between models, and the test set is touched…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-102.html">
+<meta property="og:title" content="Why do we split data into training, validation and test sets, and what is each used for? | InterviewGearUp">
+<meta property="og:description" content="The training set fits the model&#39;s parameters, the validation set is used to tune hyperparameters and choose between models, and the test set is touched…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-102.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Why do we split data into training, validation and test sets, and what is each used for?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 1 (Junior) · Fundamentals · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>The training set fits the model&#39;s parameters, the validation set is used to tune hyperparameters and choose between models, and the test set is touched once at the end to estimate performance on unseen data. Keeping them separate prevents overly optimistic results from evaluating on data the model has already learned from or been tuned against.</p></div>
+<h4>Explained in depth</h4>
+<h4>Purpose of each set</h4>
+<ul><li><strong>Training set</strong> (for example 60 to 80 percent): the model learns its parameters (weights) from it.</li><li><strong>Validation set</strong> (10 to 20 percent): used during development to <strong>tune hyperparameters</strong> (tree depth, learning rate, regularisation), compare models, and apply early stopping. Because decisions are made using it, it becomes slightly &quot;used up&quot;.</li><li><strong>Test set</strong> (10 to 20 percent): a final, untouched estimate of how the model will perform on <strong>new data</strong>. Look at it once; if you keep tuning against it, it turns into another validation set.</li></ul>
+<pre><code>X_train, X_temp, y_train, y_temp = train_test_split(X, y, test_size=0.3, random_state=42, stratify=y)
+X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42, stratify=y_temp)</code></pre>
+<h4>Why not just one set?</h4>
+<p>Measuring on training data rewards <strong>memorisation</strong> (overfitting). A model can score 100 percent on training data and fail in production. Separate data reveals <strong>generalisation</strong>.</p>
+<h4>Good practices</h4>
+<ul><li><strong>Stratify</strong> by class for imbalanced classification so each split has similar proportions.</li><li>Split <strong>before</strong> any preprocessing that learns from data (scaling, imputation, feature selection) and fit those steps on the training set only; otherwise <strong>data leakage</strong> inflates results.</li><li>Keep related records together (all rows of one user or patient in the same split) to avoid leakage between near-duplicates.</li><li>For <strong>time series</strong>, split chronologically (train on the past, test on the future), never randomly.</li><li>With small datasets use <strong>k-fold cross-validation</strong> for tuning, and still hold out a final test set.</li><li>Make the test set represent production data, and report confidence intervals where possible.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>What is data leakage and how can it ruin a split?</li><li>Why use cross-validation instead of one fixed validation set?</li><li>How should you split time-series data?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-102">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-102%3A+Why+do+we+split+data+into+training%2C+validation+and+test+sets%2C+and%E2%80%A6&amp;question-id=ml-102&amp;context=ML+%2F+AI+engineer%2C+Gear+1%2C+topic%3A+Fundamentals%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-102.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

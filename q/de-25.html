@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain Apache Parquet internal layout: Row Groups, Column Chunks, and Pages. | InterviewGearUp</title>
+<meta name="description" content="A Parquet file is split into row groups (horizontal chunks of rows). Within each row group, every column is stored as a column chunk, which is divided…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-25.html">
+<meta property="og:title" content="Explain Apache Parquet internal layout: Row Groups, Column Chunks, and Pages. | InterviewGearUp">
+<meta property="og:description" content="A Parquet file is split into row groups (horizontal chunks of rows). Within each row group, every column is stored as a column chunk, which is divided…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-25.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain Apache Parquet internal layout: Row Groups, Column Chunks, and Pages.</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 2 (Mid-level) · Storage · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A Parquet file is split into row groups (horizontal chunks of rows). Within each row group, every column is stored as a column chunk, which is divided into pages, the unit of encoding and compression. The footer holds the schema and metadata, including per-chunk min and max statistics that let engines skip data they do not need.</p></div>
+<h4>Explained in depth</h4>
+<h4>Layout</h4>
+<pre><code>File
+ |- Row group 1 (for example 128 MB of rows)
+ |    |- Column chunk: user_id  -&gt; pages (data pages, optional dictionary page)
+ |    |- Column chunk: country  -&gt; pages
+ |    |- Column chunk: amount   -&gt; pages
+ |- Row group 2
+ |- Footer: schema, row group and column metadata, statistics, offsets</code></pre>
+<ul><li><strong>Row group</strong>: a set of rows, written and read as a unit; it is the usual granularity for parallelism (one task per row group or split).</li><li><strong>Column chunk</strong>: all the values of one column within a row group, stored contiguously.</li><li><strong>Page</strong> (roughly 1 MB): the smallest unit for encoding and compression, with its own header. Pages can be dictionary-encoded, run-length encoded or bit-packed, then compressed with Snappy or Zstd.</li><li><strong>Footer</strong>: read first; holds the schema, offsets and <strong>min, max and null-count statistics</strong> per column chunk (and optional page indexes and Bloom filters).</li></ul>
+<h4>Why this helps queries</h4>
+<ul><li><strong>Column pruning</strong>: <code>SELECT amount</code> reads only that column&#39;s chunks.</li><li><strong>Predicate pushdown</strong>: with <code>WHERE country = &#39;IN&#39;</code>, the engine checks statistics and <strong>skips row groups</strong> whose min and max exclude the value.</li><li>Similar values stored together compress very well, so I/O is lower.</li></ul>
+<h4>Nested data</h4>
+<p>Parquet stores nested structures using <strong>definition and repetition levels</strong>, so it can represent lists and structs while staying columnar.</p>
+<h4>Tuning</h4>
+<p>Row groups that are too small increase metadata and overhead; too large reduce parallelism and memory use becomes heavy. Sort or cluster data by commonly filtered columns so min and max statistics are selective, and avoid many tiny files.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do row group size and page size affect performance?</li><li>How does predicate pushdown use the footer statistics?</li><li>How does Parquet represent nested and repeated data?</li></ul>
+<p><a class="btn primary" href="../#/q/de-25">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-25%3A+Explain+Apache+Parquet+internal+layout%3A+Row+Groups%2C+Column+Chunks%2C%E2%80%A6&amp;question-id=de-25&amp;context=Data+engineer%2C+Gear+2%2C+topic%3A+Storage%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-25.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are the pre-training objectives for Large Language Models: Next-Token Prediction vs Masked Language Modeling? | InterviewGearUp</title>
+<meta name="description" content="Next-token prediction (causal language modelling) trains the model to predict each token from the ones before it, which matches text generation and gives…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-41.html">
+<meta property="og:title" content="What are the pre-training objectives for Large Language Models: Next-Token Prediction vs Masked Language Modeling? | InterviewGearUp">
+<meta property="og:description" content="Next-token prediction (causal language modelling) trains the model to predict each token from the ones before it, which matches text generation and gives…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-41.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are the pre-training objectives for Large Language Models: Next-Token Prediction vs Masked Language Modeling?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · LLMs · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Next-token prediction (causal language modelling) trains the model to predict each token from the ones before it, which matches text generation and gives a training signal at every position. Masked language modelling hides about 15 percent of tokens and predicts them from both sides, giving bidirectional representations but a weaker signal and a mismatch with generation.</p></div>
+<h4>Explained in depth</h4>
+<h4>Next-token prediction (autoregressive)</h4>
+<p>The objective is to maximise <code>sum over t of log P(x_t | x_1 ... x_{t-1})</code>, trained with cross-entropy over the vocabulary.</p>
+<ul><li>A causal attention mask prevents looking ahead, so all positions of a sequence are trained <strong>in parallel</strong> (teacher forcing).</li><li>Every token provides a gradient, so it is data efficient.</li><li>The model learns exactly the task it performs at inference, which makes sampling, chat and prompting natural.</li><li>Used by GPT, LLaMA, Claude-style models and most modern LLMs.</li></ul>
+<h4>Masked language modelling (MLM)</h4>
+<p>Randomly replace about 15 percent of tokens with a <code>[MASK]</code> token (or a random or unchanged token), then predict the originals using <strong>bidirectional context</strong> (BERT).</p>
+<ul><li>Representations use left and right context, which is excellent for understanding tasks, classification and embeddings.</li><li>Only the masked tokens (15 percent) produce loss per sequence, so it is less sample efficient.</li><li><code>[MASK]</code> never appears at fine-tuning or inference time (a mismatch), and the model is not designed for free text generation.</li></ul>
+<h4>Other objectives</h4>
+<ul><li><strong>Span corruption</strong> (T5): mask contiguous spans and generate them.</li><li><strong>Replaced token detection</strong> (ELECTRA): decide which tokens were replaced by a small generator; efficient since every position gives signal.</li><li><strong>Next sentence prediction</strong> (BERT, later found unnecessary).</li></ul>
+<h4>Metrics</h4>
+<p>The cross-entropy loss on held-out text converts to <strong>perplexity</strong> = exp(loss), a measure of how surprised the model is by the text.</p>
+<h4>Why it matters</h4>
+<p>The objective decides what the model is good at: MLM for understanding encoders, next-token prediction for general generative assistants, which are then aligned with instruction tuning and preference training.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does next-token prediction yield in-context learning at scale?</li><li>What are span corruption and prefix language modelling?</li><li>How does the loss relate to perplexity?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-41">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-41%3A+What+are+the+pre-training+objectives+for+Large+Language+Models%3A%E2%80%A6&amp;question-id=ml-41&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+LLMs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-41.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

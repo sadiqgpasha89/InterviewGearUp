@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain the CSS position property: static, relative, absolute, fixed and sticky. | InterviewGearUp</title>
+<meta name="description" content="static is the default normal flow. relative offsets an element from its normal place while keeping its space and becomes the reference for absolute…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-106.html">
+<meta property="og:title" content="Explain the CSS position property: static, relative, absolute, fixed and sticky. | InterviewGearUp">
+<meta property="og:description" content="static is the default normal flow. relative offsets an element from its normal place while keeping its space and becomes the reference for absolute…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-106.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain the CSS position property: static, relative, absolute, fixed and sticky.</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 1 (Junior) · CSS · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>static is the default normal flow. relative offsets an element from its normal place while keeping its space and becomes the reference for absolute children. absolute removes the element from the flow and positions it against the nearest positioned ancestor. fixed positions against the viewport, and sticky behaves as relative until a scroll threshold, then sticks.</p></div>
+<h4>Explained in depth</h4>
+<h4>The values</h4>
+<div class="md-table"><table><thead><tr><th>Value</th><th>Behaviour</th></tr></thead><tbody><tr><td><code>static</code></td><td>Default. Normal flow; <code>top</code>, <code>left</code> and <code>z-index</code> have no effect.</td></tr><tr><td><code>relative</code></td><td>Stays in flow (its original space is kept) but can be shifted with <code>top</code>, <code>left</code>, etc. Creates a reference point for absolute children.</td></tr><tr><td><code>absolute</code></td><td>Removed from flow. Positioned relative to the nearest ancestor that is <strong>not static</strong> (or the initial containing block).</td></tr><tr><td><code>fixed</code></td><td>Removed from flow and positioned relative to the <strong>viewport</strong>, so it stays put while scrolling.</td></tr><tr><td><code>sticky</code></td><td>Acts like <code>relative</code> until it reaches a scroll offset (such as <code>top: 0</code>), then stays fixed inside its scroll container.</td></tr></tbody></table></div>
+<h4>Common pattern</h4>
+<pre><code>.card { position: relative; }
+.card .badge { position: absolute; top: 8px; right: 8px; }</code></pre>
+<p>The badge sits in the card&#39;s corner because the card is the positioned ancestor.</p>
+<h4>Sticky header</h4>
+<pre><code>header { position: sticky; top: 0; }</code></pre>
+<p>Sticky fails when an ancestor has <code>overflow: hidden</code> or <code>auto</code> (it then sticks within that box), when the parent is too short, or when no <code>top</code>, <code>bottom</code>, <code>left</code> or <code>right</code> is set.</p>
+<h4>Stacking</h4>
+<p><code>z-index</code> only works on positioned elements (and flex or grid items) and is compared inside the same <strong>stacking context</strong>. A new context is created by <code>position</code> with <code>z-index</code>, <code>opacity</code> below 1, <code>transform</code>, and <code>isolation: isolate</code>. If a high z-index element is still hidden, check whether its ancestor creates a lower context.</p>
+<h4>Modern advice</h4>
+<p>Prefer Flexbox or Grid for layout and keep positioning for overlays, badges, tooltips and sticky elements.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What makes an ancestor the containing block for an absolutely positioned element?</li><li>What is a stacking context and how does z-index relate to it?</li><li>Why does position sticky sometimes not work?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-106">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-106%3A+Explain+the+CSS+position+property%3A+static%2C+relative%2C+absolute%2C+fixed%E2%80%A6&amp;question-id=fe-106&amp;context=Frontend+engineer%2C+Gear+1%2C+topic%3A+CSS%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-106.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

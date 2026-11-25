@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare Kubernetes Liveness, Readiness, and Startup probes and the impact of incorrect probe configurations. | InterviewGearUp</title>
+<meta name="description" content="A liveness probe tells Kubernetes when to restart a stuck container, a readiness probe decides whether a pod receives traffic, and a startup probe holds…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-31.html">
+<meta property="og:title" content="Compare Kubernetes Liveness, Readiness, and Startup probes and the impact of incorrect probe configurations. | InterviewGearUp">
+<meta property="og:description" content="A liveness probe tells Kubernetes when to restart a stuck container, a readiness probe decides whether a pod receives traffic, and a startup probe holds…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-31.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare Kubernetes Liveness, Readiness, and Startup probes and the impact of incorrect probe configurations.</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 2 (Mid-level) · Kubernetes · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A liveness probe tells Kubernetes when to restart a stuck container, a readiness probe decides whether a pod receives traffic, and a startup probe holds off the other two while a slow application boots. Wrong settings cause restart loops, traffic sent to pods that are not ready, or cascading failures.</p></div>
+<h4>Explained in depth</h4>
+<div class="md-table"><table><thead><tr><th>Probe</th><th>Question</th><th>On failure</th></tr></thead><tbody><tr><td><strong>Liveness</strong></td><td>Is the process stuck beyond recovery (deadlock)?</td><td>Container is <strong>restarted</strong></td></tr><tr><td><strong>Readiness</strong></td><td>Can it serve requests right now?</td><td>Pod is <strong>removed from Service endpoints</strong>, not restarted</td></tr><tr><td><strong>Startup</strong></td><td>Has the application finished starting?</td><td>Delays liveness and readiness until it passes; restarts if it never does</td></tr></tbody></table></div>
+<pre><code>readinessProbe:
+  httpGet: { path: /ready, port: 8080 }
+  periodSeconds: 5
+  failureThreshold: 3
+livenessProbe:
+  httpGet: { path: /healthz, port: 8080 }
+  periodSeconds: 10
+  timeoutSeconds: 2
+startupProbe:
+  httpGet: { path: /healthz, port: 8080 }
+  periodSeconds: 5
+  failureThreshold: 30        # up to 150 s to start</code></pre>
+<h4>Common mistakes</h4>
+<ul><li><strong>Liveness checks that depend on other services.</strong> If the database is down, every pod fails liveness and restarts together, turning an outage into a bigger one. Keep liveness to the process&#39;s own health; put dependency checks in readiness, carefully.</li><li><strong>Timeouts too tight or no startup probe</strong>: a slow-starting app is killed before it is ready and loops in CrashLoopBackOff. Use a startup probe rather than a large <code>initialDelaySeconds</code>.</li><li><strong>No readiness probe</strong>: traffic reaches pods before they can serve, causing errors during deploys.</li><li>Probes that are expensive, or that share a thread pool with real traffic, so that load makes them fail.</li></ul>
+<p>Probe types are HTTP, TCP, exec and gRPC. Make the readiness check fail during graceful shutdown so the pod drains traffic before it stops.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why can a liveness probe that checks the database cause a cascading outage?</li><li>When would you add a startup probe instead of increasing initialDelaySeconds?</li><li>How do readiness probes help during a rolling update?</li></ul>
+<p><a class="btn primary" href="../#/q/do-31">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-31%3A+Compare+Kubernetes+Liveness%2C+Readiness%2C+and+Startup+probes+and+the%E2%80%A6&amp;question-id=do-31&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+2%2C+topic%3A+Kubernetes%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-31.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

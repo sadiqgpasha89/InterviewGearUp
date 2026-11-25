@@ -20,6 +20,9 @@ Interview preparation for IT roles, organised by **gear**:
 - **Behavioral story bank**: write STAR stories in your own words (situation, task, action, result, reflection), tag them (ownership, conflict, failure, leadership and more), see which behavioral questions each story could answer and which tags you have no story for. Rule-based tips flag a missing result or too many "we" statements. Optional AI feedback is told not to invent facts. Stories stay on your device.
 - **Job description analyzer**: paste a job description to extract skills, a rough seniority estimate and the matching role, then get a prep plan linked to bank questions. The estimate is a heuristic, the pasted text stays in your browser unless you choose AI feedback, and it is treated as untrusted text in prompts.
 - **System design workspace**: 12 design problems with requirements and estimate prompts, an 8-section template that autosaves, a text-to-diagram box (`A -> B: label`, shown as Mermaid-style source), a staged reference revealed only after you have written your own, and a deterministic seven-point rubric.
+- **Learning paths**: build your own ordered study list from the question bank, reorder it, track how much is prepared, and export or import it as a file. Four starter paths are included (AI-assembled, not reviewed by a person). Stored in this browser and part of the backup.
+- **Optional private sync**: move progress between devices through a secret GitHub Gist in your own account. Off by default. Data is encrypted in your browser with your passphrase before upload; your AI key and token are never included. See [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md) for what it does and does not protect.
+- **Static question pages**: every question with a written answer also has a crawlable page under `q/` (with a sitemap). Regenerate with `npm run seo`; `npm test` checks they are current.
 - **Coding lab**: 8 JavaScript problems with progressive hints, a timed mode and a solution walkthrough. Your code runs in an isolated Web Worker with no network, storage or page access, and is stopped after 3 seconds. JavaScript only; if the browser has no Worker support the lab is editor-only.
 - **Company pages**: community reports grouped by company, with rounds, roles and a generic prep checklist. Reports are unverified unless a maintainer has labelled them `approved`; companies have not endorsed anything here.
 - **Voice practice**: optional dictation (the browser's speech recognition, which may use a cloud service; you are asked first) or typing, then timing, pace, filler-word and structure checks on the text. Transcripts are not saved unless you tick the box, and can be deleted or exported. No emotion or personality inference.
@@ -139,7 +142,8 @@ Run validation tests (schema, metadata, duplicates, coverage ratchet, spaced rep
 
 ```bash
 npm test                  # all automated tests
-npm run test:goal         # also enforces the 15-real-answers-per-role-and-gear target (fails until it is met)
+npm run test:goal         # also enforces the 15-real-answers-per-role-and-gear target (met since content batch 9)
+npm run seo               # regenerate the static pages in q/ after any answer change
 npm run content:status    # real vs placeholder answers per role and gear, and the next questions to write
 ```
 

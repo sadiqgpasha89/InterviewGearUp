@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is the difference between normalization and denormalization, and when is each used in analytics? | InterviewGearUp</title>
+<meta name="description" content="Normalization splits data into related tables so each fact is stored once, which avoids duplication and update anomalies and suits transactional systems.…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-104.html">
+<meta property="og:title" content="What is the difference between normalization and denormalization, and when is each used in analytics? | InterviewGearUp">
+<meta property="og:description" content="Normalization splits data into related tables so each fact is stored once, which avoids duplication and update anomalies and suits transactional systems.…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-104.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is the difference between normalization and denormalization, and when is each used in analytics?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 1 (Junior) · Data modelling · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Normalization splits data into related tables so each fact is stored once, which avoids duplication and update anomalies and suits transactional systems. Denormalization deliberately repeats or pre-joins data into wide tables so analytical queries need fewer joins and run faster, at the cost of storage and harder updates. Warehouses typically denormalize into star schemas.</p></div>
+<h4>Explained in depth</h4>
+<h4>Normalization</h4>
+<p>Organise tables so each piece of information lives in <strong>one place</strong>, linked by keys.</p>
+<ul><li>1NF: atomic values, no repeating groups.</li><li>2NF: every non-key column depends on the whole key.</li><li>3NF: non-key columns depend only on the key, not on each other.</li></ul>
+<p>Example: <code>orders</code> stores <code>customer_id</code>; the customer&#39;s name and address live only in <code>customers</code>.</p>
+<p><strong>Benefits</strong>: no duplicated data, one-place updates, smaller storage, integrity through foreign keys. <strong>Costs</strong>: reading needs joins across many tables, which slows large analytical queries.</p>
+<h4>Denormalization</h4>
+<p>Copy or combine attributes so reads need fewer joins: put <code>customer_name</code> and <code>region</code> directly on an orders table, or create a wide reporting table. <strong>Benefits</strong>: fast scans and simpler queries, friendly to BI tools and columnar warehouses. <strong>Costs</strong>: redundancy, larger storage, and risk of inconsistent values if the source changes (needs a pipeline to rebuild).</p>
+<h4>Where each fits</h4>
+<ul><li><strong>OLTP</strong> (applications, many small reads and writes): mostly <strong>normalised</strong> to keep writes cheap and consistent.</li><li><strong>OLAP</strong> (reports, dashboards, large scans): <strong>denormalised</strong> into <strong>star schemas</strong> (a central fact table with dimension tables) or even one big table. Columnar storage compresses repeated values well, reducing the storage penalty.</li></ul>
+<h4>Practical approach</h4>
+<p>Keep the source of truth normalised, and build denormalised models in the warehouse (for example with dbt) that can be recreated at any time. Choose the level of denormalisation based on query patterns, data volume and how often attributes change (slowly changing dimensions).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What are the normal forms, briefly?</li><li>Why do OLTP systems favour normalization?</li><li>What is the downside of a very wide denormalized table?</li></ul>
+<p><a class="btn primary" href="../#/q/de-104">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-104%3A+What+is+the+difference+between+normalization+and+denormalization%2C%E2%80%A6&amp;question-id=de-104&amp;context=Data+engineer%2C+Gear+1%2C+topic%3A+Data+modelling%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-104.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

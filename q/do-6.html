@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain SLIs, SLOs and error budgets. How would you define them for a service? | InterviewGearUp</title>
+<meta name="description" content="An SLI measures user-visible behaviour (for example, the fraction of requests that succeed in under 300 ms). An SLO is the target for it (99.9% over 30…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-6.html">
+<meta property="og:title" content="Explain SLIs, SLOs and error budgets. How would you define them for a service? | InterviewGearUp">
+<meta property="og:description" content="An SLI measures user-visible behaviour (for example, the fraction of requests that succeed in under 300 ms). An SLO is the target for it (99.9% over 30…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-6.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain SLIs, SLOs and error budgets. How would you define them for a service?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · Reliability · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>An SLI measures user-visible behaviour (for example, the fraction of requests that succeed in under 300 ms). An SLO is the target for it (99.9% over 30 days). The error budget is the allowed shortfall (0.1%) that you spend on change and risk.</p></div>
+<h4>Explained in depth</h4>
+<h4>Choosing SLIs</h4>
+<p>Start from the user journey: availability (good requests divided by total), latency (share under a threshold), freshness, correctness. Measure at the load balancer or client side rather than just server uptime.</p>
+<h4>Setting the target</h4>
+<p>Based on what users need and what your dependencies can support. Not 100%. For scale: 99.9% over 30 days allows about 43 minutes of failure; 99.99% allows about 4 minutes.</p>
+<h4>Using the budget</h4>
+<p>Agree an error budget policy: if the budget burns too fast, freeze risky releases and prioritise reliability work; if plenty remains, ship faster.</p>
+<h4>Alerting</h4>
+<p>Alert on <strong>burn rate</strong> over multiple windows (a fast burn pages someone, a slow burn files a ticket), not on raw CPU thresholds.</p>
+<p>An SLA is a contractual promise with penalties, and is looser than the internal SLO. Pitfalls: too many SLOs, targets nobody agreed to, and measuring machines instead of user success.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How much downtime does 99.99% allow per month?</li><li>How would you alert on an SLO?</li><li>What is the difference between an SLO and an SLA?</li></ul>
+<p><a class="btn primary" href="../#/q/do-6">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-6%3A+Explain+SLIs%2C+SLOs+and+error+budgets.+How+would+you+define+them+for%E2%80%A6&amp;question-id=do-6&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+Reliability%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-6.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

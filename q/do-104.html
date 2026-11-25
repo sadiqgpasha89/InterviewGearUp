@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>A Linux server feels slow. What commands do you run in the first few minutes to find out why? | InterviewGearUp</title>
+<meta name="description" content="Check load and uptime, then CPU with top or htop, memory and swap with free, disk space and inodes with df, disk I/O with iostat, network sockets with…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-104.html">
+<meta property="og:title" content="A Linux server feels slow. What commands do you run in the first few minutes to find out why? | InterviewGearUp">
+<meta property="og:description" content="Check load and uptime, then CPU with top or htop, memory and swap with free, disk space and inodes with df, disk I/O with iostat, network sockets with…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-104.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>A Linux server feels slow. What commands do you run in the first few minutes to find out why?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 1 (Junior) · Linux · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Check load and uptime, then CPU with top or htop, memory and swap with free, disk space and inodes with df, disk I/O with iostat, network sockets with ss, and recent errors in dmesg and logs. Work through CPU, memory, disk and network in order, find the process responsible, and change one thing at a time.</p></div>
+<h4>Explained in depth</h4>
+<h4>A quick checklist</h4>
+<ol start="1"><li><strong><code>uptime</code></strong>: load averages for 1, 5, 15 minutes. Compare against the number of CPU cores (<code>nproc</code>). Load far above core count means waiting work (CPU or I/O).</li><li><strong><code>top</code> or <code>htop</code></strong>: which processes use CPU and memory? Look at <code>%us</code> (user), <code>%sy</code> (kernel), <code>%wa</code> (I/O wait), <code>%st</code> (steal, noisy neighbours on virtual machines).</li><li><strong><code>free -h</code></strong>: memory. Look at <strong>available</strong>, not just free, and at swap use. Heavy swapping (<code>vmstat 1</code>, columns <code>si</code>/<code>so</code>) makes everything slow.</li><li><strong><code>df -h</code> and <code>df -i</code></strong>: a full disk or <strong>no free inodes</strong> causes strange failures.</li><li><strong><code>iostat -xz 1</code></strong>: disk utilisation, queue length and latency (<code>await</code>). <strong><code>iotop</code></strong> shows which process does I/O.</li><li><strong><code>ss -s</code> and <code>ss -tulpn</code></strong>: socket counts, listening ports, many connections in odd states.</li><li><strong><code>dmesg -T | tail</code></strong> and <strong><code>journalctl -p err -n 50</code></strong>: out-of-memory kills, disk errors, network resets.</li><li><strong>Application logs</strong> and recent changes (deploys, cron jobs, config).</li></ol>
+<h4>USE method</h4>
+<p>For each resource (CPU, memory, disk, network) check <strong>Utilisation, Saturation and Errors</strong>. This stops guessing.</p>
+<h4>Next steps</h4>
+<ul><li>High CPU: which process, <code>perf top</code> or a profiler, then why (traffic, a runaway loop).</li><li>High I/O wait: find the heavy reader or writer, check for backups or log storms.</li><li>Memory pressure: look for leaks, check cgroup limits, and the OOM killer.</li><li>Remember to record what you found, and avoid restarting before capturing evidence (thread dumps, <code>top</code> output).</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the difference between load average and CPU utilisation?</li><li>How do you tell if the system is swapping heavily?</li><li>How do you find which process is using the most disk I/O?</li></ul>
+<p><a class="btn primary" href="../#/q/do-104">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-104%3A+A+Linux+server+feels+slow.+What+commands+do+you+run+in+the+first+few%E2%80%A6&amp;question-id=do-104&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+1%2C+topic%3A+Linux%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-104.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

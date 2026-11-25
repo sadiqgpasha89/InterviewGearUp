@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain the TLS 1.3 handshake: What cipher suites are supported and how does 0-RTT resumption work? | InterviewGearUp</title>
+<meta name="description" content="The TLS 1.3 handshake takes one round trip: the client sends supported groups and key shares in ClientHello, the server replies with its key share,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-28.html">
+<meta property="og:title" content="Explain the TLS 1.3 handshake: What cipher suites are supported and how does 0-RTT resumption work? | InterviewGearUp">
+<meta property="og:description" content="The TLS 1.3 handshake takes one round trip: the client sends supported groups and key shares in ClientHello, the server replies with its key share,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-28.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain the TLS 1.3 handshake: What cipher suites are supported and how does 0-RTT resumption work?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · Cryptography · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>The TLS 1.3 handshake takes one round trip: the client sends supported groups and key shares in ClientHello, the server replies with its key share, certificate and signed Finished message, and both derive keys with ECDHE, encrypting everything after the ServerHello. TLS 1.3 supports only a few AEAD cipher suites. 0-RTT lets a resuming client send early data with a pre-shared key, but it can be replayed.</p></div>
+<h4>Explained in depth</h4>
+<h4>Full handshake (1-RTT)</h4>
+<ol start="1"><li><strong>ClientHello</strong>: supported cipher suites, supported groups and an <strong>ephemeral key share</strong> (for example X25519).</li><li><strong>ServerHello</strong>: chosen suite and the server&#39;s key share. From here both sides can compute the shared secret and <strong>encrypt the rest</strong>.</li><li>Server sends (encrypted) its <strong>certificate</strong>, a <strong>CertificateVerify</strong> signature over the handshake, and <strong>Finished</strong>.</li><li>Client verifies the certificate and signature, sends <strong>Finished</strong>, and application data begins.</li></ol>
+<p>This needs one round trip, compared with two in TLS 1.2.</p>
+<h4>Cipher suites</h4>
+<p>TLS 1.3 only allows <strong>AEAD</strong> ciphers with ephemeral key exchange:</p>
+<ul><li><code>TLS_AES_128_GCM_SHA256</code></li><li><code>TLS_AES_256_GCM_SHA384</code></li><li><code>TLS_CHACHA20_POLY1305_SHA256</code></li></ul>
+<p>Key exchange (ECDHE or DHE) and signatures are negotiated separately, so every connection has <strong>forward secrecy</strong>.</p>
+<h4>Removed from 1.2</h4>
+<p>RSA key transport (no forward secrecy), CBC and RC4 ciphers, static Diffie-Hellman, compression, renegotiation and SHA-1 or MD5 based signatures, which closed off attacks such as BEAST, CRIME and POODLE.</p>
+<h4>Resumption and 0-RTT</h4>
+<p>After a connection, the server may issue a <strong>session ticket</strong> (a pre-shared key). On the next connection the client sends the ticket in ClientHello and may include <strong>early data</strong> encrypted with a key derived from it, with no extra round trip.</p>
+<ul><li>0-RTT data has <strong>no forward secrecy</strong> from the ticket&#39;s key and is <strong>replayable</strong>: an attacker can resend the captured packet.</li><li>So servers should accept it only for <strong>idempotent</strong> requests (GET), or use anti-replay protections, and many disable it for sensitive endpoints.</li></ul>
+<h4>Practical settings</h4>
+<p>Enable TLS 1.3 with 1.2 as the fallback, disable older versions, use HSTS, OCSP stapling and automated certificates.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does 0-RTT data need to be limited to idempotent requests?</li><li>What did TLS 1.3 remove compared with 1.2 and why?</li><li>How does session resumption work with pre-shared keys?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-28">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-28%3A+Explain+the+TLS+1.3+handshake%3A+What+cipher+suites+are+supported+and%E2%80%A6&amp;question-id=sec-28&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+Cryptography%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-28.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

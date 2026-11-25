@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you validate client-side input validations, regex patterns, and error messaging effectively? | InterviewGearUp</title>
+<meta name="description" content="Test client-side validation at three layers: unit-test the validation functions and regexes with valid, invalid and boundary values; UI-test that errors…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-96.html">
+<meta property="og:title" content="How do you validate client-side input validations, regex patterns, and error messaging effectively? | InterviewGearUp">
+<meta property="og:description" content="Test client-side validation at three layers: unit-test the validation functions and regexes with valid, invalid and boundary values; UI-test that errors…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-96.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you validate client-side input validations, regex patterns, and error messaging effectively?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 1 (Junior) · Fundamentals · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Test client-side validation at three layers: unit-test the validation functions and regexes with valid, invalid and boundary values; UI-test that errors appear at the right time with the right accessible text; and always verify the server rejects the same bad input, because client checks are only a convenience and can be bypassed.</p></div>
+<h4>Explained in depth</h4>
+<h4>What to cover</h4>
+<ul><li><strong>Equivalence classes and boundaries</strong>: for a field with a length limit of 1 to 50, test 0, 1, 50 and 51 characters; for numbers test minimum, maximum and just outside.</li><li><strong>Special inputs</strong>: empty and whitespace-only values, Unicode and emoji, very long strings, leading and trailing spaces, pasted text, and characters such as quotes and angle brackets.</li><li><strong>Regex patterns</strong>: build a table of accepted and rejected samples (email, phone, postal code). Check anchors (<code>^</code> and <code>$</code>) so partial matches do not pass, and test for slow patterns with long non-matching input.</li></ul>
+<h4>UI behaviour</h4>
+<ul><li>Errors appear at the right time (on blur or on submit), name the field and say how to fix it (&quot;Enter a date as DD/MM/YYYY&quot;).</li><li>The error clears when the value becomes valid and the submit button state is correct.</li><li>Accessibility: errors are linked to inputs with <code>aria-describedby</code>, announced by screen readers (<code>role=&quot;alert&quot;</code> or <code>aria-live</code>) and not conveyed by colour alone.</li><li>Focus moves to the first invalid field.</li></ul>
+<pre><code>test(&#39;rejects invalid email&#39;, async ({ page }) =&gt; {
+  await page.goto(&#39;/signup&#39;);
+  await page.getByLabel(&#39;Email&#39;).fill(&#39;not-an-email&#39;);
+  await page.getByRole(&#39;button&#39;, { name: &#39;Create account&#39; }).click();
+  await expect(page.getByText(&#39;Enter a valid email address&#39;)).toBeVisible();
+});</code></pre>
+<h4>Do not trust the client</h4>
+<p>Send the invalid payload directly to the API (for example with a request tool) and confirm the server returns a 400 with a clear message and stores nothing.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why must the server repeat every client-side validation?</li><li>What regex pitfalls cause catastrophic backtracking?</li><li>How would you test accessibility of error messages?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-96">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-96%3A+How+do+you+validate+client-side+input+validations%2C+regex+patterns%2C%E2%80%A6&amp;question-id=qa-96&amp;context=QA+%2F+SDET%2C+Gear+1%2C+topic%3A+Fundamentals%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-96.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

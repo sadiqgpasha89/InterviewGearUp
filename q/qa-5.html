@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is your test strategy for a payments microservice? | InterviewGearUp</title>
+<meta name="description" content="Layer tests around risk: unit tests for money logic, consumer-driven contract tests, integration tests against a provider sandbox, a few end-to-end…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-5.html">
+<meta property="og:title" content="What is your test strategy for a payments microservice? | InterviewGearUp">
+<meta property="og:description" content="Layer tests around risk: unit tests for money logic, consumer-driven contract tests, integration tests against a provider sandbox, a few end-to-end…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-5.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is your test strategy for a payments microservice?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 3 (Senior) · Test strategy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Layer tests around risk: unit tests for money logic, consumer-driven contract tests, integration tests against a provider sandbox, a few end-to-end flows, plus idempotency, fault injection and reconciliation checks.</p></div>
+<h4>Explained in depth</h4>
+<p><strong>Risks</strong>: double charges, lost payments, wrong amounts or rounding, inconsistent state, fraud, card data exposure.</p>
+<h4>Layers</h4>
+<ul><li><strong>Unit</strong>: decimal arithmetic, rounding and currency, state-machine transitions.</li><li><strong>Contract tests</strong> (for example Pact) so API changes do not break consumers.</li><li><strong>Integration</strong> with the provider sandbox: declines, 3-D Secure, timeouts, and webhooks that arrive late, duplicated or out of order.</li><li><strong>Idempotency</strong>: the same request retried must not create a second charge.</li><li><strong>Fault injection</strong>: a timeout after the charge succeeded.</li><li><strong>Data checks</strong>: ledger balances, reconciliation with provider reports.</li><li><strong>Security</strong>: no card data in logs, authorisation on every endpoint.</li><li><strong>Performance</strong> at peak load.</li></ul>
+<h4>In production</h4>
+<p>Synthetic transactions, canary releases, feature flags and fast rollback, with monitoring of payment success rate.</p>
+<p>Use deterministic test cards and isolated test accounts.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you test webhooks?</li><li>What is consumer-driven contract testing?</li><li>How do you test safely in production?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-5">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-5%3A+What+is+your+test+strategy+for+a+payments+microservice%3F&amp;question-id=qa-5&amp;context=QA+%2F+SDET%2C+Gear+3%2C+topic%3A+Test+strategy%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-5.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

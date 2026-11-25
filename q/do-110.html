@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is the difference between horizontal and vertical scaling, and when would you use each? | InterviewGearUp</title>
+<meta name="description" content="Vertical scaling makes one machine bigger with more CPU or memory, which is simple but limited and often needs downtime. Horizontal scaling adds more…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-110.html">
+<meta property="og:title" content="What is the difference between horizontal and vertical scaling, and when would you use each? | InterviewGearUp">
+<meta property="og:description" content="Vertical scaling makes one machine bigger with more CPU or memory, which is simple but limited and often needs downtime. Horizontal scaling adds more…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-110.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is the difference between horizontal and vertical scaling, and when would you use each?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 1 (Junior) · Cloud · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Vertical scaling makes one machine bigger with more CPU or memory, which is simple but limited and often needs downtime. Horizontal scaling adds more machines behind a load balancer, which improves capacity and resilience but requires stateless services or partitioned data. Most cloud designs scale web tiers horizontally and databases vertically first.</p></div>
+<h4>Explained in depth</h4>
+<h4>Vertical scaling (scale up)</h4>
+<p>Increase the size of an existing server: a bigger instance type, more RAM or faster disks.</p>
+<ul><li><strong>Pros</strong>: simple, no code changes, no distributed systems problems, good for databases and legacy apps.</li><li><strong>Cons</strong>: a hard ceiling (largest instance), cost rises faster than capacity, often requires <strong>restart</strong>, and it remains a <strong>single point of failure</strong>.</li></ul>
+<h4>Horizontal scaling (scale out)</h4>
+<p>Add more instances and spread requests with a <strong>load balancer</strong>.</p>
+<ul><li><strong>Pros</strong>: nearly unlimited capacity, <strong>fault tolerance</strong> (losing one node costs only a fraction), rolling deployments, and cost can follow demand with <strong>autoscaling</strong>.</li><li><strong>Cons</strong>: needs a <strong>stateless</strong> design (sessions in Redis or tokens, files in object storage), shared-nothing data handling, service discovery, and more operational complexity.</li></ul>
+<h4>Examples</h4>
+<ul><li>Stateless web or API servers: scale out behind a load balancer.</li><li>A relational database: scale up first, add <strong>read replicas</strong> for reads, then <strong>partition or shard</strong> for writes.</li><li>Caches and queues: cluster them (scale out) with partitioning.</li></ul>
+<h4>Autoscaling</h4>
+<p>Rules based on metrics (CPU, requests per instance, queue depth) or schedules add and remove instances. Set minimum and maximum sizes, warm-up and cooldown times, and health checks. Make sure startup is fast and the app handles being stopped (graceful shutdown).</p>
+<h4>Interview angle</h4>
+<p>State that most systems combine both: pick the simplest approach that meets the need, design for horizontal scaling where growth and availability matter, and identify the bottleneck (CPU, memory, I/O, database) before scaling anything.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What makes an application hard to scale horizontally?</li><li>How does autoscaling decide when to add instances?</li><li>Why is scaling a relational database writes harder than reads?</li></ul>
+<p><a class="btn primary" href="../#/q/do-110">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-110%3A+What+is+the+difference+between+horizontal+and+vertical+scaling%2C+and%E2%80%A6&amp;question-id=do-110&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+1%2C+topic%3A+Cloud%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-110.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

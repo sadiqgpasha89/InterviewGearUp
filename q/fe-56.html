@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is Micro-Frontends architecture and how does Webpack/Vite Module Federation implement it? | InterviewGearUp</title>
+<meta name="description" content="Micro-frontends split a large web app into independently built and deployed pieces owned by different teams. Module Federation (Webpack 5, and Vite…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-56.html">
+<meta property="og:title" content="What is Micro-Frontends architecture and how does Webpack/Vite Module Federation implement it? | InterviewGearUp">
+<meta property="og:description" content="Micro-frontends split a large web app into independently built and deployed pieces owned by different teams. Module Federation (Webpack 5, and Vite…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-56.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is Micro-Frontends architecture and how does Webpack/Vite Module Federation implement it?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 4 (Lead / Staff) · Architecture · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Micro-frontends split a large web app into independently built and deployed pieces owned by different teams. Module Federation (Webpack 5, and Vite through plugins) lets one build expose modules that another build loads from a remote URL at runtime, negotiating shared dependencies such as React so only one copy is loaded.</p></div>
+<h4>Explained in depth</h4>
+<p><strong>How Module Federation works</strong>: each app can <code>expose</code> modules and declare <code>remotes</code>. The host loads a small <code>remoteEntry.js</code> from the remote&#39;s URL at runtime, then imports the exposed module on demand. A <code>shared</code> configuration (with version ranges and <code>singleton: true</code> for libraries like React) makes host and remotes agree on a single instance.</p>
+<h4>Why teams choose it</h4>
+<ul><li>Independent deploys and release cadence per team, with a smaller blast radius.</li><li>Incremental migration away from a legacy app (the strangler pattern).</li></ul>
+<h4>The real costs</h4>
+<ul><li><strong>Runtime version skew</strong>: a remote deployed with an incompatible shared version can break the host in production, so you need contract tests, versioned remotes and fast rollback.</li><li><strong>Performance</strong>: extra network round trips and duplicated code if sharing is misconfigured; measure bundle size and Core Web Vitals.</li><li><strong>UX consistency</strong>: you need a shared design system and shared routing and auth conventions.</li><li><strong>Operational overhead</strong>: many pipelines, harder local development and harder error tracking.</li></ul>
+<h4>When not to use it</h4>
+<p>With a single team or a modest codebase, a well-structured monorepo with clear module boundaries gives most of the benefit without the runtime complexity. Alternatives are build-time composition (npm packages), iframes for hard isolation, and server-side composition.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How would you handle a breaking change in a shared library across remotes?</li><li>How do you keep one design system consistent across independently deployed apps?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-56">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-56%3A+What+is+Micro-Frontends+architecture+and+how+does+Webpack%2FVite%E2%80%A6&amp;question-id=fe-56&amp;context=Frontend+engineer%2C+Gear+4%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-56.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

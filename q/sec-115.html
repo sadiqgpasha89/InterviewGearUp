@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you build a detection engineering and threat hunting capability in a security operations team? | InterviewGearUp</title>
+<meta name="description" content="Treat detections as software: derive them from threat models and the MITRE ATT&amp;CK framework, build reliable log pipelines, write rules as code with tests…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-115.html">
+<meta property="og:title" content="How do you build a detection engineering and threat hunting capability in a security operations team? | InterviewGearUp">
+<meta property="og:description" content="Treat detections as software: derive them from threat models and the MITRE ATT&amp;CK framework, build reliable log pipelines, write rules as code with tests…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-115.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you build a detection engineering and threat hunting capability in a security operations team?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 4 (Lead / Staff) · Detection · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Treat detections as software: derive them from threat models and the MITRE ATT&amp;CK framework, build reliable log pipelines, write rules as code with tests and version control, tune for precision with feedback from analysts, measure coverage and quality, and complement automated alerts with hypothesis-driven threat hunting that feeds new detections back. Automate triage and response where safe.</p></div>
+<h4>Explained in depth</h4>
+<h4>Foundations</h4>
+<ol start="1"><li><strong>Telemetry</strong>: collect high-value logs with consistent schemas: endpoint (EDR), identity (SSO, directory), cloud audit logs, network (DNS, proxy, flow), email, SaaS, and application logs. Normalise to a common model (OCSF, ECS) and ensure time sync, retention and health monitoring of log sources (a silent source is a blind spot).</li><li><strong>Threat-informed prioritisation</strong>: identify likely adversaries and attack paths for your business, map to <strong>MITRE ATT&amp;CK</strong> techniques, and rank by risk and prevalence. Use intelligence, past incidents and red team results.</li></ol>
+<h4>Detection engineering lifecycle</h4>
+<ul><li><strong>Detection as code</strong>: rules (Sigma, YARA, KQL, SPL, SQL) in Git with peer review, unit tests against sample logs, CI validation, and staged deployment.</li><li>Each detection has a <strong>description, ATT&amp;CK mapping, data sources, severity, triage steps (runbook), owner and known false positives</strong>.</li><li><strong>Tuning</strong>: track precision (true positive rate), volume and analyst feedback; suppress known benign patterns narrowly, enrich alerts with context (asset criticality, user role, threat intel), and retire stale rules.</li><li><strong>Behavioural and anomaly detection</strong> where signatures fall short, but with human-understandable logic.</li><li><strong>Validation</strong>: purple team and adversary emulation (Atomic Red Team, Caldera) to confirm detections fire; track coverage on an ATT&amp;CK heat map and gaps.</li></ul>
+<h4>Threat hunting</h4>
+<p>Hypothesis-driven, human-led searches for undetected activity: &quot;an attacker with stolen cloud keys might enumerate IAM from a new location&quot;. Steps: form hypothesis from intelligence or ATT&amp;CK, query data, investigate anomalies, document findings, and <strong>convert successful hunts into automated detections</strong> or fix log gaps. Time-box hunts and track outcomes.</p>
+<h4>Operations</h4>
+<ul><li>Automation (SOAR) for enrichment, containment and ticketing; alert triage tiers and runbooks.</li><li>Metrics: <strong>mean time to detect and respond</strong>, alert-to-incident ratio, false positive rate, ATT&amp;CK coverage, detection test pass rate, hunts completed and detections created.</li><li>Team skills: analysts, detection engineers and data engineers; training and knowledge sharing; blameless reviews of missed detections after incidents.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you measure detection coverage and quality?</li><li>What is the difference between a detection rule and a threat hunt?</li><li>How do you reduce false positives without missing real attacks?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-115">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-115%3A+How+do+you+build+a+detection+engineering+and+threat+hunting%E2%80%A6&amp;question-id=sec-115&amp;context=Security+engineer%2C+Gear+4%2C+topic%3A+Detection%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-115.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

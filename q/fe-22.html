@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain the CSS Box Model: `box-sizing: content-box` versus `border-box`. | InterviewGearUp</title>
+<meta name="description" content="Every element is a box made of content, padding, border and margin. With the default content-box sizing, width and height set only the content area, so…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-22.html">
+<meta property="og:title" content="Explain the CSS Box Model: `box-sizing: content-box` versus `border-box`. | InterviewGearUp">
+<meta property="og:description" content="Every element is a box made of content, padding, border and margin. With the default content-box sizing, width and height set only the content area, so…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-22.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain the CSS Box Model: `box-sizing: content-box` versus `border-box`.</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 1 (Junior) · CSS · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Every element is a box made of content, padding, border and margin. With the default content-box sizing, width and height set only the content area, so padding and border make the element bigger. With border-box, width and height include padding and border, which makes sizing predictable; most projects set it globally.</p></div>
+<h4>Explained in depth</h4>
+<h4>The layers (from inside out)</h4>
+<ol start="1"><li><strong>Content</strong>: text or children, sized by <code>width</code> and <code>height</code>.</li><li><strong>Padding</strong>: space inside the border, takes the element&#39;s background.</li><li><strong>Border</strong>: the visible edge.</li><li><strong>Margin</strong>: transparent space outside, separating siblings.</li></ol>
+<h4>The two sizing models</h4>
+<pre><code>.card { width: 300px; padding: 20px; border: 2px solid; }
+/* content-box: total width = 300 + 2*20 + 2*2 = 344px */
+/* border-box:  total width = 300px, content shrinks to 256px */</code></pre>
+<p><code>box-sizing: border-box</code> means <code>width</code> and <code>height</code> describe the border box, so adding padding does not break layouts such as two 50% wide columns.</p>
+<h4>Common global reset</h4>
+<pre><code>*, *::before, *::after { box-sizing: border-box; }</code></pre>
+<h4>Details worth knowing</h4>
+<ul><li>Margins are <strong>outside</strong> the box and are not part of its size. Vertical margins of adjacent block elements can <strong>collapse</strong> into the larger one.</li><li>Percentage padding and margin resolve against the containing block&#39;s <strong>width</strong>, even for top and bottom.</li><li>Inline elements ignore <code>width</code> and <code>height</code>, and their vertical padding does not push other lines apart.</li><li>Use browser DevTools&#39; box model diagram to see each layer.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does margin collapsing happen and when?</li><li>How would you reset box-sizing for a whole page?</li><li>What does the browser do for inline elements regarding width and vertical padding?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-22">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-22%3A+Explain+the+CSS+Box+Model%3A+%60box-sizing%3A+content-box%60+versus%E2%80%A6&amp;question-id=fe-22&amp;context=Frontend+engineer%2C+Gear+1%2C+topic%3A+CSS%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-22.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

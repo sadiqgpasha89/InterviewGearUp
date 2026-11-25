@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain how an Ingress Controller routes external HTTP traffic to internal services using Gateway API. | InterviewGearUp</title>
+<meta name="description" content="An Ingress Controller is a reverse proxy running in the cluster (nginx, Traefik, Envoy) that watches Ingress or Gateway API resources and routes external…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-34.html">
+<meta property="og:title" content="Explain how an Ingress Controller routes external HTTP traffic to internal services using Gateway API. | InterviewGearUp">
+<meta property="og:description" content="An Ingress Controller is a reverse proxy running in the cluster (nginx, Traefik, Envoy) that watches Ingress or Gateway API resources and routes external…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-34.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain how an Ingress Controller routes external HTTP traffic to internal services using Gateway API.</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · Kubernetes · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>An Ingress Controller is a reverse proxy running in the cluster (nginx, Traefik, Envoy) that watches Ingress or Gateway API resources and routes external HTTP and HTTPS requests to Services by host and path. The Gateway API is the newer, more expressive model that separates infrastructure roles into GatewayClass, Gateway and HTTPRoute.</p></div>
+<h4>Explained in depth</h4>
+<h4>Ingress model</h4>
+<p>An <strong>Ingress</strong> resource declares rules, and an <strong>Ingress Controller</strong> implements them. The controller is exposed through a Service of type LoadBalancer or NodePort, watches the API server and reconfigures its proxy.</p>
+<pre><code>apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata: { name: shop }
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts: [shop.example.com]
+      secretName: shop-tls
+  rules:
+    - host: shop.example.com
+      http:
+        paths:
+          - { path: /api, pathType: Prefix, backend: { service: { name: api, port: { number: 80 } } } }
+          - { path: /,    pathType: Prefix, backend: { service: { name: web, port: { number: 80 } } } }</code></pre>
+<p>Traffic path: client, cloud load balancer, ingress controller pod, Service, pod.</p>
+<h4>Limits of Ingress</h4>
+<p>Only HTTP and HTTPS are in the spec, and advanced features (rewrites, timeouts, header matching) depend on vendor-specific annotations, which are not portable.</p>
+<h4>Gateway API</h4>
+<p>A more expressive, role-oriented successor:</p>
+<ul><li><strong>GatewayClass</strong>: the implementation (managed by the infrastructure provider).</li><li><strong>Gateway</strong>: listeners, ports and TLS (managed by cluster operators).</li><li><strong>HTTPRoute</strong> (also GRPCRoute, TCPRoute): routing rules owned by application teams, which attach to a Gateway, even across namespaces with explicit permission.</li></ul>
+<p>It supports header matching, traffic splitting by weight (useful for canary releases), request mirroring and redirects as standard fields.</p>
+<h4>Operational notes</h4>
+<p>Automate certificates with cert-manager, set timeouts and body size limits, run several controller replicas, and use health checks and rate limiting.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does TLS termination work at the ingress?</li><li>How does the Gateway API support cross-namespace routing and role separation?</li><li>What is the difference between an Ingress and a Service of type LoadBalancer?</li></ul>
+<p><a class="btn primary" href="../#/q/do-34">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-34%3A+Explain+how+an+Ingress+Controller+routes+external+HTTP+traffic+to%E2%80%A6&amp;question-id=do-34&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+Kubernetes%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-34.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

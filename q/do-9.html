@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain the difference between CPU Load Average and CPU Utilization percentage in Linux. | InterviewGearUp</title>
+<meta name="description" content="CPU utilization is the percentage of time the CPUs were busy. Load average is the average number of tasks that are running or waiting to run (on Linux…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-9.html">
+<meta property="og:title" content="Explain the difference between CPU Load Average and CPU Utilization percentage in Linux. | InterviewGearUp">
+<meta property="og:description" content="CPU utilization is the percentage of time the CPUs were busy. Load average is the average number of tasks that are running or waiting to run (on Linux…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-9.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain the difference between CPU Load Average and CPU Utilization percentage in Linux.</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 1 (Junior) · Linux · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>CPU utilization is the percentage of time the CPUs were busy. Load average is the average number of tasks that are running or waiting to run (on Linux also those in uninterruptible I/O wait) over 1, 5 and 15 minutes. Compare load with the core count: load 8 on 8 cores is full, but on 2 cores it is heavily overloaded.</p></div>
+<h4>Explained in depth</h4>
+<pre><code>$ uptime
+ 10:15:02 up 12 days,  load average: 3.20, 2.10, 1.40</code></pre>
+<ul><li>The three numbers are the 1, 5 and 15-minute averages. If the 1-minute figure is above the 15-minute one, load is rising.</li><li><strong>Divide by the core count</strong> (<code>nproc</code>): load per core near 1.0 means saturated; well above 1 means tasks are queuing.</li></ul>
+<h4>Why they differ</h4>
+<p>On Linux, load includes tasks in <strong>uninterruptible sleep</strong> (state <code>D</code>), typically waiting for disk or network storage. A machine with slow storage can show high load and low CPU utilization. High utilization with low load is also possible, for example a few busy threads on a large machine.</p>
+<h4>How to investigate</h4>
+<p>Use <code>top</code> or <code>htop</code> for CPU and process states, <code>vmstat 1</code> (the <code>r</code> column is runnable tasks, <code>b</code> is blocked), <code>iostat -x</code> for disk wait, and <code>pidstat</code>. Decide whether the pressure is CPU, I/O or memory (swapping) before changing anything.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why can load average be high while CPU usage is low?</li><li>What does the wa figure in top mean?</li></ul>
+<p><a class="btn primary" href="../#/q/do-9">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-9%3A+Explain+the+difference+between+CPU+Load+Average+and+CPU+Utilization%E2%80%A6&amp;question-id=do-9&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+1%2C+topic%3A+Linux%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-9.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

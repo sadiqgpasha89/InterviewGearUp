@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain binary heap array representation: Parent-child index arithmetic and $O(N)$ bottom-up heapify. | InterviewGearUp</title>
+<meta name="description" content="A binary heap is a complete binary tree stored in an array: with 0-based indexes the parent of i is (i-1)/2 and the children are 2i+1 and 2i+2. Building…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-20.html">
+<meta property="og:title" content="Explain binary heap array representation: Parent-child index arithmetic and $O(N)$ bottom-up heapify. | InterviewGearUp">
+<meta property="og:description" content="A binary heap is a complete binary tree stored in an array: with 0-based indexes the parent of i is (i-1)/2 and the children are 2i+1 and 2i+2. Building…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-20.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain binary heap array representation: Parent-child index arithmetic and $O(N)$ bottom-up heapify.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 2 (Mid-level) · Data structures · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A binary heap is a complete binary tree stored in an array: with 0-based indexes the parent of i is (i-1)/2 and the children are 2i+1 and 2i+2. Building a heap by sifting down from the last non-leaf node to the root takes O(N), while N separate inserts would take O(N log N).</p></div>
+<h4>Explained in depth</h4>
+<h4>Index arithmetic (0-based)</h4>
+<ul><li>parent(i) = (i - 1) / 2 (integer division)</li><li>left(i) = 2i + 1, right(i) = 2i + 2</li><li>With 1-based indexing: i / 2, 2i, 2i + 1. A complete tree has no gaps, so no pointers are needed.</li></ul>
+<h4>Core operations</h4>
+<ul><li><strong>Insert</strong>: append at the end, then <strong>sift up</strong> while it beats its parent. O(log N).</li><li><strong>Extract min or max</strong>: swap the root with the last element, remove the last, then <strong>sift down</strong>. O(log N).</li></ul>
+<h4>Why bottom-up heapify is O(N)</h4>
+<pre><code>def heapify(a):
+    n = len(a)
+    for i in range(n // 2 - 1, -1, -1):   # last non-leaf down to the root
+        sift_down(a, i, n)</code></pre>
+<p>Half of the nodes are leaves and need no work. A node at height h can sink at most h levels, and there are about N / 2^(h+1) nodes at height h. The total work is the sum over h of h * N / 2^(h+1), which converges to a constant times N. Inserting N items one by one costs up to log N each, so O(N log N). Most nodes are near the bottom, and that is why the bottom-up approach is cheaper.</p>
+<h4>Uses</h4>
+<p>Priority queues, heap sort (build a heap, then repeatedly extract), top-K problems, Dijkstra, and merging K sorted lists.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why can you not search for an arbitrary element in a heap in better than O(N)?</li><li>How does heap sort work and why is it not stable?</li><li>How would you implement decrease-key for Dijkstra with a binary heap?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-20">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-20%3A+Explain+binary+heap+array+representation%3A+Parent-child+index%E2%80%A6&amp;question-id=gen-20&amp;context=Software+engineer+%28core%29%2C+Gear+2%2C+topic%3A+Data+structures%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-20.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

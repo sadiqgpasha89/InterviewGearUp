@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is the difference between encoding, encryption and hashing? | InterviewGearUp</title>
+<meta name="description" content="Encoding transforms data for transport and is trivially reversible (Base64). Encryption hides data and is reversible with a key. Hashing is one-way and…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-1.html">
+<meta property="og:title" content="What is the difference between encoding, encryption and hashing? | InterviewGearUp">
+<meta property="og:description" content="Encoding transforms data for transport and is trivially reversible (Base64). Encryption hides data and is reversible with a key. Hashing is one-way and…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-1.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is the difference between encoding, encryption and hashing?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 1 (Junior) · Cryptography · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Encoding transforms data for transport and is trivially reversible (Base64). Encryption hides data and is reversible with a key. Hashing is one-way and used to verify integrity or store passwords.</p></div>
+<h4>Explained in depth</h4>
+<ul><li><strong>Encoding</strong> gives no secrecy. Anyone can decode Base64.</li><li><strong>Symmetric encryption</strong> (AES-GCM): one shared key, fast, for bulk data.</li><li><strong>Asymmetric encryption</strong> (RSA, elliptic curves): a key pair. Used for key exchange, signatures and certificates. Slower.</li><li><strong>Hashing</strong> (SHA-256): a fixed-size fingerprint for integrity checks.</li><li><strong>Password hashing</strong>: use a deliberately slow, salted algorithm (Argon2id, bcrypt, scrypt) so brute force is expensive. Never encrypt stored passwords, and never use MD5 or SHA-1 for security.</li><li><strong>HMAC</strong>: a hash combined with a secret key to authenticate a message.</li><li><strong>Digital signature</strong>: sign with a private key, verify with the public key.</li></ul>
+<p>TLS combines these: asymmetric cryptography to agree on a session key, symmetric encryption for the data.</p>
+<p>A <strong>salt</strong> is a unique random value per password that defeats precomputed rainbow tables.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why do we salt passwords?</li><li>What does GCM give you over CBC mode?</li><li>Hash versus HMAC versus signature?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-1">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-1%3A+What+is+the+difference+between+encoding%2C+encryption+and+hashing%3F&amp;question-id=sec-1&amp;context=Security+engineer%2C+Gear+1%2C+topic%3A+Cryptography%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-1.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

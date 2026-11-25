@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare trunk-based development with GitFlow. Which branching strategy suits continuous delivery? | InterviewGearUp</title>
+<meta name="description" content="Trunk-based development keeps everyone integrating small changes into one main branch at least daily, behind feature flags, which suits continuous…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-103.html">
+<meta property="og:title" content="Compare trunk-based development with GitFlow. Which branching strategy suits continuous delivery? | InterviewGearUp">
+<meta property="og:description" content="Trunk-based development keeps everyone integrating small changes into one main branch at least daily, behind feature flags, which suits continuous…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-103.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare trunk-based development with GitFlow. Which branching strategy suits continuous delivery?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 1 (Junior) · Git · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Trunk-based development keeps everyone integrating small changes into one main branch at least daily, behind feature flags, which suits continuous delivery. GitFlow uses long-lived develop, release and hotfix branches, which adds ceremony and merge pain and fits scheduled, versioned releases. Short-lived branches and strong CI are the keys to speed.</p></div>
+<h4>Explained in depth</h4>
+<h4>Trunk-based development</h4>
+<ul><li>One main branch (the trunk). Developers commit directly or via <strong>short-lived branches</strong> (hours to a day or two) that are merged quickly after review and automated checks.</li><li>Unfinished work is hidden behind <strong>feature flags</strong>, so main is always releasable.</li><li>Needs a fast, trustworthy CI pipeline and good automated tests.</li><li>Benefits: fewer merge conflicts, quick feedback, simple release process (deploy from main), and it supports continuous deployment. It is associated with high performance in DORA research.</li></ul>
+<h4>GitFlow</h4>
+<ul><li>Long-lived branches: <code>main</code> (production), <code>develop</code> (integration), plus <code>feature/*</code>, <code>release/*</code> and <code>hotfix/*</code>.</li><li>Features merge into <code>develop</code>; a <code>release</code> branch is cut, stabilised, then merged to <code>main</code> and tagged; hotfixes merge into both.</li><li>Fits software with <strong>explicit versions</strong> and several supported releases at once (installed products, mobile apps with app-store review, libraries).</li><li>Costs: big merges, delayed integration, stale branches, and slower feedback.</li></ul>
+<h4>Middle ground</h4>
+<p><strong>GitHub Flow</strong>: branch from main, open a pull request, review and test, merge, deploy. Simple and fine for most web teams.</p>
+<h4>Practical guidance</h4>
+<ul><li>Keep branches small and short-lived; merge or rebase from main often.</li><li>Protect main with required checks and reviews.</li><li>Use release tags (or release branches only when needed) and cherry-pick fixes to supported versions.</li><li>Use flags for risky features and remove them afterwards.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How do feature flags support trunk-based development?</li><li>When is GitFlow still a reasonable choice?</li><li>How do you handle a hotfix in trunk-based development?</li></ul>
+<p><a class="btn primary" href="../#/q/do-103">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-103%3A+Compare+trunk-based+development+with+GitFlow.+Which+branching%E2%80%A6&amp;question-id=do-103&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+1%2C+topic%3A+Git%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-103.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

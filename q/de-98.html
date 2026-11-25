@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you execute a zero-downtime data warehouse migration between cloud providers? | InterviewGearUp</title>
+<meta name="description" content="A zero-downtime warehouse migration runs the old and new warehouses in parallel: copy history in bulk, then feed both from the same pipelines, prove that…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-98.html">
+<meta property="og:title" content="How do you execute a zero-downtime data warehouse migration between cloud providers? | InterviewGearUp">
+<meta property="og:description" content="A zero-downtime warehouse migration runs the old and new warehouses in parallel: copy history in bulk, then feed both from the same pipelines, prove that…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-98.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you execute a zero-downtime data warehouse migration between cloud providers?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 4 (Lead / Staff) · Architecture · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A zero-downtime warehouse migration runs the old and new warehouses in parallel: copy history in bulk, then feed both from the same pipelines, prove that results match, move consumers over in phases behind a stable alias, and keep the old system available for rollback until you are confident.</p></div>
+<h4>Explained in depth</h4>
+<h4>1. Plan</h4>
+<p>Inventory tables, views, UDFs, jobs, orchestration, BI dashboards and who uses them, plus access policies. Rank workloads by business criticality and decide the migration order, usually by domain.</p>
+<h4>2. Translate and build</h4>
+<p>Convert schemas and SQL (dialect differences in dates, decimals, case sensitivity, null handling, window functions and procedural code), using tools where possible and manual review for the rest. Recreate roles, masking and row-level policies and lineage metadata.</p>
+<h4>3. Load history, then keep in sync</h4>
+<ul><li>Bulk export to object storage (Parquet or similar) and load into the target. Watch cross-cloud egress costs.</li><li>Then <strong>dual-run</strong>: point the ingestion pipelines or CDC at both warehouses so the target is continuously current. This is what removes any need for a downtime window.</li></ul>
+<h4>4. Validate</h4>
+<p>Reconcile per table and partition with row counts, checksums and aggregates. Run the same business queries and dashboards on both and compare results. Test performance, concurrency and cost, because query plans differ.</p>
+<h4>5. Cut over gradually</h4>
+<p>Move consumers in waves (a team&#39;s dashboards, then downstream jobs). A <strong>view or semantic layer, or a connection alias</strong>, lets you repoint users without changing their queries. Pick quiet windows for each switch, and keep a <strong>rollback path</strong>: the old warehouse stays live and in sync until the new one has run cleanly for an agreed period.</p>
+<h4>6. Decommission</h4>
+<p>After sign-off, freeze, archive what you need for retention, then turn off the old system and its pipelines.</p>
+<h4>Risks</h4>
+<p>Silent differences in data types or time zones, unknown consumers (find them from query logs), cost surprises, and a big-bang cutover. &#39;Zero downtime&#39; here means users are never without a working warehouse because both run side by side.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How would you find consumers of the old warehouse that nobody told you about?</li><li>How do you prove two warehouses return the same results?</li><li>What would make you stop and roll back during cutover?</li></ul>
+<p><a class="btn primary" href="../#/q/de-98">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-98%3A+How+do+you+execute+a+zero-downtime+data+warehouse+migration+between%E2%80%A6&amp;question-id=de-98&amp;context=Data+engineer%2C+Gear+4%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-98.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

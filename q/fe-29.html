@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does the React Fiber reconciler break rendering work into incremental units? | InterviewGearUp</title>
+<meta name="description" content="Before Fiber, React reconciled recursively and could not be interrupted, so a big update blocked the main thread. Fiber rebuilds the work as a linked…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-29.html">
+<meta property="og:title" content="How does the React Fiber reconciler break rendering work into incremental units? | InterviewGearUp">
+<meta property="og:description" content="Before Fiber, React reconciled recursively and could not be interrupted, so a big update blocked the main thread. Fiber rebuilds the work as a linked…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-29.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does the React Fiber reconciler break rendering work into incremental units?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 3 (Senior) · React · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Before Fiber, React reconciled recursively and could not be interrupted, so a big update blocked the main thread. Fiber rebuilds the work as a linked tree of units (one per component) that React can process one at a time, pause, resume, prioritise or discard. That makes time slicing and concurrent features possible, with the actual DOM changes applied in a final commit phase.</p></div>
+<h4>Explained in depth</h4>
+<h4>The old approach</h4>
+<p>The stack reconciler walked the component tree with recursion. Once started, it ran to the end, so a large update could hold the thread for longer than a frame and make typing or animation stutter.</p>
+<h4>What a fiber is</h4>
+<p>A <strong>fiber</strong> is a JavaScript object describing one unit of work: a component instance or DOM node, with pointers to its parent, first child and sibling, its props and state, and the pending work. Because the tree is a linked structure rather than the call stack, React can stop after any fiber and resume later.</p>
+<h4>Two phases</h4>
+<ol start="1"><li><strong>Render (reconciliation) phase</strong>: React builds a work-in-progress tree, diffing elements against the current tree and calling component functions. This phase can be <strong>paused, restarted or abandoned</strong>, so it must have no side effects.</li><li><strong>Commit phase</strong>: React applies the computed changes to the DOM in one synchronous pass, then runs layout effects and, afterwards, passive effects.</li></ol>
+<h4>Scheduling and priorities</h4>
+<p>Updates carry <strong>lanes</strong> (priorities). Urgent updates, such as typing and clicks, can interrupt lower priority work such as rendering a big filtered list. The scheduler yields to the browser regularly, which is called <strong>time slicing</strong>.</p>
+<h4>What it enables</h4>
+<p><code>useTransition</code>, <code>useDeferredValue</code>, Suspense for data loading and selective hydration. It also explains why render functions must be pure and why development Strict Mode double-invokes them to catch problems.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the difference between the render phase and the commit phase?</li><li>How does React decide the priority of an update?</li><li>Why must render functions be pure with Fiber?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-29">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-29%3A+How+does+the+React+Fiber+reconciler+break+rendering+work+into%E2%80%A6&amp;question-id=fe-29&amp;context=Frontend+engineer%2C+Gear+3%2C+topic%3A+React%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-29.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you choose a rendering strategy (CSR, SSR, SSG, streaming, islands) for different parts of a large product? | InterviewGearUp</title>
+<meta name="description" content="Pick per route by its needs: static generation for content that rarely changes, server rendering or streaming for personalised but SEO and first-paint…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-113.html">
+<meta property="og:title" content="How do you choose a rendering strategy (CSR, SSR, SSG, streaming, islands) for different parts of a large product? | InterviewGearUp">
+<meta property="og:description" content="Pick per route by its needs: static generation for content that rarely changes, server rendering or streaming for personalised but SEO and first-paint…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-113.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you choose a rendering strategy (CSR, SSR, SSG, streaming, islands) for different parts of a large product?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 4 (Lead / Staff) · Architecture · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Pick per route by its needs: static generation for content that rarely changes, server rendering or streaming for personalised but SEO and first-paint sensitive pages, client rendering for highly interactive app shells behind login, and islands or partial hydration to ship little JavaScript. Weigh SEO, time to first byte, caching, cost and complexity, and mix strategies in one app.</p></div>
+<h4>Explained in depth</h4>
+<h4>The options</h4>
+<div class="md-table"><table><thead><tr><th>Strategy</th><th>Where HTML is built</th><th>Best for</th><th>Costs</th></tr></thead><tbody><tr><td><strong>CSR</strong></td><td>In the browser</td><td>Authenticated dashboards, editors</td><td>Blank page until JS loads, weak SEO without help</td></tr><tr><td><strong>SSG</strong></td><td>At build time</td><td>Marketing, docs, blogs</td><td>Rebuild for changes, many pages slow builds</td></tr><tr><td><strong>ISR / stale-while-revalidate</strong></td><td>Static, regenerated on demand</td><td>Catalogues, content with periodic updates</td><td>Staleness window, cache invalidation</td></tr><tr><td><strong>SSR</strong></td><td>On each request</td><td>Personalised or fresh pages needing SEO</td><td>Server cost, TTFB depends on data fetching</td></tr><tr><td><strong>Streaming SSR</strong></td><td>Server sends HTML in chunks</td><td>Pages with slow data parts</td><td>Complexity, needs Suspense design</td></tr><tr><td><strong>Islands / partial hydration</strong></td><td>Static HTML plus small interactive parts</td><td>Content sites with a few widgets</td><td>Framework constraints</td></tr></tbody></table></div>
+<h4>Decision factors</h4>
+<ol start="1"><li><strong>SEO and social previews</strong>: need HTML at load (SSG or SSR).</li><li><strong>Personalisation</strong>: per-user content prevents CDN caching of the whole page; split into a cached shell with client-fetched or streamed user parts.</li><li><strong>Data freshness</strong>: how often data changes and what staleness is acceptable.</li><li><strong>Interactivity</strong>: heavy interaction favours CSR after login; hydration of large trees costs main-thread time (INP).</li><li><strong>Performance targets</strong> on low-end devices, and <strong>cost</strong> of servers versus CDN.</li><li><strong>Team skills and operations</strong>: SSR needs Node runtimes, scaling and monitoring.</li></ol>
+<h4>Modern techniques</h4>
+<ul><li><strong>React Server Components</strong> keep data-fetching code and big dependencies on the server and send little JavaScript.</li><li><strong>Selective hydration</strong>, <strong>lazy hydration</strong> on visibility or interaction, and <strong>islands</strong> (Astro) reduce JavaScript.</li><li>Edge rendering for low latency with cached data.</li></ul>
+<h4>Recommended approach</h4>
+<p>Treat rendering as a <strong>per-route decision</strong>. For example: marketing pages SSG, product pages ISR with streaming reviews, account area CSR, search results SSR with CDN caching by query. Measure with Core Web Vitals and revisit as usage changes.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is hydration and why can it be expensive?</li><li>How do React Server Components change the trade-offs?</li><li>How do you cache personalised server-rendered pages?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-113">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-113%3A+How+do+you+choose+a+rendering+strategy+%28CSR%2C+SSR%2C+SSG%2C+streaming%2C%E2%80%A6&amp;question-id=fe-113&amp;context=Frontend+engineer%2C+Gear+4%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-113.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

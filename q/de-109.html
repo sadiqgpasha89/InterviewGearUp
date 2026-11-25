@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are the common dimensions of data quality and how do you check them in a pipeline? | InterviewGearUp</title>
+<meta name="description" content="Common dimensions are completeness (no missing required values), uniqueness (no duplicates), validity (values match formats and ranges), consistency…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-109.html">
+<meta property="og:title" content="What are the common dimensions of data quality and how do you check them in a pipeline? | InterviewGearUp">
+<meta property="og:description" content="Common dimensions are completeness (no missing required values), uniqueness (no duplicates), validity (values match formats and ranges), consistency…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-109.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are the common dimensions of data quality and how do you check them in a pipeline?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 1 (Junior) · Data quality · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Common dimensions are completeness (no missing required values), uniqueness (no duplicates), validity (values match formats and ranges), consistency (agreement across systems), accuracy (matches reality) and timeliness (fresh enough). Check them with automated tests at pipeline stage boundaries, such as not-null, unique and accepted-value tests, row counts and freshness, and alert or block loads when they fail.</p></div>
+<h4>Explained in depth</h4>
+<h4>The dimensions</h4>
+<div class="md-table"><table><thead><tr><th>Dimension</th><th>Question</th><th>Example check</th></tr></thead><tbody><tr><td><strong>Completeness</strong></td><td>Is required data present?</td><td><code>customer_id</code> is not null; 99 percent of rows have an email</td></tr><tr><td><strong>Uniqueness</strong></td><td>Are there duplicates?</td><td><code>order_id</code> is unique</td></tr><tr><td><strong>Validity</strong></td><td>Does it match rules and formats?</td><td>Age between 0 and 120; status in an allowed list; valid email pattern</td></tr><tr><td><strong>Consistency</strong></td><td>Do systems agree?</td><td>Order totals equal the sum of line items; same customer count across tables</td></tr><tr><td><strong>Accuracy</strong></td><td>Does it reflect reality?</td><td>Reconcile revenue with the finance system</td></tr><tr><td><strong>Timeliness (freshness)</strong></td><td>Is it recent enough?</td><td>Latest event is under 2 hours old</td></tr><tr><td><strong>Integrity</strong></td><td>Do references exist?</td><td>Every <code>order.customer_id</code> exists in <code>customers</code></td></tr></tbody></table></div>
+<h4>Implementing checks</h4>
+<ul><li><strong>dbt tests</strong>: <code>not_null</code>, <code>unique</code>, <code>accepted_values</code>, <code>relationships</code>, plus custom SQL tests; <strong>Great Expectations</strong>, Soda, or warehouse-native checks.</li><li><strong>Pipeline level</strong>: row count versus the source, schema checks, null-rate and distribution thresholds, and freshness SLAs.</li><li>Place checks at boundaries: after ingestion (is the source healthy?), after transforms (did logic break?), and before publishing.</li></ul>
+<h4>Handling failures</h4>
+<ul><li><strong>Block</strong> the load for critical checks (a duplicate primary key), <strong>warn</strong> for softer ones, and <strong>quarantine</strong> bad records in a separate table for review.</li><li>Alert the owning team with context, and track data quality scores and incidents.</li></ul>
+<h4>Beyond fixed rules</h4>
+<p><strong>Anomaly detection</strong> on volumes, null rates and value distributions catches the unexpected (Monte Carlo, Soda, custom statistical checks). <strong>Data contracts</strong> with producers prevent bad data at the source.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you decide whether a failed check should stop the pipeline?</li><li>What tools can you use for data quality testing?</li><li>How do you detect anomalies that fixed rules miss?</li></ul>
+<p><a class="btn primary" href="../#/q/de-109">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-109%3A+What+are+the+common+dimensions+of+data+quality+and+how+do+you+check%E2%80%A6&amp;question-id=de-109&amp;context=Data+engineer%2C+Gear+1%2C+topic%3A+Data+quality%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-109.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

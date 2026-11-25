@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does binary search on the answer space solve optimization problems like Koko Eating Bananas? | InterviewGearUp</title>
+<meta name="description" content="Binary search on the answer applies when the answer lies in a numeric range and feasibility is monotonic: if speed k works then any larger speed works.…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-40.html">
+<meta property="og:title" content="How does binary search on the answer space solve optimization problems like Koko Eating Bananas? | InterviewGearUp">
+<meta property="og:description" content="Binary search on the answer applies when the answer lies in a numeric range and feasibility is monotonic: if speed k works then any larger speed works.…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-40.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does binary search on the answer space solve optimization problems like Koko Eating Bananas?</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 3 (Senior) · Algorithms · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Binary search on the answer applies when the answer lies in a numeric range and feasibility is monotonic: if speed k works then any larger speed works. Search the range for the smallest feasible value, using a check function that simulates the problem. Koko Eating Bananas checks, for a speed, whether the total hours needed is at most h.</p></div>
+<h4>Explained in depth</h4>
+<h4>The pattern</h4>
+<p>Instead of searching an array, search the <strong>range of possible answers</strong>. It works when:</p>
+<ol start="1"><li>The answer is a number in a known range <code>[lo, hi]</code>.</li><li>A function <code>feasible(x)</code> can be evaluated quickly.</li><li>Feasibility is monotonic: false for small x, then true from some point on (or the reverse).</li></ol>
+<h4>Koko Eating Bananas</h4>
+<p>Piles of bananas, h hours; find the minimum speed k (bananas per hour) so all piles are eaten in h hours. Eating a pile of p bananas at speed k takes ceil(p / k) hours.</p>
+<pre><code>def min_eating_speed(piles, h):
+    def hours(k):
+        return sum((p + k - 1) // k for p in piles)
+    lo, hi = 1, max(piles)             # a speed of max(piles) always works if h &gt;= len(piles)
+    while lo &lt; hi:
+        mid = lo + (hi - lo) // 2
+        if hours(mid) &lt;= h:
+            hi = mid                   # feasible, try slower
+        else:
+            lo = mid + 1               # too slow
+    return lo</code></pre>
+<h4>Complexity</h4>
+<p>O(n log(max pile)): each check is O(n) and there are log(max) steps.</p>
+<h4>Other problems with the same shape</h4>
+<p>Capacity to ship packages within D days, split array largest sum, minimum days to make m bouquets, aggressive cows and square root approximations. When the problem asks to <strong>minimise a maximum</strong> or <strong>maximise a minimum</strong>, think of this pattern.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you prove the feasibility function is monotonic?</li><li>How do you choose the lower and upper bounds for the search?</li><li>What other problems fit this pattern, such as splitting an array into k subarrays?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-40">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-40%3A+How+does+binary+search+on+the+answer+space+solve+optimization%E2%80%A6&amp;question-id=gen-40&amp;context=Software+engineer+%28core%29%2C+Gear+3%2C+topic%3A+Algorithms%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-40.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

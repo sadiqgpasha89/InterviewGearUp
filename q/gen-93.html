@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain Defensive Programming: Preconditions, postconditions, and fail-fast invariants. | InterviewGearUp</title>
+<meta name="description" content="Defensive programming assumes inputs and callers can be wrong and checks for it: validate preconditions at entry, guarantee postconditions on exit,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-93.html">
+<meta property="og:title" content="Explain Defensive Programming: Preconditions, postconditions, and fail-fast invariants. | InterviewGearUp">
+<meta property="og:description" content="Defensive programming assumes inputs and callers can be wrong and checks for it: validate preconditions at entry, guarantee postconditions on exit,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-93.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain Defensive Programming: Preconditions, postconditions, and fail-fast invariants.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 1 (Junior) · Engineering · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Defensive programming assumes inputs and callers can be wrong and checks for it: validate preconditions at entry, guarantee postconditions on exit, assert invariants, and fail fast with a clear error instead of continuing in a bad state. The aim is to catch bugs close to their source rather than letting corrupted data spread.</p></div>
+<h4>Explained in depth</h4>
+<h4>Core ideas</h4>
+<ul><li><strong>Precondition</strong>: what must be true when a function is called, such as <code>amount &gt; 0</code>. A violation is the caller&#39;s bug.</li><li><strong>Postcondition</strong>: what the function guarantees when it returns, such as a sorted result.</li><li><strong>Invariant</strong>: something that must always hold for an object, such as <code>balance &gt;= 0</code>, checked after every public method.</li><li><strong>Fail fast</strong>: stop at the first sign of a broken assumption with a specific error, so the stack trace points at the real cause.</li></ul>
+<h4>Example</h4>
+<pre><code>def withdraw(account, amount):
+    if amount &lt;= 0:
+        raise ValueError(&#39;amount must be positive&#39;)       # precondition
+    if amount &gt; account.balance:
+        raise InsufficientFunds(account.id, amount)
+    account.balance -= amount
+    assert account.balance &gt;= 0                          # invariant</code></pre>
+<h4>Practices</h4>
+<ul><li>Validate <strong>external</strong> input (users, network, files) strictly at the boundary and treat it as untrusted.</li><li>Use assertions for internal &quot;this can never happen&quot; conditions, since they can be disabled in production; use exceptions for checks that must always run.</li><li>Use types, enums and immutable objects to make invalid states impossible.</li><li>Never swallow exceptions silently, and avoid default values that hide bugs.</li></ul>
+<h4>Limits</h4>
+<p>Checking everything everywhere adds noise and cost, and it can mask real problems. Put strong checks at boundaries and trust internal code that is already validated.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you decide between assertions and exceptions?</li><li>What is the downside of over-defensive code?</li><li>How do contracts differ from input validation at trust boundaries?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-93">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-93%3A+Explain+Defensive+Programming%3A+Preconditions%2C+postconditions%2C+and%E2%80%A6&amp;question-id=gen-93&amp;context=Software+engineer+%28core%29%2C+Gear+1%2C+topic%3A+Engineering%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-93.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

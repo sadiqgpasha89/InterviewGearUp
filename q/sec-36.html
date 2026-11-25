@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare Multi-Factor Authentication (MFA) mechanisms: SMS versus TOTP apps versus FIDO2/WebAuthn hardware keys. | InterviewGearUp</title>
+<meta name="description" content="SMS codes are the weakest second factor: they can be intercepted, SIM-swapped or phished. TOTP apps generate time-based codes locally and are much…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-36.html">
+<meta property="og:title" content="Compare Multi-Factor Authentication (MFA) mechanisms: SMS versus TOTP apps versus FIDO2/WebAuthn hardware keys. | InterviewGearUp">
+<meta property="og:description" content="SMS codes are the weakest second factor: they can be intercepted, SIM-swapped or phished. TOTP apps generate time-based codes locally and are much…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-36.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare Multi-Factor Authentication (MFA) mechanisms: SMS versus TOTP apps versus FIDO2/WebAuthn hardware keys.</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 2 (Mid-level) · IAM · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>SMS codes are the weakest second factor: they can be intercepted, SIM-swapped or phished. TOTP apps generate time-based codes locally and are much stronger, but codes can still be phished in real time. FIDO2 and WebAuthn security keys or passkeys use public-key cryptography bound to the website&#39;s origin, so they resist phishing and are the strongest option.</p></div>
+<h4>Explained in depth</h4>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th></th><th>SMS code</th><th>TOTP app</th><th>FIDO2 and WebAuthn</th></tr></thead><tbody><tr><td>How it works</td><td>Code sent by text message</td><td>Code from a shared secret and the clock (30 second window)</td><td>Challenge signed by a private key in a device or key</td></tr><tr><td>Phishing resistant</td><td>No</td><td>No (the user can type the code on a fake site)</td><td><strong>Yes</strong>: signature is bound to the real origin</td></tr><tr><td>Network attacks</td><td>SIM swap, SS7 interception, malware</td><td>Secret stored on the device</td><td>No shared secret leaves the device</td></tr><tr><td>Usability</td><td>Easy, no app</td><td>Needs an app, manual entry</td><td>Touch or biometric, very quick</td></tr><tr><td>Cost</td><td>Messaging fees</td><td>Free</td><td>Hardware key cost, or free with passkeys</td></tr><tr><td>Recovery</td><td>Phone number</td><td>Backup codes, device transfer</td><td>Registering multiple authenticators</td></tr></tbody></table></div>
+<h4>Why WebAuthn is stronger</h4>
+<p>During registration the authenticator creates a <strong>key pair per site</strong>; the server stores only the public key. During login, the browser passes the site&#39;s origin to the authenticator, which signs the server&#39;s challenge. A fake site at another origin cannot obtain a valid signature, and a database leak reveals no reusable secret.</p>
+<h4>Guidance</h4>
+<ul><li>Prefer <strong>passkeys or security keys</strong> for administrators and high-risk accounts, and offer them to all users.</li><li>Use TOTP as a fallback; avoid SMS except as a last resort (NIST treats it as restricted).</li><li>Beware of <strong>MFA fatigue</strong> (push approval spam); use number matching.</li><li>Design recovery carefully: several registered authenticators, one-time backup codes stored safely, and a verified helpdesk process, since a weak recovery path undermines strong MFA.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How can an attacker phish a TOTP code with a reverse proxy?</li><li>What is a passkey and how does it differ from a hardware security key?</li><li>How do you handle account recovery without weakening MFA?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-36">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-36%3A+Compare+Multi-Factor+Authentication+%28MFA%29+mechanisms%3A+SMS+versus%E2%80%A6&amp;question-id=sec-36&amp;context=Security+engineer%2C+Gear+2%2C+topic%3A+IAM%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-36.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

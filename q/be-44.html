@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain the Saga pattern for distributed transactions: Choreography versus Orchestration. | InterviewGearUp</title>
+<meta name="description" content="A saga replaces a distributed transaction with a sequence of local transactions, each with a compensating action that undoes it if a later step fails. In…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-44.html">
+<meta property="og:title" content="Explain the Saga pattern for distributed transactions: Choreography versus Orchestration. | InterviewGearUp">
+<meta property="og:description" content="A saga replaces a distributed transaction with a sequence of local transactions, each with a compensating action that undoes it if a later step fails. In…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-44.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain the Saga pattern for distributed transactions: Choreography versus Orchestration.</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 4 (Lead / Staff) · Distributed systems · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A saga replaces a distributed transaction with a sequence of local transactions, each with a compensating action that undoes it if a later step fails. In choreography, services react to each other&#39;s events; in orchestration, a central coordinator tells each service what to do next and triggers compensations.</p></div>
+<h4>Explained in depth</h4>
+<p><strong>Example</strong>: place order, reserve stock, charge payment, schedule shipping. If payment fails, run compensations in reverse: release the stock, cancel the order.</p>
+<h4>Choreography vs orchestration</h4>
+<ul><li><strong>Choreography</strong>: each service publishes events and listens for others. There is no central point of failure and coupling is loose, but the flow is implicit, hard to see and debug, and cyclic dependencies creep in as it grows.</li><li><strong>Orchestration</strong>: an orchestrator (a workflow engine such as Temporal or AWS Step Functions, or your own state machine) holds the flow and its state. It is easier to reason about, monitor and change, at the cost of a central component.</li></ul>
+<h4>What makes sagas hard</h4>
+<ul><li><strong>No isolation</strong>: other transactions can see intermediate states. Use semantic locks (a <code>PENDING</code> status), commutative updates or re-reads.</li><li><strong>Compensations are not rollbacks</strong>: you cannot un-send an email. A compensation may be a refund or an apology, and it must itself be retryable.</li><li><strong>Idempotency and the outbox pattern</strong>: handlers must tolerate duplicate messages, and publishing an event must be atomic with the local database write.</li><li>Timeouts, stuck sagas and manual intervention need to be designed in.</li></ul>
+<p>Rule of thumb: choreography for two or three steps, orchestration once the flow has branches or many participants.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does the transactional outbox pattern help sagas?</li><li>How would you handle a compensation that fails?</li></ul>
+<p><a class="btn primary" href="../#/q/be-44">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-44%3A+Explain+the+Saga+pattern+for+distributed+transactions%3A+Choreography%E2%80%A6&amp;question-id=be-44&amp;context=Backend+engineer%2C+Gear+4%2C+topic%3A+Distributed+systems%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-44.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How would you design an ML platform for 100 data scientists covering experimentation, training, registry and serving? | InterviewGearUp</title>
+<meta name="description" content="Provide a self-service platform with shared data and a feature store, reproducible experiment tracking, managed notebooks and scalable training on shared…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-106.html">
+<meta property="og:title" content="How would you design an ML platform for 100 data scientists covering experimentation, training, registry and serving? | InterviewGearUp">
+<meta property="og:description" content="Provide a self-service platform with shared data and a feature store, reproducible experiment tracking, managed notebooks and scalable training on shared…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-106.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How would you design an ML platform for 100 data scientists covering experimentation, training, registry and serving?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 4 (Lead / Staff) · MLOps · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Provide a self-service platform with shared data and a feature store, reproducible experiment tracking, managed notebooks and scalable training on shared GPU pools, a model registry with approvals and lineage, standard deployment paths for batch and real-time serving with monitoring, and CI/CD for models. Make golden paths easy, enforce governance, and measure time from idea to production.</p></div>
+<h4>Explained in depth</h4>
+<h4>Goals</h4>
+<p>Reduce time from idea to production, make work reproducible and auditable, share infrastructure efficiently, and keep quality and compliance high without blocking data scientists.</p>
+<h4>Platform building blocks</h4>
+<ol start="1"><li><strong>Data access</strong>: governed lakehouse or warehouse access, a <strong>feature store</strong> (offline and online) for reuse and training-serving consistency, and dataset versioning (lakeFS, DVC, table snapshots).</li><li><strong>Development environments</strong>: managed notebooks and IDEs with approved images, pinned dependencies, and secure access to data; project templates with testing and linting.</li><li><strong>Experiment tracking</strong>: MLflow or Weights and Biases recording parameters, metrics, code version, data version and artifacts, so runs are reproducible and comparable.</li><li><strong>Training infrastructure</strong>: Kubernetes or managed services with <strong>shared GPU pools</strong>, job queues, quotas and priorities per team, spot instances for fault-tolerant jobs, distributed training support (DDP, FSDP), and pipelines (Kubeflow, Airflow, Vertex or SageMaker Pipelines) for retraining.</li><li><strong>Model registry</strong>: versions, metadata, evaluation reports, lineage back to data and code, stages (staging, production), <strong>approval workflows</strong> and model cards documenting intended use and limits.</li><li><strong>Deployment and serving</strong>: standard paths for <strong>batch inference</strong>, <strong>online APIs</strong> (KServe, Triton, Seldon, managed endpoints) with autoscaling and dynamic batching, canary or shadow rollouts, and rollback. Optional edge or streaming deployment.</li><li><strong>CI/CD for ML</strong>: tests for data and code, automated evaluation gates comparing with the current model, infrastructure as code.</li><li><strong>Monitoring</strong>: latency, errors, cost, <strong>data drift</strong>, concept drift, prediction quality when labels arrive, and alerts that feed retraining triggers.</li><li><strong>Governance and security</strong>: access control, audit logs, PII handling, bias and explainability checks (SHAP), and risk tiers requiring review for high-impact models.</li></ol>
+<h4>Operating model</h4>
+<ul><li><strong>Platform team as a product team</strong> with a roadmap, documentation, office hours and SLOs.</li><li><strong>Golden path</strong> templates for common use cases (tabular, NLP, recommendation, LLM applications); allow flexibility for research.</li><li><strong>FinOps</strong>: cost attribution per team and project, idle GPU alerts, auto-shutdown of notebooks.</li><li><strong>Capacity fairness</strong>: quotas, preemption policies, scheduling (Kueue, Slurm) and reservations for large jobs.</li></ul>
+<h4>Success metrics</h4>
+<p>Lead time from experiment to production, percentage of models with monitoring and lineage, reproducibility rate, GPU utilisation, incident rates, and user satisfaction. Start with the biggest bottlenecks (usually data access and deployment) rather than building everything at once.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you manage shared GPU capacity fairly across teams?</li><li>How do you make training reproducible?</li><li>What should be standardised versus left to each team?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-106">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-106%3A+How+would+you+design+an+ML+platform+for+100+data+scientists+covering%E2%80%A6&amp;question-id=ml-106&amp;context=ML+%2F+AI+engineer%2C+Gear+4%2C+topic%3A+MLOps%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-106.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

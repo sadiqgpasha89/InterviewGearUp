@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is the difference between input validation and output encoding, and why do you need both? | InterviewGearUp</title>
+<meta name="description" content="Input validation checks that incoming data matches expected type, length, format and range, rejecting or normalising bad data early. Output encoding…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-112.html">
+<meta property="og:title" content="What is the difference between input validation and output encoding, and why do you need both? | InterviewGearUp">
+<meta property="og:description" content="Input validation checks that incoming data matches expected type, length, format and range, rejecting or normalising bad data early. Output encoding…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-112.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is the difference between input validation and output encoding, and why do you need both?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 1 (Junior) · Web security · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Input validation checks that incoming data matches expected type, length, format and range, rejecting or normalising bad data early. Output encoding converts data into a safe form for the context where it is displayed or used, such as HTML, JavaScript, URLs or SQL, so it is treated as data not code. Validation reduces attack surface, while encoding or parameterisation prevents injection at the point of use.</p></div>
+<h4>Explained in depth</h4>
+<h4>Input validation</h4>
+<p>Check data <strong>when it enters</strong> the system (and again at trust boundaries):</p>
+<ul><li>Type, length, range, format (regular expressions), allowed values.</li><li>Prefer <strong>allowlists</strong> (define what is permitted) to blocklists (try to list bad patterns), which attackers evade.</li><li>Validate on the <strong>server</strong>; client-side checks are only for usability since they are easily bypassed.</li><li>Canonicalise (normalise) before validating, to avoid tricks with encodings.</li><li>Examples: an age field accepts integers 0 to 120; a username matches <code>^[a-z0-9_]{3,20}$</code>; file uploads check type, size and content.</li></ul>
+<p>Validation improves data quality and reduces attacks but <strong>cannot make every string safe</strong>; a name like <code>O&#39;Brien</code> or a comment containing <code>&lt;script&gt;</code> may be legitimate input.</p>
+<h4>Output encoding (and safe APIs)</h4>
+<p>Encode data <strong>when it leaves</strong> for a specific context so characters lose their special meaning:</p>
+<div class="md-table"><table><thead><tr><th>Context</th><th>Defence</th></tr></thead><tbody><tr><td>HTML body</td><td>HTML-encode <code>&lt;</code> as <code>&amp;lt;</code> (use the framework&#39;s auto-escaping templates)</td></tr><tr><td>HTML attribute</td><td>Attribute encoding and quoting</td></tr><tr><td>JavaScript</td><td>Avoid inserting data in scripts; use JSON serialisation and <code>textContent</code> rather than <code>innerHTML</code></td></tr><tr><td>URL</td><td>URL-encode parameters</td></tr><tr><td>SQL</td><td><strong>Parameterised queries (prepared statements)</strong>, not string building</td></tr><tr><td>OS commands</td><td>Avoid shell; pass arguments as arrays with allowlists</td></tr></tbody></table></div>
+<pre><code>// unsafe
+element.innerHTML = userComment;
+// safe
+element.textContent = userComment;</code></pre>
+<h4>Why both</h4>
+<ul><li><strong>Defence in depth</strong>: validation blocks obviously bad input and limits damage; encoding stops injection even if bad data gets through (or the data came from another source such as a database).</li><li>The right protection depends on the <strong>output context</strong>: the same string needs different escaping in HTML, JavaScript and SQL.</li><li>Use trusted libraries and framework features, add a <strong>Content Security Policy</strong> as another layer, and test with injection payloads.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is blacklisting dangerous compared with allowlisting?</li><li>What is the right defence against SQL injection: validation or parameterised queries?</li><li>Why does the encoding depend on the output context?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-112">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-112%3A+What+is+the+difference+between+input+validation+and+output+encoding%2C%E2%80%A6&amp;question-id=sec-112&amp;context=Security+engineer%2C+Gear+1%2C+topic%3A+Web+security%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-112.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

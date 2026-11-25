@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you calculate and manage error budgets to balance feature release velocity with system stability? | InterviewGearUp</title>
+<meta name="description" content="An error budget is the amount of unreliability you can spend: 100 percent minus the SLO. A 99.9 percent monthly availability SLO allows about 43 minutes…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-54.html">
+<meta property="og:title" content="How do you calculate and manage error budgets to balance feature release velocity with system stability? | InterviewGearUp">
+<meta property="og:description" content="An error budget is the amount of unreliability you can spend: 100 percent minus the SLO. A 99.9 percent monthly availability SLO allows about 43 minutes…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-54.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you calculate and manage error budgets to balance feature release velocity with system stability?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · Observability · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>An error budget is the amount of unreliability you can spend: 100 percent minus the SLO. A 99.9 percent monthly availability SLO allows about 43 minutes of downtime. While budget remains, teams ship features; when it is spent, they slow or freeze releases and prioritise reliability work, making the trade-off objective and shared between product and operations.</p></div>
+<h4>Explained in depth</h4>
+<h4>Definitions</h4>
+<ul><li><strong>SLI</strong>: a measured indicator, for example the share of requests that succeed in under 300 ms.</li><li><strong>SLO</strong>: the target for the SLI over a window, for example 99.9% over 30 days.</li><li><strong>Error budget</strong> = 1 - SLO. It is the allowed failure.</li></ul>
+<h4>Calculating it</h4>
+<p>For 99.9% availability over 30 days: 0.1% of 43,200 minutes is about <strong>43.2 minutes</strong>. For request-based SLIs, with 100 million requests a month the budget is 100,000 failed requests.</p>
+<div class="md-table"><table><thead><tr><th>SLO</th><th>Allowed downtime per 30 days</th></tr></thead><tbody><tr><td>99%</td><td>about 7.2 hours</td></tr><tr><td>99.9%</td><td>about 43 minutes</td></tr><tr><td>99.99%</td><td>about 4.3 minutes</td></tr></tbody></table></div>
+<h4>Using it to balance velocity and stability</h4>
+<ul><li><strong>Budget remaining</strong>: release at normal speed, take risks, run experiments.</li><li><strong>Budget low or exhausted</strong>: apply the agreed <strong>error budget policy</strong>, such as pausing non-critical releases, doing more testing and fixing the causes of reliability loss, until it recovers.</li></ul>
+<p>This turns the argument between &quot;ship faster&quot; and &quot;be safer&quot; into a data-based agreement made in advance.</p>
+<h4>Alerting on burn rate</h4>
+<p>Alert on how fast the budget is being consumed, not on single errors. A burn rate of 1 uses the budget exactly over the window; a rate of 14 exhausts a 30-day budget in about 2 days. Multi-window alerts (for example a fast window of 5 minutes and 1 hour paired with a slower one) catch both sudden outages and slow burns with fewer false alarms.</p>
+<h4>Cautions</h4>
+<p>Choose SLOs from user expectations, not from what is achievable; 100% is the wrong target. Review them regularly, and count only what users experience.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is a burn-rate alert and why is it better than a simple threshold?</li><li>How do you pick an SLO that is neither too strict nor too loose?</li><li>What if the budget is never used?</li></ul>
+<p><a class="btn primary" href="../#/q/do-54">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-54%3A+How+do+you+calculate+and+manage+error+budgets+to+balance+feature%E2%80%A6&amp;question-id=do-54&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+Observability%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-54.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

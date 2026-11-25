@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain PostgreSQL MVCC internals, tuple bloat, and the necessity of VACUUM. | InterviewGearUp</title>
+<meta name="description" content="PostgreSQL MVCC keeps multiple versions of a row: an UPDATE writes a new tuple and marks the old one as expired, so readers see a consistent snapshot…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-20.html">
+<meta property="og:title" content="Explain PostgreSQL MVCC internals, tuple bloat, and the necessity of VACUUM. | InterviewGearUp">
+<meta property="og:description" content="PostgreSQL MVCC keeps multiple versions of a row: an UPDATE writes a new tuple and marks the old one as expired, so readers see a consistent snapshot…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-20.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain PostgreSQL MVCC internals, tuple bloat, and the necessity of VACUUM.</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · Databases · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>PostgreSQL MVCC keeps multiple versions of a row: an UPDATE writes a new tuple and marks the old one as expired, so readers see a consistent snapshot without blocking writers. The expired tuples stay as dead space until VACUUM removes those no longer visible to any transaction, otherwise tables and indexes bloat.</p></div>
+<h4>Explained in depth</h4>
+<h4>How versions work</h4>
+<p>Each tuple stores <code>xmin</code> (the transaction that created it) and <code>xmax</code> (the one that deleted or replaced it). A query takes a snapshot and sees a tuple only if its creator committed before the snapshot and it was not deleted before then. An update is effectively <strong>insert a new version plus mark the old one</strong>, so the table keeps old versions around.</p>
+<h4>Why VACUUM is needed</h4>
+<ul><li>Dead tuples take up space and make scans and indexes slower (<strong>bloat</strong>).</li><li><strong>VACUUM</strong> finds tuples invisible to every open snapshot and marks their space reusable. It does not normally shrink the file; <code>VACUUM FULL</code> rewrites the table and returns space but takes an exclusive lock.</li><li>It updates the visibility map (which enables index-only scans) and <strong>freezes</strong> old tuples. Transaction ids are 32-bit and wrap around, so without freezing the database would eventually stop accepting writes to protect data.</li><li><strong>Autovacuum</strong> runs it in the background based on thresholds.</li></ul>
+<h4>What goes wrong in production</h4>
+<ul><li><strong>Long-running or idle-in-transaction sessions</strong> hold back the cleanup horizon, so vacuum cannot remove tuples even though it runs. The same applies to stale replication slots and long queries on replicas with feedback enabled.</li><li>Big tables with the default percentage thresholds wait too long between vacuums. Lower <code>autovacuum_vacuum_scale_factor</code> for them.</li><li>Heavy update workloads create churn; <strong>HOT updates</strong> (when no indexed column changes and the page has room, helped by a lower <code>fillfactor</code>) avoid index writes.</li></ul>
+<h4>Monitoring</h4>
+<p>Watch <code>n_dead_tup</code> in <code>pg_stat_user_tables</code>, the age of the oldest transaction, table bloat estimates and the transaction id age against the wraparound limit.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why can a single long-running transaction cause table bloat?</li><li>What is transaction id wraparound and how is it prevented?</li><li>What is a HOT update and when does it apply?</li></ul>
+<p><a class="btn primary" href="../#/q/be-20">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-20%3A+Explain+PostgreSQL+MVCC+internals%2C+tuple+bloat%2C+and+the+necessity+of%E2%80%A6&amp;question-id=be-20&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+Databases%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-20.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

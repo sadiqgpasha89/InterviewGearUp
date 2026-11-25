@@ -63,7 +63,7 @@ Source: `InterviewGearUp_plan.md`. This release does the P0 track (phases 0 to 4
 | 12 AI reliability | Done | `js/ai.js`: timeout, bounded retry, no retry on auth or quota, friendly errors, key redacted from messages, Gemini key moved from the URL to a header, delimiter hardening against prompt injection. |
 | 13 Tests and CI | Done | 40+ tests, `ci.yml` runs them on every PR. Action versions use tags, not commit SHAs. |
 
-## v1.3: practice tools and moderation (this release)
+## v1.3: practice tools and moderation
 
 Phases 5 to 10 from the plan.
 
@@ -76,9 +76,19 @@ Phases 5 to 10 from the plan.
 | 9 Company tracks | Done | `#/company` and board filters; status comes only from maintainer-applied labels (`approved`, `needs-review`; hidden: `rejected`, `duplicate`, `confidential`, `inappropriate`). |
 | 10 Voice practice | Done (needs device testing) | `#/voice`: optional dictation, typed fallback, pace, fillers, rubric, opt-in transcript history. Real speech recognition has not been tried on devices. |
 
-### Not started
+## v1.4: Phase 14, optional growth and sync (this release)
 
-Phase 14 (optional sync and growth) is exploratory in the plan and not built. The 15-per-role-and-gear content goal is still open (see Next).
+The plan marks Phase 14 as exploratory. These parts are built because they fit a static, tracker-free site; the rest is listed honestly below.
+
+| Item from the plan | Status | What changed |
+|---|---|---|
+| Private sync through a user-controlled mechanism | Done (needs real-device testing) | `#/sync`: opt-in, encrypted in the browser (AES-GCM, PBKDF2) before upload to a secret Gist in the learner's own account. Token is gist-only, kept for the tab unless the learner opts in, and never in backups; passphrase is never stored; only `api.github.com` is contacted. Threat model in `docs/THREAT_MODEL.md`. Replace, not merge. |
+| User-submitted learning paths | Done | `#/paths`: build, reorder, export and import paths (stored in the backup); 4 starter paths (AI-assembled, unreviewed); *Suggest a learning path* issue form. A maintainer still has to review and add any suggested path. |
+| Static SEO pages | Done | `npm run seo` writes `q/<id>.html` for every question with a written answer, plus `q/index.html`, `sitemap.xml` and `robots.txt`. Pages state the review status, contain no script, and `npm test` fails if they are stale. Search engines may take a while to index them; no ranking is promised. |
+| Community contribution improvements | Done | Pull request template with a checklist, learning-path issue form, CONTRIBUTING sections for paths, sync and `npm run seo`. |
+| More role tracks (mobile, platform, data science, analytics, product engineering) | Not built | Each role needs 60 or more written answers across four gears to meet the coverage standard. Placeholder roles would break the "no filler" rule. |
+| Localization | Not built | Needs a string catalogue across all views and human translators. Machine translations of interview answers would be unreviewed twice over. |
+| Privacy-preserving, opt-in usage analytics | Not built, on purpose | There is no server to receive it, and the plan says the default product stays tracker-free. |
 
 ## Next
 
@@ -88,6 +98,8 @@ Phase 14 (optional sync and growth) is exploratory in the plan and not built. Th
 - [ ] Pin GitHub Actions to commit SHAs.
 - [ ] Real-device accessibility testing.
 - [x] Phases 5 to 10 from the plan.
-- [ ] Phase 14, only if there is demand.
+- [x] Phase 14 parts that fit a static site (sync, paths, SEO pages, contribution templates). Role tracks, localization and analytics are still open.
+- [ ] Real-device testing of private sync (Safari, Firefox, mobile) and a person's review of the threat model.
+- [ ] Review of the starter paths by a person.
 - [ ] More coding problems and review of the AI-drafted ones; other languages need a safe runtime first.
 - [ ] Real-device testing of dictation.

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you protect a single-page app from XSS and CSRF, and where should auth tokens be stored? | InterviewGearUp</title>
+<meta name="description" content="Stop XSS first (escape output, avoid innerHTML, strict CSP) because any XSS can read JavaScript-accessible storage. Prefer HttpOnly, Secure, SameSite…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-7.html">
+<meta property="og:title" content="How do you protect a single-page app from XSS and CSRF, and where should auth tokens be stored? | InterviewGearUp">
+<meta property="og:description" content="Stop XSS first (escape output, avoid innerHTML, strict CSP) because any XSS can read JavaScript-accessible storage. Prefer HttpOnly, Secure, SameSite…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-7.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you protect a single-page app from XSS and CSRF, and where should auth tokens be stored?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 3 (Senior) · Security · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Stop XSS first (escape output, avoid innerHTML, strict CSP) because any XSS can read JavaScript-accessible storage. Prefer HttpOnly, Secure, SameSite cookies for session tokens and add CSRF protection when using cookies.</p></div>
+<h4>Explained in depth</h4>
+<h4>XSS defences</h4>
+<p>Framework auto-escaping (do not bypass it with <code>innerHTML</code> or <code>dangerouslySetInnerHTML</code>), sanitise any untrusted HTML with an allow-list library such as DOMPurify, a Content Security Policy without <code>unsafe-inline</code> (use nonces or hashes), and Trusted Types.</p>
+<h4>Token storage</h4>
+<ul><li><code>localStorage</code> is readable by any script on the page, so one XSS steals the token.</li><li>An <code>HttpOnly</code> cookie cannot be read by JavaScript, but the browser sends it automatically, which brings CSRF risk. Mitigate with <code>SameSite=Lax</code> or <code>Strict</code>, CSRF tokens, and Origin header checks.</li><li>Keep access tokens short-lived and rotate refresh tokens. A backend-for-frontend (BFF) keeps tokens on the server entirely.</li></ul>
+<h4>Also</h4>
+<p>Third-party scripts are a supply-chain risk (minimise them, use Subresource Integrity). Use <code>frame-ancestors</code> against clickjacking. With cross-origin APIs, never combine <code>Access-Control-Allow-Origin: *</code> with credentials.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What does SameSite actually do?</li><li>How does CSP limit the damage of XSS?</li><li>What is a backend-for-frontend?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-7">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-7%3A+How+do+you+protect+a+single-page+app+from+XSS+and+CSRF%2C+and+where%E2%80%A6&amp;question-id=fe-7&amp;context=Frontend+engineer%2C+Gear+3%2C+topic%3A+Security%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-7.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

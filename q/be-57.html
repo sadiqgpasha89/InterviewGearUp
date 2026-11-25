@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain garbage collection pause phases in modern runtimes (e.g. G1GC, ZGC, Go GC) and how to tune them. | InterviewGearUp</title>
+<meta name="description" content="Modern collectors reduce pauses by doing most work concurrently with the application. G1 collects regions in short, mostly stop-the-world evacuation…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-57.html">
+<meta property="og:title" content="Explain garbage collection pause phases in modern runtimes (e.g. G1GC, ZGC, Go GC) and how to tune them. | InterviewGearUp">
+<meta property="og:description" content="Modern collectors reduce pauses by doing most work concurrently with the application. G1 collects regions in short, mostly stop-the-world evacuation…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-57.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain garbage collection pause phases in modern runtimes (e.g. G1GC, ZGC, Go GC) and how to tune them.</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 4 (Lead / Staff) · Performance · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Modern collectors reduce pauses by doing most work concurrently with the application. G1 collects regions in short, mostly stop-the-world evacuation pauses plus concurrent marking; ZGC and Shenandoah do marking and relocation concurrently with pauses in the sub-millisecond to few-millisecond range; Go uses a concurrent mark-sweep collector tuned with GOGC and a memory limit.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why pauses happen</h4>
+<p>A collector must find live objects. Some phases need all application threads stopped (a <strong>safepoint</strong>) so object graphs do not change during critical steps. Longer pauses mean higher tail latency.</p>
+<h4>G1 (default in modern JVMs)</h4>
+<ul><li>Heap divided into regions; collects the regions with the most garbage first.</li><li><strong>Young collections</strong> are stop-the-world but short; <strong>concurrent marking</strong> finds live data in old regions; <strong>mixed collections</strong> reclaim old regions.</li><li>Key knob: <code>-XX:MaxGCPauseMillis</code> (a goal, not a guarantee). Also heap size (<code>-Xms</code>, <code>-Xmx</code>) and region size.</li><li>Failure mode: a <strong>full GC</strong> when it cannot keep up (evacuation failure), which causes long pauses.</li></ul>
+<h4>ZGC and Shenandoah</h4>
+<p>Concurrent compaction using load barriers (ZGC uses coloured pointers), so pauses stay in the low milliseconds regardless of heap size, at the cost of some throughput and extra CPU and memory headroom. Suitable for large heaps and strict latency targets.</p>
+<h4>Go</h4>
+<p>A concurrent, non-moving mark-sweep collector with very short stop-the-world phases. <code>GOGC</code> (default 100) controls how much the heap may grow between collections; <code>GOMEMLIMIT</code> sets a soft memory cap. Reduce allocations and reuse buffers (<code>sync.Pool</code>) to lower GC work.</p>
+<h4>Tuning approach</h4>
+<ol start="1"><li>Enable GC logging and look at pause times, frequency and heap after collection.</li><li>Reduce <strong>allocation rate</strong> first, because it drives GC frequency.</li><li>Right-size the heap; too small causes frequent collections, too large lengthens some pauses.</li><li>Change only one setting at a time, and measure with realistic load.</li></ol>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you decide between G1 and ZGC for a service?</li><li>What do allocation rate and live set size do to GC frequency?</li><li>How do you read a GC log to find the cause of pauses?</li></ul>
+<p><a class="btn primary" href="../#/q/be-57">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-57%3A+Explain+garbage+collection+pause+phases+in+modern+runtimes+%28e.g.%E2%80%A6&amp;question-id=be-57&amp;context=Backend+engineer%2C+Gear+4%2C+topic%3A+Performance%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-57.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

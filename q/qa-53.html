@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you test microservice workflows using distributed tracing headers (W3C Trace Context)? | InterviewGearUp</title>
+<meta name="description" content="Verify that every service propagates the W3C traceparent header (and tracestate) so one trace ID follows a request across all hops. Tests send a request…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-53.html">
+<meta property="og:title" content="How do you test microservice workflows using distributed tracing headers (W3C Trace Context)? | InterviewGearUp">
+<meta property="og:description" content="Verify that every service propagates the W3C traceparent header (and tracestate) so one trace ID follows a request across all hops. Tests send a request…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-53.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you test microservice workflows using distributed tracing headers (W3C Trace Context)?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 3 (Senior) · Microservices · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Verify that every service propagates the W3C traceparent header (and tracestate) so one trace ID follows a request across all hops. Tests send a request with a known trace ID, then assert, through the tracing backend or collector, that each service emitted spans with that trace ID and correct parent-child links, and that logs carry the same ID. Test missing, malformed and async paths too.</p></div>
+<h4>Explained in depth</h4>
+<h4>What the standard defines</h4>
+<p>The <code>traceparent</code> header has four dash-separated fields: <code>version-traceid-parentid-flags</code>, for example <code>00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01</code>. The trace ID is 32 hex characters, the parent (span) ID is 16, and the flags carry the <strong>sampled</strong> bit. <code>tracestate</code> carries vendor-specific data. OpenTelemetry uses this format by default.</p>
+<h4>What to test</h4>
+<ol start="1"><li><strong>Propagation across HTTP hops</strong>: send a request to the entry service with a chosen <code>traceparent</code>; every downstream service must keep the <strong>same trace ID</strong> and create a new span whose parent is the caller&#39;s span.</li><li><strong>Generation when absent</strong>: with no header, the edge generates a new valid trace and propagates it.</li><li><strong>Malformed headers</strong>: invalid version, wrong length or all-zero IDs must be ignored safely, not crash the service or be echoed unsafely.</li><li><strong>Sampling</strong>: the sampled flag is respected downstream (a parent-based sampler), and unsampled requests do not break propagation.</li><li><strong>Asynchronous paths</strong>: trace context in message headers for Kafka or RabbitMQ, job queues and scheduled tasks. Use span links where one message triggers many consumers.</li><li><strong>Logs and errors</strong>: log lines include trace and span IDs, and error spans record the exception and status.</li><li><strong>Gateways and proxies</strong> do not strip or rewrite the headers.</li></ol>
+<h4>How to assert</h4>
+<ul><li>In an integration environment, run an <strong>OpenTelemetry Collector</strong> with an in-memory or test exporter, or query Jaeger or Tempo through its API, then wait with polling (not fixed sleeps) until the expected spans arrive.</li><li>Check the span tree: expected service names, operation names, parent-child relationships and key attributes such as HTTP status.</li><li>Force 100 percent sampling in tests, and use unique trace IDs per test so runs do not interfere.</li></ul>
+<h4>Use in CI</h4>
+<p>A small &quot;trace smoke test&quot; for the main user journeys catches a service that forgot to propagate context after a library upgrade, which would otherwise break production debugging silently.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the structure of the traceparent header?</li><li>How do you test trace propagation through message queues?</li><li>How do you stop tracing tests from becoming flaky because of sampling?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-53">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-53%3A+How+do+you+test+microservice+workflows+using+distributed+tracing%E2%80%A6&amp;question-id=qa-53&amp;context=QA+%2F+SDET%2C+Gear+3%2C+topic%3A+Microservices%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-53.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

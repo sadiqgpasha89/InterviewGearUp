@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Why use a workflow orchestrator such as Airflow instead of cron jobs for data pipelines? | InterviewGearUp</title>
+<meta name="description" content="Cron only starts commands at times. An orchestrator models dependencies between tasks as a graph, retries and alerts on failure, tracks run history and…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-113.html">
+<meta property="og:title" content="Why use a workflow orchestrator such as Airflow instead of cron jobs for data pipelines? | InterviewGearUp">
+<meta property="og:description" content="Cron only starts commands at times. An orchestrator models dependencies between tasks as a graph, retries and alerts on failure, tracks run history and…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-113.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Why use a workflow orchestrator such as Airflow instead of cron jobs for data pipelines?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 1 (Junior) · Orchestration · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Cron only starts commands at times. An orchestrator models dependencies between tasks as a graph, retries and alerts on failure, tracks run history and state, supports backfills and parameterised runs, scales workers, and provides a UI and logs. This makes multi-step pipelines reliable, observable and re-runnable, which cron scripts cannot provide.</p></div>
+<h4>Explained in depth</h4>
+<h4>Limits of cron</h4>
+<ul><li>Runs a command at a time; knows nothing about whether upstream jobs finished or succeeded.</li><li>No retries, dependency handling, alerts or central history; logs are scattered across machines.</li><li>Hard to re-run a past date, to see what is running, or to scale and share load.</li><li>A host failure silently stops jobs.</li></ul>
+<h4>What an orchestrator adds</h4>
+<ol start="1"><li><strong>Dependencies as a DAG</strong>: task B runs only after A succeeds; independent tasks run in parallel.</li><li><strong>Retries and timeouts</strong> with backoff, <strong>alerts</strong> on failure or SLA misses, and failure callbacks.</li><li><strong>State and history</strong>: every run, task and attempt is recorded with logs and duration, visible in a UI.</li><li><strong>Scheduling with data intervals</strong>: a run is tied to a <strong>logical date</strong>, so you can process &quot;the data for 2025-01-05&quot; and re-run or <strong>backfill</strong> a range deterministically.</li><li><strong>Parameters and templating</strong>, connections and secrets management, and sensors that wait for files or upstream data.</li><li><strong>Scalability</strong>: distribute tasks across workers (Celery, Kubernetes).</li></ol>
+<pre><code>with DAG(&quot;daily_sales&quot;, schedule=&quot;@daily&quot;, start_date=datetime(2025, 1, 1), catchup=False) as dag:
+    extract = PythonOperator(task_id=&quot;extract&quot;, python_callable=extract_orders)
+    transform = PythonOperator(task_id=&quot;transform&quot;, python_callable=build_sales)
+    quality = PythonOperator(task_id=&quot;quality_check&quot;, python_callable=run_checks)
+    extract &gt;&gt; transform &gt;&gt; quality</code></pre>
+<h4>Good practices</h4>
+<p>Make tasks <strong>idempotent</strong> (overwrite the partition for the run date), keep tasks small, avoid heavy work in the orchestrator itself (trigger Spark or SQL jobs), and keep business logic in versioned code. Alternatives: Dagster, Prefect, Argo Workflows, and cloud services (Step Functions, Cloud Composer, Data Factory).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is a DAG and why must it be acyclic?</li><li>What does it mean for an Airflow task to be idempotent?</li><li>How does an orchestrator differ from a data transformation tool like dbt?</li></ul>
+<p><a class="btn primary" href="../#/q/de-113">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-113%3A+Why+use+a+workflow+orchestrator+such+as+Airflow+instead+of+cron+jobs%E2%80%A6&amp;question-id=de-113&amp;context=Data+engineer%2C+Gear+1%2C+topic%3A+Orchestration%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-113.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

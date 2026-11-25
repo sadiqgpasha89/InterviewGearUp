@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is RAG, and how does it work? Where does it fail? | InterviewGearUp</title>
+<meta name="description" content="Retrieval-augmented generation fetches relevant passages from your own documents at query time and gives them to the LLM as context, so answers are…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-4.html">
+<meta property="og:title" content="What is RAG, and how does it work? Where does it fail? | InterviewGearUp">
+<meta property="og:description" content="Retrieval-augmented generation fetches relevant passages from your own documents at query time and gives them to the LLM as context, so answers are…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-4.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is RAG, and how does it work? Where does it fail?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 2 (Mid-level) · LLMs · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Retrieval-augmented generation fetches relevant passages from your own documents at query time and gives them to the LLM as context, so answers are grounded in current, private data without retraining.</p></div>
+<h4>Explained in depth</h4>
+<h4>Pipeline</h4>
+<p>Ingest and clean documents, <strong>chunk</strong> them (often a few hundred tokens, with some overlap, respecting document structure), embed the chunks, and store them in a vector index with metadata. At query time embed the question, retrieve the top-k chunks (best with hybrid search: keyword BM25 plus vectors), optionally rerank, build the prompt, and generate an answer with citations.</p>
+<h4>Failure modes</h4>
+<ul><li>Bad chunking splits an answer across chunks.</li><li>Retrieval misses the right passage (vocabulary mismatch, weak embeddings).</li><li>Irrelevant context distracts the model.</li><li>Outdated or conflicting documents.</li><li>Prompt injection hidden in retrieved text.</li><li>The model answers anyway when evidence is absent. Instruct it to say it does not know.</li></ul>
+<h4>Improving it</h4>
+<p>Hybrid search, a reranker, query rewriting, metadata filters, parent-document retrieval. Evaluate retrieval (recall@k) separately from generation (faithfulness to sources). Enforce document permissions at retrieval time.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you choose a chunk size?</li><li>Why use hybrid search?</li><li>How do you enforce document-level permissions?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-4">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-4%3A+What+is+RAG%2C+and+how+does+it+work%3F+Where+does+it+fail%3F&amp;question-id=ml-4&amp;context=ML+%2F+AI+engineer%2C+Gear+2%2C+topic%3A+LLMs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-4.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

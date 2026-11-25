@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare performance testing tools: k6 versus Apache JMeter versus Gatling versus Locust. | InterviewGearUp</title>
+<meta name="description" content="k6 uses JavaScript scripts, is lightweight and developer-friendly, and fits CI with thresholds. JMeter is the long-established GUI tool with a huge…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-34.html">
+<meta property="og:title" content="Compare performance testing tools: k6 versus Apache JMeter versus Gatling versus Locust. | InterviewGearUp">
+<meta property="og:description" content="k6 uses JavaScript scripts, is lightweight and developer-friendly, and fits CI with thresholds. JMeter is the long-established GUI tool with a huge…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-34.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare performance testing tools: k6 versus Apache JMeter versus Gatling versus Locust.</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 2 (Mid-level) · Performance · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>k6 uses JavaScript scripts, is lightweight and developer-friendly, and fits CI with thresholds. JMeter is the long-established GUI tool with a huge plugin ecosystem and protocol coverage but heavy per-thread resource use. Gatling uses a code DSL on an asynchronous engine with good reports. Locust uses Python and is easy to extend. Pick by team language, protocols and scale.</p></div>
+<h4>Explained in depth</h4>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th></th><th>k6</th><th>Apache JMeter</th><th>Gatling</th><th>Locust</th></tr></thead><tbody><tr><td>Scripting</td><td>JavaScript (Go engine)</td><td>GUI and XML, Groovy</td><td>Scala, Java, Kotlin or JS DSL</td><td>Python</td></tr><tr><td>Engine</td><td>Goroutines, efficient</td><td>One thread per virtual user</td><td>Asynchronous (Akka and Netty)</td><td>Gevent (greenlets)</td></tr><tr><td>Resource use</td><td>Low</td><td>High at scale</td><td>Low</td><td>Moderate</td></tr><tr><td>Protocols</td><td>HTTP, WebSocket, gRPC, browser (extensions)</td><td>Very broad (HTTP, JDBC, JMS, FTP, SOAP)</td><td>HTTP, WebSocket, JMS, MQTT</td><td>HTTP by default, anything with Python</td></tr><tr><td>CI fit</td><td>Excellent, built-in thresholds</td><td>Possible, XML tests are awkward in version control</td><td>Good, code in the repo</td><td>Good</td></tr><tr><td>Reporting</td><td>CLI summary, Grafana and cloud outputs</td><td>Listeners, HTML dashboard</td><td>Rich HTML reports</td><td>Web UI with live charts</td></tr><tr><td>Learning curve</td><td>Low for developers</td><td>Medium, GUI heavy</td><td>Medium</td><td>Low for Python teams</td></tr></tbody></table></div>
+<h4>Example (k6)</h4>
+<pre><code>import http from &#39;k6/http&#39;;
+import { check } from &#39;k6&#39;;
+
+export const options = {
+  vus: 50, duration: &#39;2m&#39;,
+  thresholds: { http_req_failed: [&#39;rate&lt;0.01&#39;], http_req_duration: [&#39;p(95)&lt;300&#39;] },
+};
+export default function () {
+  const res = http.get(&#39;https://test.example.com/api/items&#39;);
+  check(res, { &#39;status is 200&#39;: (r) =&gt; r.status === 200 });
+}</code></pre>
+<p>If a threshold fails, the process exits with an error code and the pipeline stops.</p>
+<h4>Choosing</h4>
+<ul><li><strong>k6</strong>: modern teams that want tests as code in CI, low overhead, and cloud or Grafana integration.</li><li><strong>JMeter</strong>: broad protocol needs, existing assets, or testers who prefer a GUI.</li><li><strong>Gatling</strong>: JVM teams who want high throughput from one machine and polished reports.</li><li><strong>Locust</strong>: Python teams needing custom user behaviour and simple scaling with workers.</li></ul>
+<p>Whatever the tool, a realistic workload model, test data and monitoring of the system under test matter more than the tool.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why do thread-per-user tools use more resources than event-based ones?</li><li>How do you run distributed load tests with each tool?</li><li>How do you integrate performance thresholds into CI?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-34">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-34%3A+Compare+performance+testing+tools%3A+k6+versus+Apache+JMeter+versus%E2%80%A6&amp;question-id=qa-34&amp;context=QA+%2F+SDET%2C+Gear+2%2C+topic%3A+Performance%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-34.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

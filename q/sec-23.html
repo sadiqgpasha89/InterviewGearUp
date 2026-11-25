@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Why is AES-GCM preferred over AES-CBC for symmetric encryption (Authenticated Encryption)? | InterviewGearUp</title>
+<meta name="description" content="AES-CBC only provides confidentiality; an attacker can modify ciphertext, and padding errors can leak plaintext (padding oracle attacks) unless you add a…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-23.html">
+<meta property="og:title" content="Why is AES-GCM preferred over AES-CBC for symmetric encryption (Authenticated Encryption)? | InterviewGearUp">
+<meta property="og:description" content="AES-CBC only provides confidentiality; an attacker can modify ciphertext, and padding errors can leak plaintext (padding oracle attacks) unless you add a…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-23.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Why is AES-GCM preferred over AES-CBC for symmetric encryption (Authenticated Encryption)?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 2 (Mid-level) · Cryptography · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>AES-CBC only provides confidentiality; an attacker can modify ciphertext, and padding errors can leak plaintext (padding oracle attacks) unless you add a separate MAC correctly. AES-GCM is an authenticated encryption mode that encrypts and produces an authentication tag in one operation, so tampering is detected, and it is fast and parallelisable. Never reuse a nonce with the same key in GCM.</p></div>
+<h4>Explained in depth</h4>
+<h4>The problem with CBC</h4>
+<p>CBC encrypts blocks chained with the previous ciphertext block. It provides <strong>confidentiality only</strong>:</p>
+<ul><li>Ciphertext is <strong>malleable</strong>: flipping bits in one block predictably changes the next plaintext block.</li><li>With padding checks that behave differently on errors, <strong>padding oracle attacks</strong> (Vaudenay, POODLE, Lucky 13) let an attacker decrypt data byte by byte.</li><li>To be safe you must add a MAC and verify it <strong>before</strong> decrypting (encrypt-then-MAC). Many implementations got this wrong.</li></ul>
+<h4>AES-GCM (AEAD)</h4>
+<p>Galois/Counter Mode combines counter-mode encryption with a GHASH authentication tag. It is an <strong>AEAD</strong> (Authenticated Encryption with Associated Data) cipher:</p>
+<pre><code>from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+key = AESGCM.generate_key(bit_length=256)
+aes = AESGCM(key)
+nonce = os.urandom(12)                      # 96-bit, unique per message
+ct = aes.encrypt(nonce, b&#39;secret&#39;, b&#39;header&#39;)   # ciphertext plus 16-byte tag
+pt = aes.decrypt(nonce, ct, b&#39;header&#39;)      # raises InvalidTag if anything changed</code></pre>
+<ul><li>Any change to the ciphertext, nonce or associated data (such as headers) makes decryption <strong>fail</strong>.</li><li>No padding, so no padding oracle; it can be parallelised and is accelerated in hardware.</li></ul>
+<h4>The key rule</h4>
+<p><strong>Never reuse a (key, nonce) pair.</strong> Reuse in GCM leaks the XOR of plaintexts and lets attackers forge tags. Use random 96-bit nonces with limits on messages per key, a counter, or a nonce-misuse-resistant mode (AES-GCM-SIV).</p>
+<h4>Guidance</h4>
+<p>Use an AEAD mode (AES-GCM or ChaCha20-Poly1305) by default; avoid hand-assembled CBC plus HMAC. TLS 1.3 removed CBC suites entirely.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What happens if a GCM nonce is reused with the same key?</li><li>What is encrypt-then-MAC and why is the order important?</li><li>What does AEAD mean and what is associated data?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-23">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-23%3A+Why+is+AES-GCM+preferred+over+AES-CBC+for+symmetric+encryption%E2%80%A6&amp;question-id=sec-23&amp;context=Security+engineer%2C+Gear+2%2C+topic%3A+Cryptography%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-23.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

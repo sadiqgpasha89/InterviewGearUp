@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do map, filter and reduce work, and why do they avoid mutating arrays? | InterviewGearUp</title>
+<meta name="description" content="map transforms every element into a new array of the same length, filter keeps elements that pass a test, and reduce folds the array into a single value…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-108.html">
+<meta property="og:title" content="How do map, filter and reduce work, and why do they avoid mutating arrays? | InterviewGearUp">
+<meta property="og:description" content="map transforms every element into a new array of the same length, filter keeps elements that pass a test, and reduce folds the array into a single value…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-108.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do map, filter and reduce work, and why do they avoid mutating arrays?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 1 (Junior) · JavaScript · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>map transforms every element into a new array of the same length, filter keeps elements that pass a test, and reduce folds the array into a single value using an accumulator. They return new values and leave the original array untouched, which makes code easier to reason about and fits state management in React and Redux, where immutability lets changes be detected cheaply.</p></div>
+<h4>Explained in depth</h4>
+<h4>The three methods</h4>
+<pre><code>const nums = [1, 2, 3, 4, 5];
+
+nums.map(n =&gt; n * 2);              // [2, 4, 6, 8, 10]
+nums.filter(n =&gt; n % 2 === 0);     // [2, 4]
+nums.reduce((sum, n) =&gt; sum + n, 0); // 15</code></pre>
+<ul><li><strong><code>map</code></strong>: returns a new array with each element transformed. Same length.</li><li><strong><code>filter</code></strong>: returns a new array containing only elements where the callback returns truthy.</li><li><strong><code>reduce</code></strong>: calls a function with an <strong>accumulator</strong> and the current element and returns one final value (a number, object, or even another array). Always provide an <strong>initial value</strong> (the <code>0</code> above), or an empty array throws.</li><li><code>forEach</code> returns nothing and is used for side effects; use <code>map</code> when you want a result.</li></ul>
+<h4>Chaining</h4>
+<pre><code>const total = orders
+  .filter(o =&gt; o.status === &#39;paid&#39;)
+  .map(o =&gt; o.amount)
+  .reduce((a, b) =&gt; a + b, 0);</code></pre>
+<h4>Why avoid mutation</h4>
+<ul><li>Mutating methods (<code>push</code>, <code>splice</code>, <code>sort</code>, <code>reverse</code>) change the original, which creates hidden coupling between parts of the code.</li><li>In React, state updates must produce <strong>new references</strong> so the framework can detect changes quickly (<code>===</code> comparison); mutated arrays may not re-render.</li><li>Immutable updates:</li></ul>
+<pre><code>const added = [...items, newItem];
+const removed = items.filter(i =&gt; i.id !== id);
+const updated = items.map(i =&gt; i.id === id ? { ...i, done: true } : i);</code></pre>
+<p>Note that <code>sort</code> and <code>reverse</code> mutate, so copy first (<code>[...items].sort()</code>, or <code>toSorted()</code> in newer runtimes).</p>
+<h4>Trade-offs</h4>
+<p>Chained methods create intermediate arrays; for very large data or hot paths, a single loop or <code>reduce</code> can be faster. Readability usually wins first.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>When is a for loop better than chained array methods?</li><li>How do you update one item in an array immutably?</li><li>What is the difference between forEach and map?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-108">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-108%3A+How+do+map%2C+filter+and+reduce+work%2C+and+why+do+they+avoid+mutating%E2%80%A6&amp;question-id=fe-108&amp;context=Frontend+engineer%2C+Gear+1%2C+topic%3A+JavaScript%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-108.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

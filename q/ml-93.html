@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Design an enterprise RAG system that searches internal enterprise documents while enforcing ACL permissions. | InterviewGearUp</title>
+<meta name="description" content="Index documents with their access control lists as metadata, authenticate the user, and filter retrieval by the user&#39;s identity and groups before any…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-93.html">
+<meta property="og:title" content="Design an enterprise RAG system that searches internal enterprise documents while enforcing ACL permissions. | InterviewGearUp">
+<meta property="og:description" content="Index documents with their access control lists as metadata, authenticate the user, and filter retrieval by the user&#39;s identity and groups before any…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-93.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Design an enterprise RAG system that searches internal enterprise documents while enforcing ACL permissions.</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 4 (Lead / Staff) · Architecture · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Index documents with their access control lists as metadata, authenticate the user, and filter retrieval by the user&#39;s identity and groups before any text reaches the model. Enforce permissions at the retrieval layer, keep ACLs synced with the source systems, and never rely on the prompt to hide content. Log every retrieval for audit.</p></div>
+<h4>Explained in depth</h4>
+<h4>Core principle</h4>
+<p>The language model must only ever see content the <strong>requesting user is already allowed to read</strong>. The prompt cannot enforce this; the filter must happen in the search layer, before generation.</p>
+<h4>Architecture</h4>
+<ol start="1"><li><strong>Connectors</strong> ingest from sources (SharePoint, Drive, Confluence, tickets) and capture each document&#39;s <strong>permissions</strong>: users, groups, and inheritance from folders.</li><li><strong>Chunking and embedding</strong> produce vectors; each chunk stores metadata: document ID, source, and the <strong>ACL</strong> (a list of allowed principals, or an ID that resolves to one).</li><li><strong>Identity</strong>: the user signs in through SSO. The service resolves their user ID and <strong>group memberships</strong> (including nested groups) at query time, from the identity provider or a cached directory.</li><li><strong>Retrieval with a pre-filter</strong>: the vector or hybrid search runs with a metadata filter such as <code>allowed_principals ∩ user_principals ≠ ∅</code>. Filtering inside the search matters; retrieving top-k first and filtering afterwards can return empty or too-few results and wastes the budget.</li><li><strong>Generation</strong> uses only the permitted chunks, with citations to the sources so the user can open the original.</li></ol>
+<h4>Keeping permissions correct</h4>
+<ul><li><strong>Sync changes quickly</strong>: use webhooks or change feeds for permission changes and deletions, plus periodic full reconciliations. A revoked permission should disappear within minutes.</li><li>For documents shared with huge groups, store a <strong>group ID</strong> and resolve it at query time rather than expanding to millions of users.</li><li>Where a source cannot report permissions reliably, check access <strong>live at query time</strong> against the source API for the top candidates (a post-check as a second layer).</li><li>Treat <strong>deny rules</strong> and inherited restrictions carefully; default to deny when the ACL is unknown.</li></ul>
+<h4>Additional protections</h4>
+<ul><li>Separate indexes or namespaces for highly sensitive collections (legal, HR) and per-tenant isolation.</li><li>Guard against <strong>prompt injection</strong> in documents, and never include another user&#39;s cached answers.</li><li><strong>Audit logs</strong>: who asked, which chunks were returned, which sources were cited. Support deletion requests and retention rules.</li><li>Test with red-team users: a user who should see nothing from a restricted folder must not be able to extract it through clever questions.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you keep ACLs in the index fresh when permissions change in the source system?</li><li>Why is filtering after retrieval risky compared with filtering inside the search?</li><li>How do you handle documents shared with very large groups?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-93">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-93%3A+Design+an+enterprise+RAG+system+that+searches+internal+enterprise%E2%80%A6&amp;question-id=ml-93&amp;context=ML+%2F+AI+engineer%2C+Gear+4%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-93.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

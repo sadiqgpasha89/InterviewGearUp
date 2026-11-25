@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Design a file storage and synchronization service like Dropbox. | InterviewGearUp</title>
+<meta name="description" content="Split files into content-addressed chunks, upload only chunks the server lacks (deduplication), store chunks in object storage and metadata in a…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-109.html">
+<meta property="og:title" content="Design a file storage and synchronization service like Dropbox. | InterviewGearUp">
+<meta property="og:description" content="Split files into content-addressed chunks, upload only chunks the server lacks (deduplication), store chunks in object storage and metadata in a…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-109.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Design a file storage and synchronization service like Dropbox.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 4 (Lead / Staff) · System design · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Split files into content-addressed chunks, upload only chunks the server lacks (deduplication), store chunks in object storage and metadata in a database, and notify other clients of changes through a long-lived connection. Sync clients use a local database and a journal of changes, with versioning and a conflict policy for concurrent edits.</p></div>
+<h4>Explained in depth</h4>
+<h4>Requirements</h4>
+<p>Upload, download and share files, <strong>sync across devices</strong>, handle large files and flaky networks, keep version history, and scale to hundreds of millions of users and exabytes of data. Optimise for reliability and bandwidth.</p>
+<h4>Core design</h4>
+<ul><li><strong>Chunking</strong>: the client splits each file into blocks (for example 4 MB), computing a <strong>hash (SHA-256)</strong> per block. Only changed blocks need to be uploaded, so a one-line change in a large file is cheap. <strong>Content-defined chunking</strong> (rolling hash) keeps boundaries stable when data is inserted.</li><li><strong>Deduplication</strong>: the server stores each block once by hash, so identical data across files or users is stored once. Cross-user dedup can leak whether someone else has a file, so many systems limit it or add protections.</li><li><strong>Block store</strong>: object storage with replication or erasure coding; data is encrypted at rest.</li><li><strong>Metadata service</strong>: a sharded relational database holding the namespace (folders, file versions as lists of block hashes, permissions, sharing). Needs strong consistency per user&#39;s tree.</li><li><strong>Upload flow</strong>: the client asks which blocks are missing, uploads them (resumable, parallel, with retries), then commits the new file version with the block list.</li></ul>
+<h4>Sync mechanism</h4>
+<ol start="1"><li>The client watches the file system and keeps a <strong>local database</strong> of file state.</li><li>Changes go to the server as a transaction on metadata.</li><li>A <strong>notification service</strong> (long polling, WebSocket or push) tells other devices that their cursor is out of date; they fetch the <strong>change log</strong> since their last cursor and download new blocks.</li><li>Bandwidth control, LAN sync between devices and selective sync are useful extras.</li></ol>
+<h4>Conflicts</h4>
+<p>If two devices edit the same file from the same base version, the second commit is rejected as based on a stale version. The client keeps both: the server version wins and the local one is saved as a <strong>conflicted copy</strong>. Versioning with retention allows restore, and soft deletes enable undo.</p>
+<h4>Other concerns</h4>
+<p>Sharing and permission checks, virus scanning, quotas, rate limits, audit logs, and a CDN or regional caches for downloads.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why chunk files rather than uploading them whole?</li><li>How do you handle two devices editing the same file offline?</li><li>How would you deduplicate data across users while preserving privacy?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-109">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-109%3A+Design+a+file+storage+and+synchronization+service+like+Dropbox.&amp;question-id=gen-109&amp;context=Software+engineer+%28core%29%2C+Gear+4%2C+topic%3A+System+design%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-109.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>
