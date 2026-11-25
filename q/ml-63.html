@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain the difference between Data Drift and Concept Drift, and what statistical tests (KS-test, PSI) detect them. | InterviewGearUp</title>
+<meta name="description" content="Data drift means the input distribution P(X) changes while the relationship between inputs and the target may stay the same. Concept drift means the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-63.html">
+<meta property="og:title" content="Explain the difference between Data Drift and Concept Drift, and what statistical tests (KS-test, PSI) detect them. | InterviewGearUp">
+<meta property="og:description" content="Data drift means the input distribution P(X) changes while the relationship between inputs and the target may stay the same. Concept drift means the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-63.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain the difference between Data Drift and Concept Drift, and what statistical tests (KS-test, PSI) detect them.</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · MLOps · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Data drift means the input distribution P(X) changes while the relationship between inputs and the target may stay the same. Concept drift means the relationship P(Y given X) changes, so the same inputs now lead to different outcomes. The Kolmogorov-Smirnov test and Population Stability Index detect input distribution shifts, while concept drift needs labels or performance monitoring.</p></div>
+<h4>Explained in depth</h4>
+<h4>Definitions</h4>
+<ul><li><strong>Data (covariate) drift</strong>: the distribution of input features <code>P(X)</code> in production differs from training. Example: a new marketing campaign brings younger customers, so the age distribution shifts. The model may still be correct inside the new region or may extrapolate badly.</li><li><strong>Label (prior) drift</strong>: <code>P(Y)</code> changes (fraud rate rises from 0.1 to 0.5 percent).</li><li><strong>Concept drift</strong>: <code>P(Y | X)</code> changes: the meaning of the inputs for the target changes. Example: after a regulation or competitor move, customers with the same features churn at a different rate; fraudsters adapt their behaviour so old patterns stop signalling fraud; a pandemic changes demand patterns. Concept drift <strong>always hurts model accuracy</strong> unless the model is updated; data drift only hurts if the model is poor in the new region.</li></ul>
+<p>Types by speed: sudden, gradual, incremental, recurring (seasonal).</p>
+<h4>Detecting data drift (needs no labels)</h4>
+<p>Compare a <strong>reference</strong> window (training or a stable baseline) with a <strong>current</strong> window (last day or week) feature by feature, and for the prediction distribution.</p>
+<ol start="1"><li><strong>Kolmogorov-Smirnov (KS) test</strong> (continuous features): measures the <strong>maximum distance between two empirical CDFs</strong>; the p-value tests the null hypothesis that samples come from the same distribution.</li></ol>
+<pre><code>from scipy.stats import ks_2samp
+stat, p = ks_2samp(reference[&quot;age&quot;], current[&quot;age&quot;])
+drift = p &lt; 0.01 and stat &gt; 0.1          # consider effect size too: with large n, tiny shifts give tiny p-values</code></pre>
+<p>For categorical features use <strong>chi-square</strong> or Jensen-Shannon / total variation distance.</p>
+<ol start="2"><li><strong>Population Stability Index (PSI)</strong>: bin the feature (deciles of the reference), then</li></ol>
+<p><code>PSI = Σ (cur_i − ref_i) · ln(cur_i / ref_i)</code> where <code>ref_i</code> and <code>cur_i</code> are the proportions in bin i.</p>
+<pre><code>import numpy as np
+def psi(ref, cur, bins=10):
+    edges = np.quantile(ref, np.linspace(0, 1, bins + 1)); edges[0], edges[-1] = -np.inf, np.inf
+    r = np.histogram(ref, edges)[0] / len(ref); c = np.histogram(cur, edges)[0] / len(cur)
+    r, c = np.clip(r, 1e-6, None), np.clip(c, 1e-6, None)
+    return np.sum((c - r) * np.log(c / r))</code></pre>
+<p>Rule of thumb: <strong>&lt; 0.1</strong> stable, <strong>0.1 to 0.25</strong> moderate shift (investigate), <strong>&gt; 0.25</strong> significant drift. PSI is symmetric-ish, works for scores and categories, and is popular in credit risk.</p>
+<ol start="3"><li>Other: Wasserstein distance, KL and Jensen-Shannon divergence, Hellinger distance, classifier-based drift detection (train a model to distinguish reference from current; AUC near 0.5 means no drift), multivariate methods (MMD, PCA reconstruction error), embedding drift for text and images.</li></ol>
+<h4>Statistical caveats</h4>
+<p>With huge samples, tests flag trivial differences, so combine <strong>p-values with effect-size thresholds</strong>; apply multiple-testing correction across hundreds of features; prioritise <strong>important features</strong> (by SHAP or importance); watch seasonality (compare to the same weekday), and monitor missing-value rates and data quality separately.</p>
+<h4>Detecting concept drift</h4>
+<p>Requires <strong>ground truth</strong> or proxies:</p>
+<ul><li>Track <strong>performance metrics</strong> (AUC, precision, recall, error) over time on labelled data, accounting for <strong>label delay</strong> (fraud chargebacks arrive weeks later, loans months): use cohort-based evaluation and proxy metrics (approval rate, score distribution, business KPIs) in the meantime.</li><li><strong>Error-based detectors</strong> on streams: DDM, EDDM, ADWIN, Page-Hinkley monitor the error rate for significant change.</li><li>Compare model predictions with a <strong>challenger</strong> or shadow model trained on recent data.</li><li>Monitor <strong>calibration</strong> (predicted probabilities versus observed frequencies).</li></ul>
+<h4>Responses</h4>
+<p>Alert and investigate, check upstream pipeline bugs first (many &quot;drifts&quot; are broken data), retrain on recent data or with sample weighting, adaptive or online learning, use rolling training windows, fall back to rules, add features that capture the change, and automate retraining triggers with validation gates.</p>
+<h4>Tools</h4>
+<p>Evidently, WhyLabs, Arize, Fiddler, NannyML (performance estimation without labels), Alibi Detect, Great Expectations for data checks.</p>
+<h4>Pitfalls</h4>
+<p>Equating data drift with model failure, ignoring label delay, using only p-values, drift checks on raw ids or timestamps, and thresholds that cause alert fatigue.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why can you see data drift without any drop in accuracy?</li><li>How do you detect concept drift when labels arrive late?</li><li>How do you choose PSI thresholds and bin counts?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-63">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-63%3A+Explain+the+difference+between+Data+Drift+and+Concept+Drift%2C+and%E2%80%A6&amp;question-id=ml-63&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+MLOps%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-63.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

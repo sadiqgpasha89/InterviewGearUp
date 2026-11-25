@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare Hyperparameter Optimization algorithms: Grid Search, Random Search, and Bayesian Optimization (Optuna). | InterviewGearUp</title>
+<meta name="description" content="Grid search tries every combination on a predefined grid, which is exhaustive but explodes with dimensions. Random search samples configurations from…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-84.html">
+<meta property="og:title" content="Compare Hyperparameter Optimization algorithms: Grid Search, Random Search, and Bayesian Optimization (Optuna). | InterviewGearUp">
+<meta property="og:description" content="Grid search tries every combination on a predefined grid, which is exhaustive but explodes with dimensions. Random search samples configurations from…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-84.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare Hyperparameter Optimization algorithms: Grid Search, Random Search, and Bayesian Optimization (Optuna).</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 2 (Mid-level) · Tuning · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Grid search tries every combination on a predefined grid, which is exhaustive but explodes with dimensions. Random search samples configurations from distributions and covers important parameters better for the same budget. Bayesian optimisation such as Optuna&#39;s TPE builds a model of past trials to choose promising settings next and prunes bad trials early, usually finding good values in far fewer evaluations.</p></div>
+<h4>Explained in depth</h4>
+<h4>The problem</h4>
+<p>Hyperparameters (learning rate, depth, regularisation, number of layers) are not learned by gradient descent. Each evaluation means training a model, so search efficiency matters.</p>
+<h4>Grid search</h4>
+<p>Define a discrete list per hyperparameter and evaluate <strong>every combination</strong> (<code>3 learning rates × 4 depths × 5 regularisation values = 60 trainings</code>).</p>
+<ul><li>Pros: simple, reproducible, parallel, fine for 1 or 2 hyperparameters.</li><li>Cons: cost grows <strong>exponentially</strong> with dimensions; wastes trials on unimportant parameters (testing 5 values of an irrelevant parameter repeats the same effective values of the important one); limited to the points you chose, with a coarse resolution for continuous values.</li></ul>
+<pre><code>from sklearn.model_selection import GridSearchCV
+GridSearchCV(model, {&quot;max_depth&quot;: [3, 5, 7], &quot;learning_rate&quot;: [0.01, 0.1]}, cv=5, scoring=&quot;roc_auc&quot;).fit(X, y)</code></pre>
+<h4>Random search</h4>
+<p>Sample each hyperparameter independently from a distribution (log-uniform for learning rates, uniform for dropout, integers for depth) for a fixed number of trials.</p>
+<ul><li>Bergstra and Bengio (2012) showed it is <strong>more efficient than grid</strong> when only a few hyperparameters strongly affect the result (low effective dimensionality): each trial explores a distinct value of every parameter, so the important ones are covered more densely.</li><li>Easy to parallelise, budget is explicit (n_iter), supports mixed and conditional spaces, and anytime stopping.</li></ul>
+<pre><code>from sklearn.model_selection import RandomizedSearchCV
+from scipy.stats import loguniform, randint
+RandomizedSearchCV(model, {&quot;learning_rate&quot;: loguniform(1e-3, 3e-1), &quot;max_depth&quot;: randint(3, 12)}, n_iter=50, cv=5).fit(X, y)</code></pre>
+<p>Weakness: ignores what previous trials learned.</p>
+<h4>Bayesian optimisation</h4>
+<p>Treats the validation metric as an expensive black-box function. It fits a <strong>surrogate model</strong> to observed (hyperparameters, score) pairs and uses an <strong>acquisition function</strong> (expected improvement, UCB) to balance <strong>exploration</strong> (uncertain regions) and <strong>exploitation</strong> (regions likely good) when choosing the next trial.</p>
+<ul><li><strong>Gaussian-process BO</strong> (Spearmint, BoTorch): good for few continuous dimensions, scales poorly beyond a few hundred trials.</li><li><strong>TPE (Tree-structured Parzen Estimator)</strong>, the default in <strong>Optuna</strong> and Hyperopt: models <code>p(x | good)</code> and <code>p(x | bad)</code> with kernel density estimators (splitting trials at a quantile, for example the best 25 percent) and picks the x maximising <code>p(x|good)/p(x|bad)</code>. Handles categorical, conditional and large spaces well.</li><li><strong>SMAC</strong> uses random forests.</li></ul>
+<pre><code>import optuna
+def objective(trial):
+    params = {&quot;learning_rate&quot;: trial.suggest_float(&quot;lr&quot;, 1e-4, 1e-1, log=True),
+              &quot;max_depth&quot;: trial.suggest_int(&quot;max_depth&quot;, 3, 12),
+              &quot;subsample&quot;: trial.suggest_float(&quot;subsample&quot;, 0.5, 1.0)}
+    model = lgb.LGBMClassifier(**params)
+    for step in range(100):                     # pruning with intermediate values
+        model.fit(...); score = evaluate(model)
+        trial.report(score, step)
+        if trial.should_prune(): raise optuna.TrialPruned()
+    return score
+study = optuna.create_study(direction=&quot;maximize&quot;, sampler=optuna.samplers.TPESampler(seed=0), pruner=optuna.pruners.MedianPruner())
+study.optimize(objective, n_trials=100, n_jobs=4)</code></pre>
+<p><strong>Pruning</strong> (median pruner, Successive Halving, <strong>Hyperband</strong>) stops unpromising trials early based on intermediate results, saving much compute. Optuna also offers CMA-ES, NSGA-II multi-objective search, distributed studies backed by a database, dashboards and importance analysis.</p>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th></th><th>Grid</th><th>Random</th><th>Bayesian (TPE/GP)</th></tr></thead><tbody><tr><td>Uses past results</td><td>no</td><td>no</td><td>yes</td></tr><tr><td>Efficiency in high dimensions</td><td>poor</td><td>good</td><td>best</td></tr><tr><td>Parallelism</td><td>trivial</td><td>trivial</td><td>good (async)</td></tr><tr><td>Early stopping of trials</td><td>no</td><td>optional</td><td>built-in pruners</td></tr><tr><td>Complexity</td><td>low</td><td>low</td><td>moderate</td></tr></tbody></table></div>
+<h4>Practical advice</h4>
+<ul><li>Use <strong>log scales</strong> for learning rates and regularisation; keep ranges sensible; make conditional parameters conditional.</li><li>Evaluate with <strong>cross-validation</strong> or a fixed validation split, with the same pipeline (no leakage); keep a <strong>final test set</strong> untouched to avoid overfitting to validation noise; use nested CV when estimating generalisation of the tuning procedure.</li><li>Start with a coarse random or TPE search, then refine around good regions; budget by trials or wall time; seed for reproducibility; log everything (MLflow, W&amp;B).</li><li>Consider <strong>multi-fidelity</strong> methods (train on subsets or fewer epochs), <strong>population-based training</strong> for deep learning, and AutoML.</li></ul>
+<h4>Pitfalls</h4>
+<p>Searching over too many parameters at once, tuning on the test set, ignoring noise (same params yield different scores), too narrow ranges, and not repeating the best configuration with different seeds.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does random search beat grid search when only a few hyperparameters matter?</li><li>How does TPE choose the next trial and how does pruning work?</li><li>How do you set search spaces, budgets and cross-validation to avoid overfitting the validation set?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-84">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-84%3A+Compare+Hyperparameter+Optimization+algorithms%3A+Grid+Search%2C+Random%E2%80%A6&amp;question-id=ml-84&amp;context=ML+%2F+AI+engineer%2C+Gear+2%2C+topic%3A+Tuning%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-84.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

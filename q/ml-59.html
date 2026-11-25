@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is a Feature Store (e.g., Feast) and how does it prevent train-serve feature skew? | InterviewGearUp</title>
+<meta name="description" content="A feature store manages feature definitions, computation and serving so training and inference use the same logic. Feast offers an offline store for…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-59.html">
+<meta property="og:title" content="What is a Feature Store (e.g., Feast) and how does it prevent train-serve feature skew? | InterviewGearUp">
+<meta property="og:description" content="A feature store manages feature definitions, computation and serving so training and inference use the same logic. Feast offers an offline store for…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-59.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is a Feature Store (e.g., Feast) and how does it prevent train-serve feature skew?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · MLOps · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A feature store manages feature definitions, computation and serving so training and inference use the same logic. Feast offers an offline store for point-in-time-correct training datasets and an online store for low-latency lookups, populated by materialisation from one declared source of truth. This removes duplicated feature code, the main cause of train-serve skew, and leakage from future data.</p></div>
+<h4>Explained in depth</h4>
+<h4>Train-serve skew</h4>
+<p><strong>Train-serve skew</strong> is a difference between the features a model saw in training and the ones it receives in production, so accuracy silently drops. Common causes:</p>
+<ul><li><strong>Duplicated logic</strong>: data scientists compute features in pandas or SQL for training, and engineers reimplement them in Java or an API for serving (different null handling, rounding, time windows).</li><li><strong>Different data sources or freshness</strong> (batch warehouse vs live database).</li><li><strong>Time leakage</strong>: training rows use data that would not have been available at prediction time.</li><li><strong>Schema or encoding drift</strong> (category mappings, scalers computed on different data).</li></ul>
+<h4>What a feature store provides</h4>
+<ol start="1"><li><strong>Feature registry</strong>: single definition of each feature (entity, data source, transformation, owner, description, version), discoverable and reusable across teams and models.</li><li><strong>Offline store</strong> (warehouse, lake: BigQuery, Snowflake, Redshift, Parquet) with full history for training and batch scoring.</li><li><strong>Online store</strong> (Redis, DynamoDB, Bigtable, Cassandra) with the <strong>latest</strong> value per entity for millisecond lookups at inference.</li><li><strong>Materialisation pipelines</strong> that compute features once and write to both stores, keeping them consistent.</li><li><strong>Point-in-time correct joins</strong> for training data.</li><li><strong>Serving API</strong> and SDK so training and serving call the same <code>get_historical_features</code> / <code>get_online_features</code>.</li><li>Monitoring, lineage, access control and (in some products) streaming transformations.</li></ol>
+<h4>Feast example</h4>
+<pre><code>from feast import Entity, FeatureView, Field, FileSource
+from feast.types import Float32, Int64
+from datetime import timedelta
+
+driver = Entity(name=&quot;driver&quot;, join_keys=[&quot;driver_id&quot;])
+stats_source = FileSource(path=&quot;data/driver_stats.parquet&quot;, timestamp_field=&quot;event_timestamp&quot;)
+driver_stats = FeatureView(
+    name=&quot;driver_stats&quot;, entities=[driver], ttl=timedelta(days=2),
+    schema=[Field(name=&quot;conv_rate&quot;, dtype=Float32), Field(name=&quot;trips_today&quot;, dtype=Int64)],
+    source=stats_source)
+
+# Training: point-in-time correct join against entity dataframe with event timestamps and labels
+training_df = store.get_historical_features(entity_df=orders_df, features=[&quot;driver_stats:conv_rate&quot;, &quot;driver_stats:trips_today&quot;]).to_df()
+# Materialise latest values to the online store
+store.materialize_incremental(end_date=datetime.utcnow())
+# Serving
+features = store.get_online_features(features=[&quot;driver_stats:conv_rate&quot;], entity_rows=[{&quot;driver_id&quot;: 1001}]).to_dict()</code></pre>
+<h4>Point-in-time correctness</h4>
+<p>For each training example (entity, timestamp, label) the store joins the <strong>latest feature value with timestamp ≤ the event timestamp</strong> (within TTL). A naive join on entity would attach today&#39;s value to last month&#39;s label, leaking the future and inflating offline metrics. As-of joins fix this.</p>
+<h4>How it prevents skew</h4>
+<p>One definition and computation path feeds both training and serving; the online store is populated from the same transformed data; the registry fixes the feature names, types and versions; monitoring compares <strong>offline versus online distributions</strong> (skew detection) and logs served features for later training (<strong>feature logging</strong> to guarantee that training data equals what the model really saw).</p>
+<h4>Streaming and on-demand features</h4>
+<p>Streaming features (Flink, Spark Streaming) write to the online store with low latency; <strong>on-demand transformations</strong> compute at request time from request data and stored features using the same code in training and serving.</p>
+<h4>Trade-offs</h4>
+<p>Extra infrastructure and operations, governance overhead, latency of materialisation, cost of online store; benefits grow with number of models, teams, and real-time needs. For a single batch model, a well-tested shared feature library and warehouse tables may suffice. Alternatives: Tecton, Databricks Feature Store, SageMaker Feature Store, Vertex AI Feature Store, Hopsworks.</p>
+<h4>Pitfalls</h4>
+<p>Using latest values for historical training, TTL misconfiguration returning stale features, not backfilling new features, treating the feature store as a data lake, and no monitoring of null rates and freshness.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does a point-in-time join prevent label leakage?</li><li>How are streaming features and on-demand features handled?</li><li>When is a feature store overkill?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-59">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-59%3A+What+is+a+Feature+Store+%28e.g.%2C+Feast%29+and+how+does+it+prevent%E2%80%A6&amp;question-id=ml-59&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+MLOps%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-59.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

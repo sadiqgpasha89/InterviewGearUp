@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Design an end-to-end real-time credit card fraud detection ML pipeline with sub-100ms P99 latency. | InterviewGearUp</title>
+<meta name="description" content="Design the fraud pipeline as a streaming system: ingest the transaction event, enrich with precomputed features from a low-latency online store, score…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-92.html">
+<meta property="og:title" content="Design an end-to-end real-time credit card fraud detection ML pipeline with sub-100ms P99 latency. | InterviewGearUp">
+<meta property="og:description" content="Design the fraud pipeline as a streaming system: ingest the transaction event, enrich with precomputed features from a low-latency online store, score…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-92.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Design an end-to-end real-time credit card fraud detection ML pipeline with sub-100ms P99 latency.</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · Architecture · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Design the fraud pipeline as a streaming system: ingest the transaction event, enrich with precomputed features from a low-latency online store, score with a compact gradient-boosted or neural model in a tuned inference service, combine with rules and thresholds, return approve, review or decline in under 100 ms at P99, and log everything for delayed labels, monitoring and retraining.</p></div>
+<h4>Explained in depth</h4>
+<h4>Requirements</h4>
+<ul><li><strong>Latency</strong>: P99 below 100 ms end to end (authorisation path), so budget about 10 ms network, 20 ms features, 20 ms model, 10 ms rules and logging, leaving headroom.</li><li><strong>Throughput</strong>: thousands to tens of thousands of TPS with peaks (holiday), high availability (99.99 percent), graceful degradation (never block payments because the ML service is down).</li><li><strong>Accuracy goals</strong>: maximise fraud caught at an acceptable false positive rate (cost-weighted, not accuracy), with severe class imbalance (0.1 percent fraud).</li><li><strong>Adaptability</strong>: adversaries change behaviour, so fast feedback and retraining. Explainability and compliance for declines.</li></ul>
+<h4>Architecture</h4>
+<pre><code>Payment gateway → Fraud API (gRPC, stateless)
+    ├─ 1. Request validation + idempotency key
+    ├─ 2. Feature assembly:
+    │      a) request features (amount, merchant, MCC, device, IP, country)
+    │      b) online feature store lookups (Redis / DynamoDB / Aerospike): card, device, user, merchant aggregates
+    │      c) real-time aggregates (velocity: txn count last 1 min/1 h/24 h) from stream processor
+    ├─ 3. Model scoring (LightGBM/XGBoost ONNX or Treelite; optional small NN) on CPU or GPU
+    ├─ 4. Rules and policy engine (blocklists, limits, regulatory), threshold per segment
+    ├─ 5. Decision: approve / step-up (3DS, OTP) / manual review / decline + reason codes
+    └─ 6. Async logging: decision, features, score → Kafka
+Kafka → Flink/Spark streaming → update velocity features (online store) + data lake (offline store)
+Labels (chargebacks, disputes, analyst decisions, customer confirmations) → join → training data → retrain → registry → canary</code></pre>
+<h4>Features</h4>
+<ul><li><strong>Velocity and behavioural aggregates</strong> (counts, sums, distinct merchants per card in sliding windows), time since last transaction, deviation from the customer&#39;s typical amount and location, merchant risk, device fingerprint, IP reputation, geo-distance and impossible travel, graph features (shared devices or cards across accounts, link analysis computed in near real time or batch).</li><li>Computed <strong>once</strong> in the streaming pipeline and written to the <strong>online store</strong> with TTLs; the same definitions produce the offline training set (feature store with point-in-time correctness) to avoid train-serve skew.</li><li>Precompute heavy features (embeddings, graph scores) offline and look them up.</li></ul>
+<h4>Model</h4>
+<ul><li><strong>Gradient boosted trees</strong> (XGBoost, LightGBM) are the workhorse: strong on tabular data, fast CPU inference (sub-millisecond to few ms), compile with <strong>Treelite</strong> or ONNX for speed; small NNs or sequence models for card behaviour can complement; ensembles and a <strong>two-stage</strong> design (fast cheap model for everything, heavier model for ambiguous cases).</li><li>Handle <strong>imbalance</strong>: class weights, downsampling negatives with calibration correction, focal loss, optimise <strong>precision-recall AUC</strong> and cost-based metrics (expected loss = fraud loss + friction cost), <strong>calibrate</strong> probabilities (isotonic, Platt) so thresholds are meaningful.</li><li><strong>Delayed labels</strong> (chargebacks arrive 30 to 90 days later): use label maturity windows, train on matured data, use proxy labels and analyst feedback for faster signals, importance weighting; evaluate with time-based splits (train earlier, test later), never random.</li><li><strong>Explainability</strong>: SHAP reason codes precomputed or approximated, stored for analysts and disputes.</li></ul>
+<h4>Serving and latency engineering</h4>
+<ul><li>Co-locate services in the same region and AZ; keep persistent gRPC connections; connection pooling; <strong>in-memory caches</strong> for hot entities.</li><li>Online store with single-digit ms reads (Redis cluster, Aerospike, DynamoDB DAX); batch feature fetches in one round trip (pipelining); avoid joins and network calls at request time.</li><li>Model server: in-process or sidecar (ONNX Runtime, Triton, custom C++), warm models, pre-allocated memory, avoid GC pauses (JVM tuning, Go or Rust), <strong>dynamic batching</strong> only if latency allows.</li><li><strong>Timeouts and fallbacks</strong>: strict per-stage deadlines (for example 30 ms for features); on timeout use default features or a lightweight fallback model or rules-only decision; circuit breakers; autoscaling on CPU and queue depth; bulkheads and load shedding.</li><li><strong>Redundancy</strong>: multi-AZ, active-active, rolling deploys, canary and shadow for new models.</li><li>Measure P50, P95, P99, error rate and tail latency per stage with tracing (OpenTelemetry).</li></ul>
+<h4>Monitoring and feedback</h4>
+<p>Track feature distributions, score drift, approval and decline rates, fraud rates and losses by segment, latency, feature freshness, null rates, rule hit rates; alerts on spikes (attack detection); analyst queue metrics. A <strong>champion-challenger</strong> framework with shadow scoring, then A/B or staged rollout; automatic retraining pipelines (daily or weekly) with validation gates; human review loop feeding labels.</p>
+<h4>Security and governance</h4>
+<p>PCI scope minimisation (tokenise PANs), encryption, access control, audit trails of every decision, fairness checks, model risk management documentation, regulatory explanation.</p>
+<h4>Pitfalls</h4>
+<p>Computing aggregates in request path (latency), inconsistent online and offline features, random train-test splits with delayed labels, optimising AUC instead of cost, no fallback when dependencies fail, and ignoring adversarial adaptation.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you handle class imbalance and delayed chargeback labels?</li><li>How do you keep online and offline features consistent?</li><li>How do you maintain P99 latency during failures and traffic spikes?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-92">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-92%3A+Design+an+end-to-end+real-time+credit+card+fraud+detection+ML%E2%80%A6&amp;question-id=ml-92&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-92.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

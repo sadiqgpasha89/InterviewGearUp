@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain Principal Component Analysis (PCA) dimensionality reduction using covariance matrix eigenvectors. | InterviewGearUp</title>
+<meta name="description" content="PCA finds orthogonal directions of maximum variance. Centre the data, compute the covariance matrix, take its eigenvectors as principal components and…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-66.html">
+<meta property="og:title" content="Explain Principal Component Analysis (PCA) dimensionality reduction using covariance matrix eigenvectors. | InterviewGearUp">
+<meta property="og:description" content="PCA finds orthogonal directions of maximum variance. Centre the data, compute the covariance matrix, take its eigenvectors as principal components and…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-66.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain Principal Component Analysis (PCA) dimensionality reduction using covariance matrix eigenvectors.</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 2 (Mid-level) · Unsupervised · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>PCA finds orthogonal directions of maximum variance. Centre the data, compute the covariance matrix, take its eigenvectors as principal components and eigenvalues as the variance each explains, then project onto the top k components. In practice it is computed through the singular value decomposition of the centred data, which is more numerically stable.</p></div>
+<h4>Explained in depth</h4>
+<h4>Goal</h4>
+<p>Reduce dimensionality while keeping as much <strong>variance</strong> (information) as possible, for visualisation, noise reduction, decorrelation, compression and speeding up models. PCA is a <strong>linear</strong> transformation.</p>
+<h4>Derivation sketch</h4>
+<p>Given data matrix X (n samples × d features):</p>
+<ol start="1"><li><strong>Centre</strong> each feature: <code>X_c = X − mean</code>. (Also <strong>scale</strong> to unit variance when features have different units.)</li><li><strong>Covariance matrix</strong>: <code>C = X_cᵀ X_c / (n − 1)</code> (d × d, symmetric positive semi-definite).</li><li><strong>Eigen-decomposition</strong>: <code>C v = λ v</code>. Eigenvectors <code>v₁, ..., v_d</code> are orthonormal <strong>principal directions</strong>; eigenvalues <code>λ₁ ≥ λ₂ ≥ ... ≥ λ_d ≥ 0</code> equal the <strong>variance of the data along each direction</strong>.</li><li><strong>Why eigenvectors maximise variance</strong>: projecting onto a unit vector w gives variance <code>wᵀ C w</code>. Maximising it subject to <code>‖w‖ = 1</code> (Lagrange multiplier) gives <code>C w = λ w</code>, so the maximiser is the eigenvector of the largest eigenvalue, and the variance equals λ. The next component maximises variance among directions orthogonal to the first, and so on.</li><li><strong>Project</strong>: choose top k eigenvectors <code>W_k</code> (d × k) and compute <code>Z = X_c W_k</code> (n × k). Reconstruct approximately with <code>X̂ = Z W_kᵀ + mean</code>.</li><li><strong>Explained variance ratio</strong> of component j: <code>λ_j / Σ λ</code>. Keep k so that the cumulative ratio reaches, for example, 90 to 95 percent, or use a scree plot (elbow), or cross-validated reconstruction or downstream performance.</li></ol>
+<h4>SVD route</h4>
+<p><code>X_c = U Σ Vᵀ</code>. Columns of V are principal directions; <code>λ_j = σ_j² / (n − 1)</code>; scores <code>Z = U Σ</code>. SVD avoids forming the covariance matrix explicitly (better numerically, and truncated or randomised SVD handles large matrices).</p>
+<pre><code>from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import make_pipeline
+pipe = make_pipeline(StandardScaler(), PCA(n_components=0.95, svd_solver=&quot;full&quot;))   # keep 95% variance
+Z = pipe.fit_transform(X)
+pca = pipe.named_steps[&quot;pca&quot;]
+print(pca.n_components_, pca.explained_variance_ratio_.cumsum())
+# manual
+Xc = (X - X.mean(0)) / X.std(0)
+vals, vecs = np.linalg.eigh(np.cov(Xc, rowvar=False))
+order = np.argsort(vals)[::-1]; W = vecs[:, order[:2]]; Z2 = Xc @ W</code></pre>
+<h4>Practical notes</h4>
+<ul><li><strong>Standardise</strong> when features have different scales; otherwise large-scale features dominate the components. (Use covariance PCA only if units are comparable; otherwise correlation PCA.)</li><li>Fit PCA on <strong>training data only</strong> and reuse the fitted transform on validation and test data (avoid leakage).</li><li>Components are <strong>linear combinations</strong> and are less interpretable; <strong>loadings</strong> show feature contributions. Signs are arbitrary.</li><li>Useful for <strong>multicollinearity</strong>, denoising (drop low-variance components), visualisation (2D or 3D), eigenfaces, preprocessing for clustering and regression (PCR).</li><li>Variants: <strong>Incremental PCA</strong> for streaming or large data, <strong>Randomized PCA</strong>, <strong>Sparse PCA</strong> for interpretability, <strong>Kernel PCA</strong> for nonlinear structure, probabilistic PCA.</li></ul>
+<h4>Limitations</h4>
+<p>Only captures <strong>linear</strong> structure and variance (high variance is not always high signal for a target); sensitive to outliers and scaling; assumes meaningful directions are orthogonal; for visualising nonlinear manifolds use t-SNE or UMAP (which do not preserve global distances) or autoencoders. Supervised alternatives: LDA, PLS.</p>
+<h4>Pitfalls</h4>
+<p>Forgetting to scale, fitting on the whole dataset before splitting, interpreting components as original features, choosing k by variance alone when the task needs low-variance directions, and applying PCA to categorical one-hot data without thought.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you choose the number of components using explained variance?</li><li>Why must features be standardised before PCA?</li><li>What are PCA&#39;s limits compared with t-SNE, UMAP and autoencoders?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-66">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-66%3A+Explain+Principal+Component+Analysis+%28PCA%29+dimensionality+reduction%E2%80%A6&amp;question-id=ml-66&amp;context=ML+%2F+AI+engineer%2C+Gear+2%2C+topic%3A+Unsupervised%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-66.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

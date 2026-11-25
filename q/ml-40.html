@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain subword tokenization algorithms: Byte-Pair Encoding (BPE), WordPiece, and SentencePiece. | InterviewGearUp</title>
+<meta name="description" content="Subword tokenizers split text into frequent pieces so the vocabulary stays fixed while rare words are still representable. BPE repeatedly merges the most…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-40.html">
+<meta property="og:title" content="Explain subword tokenization algorithms: Byte-Pair Encoding (BPE), WordPiece, and SentencePiece. | InterviewGearUp">
+<meta property="og:description" content="Subword tokenizers split text into frequent pieces so the vocabulary stays fixed while rare words are still representable. BPE repeatedly merges the most…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-40.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain subword tokenization algorithms: Byte-Pair Encoding (BPE), WordPiece, and SentencePiece.</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 2 (Mid-level) · NLP · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Subword tokenizers split text into frequent pieces so the vocabulary stays fixed while rare words are still representable. BPE repeatedly merges the most frequent adjacent symbol pair, WordPiece picks merges that maximise training-data likelihood, and SentencePiece is a language-independent toolkit that works on raw text, treating spaces as symbols, and implements BPE or Unigram.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why subwords</h4>
+<p>Word-level vocabularies explode in size and cannot handle unseen words (out-of-vocabulary), while character-level sequences are very long and lose word-level structure. Subword units balance both: common words are single tokens (<code>the</code>), rare words split into pieces (<code>token</code> + <code>ization</code>), and any string is representable.</p>
+<h4>Byte-Pair Encoding (BPE)</h4>
+<p>Training:</p>
+<ol start="1"><li>Start with a vocabulary of single characters (or bytes) and a corpus split into words with counts.</li><li>Count all adjacent symbol pairs, <strong>merge the most frequent pair</strong> into a new symbol, and add it to the vocabulary.</li><li>Repeat until the target vocabulary size is reached (for example 32k to 100k merges).</li></ol>
+<p>Encoding applies the learned merges in order to new text. GPT-2 and later use <strong>byte-level BPE</strong>: the base alphabet is the 256 bytes, so any Unicode text can be encoded with <strong>no unknown token</strong>.</p>
+<pre><code>&quot;low lower lowest&quot;: start l o w | l o w e r | l o w e s t
+merge (l,o)→lo, (lo,w)→low, (low,e)→lowe, ... </code></pre>
+<h4>WordPiece (BERT)</h4>
+<p>Similar to BPE but chooses merges by <strong>likelihood gain</strong> rather than raw frequency: pick the pair maximising <code>count(ab) / (count(a) × count(b))</code>, which favours pairs that co-occur more than chance. Inference uses <strong>greedy longest-match-first</strong>; continuation pieces carry a <code>##</code> prefix (<code>play</code>, <code>##ing</code>). Unmatched words become <code>[UNK]</code>.</p>
+<h4>Unigram language model (SentencePiece option)</h4>
+<p>Start with a large candidate vocabulary and a probabilistic model where each piece has a probability. Iteratively remove pieces that least reduce the corpus likelihood (EM to estimate probabilities, prune the lowest-loss pieces) until the target size. Encoding finds the <strong>most probable segmentation</strong> (Viterbi), and it can <strong>sample</strong> alternative segmentations (subword regularisation) for robustness.</p>
+<h4>SentencePiece</h4>
+<p>A library (not a single algorithm) that trains BPE or Unigram directly on <strong>raw text without pre-tokenisation</strong>, treating whitespace as a normal symbol (<code>▁</code>). Benefits: language-independent (works for Chinese, Japanese, Thai without spaces), reversible and lossless detokenisation, built-in normalisation, reproducible. Used by T5, LLaMA, ALBERT, and many multilingual models.</p>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th></th><th>BPE</th><th>WordPiece</th><th>Unigram/SentencePiece</th></tr></thead><tbody><tr><td>Criterion</td><td>most frequent pair</td><td>likelihood score</td><td>likelihood with pruning</td></tr><tr><td>Direction</td><td>bottom-up merges</td><td>bottom-up merges</td><td>top-down pruning</td></tr><tr><td>Segmentation</td><td>deterministic merges</td><td>greedy longest match</td><td>probabilistic, samplable</td></tr><tr><td>Used by</td><td>GPT, RoBERTa, LLaMA 3</td><td>BERT, DistilBERT</td><td>T5, XLNet, ALBERT</td></tr></tbody></table></div>
+<h4>Practical implications</h4>
+<ul><li><strong>Vocabulary size trade-off</strong>: larger vocabularies shorten sequences (cheaper attention) but enlarge embedding matrices and make rare tokens poorly trained.</li><li><strong>Cost and latency</strong>: API pricing and context limits are in tokens; languages underrepresented in training are split into more tokens (higher cost, worse quality).</li><li>Tokenizer artefacts affect <strong>spelling, arithmetic and code</strong> (numbers split inconsistently); mitigations include digit-level tokenisation.</li><li>The tokenizer must match the model exactly; changing it requires retraining or embedding resizing.</li><li>Pre-tokenisation rules (regex splitting, normalisation, special tokens like <code>&lt;bos&gt;</code>) matter and should be versioned.</li></ul>
+<h4>Pitfalls</h4>
+<p>Using the wrong tokenizer version, truncating mid-token in custom code, ignoring whitespace handling, and assuming token count equals word count (about 1.3 tokens per English word, much higher for some languages).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does byte-level BPE avoid unknown tokens?</li><li>How does the Unigram language model tokenizer prune its vocabulary?</li><li>How does tokenization affect cost, multilingual fairness and arithmetic?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-40">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-40%3A+Explain+subword+tokenization+algorithms%3A+Byte-Pair+Encoding+%28BPE%29%2C%E2%80%A6&amp;question-id=ml-40&amp;context=ML+%2F+AI+engineer%2C+Gear+2%2C+topic%3A+NLP%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-40.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

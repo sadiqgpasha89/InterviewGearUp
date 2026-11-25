@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does K-Means clustering find centroids, and how do you pick K using the Elbow method and Silhouette score? | InterviewGearUp</title>
+<meta name="description" content="K-Means alternates between assigning each point to its nearest centroid and recomputing each centroid as the mean of its points, converging to a local…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-67.html">
+<meta property="og:title" content="How does K-Means clustering find centroids, and how do you pick K using the Elbow method and Silhouette score? | InterviewGearUp">
+<meta property="og:description" content="K-Means alternates between assigning each point to its nearest centroid and recomputing each centroid as the mean of its points, converging to a local…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-67.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does K-Means clustering find centroids, and how do you pick K using the Elbow method and Silhouette score?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 2 (Mid-level) · Unsupervised · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>K-Means alternates between assigning each point to its nearest centroid and recomputing each centroid as the mean of its points, converging to a local minimum of within-cluster sum of squares. Choose K with the elbow method (where inertia stops dropping sharply) and the silhouette score (cohesion versus separation, higher is better), ideally combined with domain knowledge and stability checks.</p></div>
+<h4>Explained in depth</h4>
+<h4>Objective</h4>
+<p>Partition n points into K clusters minimising the <strong>inertia</strong> (within-cluster sum of squared distances): <code>J = Σ_k Σ_{x ∈ C_k} ‖x − μ_k‖²</code></p>
+<h4>Lloyd&#39;s algorithm</h4>
+<ol start="1"><li><strong>Initialise</strong> K centroids (random points or <strong>K-Means++</strong>).</li><li><strong>Assignment step</strong>: assign each point to the closest centroid (Euclidean distance).</li><li><strong>Update step</strong>: set each centroid to the <strong>mean</strong> of the points assigned to it (the mean minimises the sum of squared distances, which is why centroids are means).</li><li>Repeat 2 and 3 until assignments stop changing or inertia improvement is below tolerance.</li></ol>
+<p>Each step cannot increase J, so the algorithm <strong>converges</strong>, but only to a <strong>local minimum</strong> that depends on initialisation. Complexity about <code>O(n · K · d · iterations)</code>.</p>
+<h4>Initialisation</h4>
+<ul><li>Random initialisation can produce poor solutions (two centroids in one cluster, none in another).</li><li><strong>K-Means++</strong>: choose the first centroid uniformly, then pick each next centroid with probability proportional to its <strong>squared distance</strong> to the nearest existing centroid, spreading centroids out. Gives an O(log K)-competitive approximation and is the default in scikit-learn.</li><li>Run multiple restarts (<code>n_init</code>) and keep the lowest inertia.</li></ul>
+<pre><code>from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
+from sklearn.preprocessing import StandardScaler
+Xs = StandardScaler().fit_transform(X)
+for k in range(2, 11):
+    km = KMeans(n_clusters=k, init=&quot;k-means++&quot;, n_init=10, random_state=0).fit(Xs)
+    print(k, km.inertia_, silhouette_score(Xs, km.labels_))</code></pre>
+<h4>Choosing K</h4>
+<ol start="1"><li><strong>Elbow method</strong>: plot inertia versus K. Inertia always decreases as K grows (K = n gives 0), so look for the &quot;elbow&quot; where the improvement flattens. Ambiguous when the curve is smooth; use the kneedle algorithm to automate.</li><li><strong>Silhouette score</strong>: for each point, <code>s = (b − a) / max(a, b)</code>, where <code>a</code> is the mean distance to points in its own cluster and <code>b</code> is the mean distance to the nearest other cluster. Range −1 to 1: near 1 well clustered, near 0 on the boundary, negative likely misassigned. Average silhouette across points peaks at a good K. Silhouette plots show per-cluster quality and size imbalance. Computing it is O(n²), so subsample for big data.</li><li>Other criteria: <strong>gap statistic</strong> (compares inertia with a null reference distribution), Davies-Bouldin (lower is better), Calinski-Harabasz (higher is better), BIC for Gaussian mixtures.</li><li><strong>Stability</strong>: re-cluster on bootstrap samples, check agreement (adjusted Rand index).</li><li><strong>Business usefulness</strong>: the number of segments marketing can act on, interpretability, and downstream performance.</li></ol>
+<h4>Assumptions and limitations</h4>
+<ul><li>Clusters are <strong>convex and roughly spherical</strong>, similar variance and size (since it uses Euclidean distance to a mean). Elongated, nested or non-convex clusters (rings) fail; use DBSCAN, spectral clustering or Gaussian mixtures.</li><li>Sensitive to <strong>feature scaling</strong> (standardise), <strong>outliers</strong> (means move; use K-Medoids or trimming), and irrelevant features (use PCA or feature selection).</li><li>Must specify K; hard assignments only; poor in very high dimensions (distance concentration), where dimension reduction helps.</li><li>Categorical data: use K-Modes or K-Prototypes.</li></ul>
+<h4>Scale</h4>
+<p><strong>Mini-batch K-Means</strong> updates centroids from small random batches, trading a little accuracy for large speed and streaming ability; implementations in Spark MLlib and FAISS (GPU) cluster billions of vectors.</p>
+<h4>Pitfalls</h4>
+<p>Not scaling features, trusting a single random initialisation, choosing K only by inertia, interpreting clusters without profiling them, and applying K-Means to data with mixed types.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does K-Means++ initialisation give better and more stable results?</li><li>What assumptions does K-Means make about cluster shape and scale?</li><li>How do you cluster very large datasets with mini-batch K-Means?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-67">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-67%3A+How+does+K-Means+clustering+find+centroids%2C+and+how+do+you+pick+K%E2%80%A6&amp;question-id=ml-67&amp;context=ML+%2F+AI+engineer%2C+Gear+2%2C+topic%3A+Unsupervised%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-67.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

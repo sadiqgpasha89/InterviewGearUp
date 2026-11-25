@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain Two-Tower Neural Network architecture for candidate retrieval in large-scale recommender systems. | InterviewGearUp</title>
+<meta name="description" content="A two-tower model learns separate neural encoders for users (and context) and for items, each producing an embedding in a shared space, and scores…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-71.html">
+<meta property="og:title" content="Explain Two-Tower Neural Network architecture for candidate retrieval in large-scale recommender systems. | InterviewGearUp">
+<meta property="og:description" content="A two-tower model learns separate neural encoders for users (and context) and for items, each producing an embedding in a shared space, and scores…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-71.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain Two-Tower Neural Network architecture for candidate retrieval in large-scale recommender systems.</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · Recommenders · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A two-tower model learns separate neural encoders for users (and context) and for items, each producing an embedding in a shared space, and scores relevance by the dot product or cosine of the two. Item embeddings are precomputed and indexed for approximate nearest neighbour search, so candidate retrieval over millions of items takes milliseconds, before a heavier ranker refines the shortlist.</p></div>
+<h4>Explained in depth</h4>
+<h4>Where it fits: multi-stage recommender</h4>
+<ol start="1"><li><strong>Candidate retrieval</strong> (millions to billions of items → hundreds to thousands): must be extremely fast, so it uses a <strong>two-tower</strong> model plus ANN.</li><li><strong>Ranking</strong> (hundreds → tens): a rich model scoring user-item pairs with cross features (wide and deep, DCN, transformers).</li><li><strong>Re-ranking</strong> (business rules, diversity, freshness, fairness).</li></ol>
+<h4>Architecture</h4>
+<pre><code>user features (id embedding, history sequence, demographics, context)  → user tower (MLP / transformer) → u ∈ R^d
+item features (id embedding, text/image embeddings, category, price)    → item tower (MLP)               → v ∈ R^d
+score(u, v) = &lt;u, v&gt;   (or cosine, with a learned temperature)</code></pre>
+<ul><li>Each tower is an independent deep network that maps its inputs to a <strong>d-dimensional embedding</strong> (64 to 256), usually L2-normalised.</li><li>Because the towers interact only at the final dot product, <strong>item embeddings do not depend on the user</strong>, so they can be computed <strong>offline</strong> for the entire catalogue and stored in an ANN index (FAISS, ScaNN, HNSW, Vertex Matching Engine, Milvus). At request time compute the user embedding once (cheap), query the index for top-K nearest items.</li></ul>
+<h4>Training</h4>
+<p>Data: positive interactions (clicks, purchases, watches) as (user, item) pairs. Objective: make positive pairs score higher than negatives.</p>
+<ul><li><strong>Softmax cross-entropy with in-batch negatives</strong>: for a batch of B positive pairs <code>(u_i, v_i)</code>, treat the other items <code>v_j (j ≠ i)</code> in the batch as negatives for user <code>u_i</code>:</li></ul>
+<p><code>L = − (1/B) Σ_i log [ exp(s(u_i, v_i)/τ) / Σ_j exp(s(u_i, v_j)/τ) ]</code> It is efficient (B² scores from B forward passes in each tower) and standard in YouTube and Google&#39;s retrieval papers.</p>
+<ul><li><strong>Sampling bias correction</strong>: in-batch negatives are drawn proportional to item popularity, which over-penalises popular items; apply a <strong>logQ correction</strong> (subtract <code>log p(item)</code> from logits) using estimated sampling probability.</li><li><strong>Hard negatives</strong>: items shown but not engaged, or retrieved by the previous model, mixed with random negatives for better discrimination; avoid false negatives (unseen but relevant).</li><li>Alternatives: BPR/pairwise loss, sampled softmax, contrastive losses with temperature; multi-task heads (watch time plus click).</li></ul>
+<pre><code>import tensorflow as tf, tensorflow_recommenders as tfrs
+class TwoTower(tfrs.Model):
+    def __init__(self, user_model, item_model, items_ds):
+        super().__init__()
+        self.user_model, self.item_model = user_model, item_model
+        self.task = tfrs.tasks.Retrieval(metrics=tfrs.metrics.FactorizedTopK(items_ds.batch(256).map(item_model)))
+    def compute_loss(self, features, training=False):
+        return self.task(self.user_model(features[&quot;user&quot;]), self.item_model(features[&quot;item&quot;]))</code></pre>
+<h4>Serving</h4>
+<ol start="1"><li>Batch job (daily or hourly) recomputes <strong>item embeddings</strong>, builds or updates the ANN index with metadata filters (availability, region).</li><li>Online: fetch user features (feature store), compute the <strong>user embedding</strong> via the user tower, ANN search for top K (hundreds), apply filters, send candidates to the ranker.</li><li>Real-time signals: session history in the user tower, incremental index updates for new items, embedding cache.</li><li>Monitor recall@K versus offline brute force, latency, embedding drift, coverage and diversity.</li></ol>
+<h4>Pros and cons</h4>
+<p>Pros: scales to huge catalogues, low latency, cold-start handling for items via content features, decoupled and cacheable, multiple retrieval sources can be merged. Cons: <strong>limited feature interaction</strong> (only dot product at the end, no user-item cross features), so lower accuracy than ranking models; ANN approximation loss; sensitivity to negative sampling choices; embedding staleness; popularity bias.</p>
+<h4>Extensions</h4>
+<p>Multi-interest towers, sequence-based user towers (transformers), graph-based item towers, deep retrieval with learned tree indexes, multimodal item towers, query towers for search (dual encoders as in dense retrieval).</p>
+<h4>Pitfalls</h4>
+<p>Training and serving feature mismatch, mixing normalised and unnormalised vectors with inner-product indexes, leakage of future interactions in the user history, and evaluating retrieval with random splits.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why must the towers not share cross features, and what do you lose compared to a ranking model?</li><li>How does in-batch negative sampling work and what is sampling bias correction?</li><li>How do you serve and refresh embeddings in production?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-71">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-71%3A+Explain+Two-Tower+Neural+Network+architecture+for+candidate%E2%80%A6&amp;question-id=ml-71&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+Recommenders%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-71.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

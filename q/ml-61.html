@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare model serving runtimes: Triton Inference Server versus TorchServe versus vLLM. | InterviewGearUp</title>
+<meta name="description" content="Triton is NVIDIA&#39;s multi-framework serving server with dynamic batching, concurrent model instances and ensembles, suited to heterogeneous production…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-61.html">
+<meta property="og:title" content="Compare model serving runtimes: Triton Inference Server versus TorchServe versus vLLM. | InterviewGearUp">
+<meta property="og:description" content="Triton is NVIDIA&#39;s multi-framework serving server with dynamic batching, concurrent model instances and ensembles, suited to heterogeneous production…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-61.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare model serving runtimes: Triton Inference Server versus TorchServe versus vLLM.</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · MLOps · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Triton is NVIDIA&#39;s multi-framework serving server with dynamic batching, concurrent model instances and ensembles, suited to heterogeneous production fleets. TorchServe is a simpler PyTorch-specific server with handlers and a model archive. vLLM is a specialised LLM engine using PagedAttention and continuous batching for high token throughput, and is the usual choice for generative text models.</p></div>
+<h4>Explained in depth</h4>
+<h4>What a serving runtime must do</h4>
+<p>Load models onto accelerators, expose an API (HTTP and gRPC), batch requests for GPU efficiency, manage multiple models and versions, scale and monitor, with low and predictable tail latency.</p>
+<h4>NVIDIA Triton Inference Server</h4>
+<ul><li><strong>Backends</strong> for TensorRT, PyTorch (TorchScript), ONNX Runtime, TensorFlow, OpenVINO, Python, FIL (XGBoost, LightGBM, scikit-learn), and a TensorRT-LLM / vLLM backend for LLMs.</li><li><strong>Model repository</strong> with versioned directories and <code>config.pbtxt</code> (inputs, outputs, instance groups, batching).</li><li><strong>Dynamic batching</strong> (queue requests for a few microseconds and form batches), <strong>concurrent model execution</strong> (multiple instances per GPU), <strong>model ensembles and business logic scripting (BLS)</strong> to chain preprocessing, models and postprocessing on the server, shared memory and CUDA IPC, Prometheus metrics, model analyser and <strong>perf_analyzer</strong> for tuning, and Kubernetes friendliness.</li><li>Best for <strong>multi-model, multi-framework</strong> production, computer vision, speech and recommender workloads, CPU and GPU, when you need maximum GPU utilisation and standardised ops. Higher complexity.</li></ul>
+<h4>TorchServe</h4>
+<ul><li>Packages a PyTorch model as a <strong><code>.mar</code> archive</strong> with a handler (preprocess, inference, postprocess); management and inference REST APIs; batching and multiple workers; metrics; supports TorchScript and eager models.</li><li>Pros: easy for PyTorch teams, custom handlers in Python. Cons: PyTorch only, fewer optimisations than Triton, slower evolution (the project has moved to limited maintenance), Python overhead; not ideal for large LLM throughput.</li></ul>
+<h4>vLLM</h4>
+<ul><li>Purpose-built for <strong>LLM inference</strong>. Key ideas:</li><li><strong>PagedAttention</strong>: manages the KV cache in fixed-size blocks like virtual memory pages, eliminating fragmentation so much more concurrent sequences fit.</li><li><strong>Continuous (in-flight) batching</strong>: new requests join the running batch at every decoding step instead of waiting for the entire batch to finish.</li><li>Prefix caching, chunked prefill, speculative decoding, tensor and pipeline parallelism, quantisation (AWQ, GPTQ, FP8), LoRA adapter serving, structured outputs, OpenAI-compatible API, streaming tokens.</li><li>Typically <strong>2x to 24x higher throughput</strong> than naive HuggingFace generation. Best for chat, RAG, agents on GPUs. Alternatives: TensorRT-LLM (fastest on NVIDIA with more build complexity), TGI, SGLang, LMDeploy, llama.cpp for CPU or edge.</li></ul>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th></th><th>Triton</th><th>TorchServe</th><th>vLLM</th></tr></thead><tbody><tr><td>Scope</td><td>any model type</td><td>PyTorch models</td><td>LLMs and VLMs</td></tr><tr><td>Batching</td><td>dynamic batching</td><td>basic batching</td><td>continuous batching</td></tr><tr><td>Strength</td><td>multi-framework, ensembles, GPU utilisation</td><td>simplicity for PyTorch</td><td>token throughput, KV cache efficiency</td></tr><tr><td>Weakness</td><td>config complexity</td><td>limited features, maintenance</td><td>LLM-only</td></tr><tr><td>Typical use</td><td>vision, speech, recsys, classic ML at scale</td><td>small PyTorch services</td><td>chat and RAG LLM serving</td></tr></tbody></table></div>
+<h4>Selection guidance</h4>
+<p>Use vLLM (or TensorRT-LLM) for LLM endpoints; Triton for diverse non-LLM models or when a single platform must serve many frameworks (and Triton can host vLLM or TensorRT-LLM backends); TorchServe only for simple legacy PyTorch cases (consider alternatives like KServe, BentoML, Ray Serve, SageMaker endpoints). Wrap with Kubernetes autoscaling (KEDA on queue length or GPU utilisation), model caches for fast cold start, and canary rollouts.</p>
+<h4>Tuning and benchmarking</h4>
+<p>Measure P50 and P99 latency, throughput, time to first token, and tokens per second under realistic concurrency; tune batch size and delay, instance counts, precision (FP16, FP8, INT8), and GPU memory utilisation.</p>
+<h4>Pitfalls</h4>
+<p>Benchmarking with a single request, ignoring cold starts, oversized batches inflating latency, running LLMs on a classic dynamic-batching server, and not pinning CUDA and driver versions.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is continuous batching different from dynamic batching?</li><li>When would you run vLLM behind Triton or Kubernetes?</li><li>How do TensorRT-LLM and Text Generation Inference compare?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-61">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-61%3A+Compare+model+serving+runtimes%3A+Triton+Inference+Server+versus%E2%80%A6&amp;question-id=ml-61&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+MLOps%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-61.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

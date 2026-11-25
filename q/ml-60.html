@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does MLflow track experiment parameters, metrics, code versions, and model artifacts? | InterviewGearUp</title>
+<meta name="description" content="MLflow Tracking records runs with parameters, metrics over steps, tags, source code version (git commit) and artifacts such as models, plots and…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-60.html">
+<meta property="og:title" content="How does MLflow track experiment parameters, metrics, code versions, and model artifacts? | InterviewGearUp">
+<meta property="og:description" content="MLflow Tracking records runs with parameters, metrics over steps, tags, source code version (git commit) and artifacts such as models, plots and…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-60.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does MLflow track experiment parameters, metrics, code versions, and model artifacts?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 2 (Mid-level) · MLOps · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>MLflow Tracking records runs with parameters, metrics over steps, tags, source code version (git commit) and artifacts such as models, plots and datasets, stored in a backend store (database) and an artifact store (object storage). The Model Registry adds versions, stages or aliases and lineage for promotion, and MLflow Models packages models with a flavor and environment for reproducible serving.</p></div>
+<h4>Explained in depth</h4>
+<h4>Core concepts</h4>
+<ul><li><strong>Experiment</strong>: a named group of runs for one task.</li><li><strong>Run</strong>: one execution of training code, with an ID.</li><li><strong>Tracking server</strong>: stores <strong>metadata</strong> (params, metrics, tags) in a <strong>backend store</strong> (SQLite for local, PostgreSQL or MySQL for teams) and <strong>artifacts</strong> (files) in an <strong>artifact store</strong> (S3, GCS, Azure Blob, HDFS, or local), accessed via REST and UI.</li><li><strong>Model Registry</strong>: central catalogue of registered models and versions.</li></ul>
+<h4>Logging</h4>
+<pre><code>import mlflow, mlflow.sklearn
+mlflow.set_tracking_uri(&quot;http://mlflow.internal:5000&quot;)
+mlflow.set_experiment(&quot;churn-model&quot;)
+
+with mlflow.start_run(run_name=&quot;rf-baseline&quot;) as run:
+    mlflow.log_params({&quot;n_estimators&quot;: 300, &quot;max_depth&quot;: 12, &quot;seed&quot;: 42})
+    model = train(...)
+    for epoch, loss in enumerate(losses):
+        mlflow.log_metric(&quot;val_loss&quot;, loss, step=epoch)       # time series of metrics
+    mlflow.log_metric(&quot;auc&quot;, auc)
+    mlflow.log_artifact(&quot;confusion_matrix.png&quot;)                 # any file
+    mlflow.log_dict(feature_schema, &quot;feature_schema.json&quot;)
+    mlflow.set_tags({&quot;team&quot;: &quot;growth&quot;, &quot;dataset_version&quot;: &quot;2026-11-20&quot;})
+    mlflow.sklearn.log_model(model, &quot;model&quot;, registered_model_name=&quot;churn&quot;,
+                             input_example=X_train[:5], signature=infer_signature(X_train, model.predict(X_train)))</code></pre>
+<ul><li><strong>Parameters</strong>: hyperparameters and config (immutable per run).</li><li><strong>Metrics</strong>: numeric values, optionally with <code>step</code> and timestamp for curves.</li><li><strong>Code version</strong>: MLflow records the <strong>git commit hash</strong>, branch, source file or entry point, and user automatically when run from a git repo (<code>mlflow.source.git.commit</code> tag); for notebooks it can snapshot the notebook.</li><li><strong>Artifacts</strong>: model files, plots, data samples, reports, requirements, and the <strong>model in MLflow Model format</strong> (<code>MLmodel</code> file, flavors such as sklearn, pytorch, transformers, pyfunc; <code>conda.yaml</code> or <code>requirements.txt</code> for the environment; signature and input example).</li><li><strong>Datasets</strong> (<code>mlflow.log_input</code>) can record dataset source and digest for lineage.</li><li><strong>Autologging</strong>: <code>mlflow.autolog()</code> instruments sklearn, XGBoost, LightGBM, PyTorch Lightning, Keras, Transformers, LangChain, OpenAI and others to log params, metrics, models and plots without manual code.</li></ul>
+<h4>Analysis and reproducibility</h4>
+<p>The UI and API (<code>mlflow.search_runs</code>) compare runs in tables and parallel-coordinates plots, sort by metric, and filter by tags. To reproduce a run, check out the recorded commit, install the recorded environment, and rerun with the logged params and data version (using <strong>MLflow Projects</strong> with an <code>MLproject</code> file, or Docker). Pair with data versioning (DVC, lakeFS, Delta versions) because MLflow does not store large datasets.</p>
+<h4>Model Registry</h4>
+<p>Register a model from a run, creating <strong>version N</strong> with lineage to its run. Use <strong>aliases</strong> (<code>champion</code>, <code>challenger</code>, formerly stages Staging and Production) and tags, descriptions, and approval workflows (webhooks, CI). Deployment code loads <code>models:/churn@champion</code>, so promotion or rollback is a pointer change. Serve with <code>mlflow models serve</code>, containerise (<code>mlflow models build-docker</code>), or deploy to SageMaker, Azure ML, Databricks Model Serving, Kubernetes.</p>
+<h4>Also in MLflow 2/3</h4>
+<p>Evaluation (<code>mlflow.evaluate</code>, LLM judges), tracing for GenAI apps (spans for LLM, retrievers and tools), prompt registry, AI Gateway, and GenAI app versioning.</p>
+<h4>Operating tips</h4>
+<p>Use a shared remote tracking server with auth, one experiment per project, consistent param naming, tags for dataset and pipeline versions, nested runs for hyperparameter search (Optuna integration), and retention or cleanup policies for artifacts.</p>
+<h4>Pitfalls</h4>
+<p>Logging secrets as params, not recording data versions, local file stores in team settings, untracked notebook edits, and promoting models without a recorded evaluation.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does autologging work and what does it capture?</li><li>How do you compare runs and reproduce a specific one?</li><li>How does the Model Registry support promotion and rollback?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-60">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-60%3A+How+does+MLflow+track+experiment+parameters%2C+metrics%2C+code+versions%2C%E2%80%A6&amp;question-id=ml-60&amp;context=ML+%2F+AI+engineer%2C+Gear+2%2C+topic%3A+MLOps%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-60.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

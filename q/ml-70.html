@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare Collaborative Filtering (matrix factorization) with Content-Based recommender systems. | InterviewGearUp</title>
+<meta name="description" content="Collaborative filtering learns only from user-item interactions, factorising the interaction matrix into user and item latent vectors whose dot product…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-70.html">
+<meta property="og:title" content="Compare Collaborative Filtering (matrix factorization) with Content-Based recommender systems. | InterviewGearUp">
+<meta property="og:description" content="Collaborative filtering learns only from user-item interactions, factorising the interaction matrix into user and item latent vectors whose dot product…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-70.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare Collaborative Filtering (matrix factorization) with Content-Based recommender systems.</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 2 (Mid-level) · Recommenders · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Collaborative filtering learns only from user-item interactions, factorising the interaction matrix into user and item latent vectors whose dot product predicts preference. Content-based methods recommend items similar to those a user liked, using item features. CF finds surprising matches but has cold start, while content-based works for new items but over-specialises. Hybrids combine both.</p></div>
+<h4>Explained in depth</h4>
+<h4>Content-based filtering</h4>
+<p>Represent each item by features (genre, tags, text embedding, image embedding, price, category) and each user by a profile aggregated from items they interacted with. Recommend items whose feature vectors are <strong>most similar</strong> to the profile (cosine similarity).</p>
+<ul><li>Pros: works for <strong>new items</strong> with metadata (no interaction history needed), transparent explanations (&quot;because you watched sci-fi&quot;), no need for other users&#39; data (privacy-friendly), no popularity bias.</li><li>Cons: <strong>limited serendipity</strong> (over-specialisation), depends on feature quality and engineering, struggles to capture taste not expressed by features, new users still need some history.</li></ul>
+<h4>Collaborative filtering (CF)</h4>
+<p>Uses only the <strong>user-item interaction matrix</strong> R (ratings, clicks, purchases, watch time), assuming people with similar past behaviour like similar things.</p>
+<ul><li><strong>Neighbourhood methods</strong>: user-based or item-based kNN using similarity (cosine, Pearson) on interaction vectors; simple but poor scalability and sparsity issues. Item-item CF is a common production baseline.</li><li><strong>Matrix factorisation (latent factor models)</strong>: approximate <code>R ≈ P Qᵀ</code> with user matrix <code>P</code> (m × k) and item matrix <code>Q</code> (n × k), where k is 20 to 500 latent factors (for example &quot;action versus romance&quot; dimensions learned automatically). Predicted score <code>r̂_ui = p_u · q_i</code> (plus biases <code>μ + b_u + b_i</code>).</li><li>Objective: minimise <code>Σ_{(u,i) observed} (r_ui − p_u·q_i)² + λ(‖p_u‖² + ‖q_i‖²)</code> using <strong>SGD</strong> or <strong>ALS</strong> (alternating least squares: fix one matrix, solve a closed-form least-squares for the other; parallelisable in Spark).</li><li><strong>Implicit feedback</strong> (clicks, views): treat observations as confidence-weighted preferences (Hu, Koren, Volinsky), include unobserved entries as weak negatives, or use ranking losses such as <strong>BPR</strong> (Bayesian Personalized Ranking) and sampled softmax.</li><li>Extensions: SVD++, factorisation machines, neural collaborative filtering, autoencoders (EASE, Mult-VAE), graph neural networks (LightGCN), sequence models (SASRec).</li></ul>
+<pre><code># implicit ALS
+import implicit
+model = implicit.als.AlternatingLeastSquares(factors=128, regularization=0.01, iterations=20)
+model.fit(user_items_csr)                              # sparse user x item matrix with confidence weights
+ids, scores = model.recommend(user_id, user_items_csr[user_id], N=10)</code></pre>
+<ul><li>Pros: captures <strong>complex taste patterns</strong> and discovers non-obvious recommendations (serendipity), needs no item content.</li><li>Cons: <strong>cold start</strong> for new users and items, sparsity, popularity bias, scalability for massive catalogues, limited explainability, feedback loops.</li></ul>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th></th><th>Content-based</th><th>Collaborative (MF)</th></tr></thead><tbody><tr><td>Data used</td><td>item features and own history</td><td>interactions from all users</td></tr><tr><td>New item</td><td>works</td><td>cold start</td></tr><tr><td>New user</td><td>needs history</td><td>cold start</td></tr><tr><td>Serendipity</td><td>low</td><td>higher</td></tr><tr><td>Explainability</td><td>high</td><td>lower</td></tr><tr><td>Popularity bias</td><td>low</td><td>high</td></tr><tr><td>Data need</td><td>item metadata quality</td><td>dense enough interaction data</td></tr></tbody></table></div>
+<h4>Hybrids and modern practice</h4>
+<p>Real systems combine signals: feed content embeddings into factorisation (LightFM, hybrid features), <strong>two-tower neural models</strong> for retrieval followed by <strong>ranking models</strong> (gradient boosting or deep) using rich features, context, and business rules; reranking for diversity, freshness and fairness.</p>
+<h4>Evaluation</h4>
+<p>Offline: recall@K, precision@K, nDCG, MAP with time-based splits (not random) to avoid leakage; coverage, diversity, novelty. Online: A/B tests on engagement and retention, since offline metrics correlate imperfectly with online outcomes.</p>
+<h4>Pitfalls</h4>
+<p>Evaluating with random splits, ignoring exposure bias (users only interact with what was shown), treating missing entries as dislikes, and optimising clicks at the expense of long-term satisfaction.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does ALS differ from SGD for matrix factorisation with implicit feedback?</li><li>How do you handle popularity bias and the long tail?</li><li>When would you use a hybrid or two-tower model?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-70">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-70%3A+Compare+Collaborative+Filtering+%28matrix+factorization%29+with%E2%80%A6&amp;question-id=ml-70&amp;context=ML+%2F+AI+engineer%2C+Gear+2%2C+topic%3A+Recommenders%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-70.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

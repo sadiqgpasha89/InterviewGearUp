@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you measure and mitigate demographic parity and equalized odds bias in machine learning models? | InterviewGearUp</title>
+<meta name="description" content="Demographic parity requires equal positive-prediction rates across groups, while equalized odds requires equal true positive and false positive rates…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-87.html">
+<meta property="og:title" content="How do you measure and mitigate demographic parity and equalized odds bias in machine learning models? | InterviewGearUp">
+<meta property="og:description" content="Demographic parity requires equal positive-prediction rates across groups, while equalized odds requires equal true positive and false positive rates…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-87.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you measure and mitigate demographic parity and equalized odds bias in machine learning models?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · Ethics · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Demographic parity requires equal positive-prediction rates across groups, while equalized odds requires equal true positive and false positive rates across groups. Measure them on held-out data per protected attribute, then mitigate with pre-processing (reweighing, resampling), in-processing (fairness constraints or adversarial debiasing) or post-processing (group thresholds), noting trade-offs and legal context.</p></div>
+<h4>Explained in depth</h4>
+<h4>Where bias comes from</h4>
+<p>Historical bias in labels (past hiring or lending decisions), sampling bias and under-representation, proxy features (zip code correlating with race), measurement error differing by group, feedback loops, and optimisation targets that ignore subgroup performance. Removing the protected attribute does <strong>not</strong> remove bias, because other features reveal it.</p>
+<h4>Definitions (binary classifier Ŷ, true label Y, protected attribute A)</h4>
+<ul><li><strong>Demographic (statistical) parity</strong>: <code>P(Ŷ=1 | A=a) = P(Ŷ=1 | A=b)</code>. Equal selection rates, independent of group. Measure: <strong>difference</strong> or <strong>ratio</strong> of positive rates (the &quot;four-fifths rule&quot; in US employment law uses ratio ≥ 0.8). Ignores true labels, so it can force equal rates even if base rates genuinely differ, and may require accepting less qualified candidates in a group or rejecting more qualified in another.</li><li><strong>Equalized odds</strong>: <code>P(Ŷ=1 | Y=y, A=a) = P(Ŷ=1 | Y=y, A=b)</code> for y ∈ {0, 1}: equal <strong>true positive rate</strong> and <strong>false positive rate</strong> across groups. Errors are distributed equally.</li><li><strong>Equal opportunity</strong>: relaxed version requiring only equal TPR (qualified people have an equal chance across groups).</li><li><strong>Predictive parity (calibration)</strong>: equal precision (PPV) across groups; <strong>calibration within groups</strong>: scores mean the same probability for each group.</li><li><strong>Individual fairness</strong>: similar individuals receive similar predictions.</li><li><strong>Counterfactual fairness</strong>: predictions unchanged in a counterfactual world with a different protected attribute.</li></ul>
+<p><strong>Impossibility results</strong> (Kleinberg et al.; Chouldechova): when base rates differ between groups, a non-perfect classifier <strong>cannot satisfy calibration and equalized odds simultaneously</strong> (and demographic parity conflicts with calibration and accuracy). You must choose metrics based on harms and context.</p>
+<h4>Measuring</h4>
+<pre><code>from fairlearn.metrics import MetricFrame, demographic_parity_difference, equalized_odds_difference, selection_rate
+from sklearn.metrics import recall_score, precision_score
+mf = MetricFrame(metrics={&quot;selection&quot;: selection_rate, &quot;tpr&quot;: recall_score, &quot;precision&quot;: precision_score},
+                 y_true=y_test, y_pred=pred, sensitive_features=A_test)
+print(mf.by_group)                                       # per-group metrics
+print(demographic_parity_difference(y_test, pred, sensitive_features=A_test))
+print(equalized_odds_difference(y_test, pred, sensitive_features=A_test))</code></pre>
+<p>Evaluate <strong>intersectional groups</strong> (race × gender), include confidence intervals (small groups), and slice by performance, calibration and error types. Use disparate impact analysis and audit data distributions.</p>
+<h4>Mitigation</h4>
+<ol start="1"><li><strong>Pre-processing</strong>: fix the data. <strong>Reweighing</strong> (instance weights so group and label are independent), resampling, relabelling, removing or transforming proxy features, learning <strong>fair representations</strong>, collecting more data for under-represented groups.</li><li><strong>In-processing</strong>: change training. Add <strong>fairness constraints or penalties</strong> to the loss (Fairlearn <strong>ExponentiatedGradient</strong>, GridSearch reductions with <code>DemographicParity()</code> or <code>EqualizedOdds()</code> constraints), <strong>adversarial debiasing</strong> (an adversary tries to predict A from representations or scores), regularisation.</li><li><strong>Post-processing</strong>: adjust outputs. <strong>Group-specific thresholds</strong> (Fairlearn <code>ThresholdOptimizer</code>) to equalise rates, calibrated equalised odds, reject option classification near the decision boundary. Simple and model-agnostic, but may require using the protected attribute at decision time, which can be <strong>legally restricted</strong> (disparate treatment).</li></ol>
+<p>Always measure the <strong>accuracy-fairness trade-off</strong> and report it.</p>
+<h4>Governance and context</h4>
+<ul><li>Choose metrics by <strong>harm analysis</strong>: lending (equal opportunity and calibration), hiring screens (selection ratios and equal opportunity), criminal risk (false positive rates), medical triage (equal sensitivity).</li><li>Understand <strong>legal frameworks</strong> (US ECOA, Title VII, EU AI Act, GDPR automated decision rules) and document model cards, datasets sheets, impact assessments, human oversight, appeals, and monitoring after deployment (fairness drift).</li><li>Involve domain experts and affected groups; fairness is not purely technical.</li><li>Toolkits: <strong>Fairlearn</strong>, <strong>AIF360</strong> (IBM), What-If Tool, Aequitas, Google&#39;s Fairness Indicators, SHAP for proxy analysis.</li></ul>
+<h4>Pitfalls</h4>
+<p>Dropping the protected attribute and assuming fairness, optimising one metric while harming another, ignoring intersectional groups and small samples, evaluating on unrepresentative data, and treating mitigation as a one-time step.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why can demographic parity and equalized odds not generally hold together when base rates differ?</li><li>How does the choice of fairness metric depend on the use case and law?</li><li>What do Fairlearn and AIF360 provide?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-87">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-87%3A+How+do+you+measure+and+mitigate+demographic+parity+and+equalized%E2%80%A6&amp;question-id=ml-87&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+Ethics%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-87.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare Dense Vector Embeddings with Sparse Lexical Search (BM25) for document retrieval. | InterviewGearUp</title>
+<meta name="description" content="Dense retrieval encodes queries and documents into embeddings and ranks by vector similarity, so it captures meaning and handles paraphrases and…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-51.html">
+<meta property="og:title" content="Compare Dense Vector Embeddings with Sparse Lexical Search (BM25) for document retrieval. | InterviewGearUp">
+<meta property="og:description" content="Dense retrieval encodes queries and documents into embeddings and ranks by vector similarity, so it captures meaning and handles paraphrases and…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-51.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare Dense Vector Embeddings with Sparse Lexical Search (BM25) for document retrieval.</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 2 (Mid-level) · RAG · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Dense retrieval encodes queries and documents into embeddings and ranks by vector similarity, so it captures meaning and handles paraphrases and synonyms. BM25 scores exact term overlap weighted by term frequency and rarity, so it excels at keywords, identifiers and rare terms, needs no training, and is cheap. They fail in different ways, so production systems often combine them.</p></div>
+<h4>Explained in depth</h4>
+<h4>BM25 (sparse lexical)</h4>
+<p>BM25 improves TF-IDF. For a query term q in document d: <code>score = Σ IDF(q) · f(q,d)·(k1+1) / (f(q,d) + k1·(1 − b + b·|d|/avgdl))</code></p>
+<ul><li><strong>IDF</strong> rewards rare terms; <strong>term frequency saturates</strong> (parameter <code>k1</code>, typically 1.2 to 2), so repeating a word does not help forever; <strong>length normalisation</strong> (<code>b</code>, typically 0.75) penalises long documents.</li><li>Implemented with an <strong>inverted index</strong> (term → posting list), so search is fast and cheap on CPU (Elasticsearch, OpenSearch, Lucene, Tantivy, Postgres full-text).</li><li>Strengths: exact matches (error codes, product SKUs, names, legal citations), explainability, no training or GPU, works immediately in any language with analysers, handles out-of-domain vocabulary, easy to filter and facet.</li><li>Weaknesses: <strong>vocabulary mismatch</strong> (&quot;car&quot; versus &quot;automobile&quot;, &quot;How do I reset my password&quot; versus a document on &quot;credential recovery&quot;), no understanding of context or negation, sensitive to typos and morphology without analysers.</li></ul>
+<h4>Dense retrieval (bi-encoder embeddings)</h4>
+<p>A model (sentence-transformers, OpenAI, Cohere, BGE, E5) maps text to a vector (384 to 3072 dimensions). Documents are embedded offline and stored in a vector index (HNSW, IVF); the query is embedded online and the <strong>nearest neighbours</strong> by cosine similarity are returned.</p>
+<ul><li>Strengths: <strong>semantic matching</strong> across paraphrases, synonyms, and languages (multilingual models), robust to wording differences, natural-language questions, can be fine-tuned on domain pairs.</li><li>Weaknesses: poor on <strong>exact tokens and rare entities</strong> (part numbers, names the model never saw), can retrieve topically related but wrong passages, <strong>domain shift</strong> (out-of-domain text degrades), costs for embedding and memory, index maintenance, approximate search recall loss, less interpretable (&quot;why was this returned?&quot;), and chunk-size sensitivity.</li></ul>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th></th><th>BM25</th><th>Dense</th></tr></thead><tbody><tr><td>Matching</td><td>exact lexical</td><td>semantic</td></tr><tr><td>Training</td><td>none</td><td>pretrained or fine-tuned</td></tr><tr><td>Rare terms and IDs</td><td>strong</td><td>weak</td></tr><tr><td>Paraphrase and synonyms</td><td>weak</td><td>strong</td></tr><tr><td>Infrastructure</td><td>inverted index, CPU</td><td>embedding model, vector index</td></tr><tr><td>Cost</td><td>low</td><td>higher (embedding, memory)</td></tr><tr><td>Explainability</td><td>high</td><td>low</td></tr><tr><td>Cold start in new domain</td><td>great</td><td>needs eval or tuning</td></tr></tbody></table></div>
+<h4>Using both</h4>
+<p>Real queries mix intent: &quot;error E1234 when exporting invoices&quot; needs the code (lexical) and the concept (semantic). <strong>Hybrid search</strong> runs both retrievers and fuses results (weighted score combination or Reciprocal Rank Fusion), often followed by a <strong>cross-encoder reranker</strong>. Benchmarks such as BEIR show BM25 remains a strong baseline and hybrid usually wins. Sparse neural models (SPLADE, learned sparse retrieval) and late-interaction models (ColBERT) sit between the two.</p>
+<h4>Choosing and evaluating</h4>
+<p>Start with BM25 as the baseline and build an <strong>evaluation set</strong> (queries with relevant docs); measure recall@k, nDCG, MRR. Add dense retrieval if recall on paraphrased queries is low. Fine-tune embeddings on domain pairs when vocabulary is specialised (legal, biomedical, code). Index metadata for filters either way.</p>
+<h4>Pitfalls</h4>
+<p>Assuming embeddings always beat keyword search, chunking too large for dense models, forgetting query-side instructions or prefixes required by some embedding models (E5, BGE), and mixing similarity metrics inconsistent with the model&#39;s training.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why do dense retrievers struggle with exact identifiers, SKUs and rare entities?</li><li>How does BM25 handle term frequency saturation and document length?</li><li>When would you fine-tune the embedding model instead of adding BM25?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-51">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-51%3A+Compare+Dense+Vector+Embeddings+with+Sparse+Lexical+Search+%28BM25%29%E2%80%A6&amp;question-id=ml-51&amp;context=ML+%2F+AI+engineer%2C+Gear+2%2C+topic%3A+RAG%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-51.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

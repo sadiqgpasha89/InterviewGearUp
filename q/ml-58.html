@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain RAG evaluation metrics using the RAGAS framework: Faithfulness, Answer Relevance, and Context Precision. | InterviewGearUp</title>
+<meta name="description" content="RAGAS evaluates RAG pipelines with LLM-judged, mostly reference-free metrics. Faithfulness checks that answer claims are supported by the retrieved…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-58.html">
+<meta property="og:title" content="Explain RAG evaluation metrics using the RAGAS framework: Faithfulness, Answer Relevance, and Context Precision. | InterviewGearUp">
+<meta property="og:description" content="RAGAS evaluates RAG pipelines with LLM-judged, mostly reference-free metrics. Faithfulness checks that answer claims are supported by the retrieved…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-58.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain RAG evaluation metrics using the RAGAS framework: Faithfulness, Answer Relevance, and Context Precision.</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · RAG · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>RAGAS evaluates RAG pipelines with LLM-judged, mostly reference-free metrics. Faithfulness checks that answer claims are supported by the retrieved context, answer relevance that the answer addresses the question, and context precision that relevant chunks rank high. Context recall and correctness use ground truth. Together they separate retrieval from generation failures.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why RAG needs component-level metrics</h4>
+<p>A wrong answer can come from <strong>bad retrieval</strong> (missing or noisy context) or <strong>bad generation</strong> (ignoring context, hallucinating). End-to-end accuracy alone cannot tell which. RAGAS (Retrieval Augmented Generation Assessment) provides metrics for each stage using an LLM as judge and embeddings, with minimal human labelling.</p>
+<h4>Core metrics</h4>
+<ol start="1"><li><strong>Faithfulness (groundedness)</strong>: are the claims in the answer <strong>supported by the retrieved context</strong>?</li></ol>
+<ul><li>The judge LLM <strong>decomposes the answer into atomic statements</strong>, then checks each against the context (supported or not).</li><li><code>faithfulness = supported statements / total statements</code> (0 to 1).</li><li>Detects <strong>hallucination</strong>: statements not inferable from the retrieved context, even if true in the world.</li></ul>
+<ol start="2"><li><strong>Answer relevance (response relevancy)</strong>: does the answer address the question, without redundancy or evasion?</li></ol>
+<ul><li>The LLM <strong>generates several questions</strong> that the answer could be answering; compute the <strong>cosine similarity</strong> between each generated question embedding and the original question embedding; average.</li><li>High if the answer is on topic and complete; penalises noncommittal (&quot;I don&#39;t know&quot;) or off-topic content. It does not check correctness.</li></ul>
+<ol start="3"><li><strong>Context precision</strong>: are the <strong>relevant chunks ranked near the top</strong> of the retrieved list? Using the question (and reference answer or the final answer), a judge labels each retrieved chunk as relevant or not; the metric is a precision@k averaged over ranks, so relevant chunks at rank 1 score higher than at rank 5. Measures retrieval <strong>ranking and noise</strong>.</li><li><strong>Context recall</strong>: what fraction of the information needed (from the <strong>ground-truth answer</strong>) is present in the retrieved context? Each ground-truth sentence is attributed to the context or not. Measures whether retrieval <strong>found everything needed</strong>.</li><li>Others: <strong>context entity recall</strong>, <strong>answer correctness</strong> (semantic and factual similarity to the reference), <strong>answer similarity</strong>, <strong>noise sensitivity</strong>, aspect critiques, and agent or tool-call metrics.</li></ol>
+<pre><code>from ragas import evaluate
+from ragas.metrics import faithfulness, answer_relevancy, context_precision, context_recall
+from datasets import Dataset
+ds = Dataset.from_dict({&quot;question&quot;: qs, &quot;answer&quot;: answers, &quot;contexts&quot;: ctxs, &quot;ground_truth&quot;: refs})
+result = evaluate(ds, metrics=[faithfulness, answer_relevancy, context_precision, context_recall])
+print(result)</code></pre>
+<h4>Interpretation</h4>
+<div class="md-table"><table><thead><tr><th>Symptom</th><th>Likely cause</th></tr></thead><tbody><tr><td>Low context recall</td><td>chunking, embedding, query rewrite, too small k</td></tr><tr><td>Low context precision</td><td>noisy retrieval, no reranker, large k</td></tr><tr><td>Low faithfulness</td><td>prompt not enforcing grounding, model hallucination, contradictory contexts</td></tr><tr><td>Low answer relevance</td><td>poor prompt, over-long or evasive answers</td></tr></tbody></table></div>
+<h4>Using RAGAS in practice</h4>
+<ul><li>Build a <strong>golden dataset</strong> of 100 to 500 representative questions with reference answers and supporting passages (from domain experts or synthetic generation by an LLM, then reviewed). RAGAS can synthesise test sets from documents.</li><li>Run evals on every pipeline change (chunking, embedding model, prompt, retriever settings) and in <strong>CI</strong>, tracking trends and regressions; sample production traces for ongoing monitoring (with feedback signals).</li><li>Use a <strong>strong, fixed judge model</strong> and pin versions for reproducibility.</li></ul>
+<h4>Limitations</h4>
+<p>LLM judges are <strong>noisy, biased</strong> (prefer verbose answers, own-model outputs, position), cost tokens, and can disagree with humans. Metrics are only as good as the reference data. Faithfulness cannot verify truth, only support by context. Calibrate against human labels on a sample, report confidence intervals, and combine with human review, user feedback, task success metrics, latency and cost. Alternatives and complements: TruLens, DeepEval, ARES, LangSmith, Phoenix, OpenAI evals.</p>
+<h4>Pitfalls</h4>
+<p>Treating scores as absolute truth, changing judge models between runs, evaluating without ground truth for recall, ignoring safety and refusal behaviour, and optimising metrics while user satisfaction falls.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does RAGAS compute faithfulness step by step?</li><li>What are the biases and limitations of LLM-as-judge metrics?</li><li>How do you build a golden dataset and run RAG evals in CI?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-58">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-58%3A+Explain+RAG+evaluation+metrics+using+the+RAGAS+framework%3A%E2%80%A6&amp;question-id=ml-58&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+RAG%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-58.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>
