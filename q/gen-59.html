@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain the Knuth-Morris-Pratt (KMP) string matching algorithm and how the Longest Prefix Suffix (LPS) array works. | InterviewGearUp</title>
+<meta name="description" content="KMP searches for a pattern in a text in O(N+M) by never moving backwards in the text. It precomputes an LPS array, where lps[i] is the length of the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-59.html">
+<meta property="og:title" content="Explain the Knuth-Morris-Pratt (KMP) string matching algorithm and how the Longest Prefix Suffix (LPS) array works. | InterviewGearUp">
+<meta property="og:description" content="KMP searches for a pattern in a text in O(N+M) by never moving backwards in the text. It precomputes an LPS array, where lps[i] is the length of the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-59.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain the Knuth-Morris-Pratt (KMP) string matching algorithm and how the Longest Prefix Suffix (LPS) array works.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 3 (Senior) · Algorithms · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>KMP searches for a pattern in a text in O(N+M) by never moving backwards in the text. It precomputes an LPS array, where lps[i] is the length of the longest proper prefix of the pattern that is also a suffix of pattern[0..i]. On a mismatch it uses lps to shift the pattern, reusing the characters already matched.</p></div>
+<h4>Explained in depth</h4>
+<h4>LPS array</h4>
+<p>For the pattern <code>ABABCABAB</code>, <code>lps = [0,0,1,2,0,1,2,3,4]</code>. At index 8 the string <code>ABAB</code> is both a prefix and a suffix, so its length 4 is stored.</p>
+<pre><code>def build_lps(p):
+    lps = [0] * len(p)
+    k = 0                          # length of the current matching prefix
+    for i in range(1, len(p)):
+        while k and p[i] != p[k]:
+            k = lps[k - 1]         # fall back to a shorter border
+        if p[i] == p[k]:
+            k += 1
+        lps[i] = k
+    return lps
+
+def kmp_search(text, p):
+    lps, k, hits = build_lps(p), 0, []
+    for i, ch in enumerate(text):
+        while k and ch != p[k]:
+            k = lps[k - 1]         # keep what already matched
+        if ch == p[k]:
+            k += 1
+        if k == len(p):
+            hits.append(i - k + 1)
+            k = lps[k - 1]
+    return hits</code></pre>
+<h4>Why it is linear</h4>
+<p>The text pointer never goes back. The pattern pointer <code>k</code> increases by at most one per character and each fallback decreases it, so the total number of fallbacks is bounded by the increases: O(N + M) overall, including O(M) to build the table.</p>
+<h4>Comparison</h4>
+<p>The naive method is O(N*M) in the worst case. Rabin-Karp is O(N+M) on average using hashes but can degrade on collisions. KMP gives a guaranteed linear bound and needs O(M) extra space.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How is the LPS array built in linear time?</li><li>How does KMP compare with Rabin-Karp and with the naive search?</li><li>How can the LPS idea find the smallest repeating period of a string?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-59">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-59%3A+Explain+the+Knuth-Morris-Pratt+%28KMP%29+string+matching+algorithm+and%E2%80%A6&amp;question-id=gen-59&amp;context=Software+engineer+%28core%29%2C+Gear+3%2C+topic%3A+Algorithms%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-59.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

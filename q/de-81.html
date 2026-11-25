@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain Kafka producer acknowledgment settings: `acks=0`, `acks=1`, and `acks=all`. | InterviewGearUp</title>
+<meta name="description" content="acks controls how many brokers must confirm a write. acks=0 does not wait, so it is fastest and can lose data silently. acks=1 waits for the leader only,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-81.html">
+<meta property="og:title" content="Explain Kafka producer acknowledgment settings: `acks=0`, `acks=1`, and `acks=all`. | InterviewGearUp">
+<meta property="og:description" content="acks controls how many brokers must confirm a write. acks=0 does not wait, so it is fastest and can lose data silently. acks=1 waits for the leader only,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-81.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain Kafka producer acknowledgment settings: `acks=0`, `acks=1`, and `acks=all`.</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 2 (Mid-level) · Streaming · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>acks controls how many brokers must confirm a write. acks=0 does not wait, so it is fastest and can lose data silently. acks=1 waits for the leader only, so data is lost if the leader fails before followers copy it. acks=all waits for all in-sync replicas and, with min.insync.replicas, gives the strongest durability.</p></div>
+<h4>Explained in depth</h4>
+<div class="md-table"><table><thead><tr><th>Setting</th><th>Producer waits for</th><th>Risk</th><th>Latency</th></tr></thead><tbody><tr><td><code>acks=0</code></td><td>Nothing</td><td>Loses messages on any failure, no error visible</td><td>Lowest</td></tr><tr><td><code>acks=1</code></td><td>The leader&#39;s write to its log</td><td>Loses data if the leader dies before replication</td><td>Low</td></tr><tr><td><code>acks=all</code> (or -1)</td><td>Every replica in the in-sync set (ISR)</td><td>Safest</td><td>Higher</td></tr></tbody></table></div>
+<h4>acks=all needs min.insync.replicas</h4>
+<p><code>acks=all</code> only waits for the current ISR. If followers fall behind and the ISR shrinks to just the leader, <code>acks=all</code> behaves like <code>acks=1</code>. Set <code>min.insync.replicas=2</code> with replication factor 3: a write is acknowledged only if at least two replicas have it, and the broker rejects the write (the producer gets an error) when fewer than two are in sync. That trades availability for durability during failures.</p>
+<h4>Related settings</h4>
+<ul><li><strong>Retries and <code>delivery.timeout.ms</code></strong>: retries can cause duplicates or reordering. Enable the <strong>idempotent producer</strong> (<code>enable.idempotence=true</code>, the default in recent clients when acks=all) so retried batches are not written twice.</li><li><strong><code>unclean.leader.election.enable=false</code></strong> prevents a stale replica from becoming leader and losing acknowledged data.</li><li>Batching (<code>linger.ms</code>, <code>batch.size</code>) and compression raise throughput and offset some of the latency cost of <code>acks=all</code>.</li></ul>
+<h4>Choosing</h4>
+<p>Metrics or logs where occasional loss is fine: <code>acks=1</code> or even 0. Payments, orders and anything you cannot afford to lose: <code>acks=all</code>, replication factor 3, <code>min.insync.replicas=2</code>, idempotent producer.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What does min.insync.replicas do when only one replica is in sync?</li><li>How does the idempotent producer prevent duplicates on retry?</li><li>What is the risk of unclean leader election?</li></ul>
+<p><a class="btn primary" href="../#/q/de-81">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-81%3A+Explain+Kafka+producer+acknowledgment+settings%3A+%60acks%3D0%60%2C+%60acks%3D1%60%2C%E2%80%A6&amp;question-id=de-81&amp;context=Data+engineer%2C+Gear+2%2C+topic%3A+Streaming%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-81.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

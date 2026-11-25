@@ -880,3 +880,200 @@ test('markdown tables in answers are well formed (header, separator, same column
     }
   });
 });
+
+/* ---------- Phase 14: learning paths, private sync, static pages ---------- */
+const p14 = { setTimeout, clearTimeout, URL, TextEncoder, TextDecoder, btoa, atob, crypto: globalThis.crypto, Uint8Array };
+p14.window = p14;
+vm.createContext(p14);
+['js/config.js', 'js/quality.js', 'js/stats.js', 'js/paths.js', 'js/sync.js', 'js/starter-paths.js'].forEach((f) => vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), p14, { filename: f }));
+const PA = p14.IGU.paths, SY = p14.IGU.sync;
+const known14 = new Set(bank.map((e) => e.id));
+
+test('paths: clean drops unknown and duplicate ids, caps lengths, and flags an empty path', () => {
+  const r = PA.clean({ title: '  Plan\u0007 A  ', note: 'x'.repeat(900), ids: ['be-3', 'be-3', 'nope', 7, 'fe-3', '<script>'] }, known14);
+  assert.equal(r.path.title, 'Plan  A');
+  assert.equal(r.path.note.length, 500);
+  assert.deepEqual(Array.from(r.path.ids), ['be-3', 'fe-3']);
+  assert.equal(r.dropped, 4);
+  assert.ok(PA.clean({ title: '', ids: [] }, known14).problems.length === 2);
+  assert.ok(PA.clean({ title: 't', ids: Array.from({ length: 300 }, (_, i) => 'be-' + (i + 1)) }, null).path.ids.length <= PA.MAX_IDS);
+});
+
+test('paths: export then import round-trips; bad files are rejected without throwing', () => {
+  const p = PA.clean({ title: 'My path', note: 'n', ids: ['be-3', 'be-4'] }, known14).path;
+  const text = JSON.stringify(PA.exportPath(p));
+  const back = PA.importPath(text, known14);
+  assert.deepEqual(Array.from(back.path.ids), ['be-3', 'be-4']);
+  assert.notEqual(back.path.id, p.id, 'imported path gets a fresh id');
+  ['not json', '{}', JSON.stringify({ app: 'InterviewGearUp', kind: 'backup', version: 1, path: {} }), JSON.stringify({ app: 'InterviewGearUp', kind: 'learning-path', version: 2, path: {} }), 'x'.repeat(300000)]
+    .forEach((t) => assert.ok(PA.importPath(t, known14).error, 'should reject: ' + t.slice(0, 20)));
+  assert.ok(PA.importPath(JSON.stringify({ app: 'InterviewGearUp', kind: 'learning-path', version: 1, path: { title: 'T', ids: ['zz-1'] } }), known14).error, 'no known ids');
+  const evil = PA.importPath(JSON.stringify({ app: 'InterviewGearUp', kind: 'learning-path', version: 1, path: { title: '<img src=x onerror=1>', ids: ['be-3'], __proto__: { x: 1 } } }), known14);
+  assert.equal(evil.path.title, '<img src=x onerror=1>', 'kept as plain text; the UI never uses innerHTML');
+});
+
+test('paths: progress counts prepared and written answers; backup carries paths', () => {
+  const byId = {}; bank.forEach((e) => { byId[e.id] = e; });
+  const real = bank.filter((e) => !IGU.quality.isPlaceholder(e)).slice(0, 3).map((e) => e.id);
+  const ph = bank.find((e) => IGU.quality.isPlaceholder(e));
+  const pr = PA.progress({ ids: real.concat([ph.id]) }, byId, { [real[0]]: 1 });
+  assert.equal(pr.total, 4); assert.equal(pr.prepared, 1); assert.equal(pr.real, 3); assert.equal(pr.next, real[1]);
+  assert.ok(p14.IGU.stats.BACKUP_KEYS.includes('paths'));
+  assert.ok(p14.IGU.stats.readBackup({ app: 'InterviewGearUp', data: { paths: {} } }).error);
+  assert.ok(p14.IGU.stats.readBackup({ app: 'InterviewGearUp', data: { paths: [] } }).data);
+});
+
+test('starter paths only use existing questions that have written answers, and are labelled', () => {
+  assert.ok(p14.IGU.starterPaths.length >= 3);
+  p14.IGU.starterPaths.forEach((s) => {
+    assert.ok(s.title && s.note && s.origin === 'starter');
+    assert.ok(s.ids.length >= 8 && new Set(s.ids).size === s.ids.length, s.id);
+    s.ids.forEach((id) => { const e = bank.find((x) => x.id === id); assert.ok(e, s.id + ' unknown ' + id); assert.ok(!IGU.quality.isPlaceholder(e), s.id + ' ' + id + ' has no written answer'); });
+  });
+});
+
+/* In-memory stand-in for the Gist API. */
+function fakeGists(opts) {
+  opts = opts || {};
+  const db = {}; const calls = [];
+  let n = 0;
+  const reply = (status, body) => ({ ok: status < 300, status, json: async () => body });
+  const f = async (url, init) => {
+    calls.push({ url, init });
+    if (opts.offline) throw new Error('offline');
+    if (opts.status) return reply(opts.status, {});
+    const u = new URL(url);
+    if (u.origin !== 'https://api.github.com') return reply(500, {});
+    const m = /^\/gists(?:\/([^/]+))?$/.exec(u.pathname);
+    const body = init.body ? JSON.parse(init.body) : null;
+    if (init.method === 'POST' && !m[1]) { const id = 'g' + (++n); db[id] = body.files; return reply(201, { id }); }
+    if (!db[m[1]]) return reply(404, {});
+    if (init.method === 'GET') return reply(200, { id: m[1], files: Object.fromEntries(Object.entries(db[m[1]]).map(([k, v]) => [k, { content: v.content, truncated: !!opts.truncated }])) });
+    if (init.method === 'PATCH') { db[m[1]] = Object.assign({}, db[m[1]], body.files); return reply(200, { id: m[1] }); }
+    return reply(405, {});
+  };
+  return { f, db, calls };
+}
+const TOKEN = 'ghp_ABCdef0123456789abcdef0123456789abcd';
+const backup14 = () => p14.IGU.stats.makeBackup((k) => ({ done: { 'be-3': 1 }, notes: { 'be-3': 'my private note SECRET-NOTE-123' }, settings: { key: 'AI-KEY-999' }, sync: { token: TOKEN } })[k]);
+
+test('sync: backups never carry the AI key or the sync token', () => {
+  const b = backup14();
+  assert.deepEqual(Array.from(Object.keys(b.data)).sort(), ['done', 'notes']);
+  assert.ok(!JSON.stringify(b).includes('AI-KEY-999') && !JSON.stringify(b).includes(TOKEN));
+});
+
+test('sync: encrypted file hides the data, opens with the right passphrase only, and detects tampering', async () => {
+  const text = await SY.seal(backup14(), 'correct horse battery');
+  assert.ok(!text.includes('SECRET-NOTE-123') && !text.includes('be-3'), 'plaintext must not appear');
+  const ok = await SY.open(text, 'correct horse battery');
+  assert.equal(ok.backup.notes['be-3'], 'my private note SECRET-NOTE-123');
+  assert.ok((await SY.open(text, 'wrong passphrase!!')).error);
+  const env = JSON.parse(text); env.data = env.data.slice(0, -8) + (env.data.slice(-8) === 'AAAAAAAA' ? 'BBBBBBBB' : 'AAAAAAAA');
+  assert.ok((await SY.open(JSON.stringify(env), 'correct horse battery')).error, 'modified ciphertext is rejected');
+  assert.ok((await SY.open('not json', 'x')).error);
+  assert.ok((await SY.open(JSON.stringify({ app: 'InterviewGearUp', format: 'other' }), 'x')).error);
+  const t2 = await SY.seal(backup14(), 'correct horse battery');
+  assert.notEqual(JSON.parse(t2).iv, JSON.parse(text).iv, 'fresh IV every time');
+});
+
+test('sync: token and passphrase checks give friendly errors and never echo the secret', () => {
+  ['', '   ', 'has space', 'a'.repeat(300), 'bad$char'].forEach((t) => { const r = SY.checkToken(t); assert.ok(r.error && !r.error.includes(t.trim() || 'zzz')); });
+  assert.equal(SY.checkToken('  ' + TOKEN + ' ').token, TOKEN);
+  assert.ok(SY.checkPassphrase('short').error);
+  assert.ok(SY.checkPassphrase('long enough passphrase').pass);
+});
+
+test('sync: push creates a secret gist, only talks to api.github.com, and keeps the token out of the body', async () => {
+  const g = fakeGists();
+  const r = await SY.push({ token: TOKEN, pass: 'correct horse battery', backup: backup14(), fetch: g.f });
+  assert.equal(r.gistId, 'g1');
+  const c = g.calls[0];
+  assert.equal(c.url, 'https://api.github.com/gists');
+  assert.equal(JSON.parse(c.init.body).public, false);
+  assert.equal(c.init.headers.Authorization, 'Bearer ' + TOKEN);
+  assert.ok(!c.init.body.includes(TOKEN) && !c.init.body.includes('SECRET-NOTE-123') && !c.init.body.includes('AI-KEY-999'));
+  assert.equal(c.init.referrerPolicy, 'no-referrer');
+  g.calls.forEach((x) => assert.ok(x.url.startsWith('https://api.github.com/')));
+});
+
+test('sync: pull restores data; wrong passphrase, missing gist, truncated file and bad token are explained', async () => {
+  const g = fakeGists();
+  const pushed = await SY.push({ token: TOKEN, pass: 'correct horse battery', backup: backup14(), fetch: g.f });
+  const got = await SY.pull({ token: TOKEN, pass: 'correct horse battery', gistId: pushed.gistId, fetch: g.f });
+  assert.equal(got.backup.done['be-3'], 1);
+  await assert.rejects(SY.pull({ token: TOKEN, pass: 'not the passphrase', gistId: pushed.gistId, fetch: g.f }), /decrypt/);
+  await assert.rejects(SY.pull({ token: TOKEN, pass: 'correct horse battery', gistId: 'nope', fetch: g.f }), /not found/);
+  await assert.rejects(SY.pull({ token: TOKEN, pass: 'correct horse battery', gistId: '', fetch: g.f }), /gist id/);
+  await assert.rejects(SY.pull({ token: TOKEN, pass: 'correct horse battery', gistId: pushed.gistId, fetch: fakeGists({ truncated: true }).f }), /not found|too large/);
+  await assert.rejects(SY.pull({ token: TOKEN, pass: 'correct horse battery', gistId: 'x', fetch: fakeGists({ status: 401 }).f }), /rejected the token/);
+  await assert.rejects(SY.pull({ token: TOKEN, pass: 'correct horse battery', gistId: 'x', fetch: fakeGists({ offline: true }).f }), /Could not reach GitHub/);
+  await assert.rejects(SY.push({ token: 'bad token', pass: 'correct horse battery', backup: backup14(), fetch: g.f }), /token/);
+});
+
+test('sync: a second push updates the same gist, and a newer remote copy blocks a blind overwrite', async () => {
+  const g = fakeGists();
+  const first = await SY.push({ token: TOKEN, pass: 'correct horse battery', backup: backup14(), fetch: g.f });
+  const last = { remoteSavedAt: first.savedAt };
+  await new Promise((r) => setTimeout(r, 5));
+  const second = await SY.push({ token: TOKEN, pass: 'correct horse battery', backup: backup14(), gistId: first.gistId, last, fetch: g.f });
+  assert.equal(second.gistId, first.gistId);
+  assert.ok(g.calls.some((c) => c.init.method === 'PATCH'));
+  // this browser still believes the first save is the latest, but the gist now holds the second
+  await assert.rejects(SY.push({ token: TOKEN, pass: 'correct horse battery', backup: backup14(), gistId: first.gistId, last, fetch: g.f }), (e) => e.conflict === true);
+  await SY.push({ token: TOKEN, pass: 'correct horse battery', backup: backup14(), gistId: first.gistId, last, force: true, fetch: g.f });
+  assert.equal(SY.pushDecision(null, '', false).ok, true);
+  assert.equal(SY.pushDecision(null, '2026-01-01T00:00:00Z', false).ok, false, 'unknown device must not overwrite existing data silently');
+});
+
+test('sync: oversized data is refused before anything is sent', async () => {
+  const g = fakeGists();
+  const big = p14.IGU.stats.makeBackup((k) => (k === 'notes' ? { a: Array.from({ length: 4000 }, () => Math.random().toString(36).repeat(60)).join('') } : null));
+  await assert.rejects(SY.push({ token: TOKEN, pass: 'correct horse battery', backup: big, fetch: g.f }), /too large/);
+  assert.equal(g.calls.length, 0);
+});
+
+test('sync: the page may contact api.github.com and nothing new; the sync module names no other host', () => {
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  assert.ok(/connect-src https:\/\/api\.github\.com /.test(html));
+  const src = fs.readFileSync(path.join(root, 'js/sync.js'), 'utf8');
+  const hosts = new Set((src.match(/https?:\/\/[a-z0-9.-]+/gi) || []).map((s) => s.toLowerCase()));
+  assert.deepEqual([...hosts], ['https://api.github.com']);
+  assert.ok(!/localStorage|console\.(log|info|debug)/.test(src), 'sync.js must not persist or log secrets');
+  assert.ok(fs.existsSync(path.join(root, 'docs/THREAT_MODEL.md')));
+});
+
+const seo = require('../scripts/build-seo.js');
+const mdh = require('../scripts/lib/md-html.js');
+
+test('static pages: generated markdown is escaped and only https or in-app links survive', () => {
+  const out = mdh.mdToHtml('#### H <b>\n\nText <script>alert(1)</script> [bad](javascript:alert(1)) [ok](https://example.com) [app](#/q/be-3) `a<b` **bold**\n\n| A | B |\n|---|---|\n| <i> | 2 |\n\n```\n<div>\n```', '../');
+  assert.ok(!/<script|<b>|<i>|<div>/.test(out), out);
+  assert.ok(!out.includes('javascript:'));
+  assert.ok(out.includes('href="https://example.com"') && out.includes('href="../#/q/be-3"'));
+  assert.ok(out.includes('<table>') && out.includes('<strong>bold</strong>'));
+});
+
+test('static pages: committed q/ pages, sitemap and robots.txt match the current answers', () => {
+  const files = seo.build(root);
+  const real = bank.filter((e) => !IGU.quality.isPlaceholder(e));
+  assert.equal(Object.keys(files).filter((f) => /^q\/[a-z]+-\d+\.html$/.test(f)).length, real.length, 'one page per written answer');
+  bank.filter((e) => IGU.quality.isPlaceholder(e)).slice(0, 20).forEach((e) => assert.ok(!files['q/' + e.id + '.html'], 'no page for a placeholder'));
+  const stale = Object.keys(files).filter((f) => !fs.existsSync(path.join(root, f)) || fs.readFileSync(path.join(root, f), 'utf8') !== files[f]);
+  assert.deepEqual(stale.slice(0, 5), [], 'out of date: run npm run seo');
+  assert.deepEqual(seo.existing(root).filter((f) => !(f in files)), [], 'stale page for a removed question: run npm run seo');
+  Object.keys(files).filter((f) => f.endsWith('.html')).forEach((f) => {
+    assert.ok(!/<script/i.test(files[f]), f + ' must not contain script');
+    assert.ok(/Content-Security-Policy/.test(files[f]) && /rel="canonical"/.test(files[f]), f);
+  });
+  assert.ok(files['sitemap.xml'].includes('/q/be-3.html') && files['robots.txt'].includes('Sitemap:'));
+  assert.ok(/AI-drafted, not yet reviewed|Reviewed \d{4}/.test(files['q/be-3.html']), 'review status is disclosed');
+});
+
+test('new files are registered: index.html loads them and the service worker precaches them (checked above), nav links the new routes', () => {
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  ['js/paths.js', 'js/sync.js', 'js/starter-paths.js', 'js/views4.js'].forEach((f) => assert.ok(html.includes('src="' + f + '"'), f));
+  assert.ok(html.includes('href="#/paths"'));
+  assert.ok(fs.readFileSync(path.join(root, 'js/app.js'), 'utf8').includes("'#/sync'"));
+  ['learning-path.yml'].forEach((f) => assert.ok(fs.existsSync(path.join(root, '.github/ISSUE_TEMPLATE', f))));
+});

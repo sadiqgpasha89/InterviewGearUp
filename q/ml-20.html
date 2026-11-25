@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare class imbalance remedies: Random oversampling/undersampling, SMOTE, and Focal Loss. | InterviewGearUp</title>
+<meta name="description" content="For class imbalance, you can resample the data (random oversampling duplicates the minority, undersampling drops the majority, SMOTE synthesises new…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-20.html">
+<meta property="og:title" content="Compare class imbalance remedies: Random oversampling/undersampling, SMOTE, and Focal Loss. | InterviewGearUp">
+<meta property="og:description" content="For class imbalance, you can resample the data (random oversampling duplicates the minority, undersampling drops the majority, SMOTE synthesises new…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-20.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare class imbalance remedies: Random oversampling/undersampling, SMOTE, and Focal Loss.</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 2 (Mid-level) · Preprocessing · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>For class imbalance, you can resample the data (random oversampling duplicates the minority, undersampling drops the majority, SMOTE synthesises new minority points between neighbours), reweight the loss (class weights, focal loss), or change the decision threshold. Always evaluate with precision, recall or PR-AUC, and resample only the training data.</p></div>
+<h4>Explained in depth</h4>
+<h4>Data-level methods</h4>
+<ul><li><strong>Random undersampling</strong> of the majority class: fast, but throws away information.</li><li><strong>Random oversampling</strong> of the minority class: keeps all data, but duplicated points encourage overfitting.</li><li><strong>SMOTE</strong> creates synthetic minority points by interpolating between a sample and its nearest minority neighbours. It adds variety, but can create noisy points near class overlap, and it works poorly for high-dimensional or categorical data (variants exist).</li></ul>
+<h4>Algorithm-level methods</h4>
+<ul><li><strong>Class weights</strong>: weight errors on the minority more (<code>class_weight=&#39;balanced&#39;</code>, or <code>scale_pos_weight</code> in XGBoost). Simple and often as good as resampling.</li><li><strong>Focal loss</strong> (used in object detection): <code>FL = -(1 - p_t)^gamma * log(p_t)</code>. The factor shrinks the loss for <strong>easy, confidently correct</strong> examples, so training concentrates on hard and rare ones. Gamma is commonly 2.</li><li><strong>Threshold tuning</strong>: train normally, then choose the probability cut-off that maximises the metric you care about on validation data.</li><li>Ensembles that balance each bag (balanced random forest, EasyEnsemble).</li></ul>
+<h4>Rules that avoid mistakes</h4>
+<ul><li><strong>Split first, then resample only the training set.</strong> Resampling before splitting leaks duplicates or synthetic neighbours into validation and inflates scores.</li><li>Do not evaluate with accuracy; use precision, recall, F1, <strong>PR-AUC</strong> or cost-based metrics.</li><li>Resampling changes predicted probabilities, so recalibrate if you need real probabilities.</li></ul>
+<h4>Choosing</h4>
+<p>Start with class weights and threshold tuning; try SMOTE or focal loss if they are not enough. Collecting more minority data is best when possible.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why should you never oversample before splitting into train and validation?</li><li>How does focal loss change the gradient for easy examples?</li><li>When is changing the threshold enough?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-20">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-20%3A+Compare+class+imbalance+remedies%3A+Random+oversampling%2Fundersampling%2C%E2%80%A6&amp;question-id=ml-20&amp;context=ML+%2F+AI+engineer%2C+Gear+2%2C+topic%3A+Preprocessing%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-20.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

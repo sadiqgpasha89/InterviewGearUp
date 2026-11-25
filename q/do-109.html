@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does SSH key-based authentication work, and how do you use it securely? | InterviewGearUp</title>
+<meta name="description" content="SSH key authentication uses a key pair: the private key stays on your machine and the public key goes into the server&#39;s authorized_keys. The server…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-109.html">
+<meta property="og:title" content="How does SSH key-based authentication work, and how do you use it securely? | InterviewGearUp">
+<meta property="og:description" content="SSH key authentication uses a key pair: the private key stays on your machine and the public key goes into the server&#39;s authorized_keys. The server…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-109.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does SSH key-based authentication work, and how do you use it securely?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 1 (Junior) · Security · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>SSH key authentication uses a key pair: the private key stays on your machine and the public key goes into the server&#39;s authorized_keys. The server challenges you to prove you hold the private key without ever sending it. Protect the private key with a passphrase and an agent, disable password login, use modern key types, and rotate or revoke keys when people leave.</p></div>
+<h4>Explained in depth</h4>
+<h4>How it works</h4>
+<ol start="1"><li>You generate a key pair: <code>ssh-keygen -t ed25519 -C &quot;you@example.com&quot;</code>. This creates a <strong>private key</strong> (<code>~/.ssh/id_ed25519</code>, never shared) and a <strong>public key</strong> (<code>id_ed25519.pub</code>).</li><li>Add the public key to the server: <code>ssh-copy-id user@host</code>, which appends it to <code>~/.ssh/authorized_keys</code>.</li><li>When you connect, the server sends a challenge; your client <strong>signs</strong> it with the private key, and the server verifies the signature with the public key. No secret crosses the network.</li><li>Separately, the client verifies the <strong>server&#39;s host key</strong> against <code>~/.ssh/known_hosts</code>, to detect man-in-the-middle attacks. Check the fingerprint on first connect.</li></ol>
+<h4>Secure usage</h4>
+<ul><li><strong>Passphrase-protect</strong> private keys, and use <code>ssh-agent</code> (or a hardware token or OS keychain) to unlock once per session.</li><li>Prefer <strong>Ed25519</strong> (or RSA 3072+ bits); avoid DSA and old RSA sizes.</li><li>Server hardening in <code>sshd_config</code>: <code>PasswordAuthentication no</code>, <code>PermitRootLogin no</code>, restrict users with <code>AllowUsers</code>, and use fail2ban or rate limiting.</li><li>File permissions matter: <code>~/.ssh</code> at <code>700</code>, private keys at <code>600</code>.</li><li><strong>Agent forwarding</strong> (<code>-A</code>) exposes your agent to the remote host; prefer <strong>ProxyJump</strong> (<code>-J bastion</code>) to reach internal hosts through a bastion.</li><li>Use <strong>hardware keys</strong> (FIDO2 <code>ed25519-sk</code>) for stronger protection.</li></ul>
+<h4>At scale</h4>
+<p>Maintaining <code>authorized_keys</code> on hundreds of servers does not scale or offboard well. Use <strong>SSH certificates</strong> signed by a CA with short lifetimes, or session managers (AWS SSM, Teleport, IAP) with SSO and audit logging.</p>
+<h4>Troubleshooting</h4>
+<p><code>ssh -vvv host</code> shows which keys are offered and why authentication fails; check permissions and the server&#39;s logs (<code>/var/log/auth.log</code> or <code>journalctl -u sshd</code>).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the purpose of the known_hosts file?</li><li>How does ssh-agent avoid retyping passphrases?</li><li>What are SSH certificates and why do large teams use them?</li></ul>
+<p><a class="btn primary" href="../#/q/do-109">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-109%3A+How+does+SSH+key-based+authentication+work%2C+and+how+do+you+use+it%E2%80%A6&amp;question-id=do-109&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+1%2C+topic%3A+Security%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-109.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

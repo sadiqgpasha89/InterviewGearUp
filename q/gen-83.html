@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are the four Coffman conditions required for deadlocks, and how can breaking one prevent deadlocks? | InterviewGearUp</title>
+<meta name="description" content="A deadlock needs all four Coffman conditions at once: mutual exclusion, hold and wait, no preemption and circular wait. Removing any one prevents…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-83.html">
+<meta property="og:title" content="What are the four Coffman conditions required for deadlocks, and how can breaking one prevent deadlocks? | InterviewGearUp">
+<meta property="og:description" content="A deadlock needs all four Coffman conditions at once: mutual exclusion, hold and wait, no preemption and circular wait. Removing any one prevents…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-83.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are the four Coffman conditions required for deadlocks, and how can breaking one prevent deadlocks?</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 3 (Senior) · Systems · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A deadlock needs all four Coffman conditions at once: mutual exclusion, hold and wait, no preemption and circular wait. Removing any one prevents deadlock. The most practical fix is to break circular wait by always acquiring locks in one global order; other fixes use timeouts, try-locks or acquiring everything at once.</p></div>
+<h4>Explained in depth</h4>
+<h4>The four conditions</h4>
+<ol start="1"><li><strong>Mutual exclusion</strong>: a resource can be held by only one thread at a time.</li><li><strong>Hold and wait</strong>: a thread holds one resource while waiting for another.</li><li><strong>No preemption</strong>: a resource can only be released by the holder, not taken away.</li><li><strong>Circular wait</strong>: there is a cycle of threads, each waiting for a resource held by the next.</li></ol>
+<h4>Breaking each condition</h4>
+<ul><li><strong>Circular wait</strong> (most common fix): define a <strong>global lock order</strong> and always acquire locks in that order. Thread A locking (X then Y) and thread B locking (Y then X) is the classic deadlock; if both take X first it cannot happen.</li><li><strong>Hold and wait</strong>: acquire all needed locks at once, or release what you hold before waiting.</li><li><strong>No preemption</strong>: use <code>tryLock</code> with a timeout and back off, releasing held locks on failure.</li><li><strong>Mutual exclusion</strong>: use lock-free structures, immutable data or message passing so fewer resources need exclusive access.</li></ul>
+<h4>Example</h4>
+<pre><code># Deadlock risk: transfer(a, b) and transfer(b, a) run at the same time
+def transfer(a, b, amount):
+    first, second = (a, b) if a.id &lt; b.id else (b, a)   # fixed order by id
+    with first.lock:
+        with second.lock:
+            ...</code></pre>
+<h4>Detection</h4>
+<p>Build a wait-for graph and look for cycles, or use a thread dump (for example <code>jstack</code> shows deadlocked threads). Database engines detect cycles and abort one transaction.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you detect a deadlock in a running system?</li><li>What is the difference between deadlock, livelock and starvation?</li><li>How does the banker&#39;s algorithm avoid deadlock?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-83">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-83%3A+What+are+the+four+Coffman+conditions+required+for+deadlocks%2C+and+how%E2%80%A6&amp;question-id=gen-83&amp;context=Software+engineer+%28core%29%2C+Gear+3%2C+topic%3A+Systems%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-83.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

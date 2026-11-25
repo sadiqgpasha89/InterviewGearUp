@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you plan GPU capacity and control costs for model training and inference at scale? | InterviewGearUp</title>
+<meta name="description" content="Forecast demand by workload type, size jobs from model, data and throughput measurements, mix reserved capacity for steady inference with on-demand and…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-109.html">
+<meta property="og:title" content="How do you plan GPU capacity and control costs for model training and inference at scale? | InterviewGearUp">
+<meta property="og:description" content="Forecast demand by workload type, size jobs from model, data and throughput measurements, mix reserved capacity for steady inference with on-demand and…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-109.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you plan GPU capacity and control costs for model training and inference at scale?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 4 (Lead / Staff) · Infrastructure · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Forecast demand by workload type, size jobs from model, data and throughput measurements, mix reserved capacity for steady inference with on-demand and spot for bursty training, raise utilisation with scheduling, batching, quantisation and right-sized hardware, and attribute costs to teams. Track GPU utilisation, queue time and cost per token or per training run, and revisit as models and prices change.</p></div>
+<h4>Explained in depth</h4>
+<h4>Understand the workloads</h4>
+<ul><li><strong>Training and fine-tuning</strong>: bursty, large jobs; need high memory and interconnect (NVLink, InfiniBand) for multi-GPU; fault tolerance through checkpoints; flexible timing.</li><li><strong>Inference</strong>: steady, latency-sensitive traffic; scale with demand; memory bound by model weights and KV cache.</li><li><strong>Experimentation</strong>: many small jobs; notebooks often leave GPUs idle.</li></ul>
+<h4>Sizing</h4>
+<ul><li>Estimate <strong>training compute</strong> (roughly 6 times parameters times tokens in FLOPs for transformers), memory needs (weights, gradients, optimiser state, activations; sharding with FSDP or ZeRO), and measured <strong>throughput</strong> (tokens per second per GPU) from a pilot run. Plan for realistic utilisation of about 30 to 50 percent of peak FLOPs.</li><li>For inference, size by <strong>requests per second, tokens per request and latency targets</strong>: weights plus KV cache memory per concurrent request, batch size, and throughput per GPU from benchmarks (vLLM, TensorRT-LLM, Triton).</li><li>Add headroom for peaks and failures, and plan for growth with a quarterly forecast.</li></ul>
+<h4>Procurement mix</h4>
+<ul><li><strong>Reserved or committed capacity</strong> (savings plans, long-term contracts, owned hardware) for baseline inference and predictable training.</li><li><strong>On-demand</strong> for spikes and <strong>spot or preemptible</strong> instances for checkpointed training and batch jobs (60 to 90 percent cheaper).</li><li>Consider multiple providers or regions for availability, and compare <strong>buy versus rent</strong> by utilisation: owning pays off only at high, sustained use, with ongoing costs for power, cooling, networking and staff.</li></ul>
+<h4>Raising utilisation</h4>
+<ul><li><strong>Scheduler and quotas</strong> (Kubernetes with Kueue or Volcano, Slurm): queues, priorities, fair sharing and preemption, gang scheduling for distributed jobs.</li><li><strong>GPU sharing</strong> for small jobs: MIG partitions, time-slicing, or multi-model serving on one GPU.</li><li>Auto-shutdown of idle notebooks, cluster autoscaling, and bin packing.</li><li><strong>Inference efficiency</strong>: continuous batching, PagedAttention, quantisation (INT8, FP8, 4-bit), speculative decoding, prompt caching, smaller or distilled models, routing easy requests to cheaper models, and request caching.</li><li><strong>Training efficiency</strong>: mixed precision, FlashAttention, efficient data loading, gradient checkpointing, and early stopping of poor experiments.</li><li>Choose appropriate hardware (cheaper GPUs for small models and inference).</li></ul>
+<h4>Governance</h4>
+<p>Tag cost by team and project, show dashboards (GPU hours, utilisation, queue time, cost per training run, cost per 1000 tokens), set budgets and alerts, and review regularly. Make design decisions with cost as a criterion, since the cheapest GPU hour is the one you do not need.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you decide between buying GPUs and renting them in the cloud?</li><li>How does batching and quantisation change inference cost?</li><li>How do you schedule many teams&#39; training jobs on a shared cluster?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-109">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-109%3A+How+do+you+plan+GPU+capacity+and+control+costs+for+model+training%E2%80%A6&amp;question-id=ml-109&amp;context=ML+%2F+AI+engineer%2C+Gear+4%2C+topic%3A+Infrastructure%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-109.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

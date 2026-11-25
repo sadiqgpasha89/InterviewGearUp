@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are primary keys, foreign keys and constraints, and why do they matter? | InterviewGearUp</title>
+<meta name="description" content="A primary key uniquely identifies each row, a foreign key references a row in another table to enforce referential integrity, and constraints such as NOT…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-109.html">
+<meta property="og:title" content="What are primary keys, foreign keys and constraints, and why do they matter? | InterviewGearUp">
+<meta property="og:description" content="A primary key uniquely identifies each row, a foreign key references a row in another table to enforce referential integrity, and constraints such as NOT…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-109.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are primary keys, foreign keys and constraints, and why do they matter?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 1 (Junior) · Databases · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A primary key uniquely identifies each row, a foreign key references a row in another table to enforce referential integrity, and constraints such as NOT NULL, UNIQUE and CHECK make the database reject invalid data. Putting rules in the schema protects data integrity even when application code has bugs or several services write to the same tables.</p></div>
+<h4>Explained in depth</h4>
+<h4>Primary key</h4>
+<ul><li>Uniquely identifies a row; cannot be null; automatically indexed.</li><li><strong>Surrogate keys</strong> (auto-increment integers, UUIDs) are meaningless and never change. <strong>Natural keys</strong> (email, ISBN) carry meaning but can change or be reused. Most designs use a surrogate primary key plus a <code>UNIQUE</code> constraint on natural attributes.</li><li>Composite keys combine columns, common in join tables.</li></ul>
+<h4>Foreign key</h4>
+<pre><code>CREATE TABLE orders (
+  id          BIGSERIAL PRIMARY KEY,
+  customer_id BIGINT NOT NULL REFERENCES customers(id) ON DELETE RESTRICT,
+  total       NUMERIC(10,2) CHECK (total &gt;= 0),
+  status      TEXT NOT NULL DEFAULT &#39;new&#39;
+);</code></pre>
+<p>The database guarantees every order points to an existing customer, so <strong>orphan rows</strong> cannot appear. Actions on delete or update: <code>RESTRICT</code> or <code>NO ACTION</code> (block), <code>CASCADE</code> (delete children too), <code>SET NULL</code>.</p>
+<h4>Other constraints</h4>
+<ul><li><code>NOT NULL</code>: value required.</li><li><code>UNIQUE</code>: no duplicates (for example email), also backed by an index.</li><li><code>CHECK</code>: domain rules such as positive amounts or allowed statuses.</li><li><code>DEFAULT</code>: sensible values.</li></ul>
+<h4>Why they matter</h4>
+<ul><li><strong>Integrity at the lowest layer</strong>: application validation can be bypassed by bugs, scripts, concurrent requests or other services. A unique constraint is the only reliable way to prevent duplicate rows under race conditions.</li><li>Documentation of relationships, and optimisers can use the information.</li><li>Safer migrations and fewer data-cleanup projects.</li></ul>
+<h4>Trade-offs</h4>
+<p>Foreign keys add overhead on writes and complicate sharding, bulk loads and some online migrations, so some large-scale systems enforce relationships in application code and with periodic consistency checks. Index foreign key columns to keep joins and deletes fast. Be careful with <code>CASCADE</code> since an accidental delete can remove large amounts of data.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Natural key versus surrogate key: which would you choose?</li><li>What does ON DELETE CASCADE do and when is it dangerous?</li><li>Why might large systems avoid foreign keys?</li></ul>
+<p><a class="btn primary" href="../#/q/be-109">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-109%3A+What+are+primary+keys%2C+foreign+keys+and+constraints%2C+and+why+do+they%E2%80%A6&amp;question-id=be-109&amp;context=Backend+engineer%2C+Gear+1%2C+topic%3A+Databases%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-109.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

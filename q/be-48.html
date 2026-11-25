@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does consistent hashing with virtual nodes prevent data skew and re-hashing overhead? | InterviewGearUp</title>
+<meta name="description" content="Consistent hashing places both nodes and keys on a hash ring, and each key belongs to the next node clockwise. Adding or removing a node moves only about…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-48.html">
+<meta property="og:title" content="How does consistent hashing with virtual nodes prevent data skew and re-hashing overhead? | InterviewGearUp">
+<meta property="og:description" content="Consistent hashing places both nodes and keys on a hash ring, and each key belongs to the next node clockwise. Adding or removing a node moves only about…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-48.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does consistent hashing with virtual nodes prevent data skew and re-hashing overhead?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · Distributed systems · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Consistent hashing places both nodes and keys on a hash ring, and each key belongs to the next node clockwise. Adding or removing a node moves only about 1/N of the keys, unlike hash mod N, which remaps nearly everything. Virtual nodes give each server many ring positions, which evens out load and spreads a failed node&#39;s data across many peers.</p></div>
+<h4>Explained in depth</h4>
+<h4>The problem with modulo</h4>
+<p><code>node = hash(key) % N</code> is fine until N changes. Going from 10 to 11 servers changes the target for roughly 90% of keys, which empties a cache or triggers a massive data migration.</p>
+<h4>The ring</h4>
+<p>Hash node ids and keys into the same circular space (for example 0 to 2^32 - 1). A key is stored on the first node found clockwise from its position. Adding a node takes over only the keys between it and its predecessor; removing one hands its keys to the next node. On average <strong>K/N keys move</strong>.</p>
+<h4>Why virtual nodes</h4>
+<p>With only a few points on the ring, arcs have uneven lengths, so some nodes get much more data. With virtual nodes, each physical server appears at, say, 100 to 500 positions:</p>
+<ul><li>Load is close to even, since many small arcs average out.</li><li>A bigger server can be given more virtual nodes (weighted capacity).</li><li>When a node fails, its keys spread over many other nodes, not all onto one neighbour.</li></ul>
+<h4>Replication</h4>
+<p>Systems like Dynamo and Cassandra store each key on the next R distinct physical nodes along the ring, which gives replicas and lets reads and writes use quorums.</p>
+<h4>Trade-offs</h4>
+<ul><li>More virtual nodes mean more metadata and more streaming operations during rebalancing.</li><li>A hot key still lands on one node, so hot keys need caching or splitting.</li><li>Alternatives: fixed hash slots (Redis Cluster uses 16,384 slots), rendezvous hashing, and Maglev hashing for load balancers.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you pick the number of virtual nodes per server?</li><li>How does Redis Cluster&#39;s fixed slots approach differ from a hash ring?</li><li>How would you handle a single extremely hot key?</li></ul>
+<p><a class="btn primary" href="../#/q/be-48">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-48%3A+How+does+consistent+hashing+with+virtual+nodes+prevent+data+skew+and%E2%80%A6&amp;question-id=be-48&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+Distributed+systems%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-48.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

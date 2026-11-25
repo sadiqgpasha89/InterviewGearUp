@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you run vulnerability management at scale so teams fix what matters first? | InterviewGearUp</title>
+<meta name="description" content="Maintain a complete asset inventory, scan continuously across code, dependencies, containers, cloud and infrastructure, then prioritise by exploitability…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-119.html">
+<meta property="og:title" content="How do you run vulnerability management at scale so teams fix what matters first? | InterviewGearUp">
+<meta property="og:description" content="Maintain a complete asset inventory, scan continuously across code, dependencies, containers, cloud and infrastructure, then prioritise by exploitability…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-119.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you run vulnerability management at scale so teams fix what matters first?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 4 (Lead / Staff) · Vulnerability management · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Maintain a complete asset inventory, scan continuously across code, dependencies, containers, cloud and infrastructure, then prioritise by exploitability and business context using signals such as EPSS and the CISA KEV list rather than CVSS alone, assign owners with SLAs by risk tier, automate fixes and patching, track exceptions with expiry, and report on exposure time rather than raw counts.</p></div>
+<h4>Explained in depth</h4>
+<h4>Foundation</h4>
+<ul><li><strong>Asset inventory</strong> with ownership and criticality (CMDB, cloud APIs, Kubernetes, code repositories). You cannot fix what you cannot see.</li><li><strong>Coverage</strong>: SAST and SCA in pull requests, container image and registry scans, IaC scanning, DAST and API scanning for web apps, authenticated infrastructure scans, cloud posture (CSPM), and external attack surface discovery. Add a software bill of materials (SBOM) per build to answer &quot;are we affected?&quot; quickly when a new CVE appears.</li></ul>
+<h4>Prioritise</h4>
+<p>CVSS measures severity in the abstract and tends to flag too many &quot;critical&quot; items. Combine:</p>
+<ul><li><strong>Exploitability</strong>: <strong>EPSS</strong> probability of exploitation, <strong>CISA Known Exploited Vulnerabilities (KEV)</strong> catalogue, public exploit code, observed attacks.</li><li><strong>Exposure</strong>: internet-facing, reachable code path (reachability analysis for dependencies), network position.</li><li><strong>Asset criticality and data sensitivity.</strong></li><li><strong>Compensating controls</strong>: WAF rule, segmentation, disabled feature.</li></ul>
+<p>A simple scheme: Tier 1 (actively exploited or critical exposed asset) fix within 48 hours to 7 days; Tier 2 within 30 days; Tier 3 within 90 days or by normal maintenance.</p>
+<h4>Fix efficiently</h4>
+<ul><li><strong>Route to owners</strong> automatically (ticket in the team&#39;s tracker with context, fix version and reproduction), de-duplicating findings.</li><li><strong>Automate remediation</strong>: Dependabot or Renovate pull requests, golden images rebuilt on a schedule, base image updates, automated patch windows, and immutable infrastructure that replaces rather than patches.</li><li><strong>Virtual patching</strong> and mitigations for unpatched or end-of-life systems; plan replacements.</li><li><strong>Exceptions</strong> need a risk acceptance, compensating controls and an <strong>expiry date</strong>.</li><li><strong>Guardrails to prevent new debt</strong>: CI gates for new critical findings, approved base images, and policies in admission controllers.</li></ul>
+<h4>Measure and communicate</h4>
+<ul><li><strong>Mean time to remediate</strong> per tier, SLA compliance, vulnerability <strong>age</strong> and &quot;exposure window&quot; for exploited issues, coverage of scanning, and backlog trend, not total counts.</li><li>Dashboards per team and executive summaries, with regular reviews and leadership support so security work is scheduled (for example a fixed share of sprint capacity).</li></ul>
+<h4>Culture</h4>
+<p>Make it easy and rewarding to fix: clear guidance, low false positives (tune scanners), and recognition for teams with good hygiene. Handle major vulnerabilities like Log4Shell through an emergency process: identify exposure via SBOM and scanning, mitigate quickly, and communicate.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is CVSS alone a poor prioritisation method?</li><li>How do you handle vulnerabilities with no available patch?</li><li>How do you get busy product teams to meet remediation SLAs?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-119">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-119%3A+How+do+you+run+vulnerability+management+at+scale+so+teams+fix+what%E2%80%A6&amp;question-id=sec-119&amp;context=Security+engineer%2C+Gear+4%2C+topic%3A+Vulnerability+management%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-119.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

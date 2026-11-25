@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does Apache Iceberg guarantee ACID transactions and snapshot isolation on cloud object storage? | InterviewGearUp</title>
+<meta name="description" content="Iceberg tracks a table as a tree: a catalog points to the current metadata file, which lists snapshots; each snapshot points to manifest lists and…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-29.html">
+<meta property="og:title" content="How does Apache Iceberg guarantee ACID transactions and snapshot isolation on cloud object storage? | InterviewGearUp">
+<meta property="og:description" content="Iceberg tracks a table as a tree: a catalog points to the current metadata file, which lists snapshots; each snapshot points to manifest lists and…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-29.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does Apache Iceberg guarantee ACID transactions and snapshot isolation on cloud object storage?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Lakehouse · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Iceberg tracks a table as a tree: a catalog points to the current metadata file, which lists snapshots; each snapshot points to manifest lists and manifests that list the data files. A commit writes new files and then atomically swaps the catalog pointer using compare-and-swap. Readers use a fixed snapshot, which gives snapshot isolation without locking.</p></div>
+<h4>Explained in depth</h4>
+<h4>Metadata tree</h4>
+<pre><code>Catalog (pointer to current metadata file)
+  -&gt; metadata.json  (schema, partition spec, list of snapshots, current snapshot id)
+      -&gt; snapshot  -&gt; manifest list  -&gt; manifests  -&gt; data files (Parquet) with stats</code></pre>
+<ul><li>A <strong>manifest</strong> lists data files with partition values and column min and max statistics.</li><li>A <strong>snapshot</strong> is the complete set of files for the table at one commit.</li><li>All files are <strong>immutable</strong>; changes create new files and new metadata.</li></ul>
+<h4>How a write commits</h4>
+<ol start="1"><li>The writer writes new data files (and delete files) to object storage.</li><li>It writes new manifests, a manifest list and a new <code>metadata.json</code> that adds a snapshot.</li><li>It asks the <strong>catalog</strong> to atomically change the table pointer from the old metadata file to the new one (compare-and-swap).</li></ol>
+<p>If another writer committed first, the swap fails, and the writer <strong>re-reads the latest metadata, checks for conflicts and retries</strong> (optimistic concurrency). Object stores lack atomic rename, so the catalog provides this atomicity.</p>
+<h4>Isolation and consistency</h4>
+<ul><li><strong>Atomicity</strong>: until the pointer changes, readers do not see any new files; partial writes are invisible.</li><li><strong>Snapshot isolation</strong>: a query pins one snapshot id at the start, so concurrent commits cannot change what it sees.</li><li><strong>Consistency</strong>: schema and partition specs are in metadata, validated at commit.</li><li><strong>Durability</strong>: immutable files in object storage.</li></ul>
+<h4>Row-level changes</h4>
+<p>Deletes are recorded as <strong>delete files</strong> (positional or equality deletes, merge-on-read) or by rewriting affected files (copy-on-write), depending on the table configuration.</p>
+<h4>Maintenance</h4>
+<p>Compact files, expire snapshots (which limits time travel) and remove orphan files left by failed writers.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does optimistic concurrency detect conflicting writers?</li><li>How are deletes represented without rewriting a whole file?</li><li>Why does atomic rename matter on object stores, and how does the catalog solve it?</li></ul>
+<p><a class="btn primary" href="../#/q/de-29">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-29%3A+How+does+Apache+Iceberg+guarantee+ACID+transactions+and+snapshot%E2%80%A6&amp;question-id=de-29&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Lakehouse%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-29.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

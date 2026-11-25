@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are the rules of React Hooks and why must hooks be called at the top level? | InterviewGearUp</title>
+<meta name="description" content="Call hooks only at the top level of a component or custom hook, never inside loops, conditions or nested functions, and only from React function…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-30.html">
+<meta property="og:title" content="What are the rules of React Hooks and why must hooks be called at the top level? | InterviewGearUp">
+<meta property="og:description" content="Call hooks only at the top level of a component or custom hook, never inside loops, conditions or nested functions, and only from React function…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-30.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are the rules of React Hooks and why must hooks be called at the top level?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · React · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Call hooks only at the top level of a component or custom hook, never inside loops, conditions or nested functions, and only from React function components or other hooks. React identifies each hook by the order of calls during a render, so the order must be identical every time or state gets attached to the wrong hook.</p></div>
+<h4>Explained in depth</h4>
+<h4>The two rules</h4>
+<ol start="1"><li><strong>Only call hooks at the top level</strong>: not in <code>if</code> statements, loops, after an early <code>return</code>, or inside callbacks.</li><li><strong>Only call hooks from React functions</strong>: function components or custom hooks (functions whose names start with <code>use</code>).</li></ol>
+<h4>Why</h4>
+<p>React does not know hook names. Per component, it stores hook state in an ordered list (a linked list on the fiber). Each <code>useState</code> or <code>useEffect</code> call takes the <strong>next slot</strong> in that list during a render.</p>
+<pre><code>function Bad({ show }) {
+  if (show) {
+    const [a, setA] = useState(0);   // slot 1 only sometimes
+  }
+  const [b, setB] = useState(&#39;&#39;);    // slot 1 or 2: mismatched state
+}</code></pre>
+<p>If the condition changes between renders, <code>b</code> would read the slot that belonged to <code>a</code>. React cannot tell, so state and effects would be corrupted. React warns about this in development.</p>
+<h4>How to follow the rules</h4>
+<ul><li>Put the condition <strong>inside</strong> the hook or effect: <code>useEffect(() =&gt; { if (show) ... }, [show])</code>.</li><li>If a branch needs its own state, move it into a <strong>child component</strong>.</li><li>Place early returns <strong>after</strong> all hooks.</li><li>Use the ESLint plugin <code>eslint-plugin-react-hooks</code> (<code>rules-of-hooks</code> and <code>exhaustive-deps</code>), which catches violations and missing dependencies.</li></ul>
+<h4>Exception</h4>
+<p>The newer <code>use</code> API, which reads a promise or context, can be called conditionally. The classic hooks (<code>useState</code>, <code>useEffect</code>, <code>useMemo</code> and so on) cannot.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What goes wrong if a hook is called inside an if statement?</li><li>How would you conditionally run an effect without breaking the rules?</li><li>Why do custom hooks have to start with &#39;use&#39;?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-30">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-30%3A+What+are+the+rules+of+React+Hooks+and+why+must+hooks+be+called+at%E2%80%A6&amp;question-id=fe-30&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+React%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-30.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>A database query is slow in production. How do you investigate and fix it? | InterviewGearUp</title>
+<meta name="description" content="Confirm it is the query (metrics, slow query log), read its execution plan with EXPLAIN ANALYZE, fix the cause (missing or unusable index, bad join, too…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-8.html">
+<meta property="og:title" content="A database query is slow in production. How do you investigate and fix it? | InterviewGearUp">
+<meta property="og:description" content="Confirm it is the query (metrics, slow query log), read its execution plan with EXPLAIN ANALYZE, fix the cause (missing or unusable index, bad join, too…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-8.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>A database query is slow in production. How do you investigate and fix it?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · Performance · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Confirm it is the query (metrics, slow query log), read its execution plan with EXPLAIN ANALYZE, fix the cause (missing or unusable index, bad join, too many rows, stale statistics, lock waits), and verify on production-like data.</p></div>
+<h4>Explained in depth</h4>
+<ol start="1"><li><strong>Scope</strong>: since when, which endpoints, what changed (deploy, data growth, traffic).</li><li><strong>Capture</strong> the exact query and parameters (<code>pg_stat_statements</code>, slow query log).</li><li><strong>Read the plan</strong> with <code>EXPLAIN (ANALYZE, BUFFERS)</code>. Look for sequential scans on large tables, large gaps between estimated and actual rows (stale statistics: run <code>ANALYZE</code>), sorts spilling to disk, and nested loops over big inputs.</li><li><strong>Fix</strong>:</li></ol>
+<ul><li>Add a composite index matching the filters and sort order (column order matters).</li><li>Do not wrap indexed columns in functions (<code>WHERE date(created_at) = ...</code>).</li><li>Select only the columns you need.</li><li>Use keyset pagination instead of large <code>OFFSET</code>.</li><li>Pre-aggregate or denormalise for heavy reports.</li></ul>
+<ol start="5"><li><strong>Check waits</strong>: blocked sessions, lock contention and connection pool exhaustion can look like a slow query.</li><li><strong>Mitigate quickly</strong> if needed: kill the runaway query, route reads to a replica, add caching.</li><li><strong>Prevent</strong>: alerting on query latency, and review plans for new queries.</li></ol>
+<p>Indexes cost write speed and space. On a huge live table create them without blocking writes (for example <code>CREATE INDEX CONCURRENTLY</code> in PostgreSQL).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why might the planner ignore your index?</li><li>What is wrong with OFFSET pagination?</li><li>How do you add an index to a huge live table safely?</li></ul>
+<p><a class="btn primary" href="../#/q/be-8">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-8%3A+A+database+query+is+slow+in+production.+How+do+you+investigate+and%E2%80%A6&amp;question-id=be-8&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+Performance%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-8.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

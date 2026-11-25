@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are the common root causes of flaky tests, and what strategies (quarantine, retries) mitigate them? | InterviewGearUp</title>
+<meta name="description" content="Flaky tests come from timing and race conditions, shared or leftover state, non-deterministic data such as time or randomness, unstable external…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-39.html">
+<meta property="og:title" content="What are the common root causes of flaky tests, and what strategies (quarantine, retries) mitigate them? | InterviewGearUp">
+<meta property="og:description" content="Flaky tests come from timing and race conditions, shared or leftover state, non-deterministic data such as time or randomness, unstable external…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-39.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are the common root causes of flaky tests, and what strategies (quarantine, retries) mitigate them?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 3 (Senior) · Reliability · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Flaky tests come from timing and race conditions, shared or leftover state, non-deterministic data such as time or randomness, unstable external services, and resource contention in CI. Fix the root cause first; quarantine a flaky test with an owner and deadline; treat automatic retries as a diagnostic aid, not a cure.</p></div>
+<h4>Explained in depth</h4>
+<h4>Common root causes</h4>
+<ul><li><strong>Timing</strong>: fixed sleeps, assertions that run before the UI or backend has settled, race between test and app.</li><li><strong>Shared state and test order</strong>: tests that depend on data left by others, global singletons, or a database that is not reset.</li><li><strong>Non-determinism</strong>: real clocks and timezones, random values, unordered collections, floating-point comparisons.</li><li><strong>External dependencies</strong>: third-party APIs, email or network calls that fail or slow down.</li><li><strong>Environment</strong>: CPU or memory pressure in shared CI runners, parallel tests colliding on ports or files.</li><li><strong>Brittle selectors</strong> and animation in UI tests.</li></ul>
+<h4>Strategies</h4>
+<ol start="1"><li><strong>Reproduce</strong> by running the test many times, in a loop, under load or in the same order as CI.</li><li><strong>Fix the cause</strong>: wait for conditions instead of time, isolate data per test (unique ids, transactions, containers), inject fake clocks and seeded random numbers, replace external services with mocks or virtual services.</li><li><strong>Quarantine</strong>: move a known-flaky test out of the blocking path, <strong>track it with an owner and a deadline</strong>, and restore or delete it. Quarantine without follow-up becomes a graveyard.</li><li><strong>Retries</strong>: a limited retry (one or two) keeps pipelines moving, but record every retried pass as a flake. Unbounded retries hide real, intermittent product bugs.</li><li><strong>Measure</strong>: track flake rate per test and per suite and make it visible, so the team sees the cost.</li></ol>
+<p>Remember that some flakes are real bugs, such as race conditions in the application, so investigate before assuming it is the test.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How would you measure and report the flake rate of a large suite?</li><li>When is it better to delete a flaky test than to fix it?</li><li>How do you tell a flaky test from a real intermittent bug?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-39">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-39%3A+What+are+the+common+root+causes+of+flaky+tests%2C+and+what+strategies%E2%80%A6&amp;question-id=qa-39&amp;context=QA+%2F+SDET%2C+Gear+3%2C+topic%3A+Reliability%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-39.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

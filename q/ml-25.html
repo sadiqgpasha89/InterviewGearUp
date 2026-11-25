@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does LightGBM use histogram-based algorithms and Exclusive Feature Bundling for speed? | InterviewGearUp</title>
+<meta name="description" content="LightGBM speeds up gradient boosting by bucketing feature values into histograms so split search scans a few hundred bins instead of sorting all values,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-25.html">
+<meta property="og:title" content="How does LightGBM use histogram-based algorithms and Exclusive Feature Bundling for speed? | InterviewGearUp">
+<meta property="og:description" content="LightGBM speeds up gradient boosting by bucketing feature values into histograms so split search scans a few hundred bins instead of sorting all values,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-25.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does LightGBM use histogram-based algorithms and Exclusive Feature Bundling for speed?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · Tree Models · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>LightGBM speeds up gradient boosting by bucketing feature values into histograms so split search scans a few hundred bins instead of sorting all values, and by growing trees leaf-wise. Gradient-based one-side sampling keeps the large-gradient rows, and exclusive feature bundling merges sparse features that are rarely non-zero together.</p></div>
+<h4>Explained in depth</h4>
+<h4>Histogram-based splits</h4>
+<p>Each continuous feature is bucketed into at most <code>max_bin</code> bins (255 by default). Split finding scans bin statistics (sum of gradients and hessians) instead of sorting raw values, so it costs O(bins) per feature rather than O(rows). Bins use little memory, and the <strong>histogram subtraction trick</strong> gets a sibling&#39;s histogram as parent minus the other child, so only the smaller child needs computing.</p>
+<h4>Leaf-wise growth</h4>
+<p>Most libraries grow trees level by level. LightGBM repeatedly splits the leaf with the <strong>largest loss reduction</strong>, regardless of depth. It reaches a lower loss with the same number of leaves but can build deep, lopsided trees that overfit small datasets. Control it with <code>num_leaves</code>, <code>max_depth</code> and <code>min_data_in_leaf</code>.</p>
+<h4>GOSS (gradient-based one-side sampling)</h4>
+<p>Rows with large gradients are under-trained and informative. GOSS keeps all of the top fraction by gradient size, randomly samples from the rest and up-weights that sample to keep the gradient estimate approximately unbiased. This uses far fewer rows per iteration.</p>
+<h4>EFB (exclusive feature bundling)</h4>
+<p>In high-dimensional sparse data, many features are almost never non-zero at the same time (such as one-hot columns). EFB bundles these mutually exclusive features into one by offsetting their bin ranges, so histograms are built for far fewer features. Finding the best bundling is NP-hard, so a greedy graph-colouring approach is used, allowing a small conflict rate.</p>
+<h4>Other points</h4>
+<p>Native handling of categorical features, and parallel training modes (feature, data and voting parallel). XGBoost and CatBoost have since added histogram-based modes, so the gap is smaller than it was at first.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why can leaf-wise growth overfit on small datasets and how do you control it?</li><li>How does GOSS keep the gradient estimate unbiased?</li><li>How does LightGBM handle categorical features compared with one-hot encoding?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-25">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-25%3A+How+does+LightGBM+use+histogram-based+algorithms+and+Exclusive%E2%80%A6&amp;question-id=ml-25&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+Tree+Models%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-25.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

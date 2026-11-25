@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does a Kubernetes rolling update work? Explain readiness versus liveness probes. | InterviewGearUp</title>
+<meta name="description" content="A Deployment manages ReplicaSets of Pods and does rolling updates by starting new Pods and stopping old ones gradually. Readiness decides when a Pod…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-3.html">
+<meta property="og:title" content="How does a Kubernetes rolling update work? Explain readiness versus liveness probes. | InterviewGearUp">
+<meta property="og:description" content="A Deployment manages ReplicaSets of Pods and does rolling updates by starting new Pods and stopping old ones gradually. Readiness decides when a Pod…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-3.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does a Kubernetes rolling update work? Explain readiness versus liveness probes.</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 2 (Mid-level) · Kubernetes · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A Deployment manages ReplicaSets of Pods and does rolling updates by starting new Pods and stopping old ones gradually. Readiness decides when a Pod receives traffic; liveness decides when to restart it.</p></div>
+<h4>Explained in depth</h4>
+<p><strong>Objects</strong>: a Pod runs one or more containers; a Deployment declares replicas and update strategy; a Service gives a stable address that load-balances across Pods matching its label selector.</p>
+<p><strong>Rolling update</strong>: a new ReplicaSet scales up while the old one scales down, limited by <code>maxSurge</code> and <code>maxUnavailable</code>. Roll back with <code>kubectl rollout undo</code>.</p>
+<p><strong>Probes</strong>:</p>
+<ul><li>Failing <strong>readiness</strong>: the Pod is removed from Service endpoints, not restarted.</li><li>Failing <strong>liveness</strong>: the container is restarted. Use it for deadlocks, and do not make it depend on downstream services.</li><li><strong>Startup</strong> probe: gives slow-starting apps time before liveness begins.</li></ul>
+<pre><code>readinessProbe:
+  httpGet: { path: /ready, port: 8080 }
+  periodSeconds: 5
+livenessProbe:
+  httpGet: { path: /healthz, port: 8080 }
+  initialDelaySeconds: 15</code></pre>
+<p>Also set resource requests and limits, a PodDisruptionBudget, and handle SIGTERM gracefully (finish in-flight requests, use <code>preStop</code> and <code>terminationGracePeriodSeconds</code>) so deployments do not drop traffic.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What happens if the readiness probe is too strict?</li><li>What is the difference between requests and limits?</li><li>How does a Service find its Pods?</li></ul>
+<p><a class="btn primary" href="../#/q/do-3">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-3%3A+How+does+a+Kubernetes+rolling+update+work%3F+Explain+readiness+versus%E2%80%A6&amp;question-id=do-3&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+2%2C+topic%3A+Kubernetes%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-3.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

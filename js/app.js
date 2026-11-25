@@ -598,7 +598,8 @@
       msg,
       h('div', { class: 'q-actions' }, exportBtn,
         h('button', { class: 'btn ghost', type: 'button', onclick: function () { fileIn.value = ''; fileIn.click(); } }, 'Restore from backup'),
-        h('label', { for: 'import-file', class: 'sr-only' }, 'Backup file'), fileIn)));
+        h('label', { for: 'import-file', class: 'sr-only' }, 'Backup file'), fileIn),
+      h('p', { class: 'muted small-text' }, 'Want to move progress between devices without files? ', h('a', { href: '#/sync' }, 'Optional private sync'), ' (off by default, encrypted, uses your own GitHub account).')));
   }
 
   /* ---------------- profile and posting ---------------- */

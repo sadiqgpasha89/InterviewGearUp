@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Define Precision, Recall, F1-Score, and Specificity with confusion matrix formulas. | InterviewGearUp</title>
+<meta name="description" content="From the confusion matrix counts TP, FP, FN and TN: precision = TP/(TP+FP), recall = TP/(TP+FN), specificity = TN/(TN+FP) and F1 = 2PR/(P+R), the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-12.html">
+<meta property="og:title" content="Define Precision, Recall, F1-Score, and Specificity with confusion matrix formulas. | InterviewGearUp">
+<meta property="og:description" content="From the confusion matrix counts TP, FP, FN and TN: precision = TP/(TP+FP), recall = TP/(TP+FN), specificity = TN/(TN+FP) and F1 = 2PR/(P+R), the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-12.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Define Precision, Recall, F1-Score, and Specificity with confusion matrix formulas.</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 1 (Junior) · Metrics · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>From the confusion matrix counts TP, FP, FN and TN: precision = TP/(TP+FP), recall = TP/(TP+FN), specificity = TN/(TN+FP) and F1 = 2PR/(P+R), the harmonic mean of precision and recall. Precision asks how many flagged items are right; recall asks how many real positives were found.</p></div>
+<h4>Explained in depth</h4>
+<h4>Confusion matrix</h4>
+<div class="md-table"><table><thead><tr><th></th><th>Predicted positive</th><th>Predicted negative</th></tr></thead><tbody><tr><td><strong>Actual positive</strong></td><td>TP (true positive)</td><td>FN (false negative)</td></tr><tr><td><strong>Actual negative</strong></td><td>FP (false positive)</td><td>TN (true negative)</td></tr></tbody></table></div>
+<h4>Formulas</h4>
+<ul><li><strong>Precision</strong> = TP / (TP + FP): of everything predicted positive, the fraction that is correct.</li><li><strong>Recall (sensitivity, true positive rate)</strong> = TP / (TP + FN): of all actual positives, the fraction found.</li><li><strong>Specificity (true negative rate)</strong> = TN / (TN + FP): of all actual negatives, the fraction correctly rejected.</li><li><strong>F1</strong> = 2 * Precision * Recall / (Precision + Recall): the harmonic mean, which is low if either is low.</li><li><strong>Accuracy</strong> = (TP + TN) / total.</li></ul>
+<h4>Example</h4>
+<p>A fraud detector flags 100 transactions: 80 are fraud (TP = 80, FP = 20). There are 200 frauds in total, so FN = 120. Precision = 0.8, recall = 80/200 = 0.4, F1 = 2 * 0.8 * 0.4 / 1.2 = about 0.53.</p>
+<h4>Trade-offs</h4>
+<p>Raising the decision threshold increases precision and lowers recall; lowering it does the reverse. Choose by cost:</p>
+<ul><li>Cancer screening or fraud: prioritise <strong>recall</strong> (missing a case is costly).</li><li>Spam filtering of important mail, or legal alerts: prioritise <strong>precision</strong> (false alarms are costly).</li><li><strong>F-beta</strong> weights recall (beta above 1) or precision (beta below 1).</li></ul>
+<h4>Pitfalls</h4>
+<p>Accuracy misleads with imbalanced classes (99% accuracy by always predicting the majority). Report precision and recall (or PR-AUC), per class, and consider macro or micro averaging for multi-class problems.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does accuracy mislead on imbalanced data?</li><li>How do you choose the decision threshold?</li><li>When would you use F-beta instead of F1?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-12">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-12%3A+Define+Precision%2C+Recall%2C+F1-Score%2C+and+Specificity+with+confusion%E2%80%A6&amp;question-id=ml-12&amp;context=ML+%2F+AI+engineer%2C+Gear+1%2C+topic%3A+Metrics%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-12.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

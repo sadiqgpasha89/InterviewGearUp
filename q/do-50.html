@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you implement automated Canary deployments with progressive traffic shifting and metric rollbacks? | InterviewGearUp</title>
+<meta name="description" content="A canary deployment sends a small share of traffic (say 5 percent) to the new version, watches key metrics such as error rate and latency, then increases…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-50.html">
+<meta property="og:title" content="How do you implement automated Canary deployments with progressive traffic shifting and metric rollbacks? | InterviewGearUp">
+<meta property="og:description" content="A canary deployment sends a small share of traffic (say 5 percent) to the new version, watches key metrics such as error rate and latency, then increases…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-50.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you implement automated Canary deployments with progressive traffic shifting and metric rollbacks?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · CI/CD · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A canary deployment sends a small share of traffic (say 5 percent) to the new version, watches key metrics such as error rate and latency, then increases the share in steps if healthy. Automation tools like Argo Rollouts or Flagger shift the traffic weights, run analysis against Prometheus metrics and roll back automatically if thresholds are breached.</p></div>
+<h4>Explained in depth</h4>
+<h4>Idea</h4>
+<p>Limit the blast radius of a bad release: expose it to a small fraction of real users first, measure, and only then widen.</p>
+<h4>Steps with automation</h4>
+<ol start="1"><li>Deploy the new version next to the stable one.</li><li>Shift traffic in stages, for example 5%, 25%, 50%, 100%, pausing between steps.</li><li>At each pause, run <strong>analysis</strong>: compare canary metrics against the baseline or fixed thresholds (success rate above 99%, p95 latency within 10% of baseline, no growth in error logs).</li><li>If a check fails, <strong>abort and roll back</strong> by returning the weight to 0 automatically; otherwise continue.</li></ol>
+<pre><code># Argo Rollouts (simplified)
+spec:
+  strategy:
+    canary:
+      steps:
+        - setWeight: 5
+        - pause: { duration: 5m }
+        - analysis: { templates: [{ templateName: success-rate }] }
+        - setWeight: 25
+        - pause: { duration: 10m }
+        - setWeight: 100</code></pre>
+<p>Traffic splitting uses a service mesh (Istio), an ingress or gateway that supports weights, or a load balancer. Without those, replica ratios give only a rough split.</p>
+<h4>What makes it work</h4>
+<ul><li><strong>Good metrics</strong> (RED: rate, errors, duration, plus business metrics) and enough traffic for statistical confidence.</li><li><strong>Backward-compatible</strong> database and API changes (expand-contract), since both versions run at the same time.</li><li>Session affinity or consistent routing so a user does not bounce between versions.</li><li>Feature flags to decouple deploy from release.</li></ul>
+<h4>Canary versus blue-green</h4>
+<p>Blue-green switches all traffic at once between two full environments (fast cutover, higher cost, no gradual exposure). Canary exposes gradually and needs more observability.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you choose which metrics and thresholds gate the promotion?</li><li>How does a canary differ from blue-green?</li><li>What do you do about database schema changes during a canary?</li></ul>
+<p><a class="btn primary" href="../#/q/do-50">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-50%3A+How+do+you+implement+automated+Canary+deployments+with+progressive%E2%80%A6&amp;question-id=do-50&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+CI%2FCD%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-50.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

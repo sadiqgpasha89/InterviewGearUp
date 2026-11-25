@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is the difference between GROUP BY and window functions in SQL? | InterviewGearUp</title>
+<meta name="description" content="GROUP BY collapses rows into one row per group, so you lose the individual rows. A window function computes an aggregate or ranking over a set of related…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-103.html">
+<meta property="og:title" content="What is the difference between GROUP BY and window functions in SQL? | InterviewGearUp">
+<meta property="og:description" content="GROUP BY collapses rows into one row per group, so you lose the individual rows. A window function computes an aggregate or ranking over a set of related…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-103.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is the difference between GROUP BY and window functions in SQL?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 1 (Junior) · SQL · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>GROUP BY collapses rows into one row per group, so you lose the individual rows. A window function computes an aggregate or ranking over a set of related rows but keeps every original row, so you can show row detail next to the group total, a running sum or a rank. Use GROUP BY for summaries and windows for per-row analytics.</p></div>
+<h4>Explained in depth</h4>
+<h4>GROUP BY: collapse</h4>
+<pre><code>SELECT department, AVG(salary) AS avg_salary
+FROM employees
+GROUP BY department;</code></pre>
+<p>Returns <strong>one row per department</strong>. Individual employees disappear, and every selected column must be grouped or aggregated.</p>
+<h4>Window function: keep the rows</h4>
+<pre><code>SELECT name, department, salary,
+       AVG(salary) OVER (PARTITION BY department) AS dept_avg,
+       salary - AVG(salary) OVER (PARTITION BY department) AS diff_from_avg
+FROM employees;</code></pre>
+<p>Every employee remains, with the department average beside them.</p>
+<h4>The OVER clause</h4>
+<ul><li><code>PARTITION BY</code> splits rows into groups (like GROUP BY, but without collapsing).</li><li><code>ORDER BY</code> defines the order inside each partition (needed for ranking and running totals).</li><li>An optional <strong>frame</strong> (<code>ROWS BETWEEN 2 PRECEDING AND CURRENT ROW</code>) selects which neighbouring rows are used.</li></ul>
+<h4>Common window functions</h4>
+<ul><li>Ranking: <code>ROW_NUMBER()</code> (unique 1,2,3), <code>RANK()</code> (ties share a rank, gaps follow), <code>DENSE_RANK()</code> (ties share, no gaps).</li><li>Offsets: <code>LAG(x)</code> and <code>LEAD(x)</code> read the previous or next row.</li><li>Running or moving aggregates: <code>SUM(amount) OVER (ORDER BY day)</code>.</li><li>Others: <code>NTILE(4)</code>, <code>FIRST_VALUE</code>, <code>PERCENT_RANK</code>.</li></ul>
+<h4>Typical uses</h4>
+<p>Top N per group (<code>ROW_NUMBER</code> then filter <code>rn &lt;= 3</code> in an outer query), month-over-month change with <code>LAG</code>, deduplicating rows, and running totals. Window functions run <strong>after</strong> <code>WHERE</code> and <code>GROUP BY</code>, so you cannot filter on them in the same <code>WHERE</code>; wrap in a subquery or CTE.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What does PARTITION BY do versus ORDER BY inside OVER?</li><li>How would you compute a running total?</li><li>What is the difference between RANK, DENSE_RANK and ROW_NUMBER?</li></ul>
+<p><a class="btn primary" href="../#/q/de-103">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-103%3A+What+is+the+difference+between+GROUP+BY+and+window+functions+in+SQL%3F&amp;question-id=de-103&amp;context=Data+engineer%2C+Gear+1%2C+topic%3A+SQL%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-103.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

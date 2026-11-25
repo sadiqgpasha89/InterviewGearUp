@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain Broken Object-Level Authorization (BOLA/IDOR) and how to enforce object ownership checks. | InterviewGearUp</title>
+<meta name="description" content="BOLA (also called IDOR) happens when an API accepts an object identifier from the client, such as /orders/1234, and returns or changes the object without…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-13.html">
+<meta property="og:title" content="Explain Broken Object-Level Authorization (BOLA/IDOR) and how to enforce object ownership checks. | InterviewGearUp">
+<meta property="og:description" content="BOLA (also called IDOR) happens when an API accepts an object identifier from the client, such as /orders/1234, and returns or changes the object without…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-13.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain Broken Object-Level Authorization (BOLA/IDOR) and how to enforce object ownership checks.</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 2 (Mid-level) · AppSec · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>BOLA (also called IDOR) happens when an API accepts an object identifier from the client, such as /orders/1234, and returns or changes the object without checking that the caller is allowed to access that specific object. Fix it by enforcing an ownership or permission check in the server on every request, not by hiding or randomising ids.</p></div>
+<h4>Explained in depth</h4>
+<h4>The vulnerability</h4>
+<pre><code>GET /api/invoices/1001      (logged in as user A, returns A&#39;s invoice)
+GET /api/invoices/1002      (belongs to user B, but the server returns it)</code></pre>
+<p>The user is <strong>authenticated</strong>, but the server never asks whether this user may see object 1002. It is the first item in the OWASP API Security Top 10 and a common cause of mass data leaks, because attackers simply iterate identifiers.</p>
+<h4>Where it hides</h4>
+<p>Path and query parameters, JSON body fields (<code>&quot;accountId&quot;</code>), headers, GraphQL arguments, and bulk or export endpoints. It applies to reads and also to updates and deletes.</p>
+<h4>Enforcing ownership</h4>
+<ol start="1"><li><strong>Authorise every object access</strong> server-side, using the identity from the session or token, not an id sent by the client.</li><li>Scope queries by the owner so the check cannot be forgotten:</li></ol>
+<pre><code>SELECT * FROM invoices WHERE id = :id AND account_id = :current_account_id;</code></pre>
+<p>   A missing row returns <strong>404</strong>, which avoids confirming that the object exists.</p>
+<ol start="3"><li>Centralise policy in middleware or a policy library (for example per-resource <code>can(user, action, object)</code> functions) with tests, instead of ad hoc checks in each handler.</li><li>Use row-level security in the database for defence in depth.</li><li>Deny by default and review new endpoints for object access.</li></ol>
+<h4>What does not fix it</h4>
+<p>Unpredictable ids (UUIDs) reduce guessing but do not authorise anything, since ids leak through links, logs and other API responses. Hiding buttons in the UI does nothing for the API.</p>
+<h4>Testing</h4>
+<p>Use two test accounts: call each endpoint with account A&#39;s object ids using account B&#39;s token, and expect 403 or 404. Automate this in the API test suite.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why are random UUIDs not a sufficient defence?</li><li>How would you test an API for BOLA?</li><li>How do you apply the check consistently across many endpoints?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-13">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-13%3A+Explain+Broken+Object-Level+Authorization+%28BOLA%2FIDOR%29+and+how+to%E2%80%A6&amp;question-id=sec-13&amp;context=Security+engineer%2C+Gear+2%2C+topic%3A+AppSec%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-13.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

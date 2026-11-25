@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare the Screenplay Pattern with Page Object Model: Actors, Tasks, and Question abstractions. | InterviewGearUp</title>
+<meta name="description" content="Page Object Model groups UI structure and actions by page, so large suites tend to grow bloated classes. The Screenplay pattern models tests around…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-17.html">
+<meta property="og:title" content="Compare the Screenplay Pattern with Page Object Model: Actors, Tasks, and Question abstractions. | InterviewGearUp">
+<meta property="og:description" content="Page Object Model groups UI structure and actions by page, so large suites tend to grow bloated classes. The Screenplay pattern models tests around…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-17.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare the Screenplay Pattern with Page Object Model: Actors, Tasks, and Question abstractions.</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 3 (Senior) · UI Automation · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Page Object Model groups UI structure and actions by page, so large suites tend to grow bloated classes. The Screenplay pattern models tests around actors who have abilities (browse the web), perform tasks (log in) composed of interactions (click, type) and ask questions about the state. It favours small reusable pieces and reads like a user story.</p></div>
+<h4>Explained in depth</h4>
+<h4>Core concepts</h4>
+<ul><li><strong>Actor</strong>: a user persona, such as Ana the customer.</li><li><strong>Ability</strong>: what the actor can do, for example <code>BrowseTheWeb</code> using a browser, or <code>CallAnApi</code>.</li><li><strong>Interaction</strong>: one low-level step (click, enter text).</li><li><strong>Task</strong>: a business-level action built from interactions (<code>Login.as(ana)</code>, <code>AddToCart.item(&#39;Book&#39;)</code>).</li><li><strong>Question</strong>: a read of the system state (<code>CartTotal.value()</code>), used in assertions.</li></ul>
+<pre><code>ana.attemptsTo(
+    Login.withCredentials(&quot;ana@example.com&quot;, &quot;secret&quot;),
+    AddToCart.item(&quot;Book&quot;)
+);
+ana.should(seeThat(CartTotal.value(), equalTo(&quot;$12.00&quot;)));</code></pre>
+<h4>Compared with POM</h4>
+<div class="md-table"><table><thead><tr><th></th><th>Page Object Model</th><th>Screenplay</th></tr></thead><tbody><tr><td>Organised by</td><td>Pages and components</td><td>Actors, tasks and questions</td></tr><tr><td>Reuse</td><td>Methods on page classes</td><td>Small composable tasks</td></tr><tr><td>Growth</td><td>Pages can become large</td><td>Many small classes</td></tr><tr><td>Readability</td><td>Good</td><td>Reads like a story, good for BDD</td></tr><tr><td>Learning curve</td><td>Low</td><td>Higher</td></tr></tbody></table></div>
+<h4>When to choose</h4>
+<ul><li>POM is simple and enough for small and medium suites.</li><li>Screenplay helps when many user roles and long workflows share steps, or when you want to test through several interfaces (UI, API) with the same tasks. Serenity BDD and Playwright community libraries implement it.</li><li>The extra indirection costs onboarding time, so adopt it deliberately.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>What are the downsides of Screenplay for a small team?</li><li>How do tasks and interactions differ?</li><li>How would you migrate a large POM suite gradually?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-17">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-17%3A+Compare+the+Screenplay+Pattern+with+Page+Object+Model%3A+Actors%2C%E2%80%A6&amp;question-id=qa-17&amp;context=QA+%2F+SDET%2C+Gear+3%2C+topic%3A+UI+Automation%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-17.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

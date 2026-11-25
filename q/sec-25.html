@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain password hashing best practices: Why are Argon2id, bcrypt, and scrypt preferred over SHA-256? | InterviewGearUp</title>
+<meta name="description" content="Passwords must be stored with a slow, salted, memory-hard function so that a stolen database is expensive to crack. Plain SHA-256 is designed to be fast,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-25.html">
+<meta property="og:title" content="Explain password hashing best practices: Why are Argon2id, bcrypt, and scrypt preferred over SHA-256? | InterviewGearUp">
+<meta property="og:description" content="Passwords must be stored with a slow, salted, memory-hard function so that a stolen database is expensive to crack. Plain SHA-256 is designed to be fast,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-25.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain password hashing best practices: Why are Argon2id, bcrypt, and scrypt preferred over SHA-256?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 2 (Mid-level) · Cryptography · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Passwords must be stored with a slow, salted, memory-hard function so that a stolen database is expensive to crack. Plain SHA-256 is designed to be fast, so attackers can test billions of guesses per second on GPUs. Argon2id, scrypt and bcrypt add a unique salt and a tunable work factor, and Argon2id and scrypt also require lots of memory, which blunts GPU and ASIC attacks.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why plain SHA-256 is wrong</h4>
+<p>Hash functions are built to be <strong>fast</strong>. A modern GPU can compute billions of SHA-256 hashes per second, so most real passwords fall quickly to dictionary and brute-force attacks. Without a salt, identical passwords give identical hashes, enabling <strong>rainbow tables</strong> and showing which users share a password.</p>
+<h4>What a password hash adds</h4>
+<ul><li><strong>Unique random salt per user</strong>, stored with the hash: defeats precomputed tables and forces per-user cracking.</li><li><strong>Work factor (cost)</strong>: deliberately slow, tunable as hardware improves.</li><li><strong>Memory hardness</strong> (Argon2id, scrypt): needs large memory per guess, which makes massively parallel GPU or ASIC attacks expensive.</li></ul>
+<h4>Choices</h4>
+<div class="md-table"><table><thead><tr><th>Algorithm</th><th>Notes</th></tr></thead><tbody><tr><td><strong>Argon2id</strong></td><td>Current recommendation (winner of the Password Hashing Competition), resists GPU and side-channel attacks</td></tr><tr><td><strong>scrypt</strong></td><td>Memory-hard, a good choice where Argon2 is unavailable</td></tr><tr><td><strong>bcrypt</strong></td><td>Mature and widely supported, CPU-only cost (limit of 72 bytes of password)</td></tr><tr><td><strong>PBKDF2</strong></td><td>Acceptable when FIPS compliance is needed, use high iteration counts</td></tr></tbody></table></div>
+<p>OWASP guidance for Argon2id is about 19 MiB of memory, 2 iterations and 1 degree of parallelism as a minimum, or heavier settings if your server allows; aim for roughly 0.25 to 1 second per hash on your hardware.</p>
+<h4>Implementation tips</h4>
+<pre><code>from argon2 import PasswordHasher
+ph = PasswordHasher()
+h = ph.hash(&#39;correct horse&#39;)        # includes salt and parameters
+ph.verify(h, &#39;correct horse&#39;)</code></pre>
+<ul><li>Use the library&#39;s own verify function (constant time) and store the full encoded string.</li><li>Optionally add a <strong>pepper</strong> (a secret key kept outside the database, for example in a KMS or HSM).</li><li><strong>Rehash on login</strong> when parameters are outdated.</li><li>Complement with rate limiting, breached-password checks, MFA and passkeys.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>What does a salt protect against and what does a pepper add?</li><li>How do you pick Argon2id parameters?</li><li>How do you upgrade hashes for existing users without forcing a reset?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-25">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-25%3A+Explain+password+hashing+best+practices%3A+Why+are+Argon2id%2C+bcrypt%2C%E2%80%A6&amp;question-id=sec-25&amp;context=Security+engineer%2C+Gear+2%2C+topic%3A+Cryptography%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-25.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you roll out a major UI redesign to millions of users safely using flags and experiments? | InterviewGearUp</title>
+<meta name="description" content="Ship the new UI dark behind feature flags, validate with internal users and a small percentage cohort, run an A/B test with primary and guardrail metrics…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-118.html">
+<meta property="og:title" content="How do you roll out a major UI redesign to millions of users safely using flags and experiments? | InterviewGearUp">
+<meta property="og:description" content="Ship the new UI dark behind feature flags, validate with internal users and a small percentage cohort, run an A/B test with primary and guardrail metrics…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-118.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you roll out a major UI redesign to millions of users safely using flags and experiments?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 4 (Lead / Staff) · Delivery · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Ship the new UI dark behind feature flags, validate with internal users and a small percentage cohort, run an A/B test with primary and guardrail metrics and a pre-defined sample size, monitor errors and performance in real time with automatic rollback, expand gradually, and keep the old path until the new one is proven. Communicate with support and users, and remove the flag afterwards.</p></div>
+<h4>Explained in depth</h4>
+<h4>Prepare</h4>
+<ul><li>Break the redesign into <strong>incremental slices</strong> (page by page or component by component) that can ship independently, rather than a big-bang release.</li><li>Define success up front: a <strong>primary metric</strong> (task completion, conversion), <strong>guardrails</strong> (error rate, page speed, support contacts, accessibility defects, revenue) and the minimum effect worth acting on. Compute the required sample size and run duration.</li><li>Build behind a <strong>feature flag</strong> with a server-side kill switch, shipped dark in normal releases (trunk-based development).</li></ul>
+<h4>Rollout stages</h4>
+<ol start="1"><li><strong>Internal dogfooding</strong> and QA, including accessibility, localisation and low-end device checks.</li><li><strong>Beta or opt-in</strong> users, with feedback widgets and session analysis.</li><li><strong>Canary</strong> to 1 to 5 percent, watching dashboards for errors, performance (Web Vitals), and key funnels.</li><li><strong>A/B test</strong> with random assignment by stable user ID, the new design against the old, for at least one or two full business cycles.</li><li><strong>Gradual ramp</strong> (10, 25, 50, 100 percent), with the ability to pause or roll back at each step. Segment results (new versus returning users, device, region).</li></ol>
+<h4>Pitfalls</h4>
+<ul><li><strong>Novelty and change aversion effects</strong>: short tests mislead, so run long enough and watch trends over time.</li><li>Peeking at results early inflates false positives; use sequential methods or fixed horizons.</li><li>Sample ratio mismatch (unequal allocation) signals instrumentation bugs.</li><li>Long-lived dual maintenance, so set an <strong>expiry</strong> for the flag and a cleanup ticket.</li></ul>
+<h4>People and communication</h4>
+<p>Brief support and sales, publish release notes and help content, allow temporary opt-out if appropriate, and gather qualitative feedback. After full rollout, delete the old code, flag and tests, and write up the learnings.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you decide the success metrics for a redesign?</li><li>How do you avoid the novelty effect misleading an experiment?</li><li>What is the risk of maintaining two versions of the UI for too long?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-118">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-118%3A+How+do+you+roll+out+a+major+UI+redesign+to+millions+of+users+safely%E2%80%A6&amp;question-id=fe-118&amp;context=Frontend+engineer%2C+Gear+4%2C+topic%3A+Delivery%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-118.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

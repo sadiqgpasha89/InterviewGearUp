@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How would you design an offline-first web application with background sync and conflict resolution? | InterviewGearUp</title>
+<meta name="description" content="Treat the local database in IndexedDB as the source of truth for the UI, queue writes in an outbox that a service worker or app code replays with…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-114.html">
+<meta property="og:title" content="How would you design an offline-first web application with background sync and conflict resolution? | InterviewGearUp">
+<meta property="og:description" content="Treat the local database in IndexedDB as the source of truth for the UI, queue writes in an outbox that a service worker or app code replays with…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-114.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How would you design an offline-first web application with background sync and conflict resolution?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 4 (Lead / Staff) · Architecture · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Treat the local database in IndexedDB as the source of truth for the UI, queue writes in an outbox that a service worker or app code replays with idempotent requests when connectivity returns, pull changes with cursors, and resolve conflicts with a defined policy such as last-write-wins per field, versioned merges or CRDTs. Make sync state visible to users.</p></div>
+<h4>Explained in depth</h4>
+<h4>Principles</h4>
+<p>The app must <strong>work without a network</strong> and sync later. The UI reads and writes a <strong>local store</strong>; the network is a background concern, so interactions are instant.</p>
+<h4>Building blocks</h4>
+<ol start="1"><li><strong>App shell caching</strong>: a <strong>service worker</strong> precaches HTML, JS and CSS (Workbox) and uses strategies per resource: cache-first for static assets, stale-while-revalidate for content, network-first with fallback for APIs.</li><li><strong>Local database</strong>: <strong>IndexedDB</strong> (via Dexie or idb; SQLite WASM for relational needs) with an abstraction layer; request persistent storage and handle quota errors.</li><li><strong>Outbox queue</strong>: each user action is stored as a <strong>mutation</strong> (with a client-generated UUID and timestamp) and applied locally at once (optimistic UI).</li><li><strong>Sync engine</strong>: when online, send queued mutations in order with <strong>idempotency keys</strong> (so retries do not duplicate), then <strong>pull</strong> changes from the server using a <strong>cursor or version</strong> (delta sync) and merge into the local store. Use the Background Sync API where supported, with a fallback to <code>online</code> events and app-level retries, since browser support is incomplete.</li><li><strong>Server API</strong> supports batching, versioning (ETags or revision numbers) and tombstones for deletes.</li></ol>
+<h4>Conflict resolution</h4>
+<p>Decide per data type:</p>
+<ul><li><strong>Last-write-wins</strong> (by server timestamp or version): simple, but silently loses data; acceptable for settings and low-value fields.</li><li><strong>Field-level merge</strong>: merge independent fields from both sides.</li><li><strong>Operational transform or CRDTs</strong> for collaborative text and lists.</li><li><strong>Manual resolution</strong>: show a conflict UI for high-value records.</li></ul>
+<p>Use server-assigned versions rather than device clocks, which drift.</p>
+<h4>User experience</h4>
+<p>Show clear <strong>sync status</strong> (offline, syncing, last synced, failed items), allow retry and edit of failed items, and communicate what works offline.</p>
+<h4>Operational concerns</h4>
+<p>Local schema migrations with versioned upgrades, data encryption considerations for sensitive data on device, cleanup of old data, token expiry while offline, and end-to-end tests with network throttling and offline mode.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>When is last-write-wins acceptable and when is it dangerous?</li><li>How do you handle schema migrations of local data?</li><li>What is the limitation of the Background Sync API across browsers?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-114">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-114%3A+How+would+you+design+an+offline-first+web+application+with%E2%80%A6&amp;question-id=fe-114&amp;context=Frontend+engineer%2C+Gear+4%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-114.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

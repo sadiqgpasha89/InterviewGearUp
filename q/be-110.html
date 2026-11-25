@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is database connection pooling and why is it important? | InterviewGearUp</title>
+<meta name="description" content="Opening a database connection is expensive, so a pool keeps a set of open connections that requests borrow and return. This reduces latency, caps the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-110.html">
+<meta property="og:title" content="What is database connection pooling and why is it important? | InterviewGearUp">
+<meta property="og:description" content="Opening a database connection is expensive, so a pool keeps a set of open connections that requests borrow and return. This reduces latency, caps the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-110.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is database connection pooling and why is it important?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 1 (Junior) · Databases · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Opening a database connection is expensive, so a pool keeps a set of open connections that requests borrow and return. This reduces latency, caps the load on the database, and prevents connection storms. Size the pool carefully, because too large a pool hurts the database and too small a pool makes requests wait.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why pooling</h4>
+<p>Each new connection needs a TCP handshake, TLS negotiation, authentication and session setup, and the database allocates memory and often a process or thread for it (PostgreSQL uses a process per connection). Creating one per request wastes time and exhausts the server.</p>
+<p>A <strong>pool</strong> creates connections ahead of time. A request <strong>borrows</strong> one, runs queries, and <strong>returns</strong> it, ready for the next request.</p>
+<h4>Key settings</h4>
+<ul><li><strong>Maximum pool size</strong>: the cap on concurrent connections per application instance.</li><li><strong>Minimum idle</strong>: connections kept warm.</li><li><strong>Connection timeout</strong>: how long a request waits for a free connection before failing.</li><li><strong>Max lifetime and idle timeout</strong>: recycle connections to avoid stale ones that firewalls or the server closed.</li><li><strong>Validation</strong> (test query or driver ping) and <strong>leak detection</strong>.</li></ul>
+<h4>Sizing</h4>
+<p>More is not better. A database can only run as many queries in parallel as it has CPU cores and disk capacity. A common starting point is <code>(core_count * 2) + effective_spindle_count</code> for the whole database, then divide among application instances. For example, 10 instances with a pool of 20 means 200 connections, which may exceed the database limit. Measure wait times and throughput, and tune.</p>
+<h4>Common problems</h4>
+<ul><li><strong>Connection leaks</strong>: code that does not close or return connections (missing <code>close()</code> or <code>finally</code>), eventually exhausting the pool. Use try-with-resources or context managers and enable leak detection.</li><li><strong>Long transactions</strong> that hold connections while waiting on slow external calls.</li><li><strong>Pool exhaustion</strong> shown by threads waiting and timeouts while CPU is idle.</li><li><strong>Serverless and many instances</strong> creating more connections than the database can handle.</li></ul>
+<h4>Beyond the application</h4>
+<p>An external pooler such as <strong>PgBouncer</strong> or <strong>RDS Proxy</strong> multiplexes many client connections onto fewer server connections (transaction pooling), useful for serverless and large fleets, though session features like prepared statements and advisory locks need care.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you decide on the size of a connection pool?</li><li>What is a connection leak?</li><li>Why might you add PgBouncer in front of PostgreSQL?</li></ul>
+<p><a class="btn primary" href="../#/q/be-110">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-110%3A+What+is+database+connection+pooling+and+why+is+it+important%3F&amp;question-id=be-110&amp;context=Backend+engineer%2C+Gear+1%2C+topic%3A+Databases%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-110.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

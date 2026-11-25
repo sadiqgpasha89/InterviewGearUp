@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain Spark memory management: Storage Memory versus Execution Memory and off-heap memory. | InterviewGearUp</title>
+<meta name="description" content="Spark executors divide their heap into reserved, user and unified memory. Unified memory is shared dynamically between execution memory (shuffles, joins,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-22.html">
+<meta property="og:title" content="Explain Spark memory management: Storage Memory versus Execution Memory and off-heap memory. | InterviewGearUp">
+<meta property="og:description" content="Spark executors divide their heap into reserved, user and unified memory. Unified memory is shared dynamically between execution memory (shuffles, joins,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-22.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain Spark memory management: Storage Memory versus Execution Memory and off-heap memory.</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Spark · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Spark executors divide their heap into reserved, user and unified memory. Unified memory is shared dynamically between execution memory (shuffles, joins, sorts, aggregations) and storage memory (cached data and broadcasts), with execution able to evict cached blocks when it needs space. Off-heap memory can add Tungsten-managed space outside the garbage-collected heap.</p></div>
+<h4>Explained in depth</h4>
+<h4>Layout of an executor&#39;s heap (since Spark 1.6)</h4>
+<ul><li><strong>Reserved memory</strong>: a fixed 300 MB for Spark internals.</li><li><strong>Unified memory region</strong>: <code>spark.memory.fraction</code> (default 0.6) of the remaining heap, shared by:</li><li><strong>Execution memory</strong>: temporary data for shuffles, joins, sorts and aggregations.</li><li><strong>Storage memory</strong>: cached DataFrames and RDD partitions, broadcast variables.</li><li><strong>User memory</strong>: the rest (about 40%) for user data structures, UDF objects and metadata.</li></ul>
+<h4>The soft boundary</h4>
+<p><code>spark.memory.storageFraction</code> (default 0.5) is the part of the unified region protected from eviction. Beyond that, the two sides <strong>borrow from each other</strong>:</p>
+<ul><li>Execution can <strong>evict cached blocks</strong> to reclaim memory borrowed by storage.</li><li>Storage cannot evict execution memory that is in use.</li></ul>
+<p>So cache is the first thing sacrificed when a job needs working memory.</p>
+<h4>Off-heap memory</h4>
+<p>With <code>spark.memory.offHeap.enabled=true</code> and <code>spark.memory.offHeap.size</code>, Tungsten allocates memory outside the JVM heap, avoiding GC pauses for big buffers.</p>
+<h4>Memory overhead</h4>
+<p>Containers also need space outside the heap (JVM metadata, thread stacks, native libraries, Python workers). <code>spark.executor.memoryOverhead</code> (default about 10% of the executor memory, minimum 384 MB) covers this. If the process exceeds heap plus overhead, YARN or Kubernetes kills the container (often &quot;exit code 137&quot;, or &quot;Container killed by YARN for exceeding memory limits&quot;). PySpark jobs often need a larger overhead.</p>
+<h4>Diagnosing</h4>
+<p>In the Spark UI, look for <strong>spill (memory)</strong> and <strong>spill (disk)</strong> in stage metrics, long GC times, and skewed task durations. Fixes: more partitions, more memory per executor, less caching, better serialisation, and handling skew.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What do spark.memory.fraction and spark.memory.storageFraction control?</li><li>What is memoryOverhead and why do YARN or Kubernetes kill containers for exceeding it?</li><li>How do you diagnose spill to disk in the Spark UI?</li></ul>
+<p><a class="btn primary" href="../#/q/de-22">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-22%3A+Explain+Spark+memory+management%3A+Storage+Memory+versus+Execution%E2%80%A6&amp;question-id=de-22&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Spark%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-22.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is a Service Mesh (Istio, Linkerd) and how does a sidecar proxy provide mTLS and traffic shaping? | InterviewGearUp</title>
+<meta name="description" content="A service mesh moves cross-cutting network concerns out of application code into a layer of proxies. Each pod gets a sidecar proxy (Envoy in Istio,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-39.html">
+<meta property="og:title" content="What is a Service Mesh (Istio, Linkerd) and how does a sidecar proxy provide mTLS and traffic shaping? | InterviewGearUp">
+<meta property="og:description" content="A service mesh moves cross-cutting network concerns out of application code into a layer of proxies. Each pod gets a sidecar proxy (Envoy in Istio,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-39.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is a Service Mesh (Istio, Linkerd) and how does a sidecar proxy provide mTLS and traffic shaping?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 4 (Lead / Staff) · Kubernetes · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A service mesh moves cross-cutting network concerns out of application code into a layer of proxies. Each pod gets a sidecar proxy (Envoy in Istio, linkerd2-proxy in Linkerd) managed by a control plane, giving automatic mutual TLS, retries, timeouts, traffic splitting and telemetry at the cost of extra latency, resources and operational complexity.</p></div>
+<h4>Explained in depth</h4>
+<p><strong>Architecture</strong>: the <strong>data plane</strong> is the set of proxies that handle all pod traffic; the <strong>control plane</strong> (istiod, or Linkerd&#39;s control plane) distributes configuration and issues short-lived workload certificates.</p>
+<h4>What you get</h4>
+<ul><li><strong>mTLS</strong> between services with automatic certificate rotation, giving encryption and service identity without code changes.</li><li><strong>Traffic management</strong>: weighted routing for canary releases, retries, timeouts, circuit breaking and fault injection.</li><li><strong>Observability</strong>: uniform golden-signal metrics, traces and access logs for every hop.</li><li><strong>Policy</strong>: which services may call which.</li></ul>
+<h4>Costs and trade-offs</h4>
+<ul><li>Added latency per hop and CPU and memory per pod; sidecars complicate startup and shutdown ordering, and jobs that must terminate.</li><li>One more critical system: a bad mesh configuration can take down all traffic, and upgrades need care.</li><li>Debugging has another layer to inspect. Sidecar-less or node-level modes (Istio ambient mode, Cilium) reduce the overhead.</li></ul>
+<h4>When to adopt</h4>
+<p>It pays off with many services, a need for mTLS and consistent policy, and a platform team to run it. For a handful of services, client libraries, an ingress controller and network policies are often enough.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does a sidecar get traffic redirected through it?</li><li>What would you check first if requests start failing after enabling strict mTLS?</li></ul>
+<p><a class="btn primary" href="../#/q/do-39">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-39%3A+What+is+a+Service+Mesh+%28Istio%2C+Linkerd%29+and+how+does+a+sidecar+proxy%E2%80%A6&amp;question-id=do-39&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+4%2C+topic%3A+Kubernetes%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-39.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

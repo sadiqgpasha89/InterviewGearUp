@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain the difference between `SIGTERM` (15), `SIGKILL` (9), and `SIGHUP` (1) signals in process management. | InterviewGearUp</title>
+<meta name="description" content="SIGTERM (15) politely asks a process to terminate, so it can catch the signal, flush data and clean up. SIGKILL (9) cannot be caught or ignored; the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-15.html">
+<meta property="og:title" content="Explain the difference between `SIGTERM` (15), `SIGKILL` (9), and `SIGHUP` (1) signals in process management. | InterviewGearUp">
+<meta property="og:description" content="SIGTERM (15) politely asks a process to terminate, so it can catch the signal, flush data and clean up. SIGKILL (9) cannot be caught or ignored; the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-15.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain the difference between `SIGTERM` (15), `SIGKILL` (9), and `SIGHUP` (1) signals in process management.</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 2 (Mid-level) · Linux · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>SIGTERM (15) politely asks a process to terminate, so it can catch the signal, flush data and clean up. SIGKILL (9) cannot be caught or ignored; the kernel ends the process immediately with no cleanup. SIGHUP (1) originally meant the terminal hung up, and daemons commonly use it to reload their configuration.</p></div>
+<h4>Explained in depth</h4>
+<h4>The three signals</h4>
+<div class="md-table"><table><thead><tr><th>Signal</th><th>Number</th><th>Catchable?</th><th>Typical use</th></tr></thead><tbody><tr><td>SIGTERM</td><td>15</td><td>Yes</td><td>Graceful shutdown request; the default for <code>kill</code></td></tr><tr><td>SIGKILL</td><td>9</td><td>No</td><td>Forced termination</td></tr><tr><td>SIGHUP</td><td>1</td><td>Yes</td><td>Terminal closed; reload config in many daemons (nginx, sshd)</td></tr></tbody></table></div>
+<p>Other common ones: SIGINT (2, Ctrl+C), SIGSTOP (19, pause, not catchable), SIGCONT (resume), SIGUSR1 and SIGUSR2 (application-defined), SIGCHLD (child exited).</p>
+<h4>Why order matters</h4>
+<ol start="1"><li>Send <strong>SIGTERM</strong> first so the program can finish requests, flush buffers, release locks and delete temporary files.</li><li>Wait a reasonable grace period.</li><li>Only then use <strong>SIGKILL</strong>. It skips cleanup and can leave corrupted files, stale lock files and half-written data. A process stuck in uninterruptible I/O (D state) will not die even from SIGKILL until the I/O ends.</li></ol>
+<pre><code>kill 1234            # SIGTERM
+kill -9 1234         # SIGKILL
+kill -HUP $(pidof nginx)     # reload configuration</code></pre>
+<h4>Containers and Kubernetes</h4>
+<p><code>docker stop</code> and Kubernetes send SIGTERM to the container&#39;s main process, wait <code>terminationGracePeriodSeconds</code> (30 seconds by default) and then SIGKILL. Applications must handle SIGTERM (stop accepting work, drain, exit), and in containers the app should be PID 1 or run under an init that forwards signals. A shell script as the entrypoint often swallows signals unless it uses <code>exec</code>.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why should you try SIGTERM before SIGKILL?</li><li>How does Kubernetes use SIGTERM when stopping a pod?</li><li>Which signals can never be caught?</li></ul>
+<p><a class="btn primary" href="../#/q/do-15">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-15%3A+Explain+the+difference+between+%60SIGTERM%60+%2815%29%2C+%60SIGKILL%60+%289%29%2C+and%E2%80%A6&amp;question-id=do-15&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+2%2C+topic%3A+Linux%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-15.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

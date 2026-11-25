@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain FlashAttention: How does hardware-aware tiling compute exact attention without materializing $N \times N$ attention matrices? | InterviewGearUp</title>
+<meta name="description" content="FlashAttention computes exact attention without writing the N×N score matrix to GPU high-bandwidth memory. It splits Q, K and V into tiles that fit in…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-50.html">
+<meta property="og:title" content="Explain FlashAttention: How does hardware-aware tiling compute exact attention without materializing $N \times N$ attention matrices? | InterviewGearUp">
+<meta property="og:description" content="FlashAttention computes exact attention without writing the N×N score matrix to GPU high-bandwidth memory. It splits Q, K and V into tiles that fit in…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-50.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain FlashAttention: How does hardware-aware tiling compute exact attention without materializing $N \times N$ attention matrices?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 4 (Lead / Staff) · LLMs · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>FlashAttention computes exact attention without writing the N×N score matrix to GPU high-bandwidth memory. It splits Q, K and V into tiles that fit in fast on-chip SRAM, processes them block by block with an online softmax, and fuses the steps into one kernel. This cuts memory traffic and reduces attention memory from O(N²) to O(N).</p></div>
+<h4>Explained in depth</h4>
+<p><strong>The bottleneck is memory bandwidth, not arithmetic</strong>: standard attention materializes <code>S = QKᵀ</code> and <code>P = softmax(S)</code> in HBM (each N × N), reading and writing them several times. For long sequences those transfers dominate the runtime.</p>
+<h4>How tiling works</h4>
+<p>For each block of queries, loop over blocks of keys and values: load tiles into SRAM, compute the partial scores and update running results. The softmax is the hard part, because it needs the maximum and sum over the whole row. The <strong>online softmax</strong> keeps a running maximum and normalizer and rescales earlier partial outputs as new blocks arrive, so the exact result can be built one tile at a time.</p>
+<h4>Effects</h4>
+<ul><li>Attention memory goes from O(N²) to O(N), which enables much longer contexts.</li><li>Fewer HBM reads and writes give a speedup of a few times in practice; the FLOP count is unchanged, because this is exact attention and not an approximation.</li><li>The backward pass <strong>recomputes</strong> attention blocks instead of storing them, trading extra compute for memory.</li><li>Later versions improve work partitioning and use newer GPU features.</li></ul>
+<p>It complements PagedAttention in serving: FlashAttention speeds up the computation, while PagedAttention manages KV-cache memory.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is standard attention memory-bound rather than compute-bound?</li><li>What is the online softmax trick?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-50">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-50%3A+Explain+FlashAttention%3A+How+does+hardware-aware+tiling+compute+exact%E2%80%A6&amp;question-id=ml-50&amp;context=ML+%2F+AI+engineer%2C+Gear+4%2C+topic%3A+LLMs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-50.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

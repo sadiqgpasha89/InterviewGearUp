@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are React Server Components (RSC) and how do they differ from traditional Server-Side Rendering? | InterviewGearUp</title>
+<meta name="description" content="React Server Components run only on the server and send a serialised result to the client, with no component JavaScript shipped. They can read databases…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-36.html">
+<meta property="og:title" content="What are React Server Components (RSC) and how do they differ from traditional Server-Side Rendering? | InterviewGearUp">
+<meta property="og:description" content="React Server Components run only on the server and send a serialised result to the client, with no component JavaScript shipped. They can read databases…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-36.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are React Server Components (RSC) and how do they differ from traditional Server-Side Rendering?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 3 (Senior) · React · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>React Server Components run only on the server and send a serialised result to the client, with no component JavaScript shipped. They can read databases or files directly and keep large dependencies off the bundle. Traditional SSR renders HTML on the server for first load, but still sends and hydrates all component code on the client.</p></div>
+<h4>Explained in depth</h4>
+<h4>Traditional SSR</h4>
+<p>The server renders components to HTML for fast first paint and SEO. The browser then downloads <strong>all</strong> the component JavaScript and <strong>hydrates</strong> the page, running every component again on the client. The code size and hydration cost remain.</p>
+<h4>Server Components</h4>
+<ul><li>Server Components execute only on the server (at request time or build time). Their output is a special serialised tree (the RSC payload) that React merges into the client&#39;s tree.</li><li>Their code and dependencies <strong>never reach the browser</strong>: a markdown parser or date library used only there adds zero bytes to the bundle.</li><li>They can be <code>async</code>, and access the database, file system or secrets directly.</li></ul>
+<pre><code>// Server Component (default in the Next.js app router)
+export default async function Posts() {
+  const posts = await db.posts.findMany();
+  return posts.map((p) =&gt; &lt;PostCard key={p.id} post={p} /&gt;);
+}</code></pre>
+<h4>Client Components</h4>
+<p>Marked with <code>&#39;use client&#39;</code>. They hold state, effects, event handlers and browser APIs. They are still pre-rendered to HTML on the server, then hydrated.</p>
+<h4>Rules and boundaries</h4>
+<ul><li>Server components cannot use <code>useState</code>, effects or browser-only APIs; client components cannot import server-only code.</li><li>Props passed across the boundary must be serialisable (no functions, apart from server actions).</li><li>A server component can render client components as children, so interactivity is added in small islands.</li></ul>
+<h4>Relationship</h4>
+<p>RSC does not replace SSR; frameworks use both: RSC reduces what is sent and hydrated, and SSR gives the first HTML.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What can a Server Component not do that a Client Component can?</li><li>How do you pass data from server to client components?</li><li>How do RSC and SSR work together in the same app?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-36">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-36%3A+What+are+React+Server+Components+%28RSC%29+and+how+do+they+differ+from%E2%80%A6&amp;question-id=fe-36&amp;context=Frontend+engineer%2C+Gear+3%2C+topic%3A+React%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-36.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

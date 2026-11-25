@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Walk through the TCP three-way handshake and four-way connection termination states. | InterviewGearUp</title>
+<meta name="description" content="TCP opens with a three-way handshake (SYN, SYN-ACK, ACK) so both sides agree on sequence numbers and options. It closes with a four-way exchange (FIN,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-16.html">
+<meta property="og:title" content="Walk through the TCP three-way handshake and four-way connection termination states. | InterviewGearUp">
+<meta property="og:description" content="TCP opens with a three-way handshake (SYN, SYN-ACK, ACK) so both sides agree on sequence numbers and options. It closes with a four-way exchange (FIN,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-16.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Walk through the TCP three-way handshake and four-way connection termination states.</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 2 (Mid-level) · Networking · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>TCP opens with a three-way handshake (SYN, SYN-ACK, ACK) so both sides agree on sequence numbers and options. It closes with a four-way exchange (FIN, ACK, FIN, ACK) because each direction is shut down separately. The side that closes first ends in TIME_WAIT to make sure the last ACK arrives and old packets die out.</p></div>
+<h4>Explained in depth</h4>
+<h4>Opening (three-way handshake)</h4>
+<ol start="1"><li>Client sends <strong>SYN</strong> with its initial sequence number (client state SYN_SENT).</li><li>Server replies <strong>SYN-ACK</strong>, acknowledging it and sending its own sequence number (server state SYN_RECEIVED).</li><li>Client sends <strong>ACK</strong>. Both sides are now <strong>ESTABLISHED</strong>.</li></ol>
+<p>Options are negotiated in the SYN packets: maximum segment size, window scaling, selective acknowledgements and timestamps. Until the final ACK arrives, the server holds a half-open entry, which is what a SYN flood abuses and why <strong>SYN cookies</strong> exist.</p>
+<h4>Closing (four-way termination)</h4>
+<ol start="1"><li>The active closer sends <strong>FIN</strong> (FIN_WAIT_1).</li><li>The other side sends <strong>ACK</strong> (the closer enters FIN_WAIT_2; the peer is in CLOSE_WAIT and may still send data, a half-close).</li><li>When the peer&#39;s application closes, it sends its own <strong>FIN</strong> (LAST_ACK).</li><li>The closer sends the final <strong>ACK</strong> and waits in <strong>TIME_WAIT</strong> for twice the maximum segment lifetime (60 seconds on Linux), then moves to CLOSED.</li></ol>
+<h4>States worth recognising when debugging</h4>
+<ul><li>Many <strong>TIME_WAIT</strong> sockets on a client or proxy are normal, but can exhaust ephemeral ports under high connection churn. Use connection reuse (keep-alive, pooling).</li><li>Many <strong>CLOSE_WAIT</strong> sockets mean the application received a FIN and never closed its side. That is a bug (a leaked connection).</li><li>Many <strong>SYN_RECV</strong> can mean a SYN flood or a full accept backlog.</li></ul>
+<p>A <code>RST</code> packet aborts a connection immediately, for example when a port is closed. Inspect states with <code>ss -tan</code> or <code>netstat</code>.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does TIME_WAIT exist and what are the downsides of many sockets in that state?</li><li>What does a growing number of CLOSE_WAIT sockets tell you?</li><li>How do SYN cookies defend against a SYN flood?</li></ul>
+<p><a class="btn primary" href="../#/q/do-16">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-16%3A+Walk+through+the+TCP+three-way+handshake+and+four-way+connection%E2%80%A6&amp;question-id=do-16&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+2%2C+topic%3A+Networking%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-16.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

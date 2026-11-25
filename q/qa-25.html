@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain Cypress in-browser execution architecture and its constraints regarding multiple tabs and origins. | InterviewGearUp</title>
+<meta name="description" content="Cypress runs the test code in the same browser run loop as the application, with a Node server in the background, so it sees DOM events and network…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-25.html">
+<meta property="og:title" content="Explain Cypress in-browser execution architecture and its constraints regarding multiple tabs and origins. | InterviewGearUp">
+<meta property="og:description" content="Cypress runs the test code in the same browser run loop as the application, with a Node server in the background, so it sees DOM events and network…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-25.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain Cypress in-browser execution architecture and its constraints regarding multiple tabs and origins.</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 3 (Senior) · Frameworks · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Cypress runs the test code in the same browser run loop as the application, with a Node server in the background, so it sees DOM events and network traffic directly, auto-retries commands and offers time-travel debugging. The trade-offs are no true multi-tab support, same-origin limits (relaxed by cy.origin), and tests written only in JavaScript or TypeScript.</p></div>
+<h4>Explained in depth</h4>
+<h4>Execution model</h4>
+<p>Selenium drives the browser from outside; Cypress loads the test spec <strong>inside the browser</strong> next to your application, in an iframe of its runner page. Commands are queued and run asynchronously with built-in retries, and a proxy in the Node process lets Cypress observe and modify network traffic (<code>cy.intercept</code>).</p>
+<h4>Benefits</h4>
+<ul><li>Direct access to the page and application state, which gives fast, consistent runs.</li><li>Automatic waiting and retrying of assertions, no explicit sleeps.</li><li>A visual runner with snapshots for each command, plus videos and screenshots.</li><li>Easy network stubbing and spying.</li></ul>
+<h4>Constraints</h4>
+<ul><li><strong>Multiple tabs and windows</strong>: Cypress cannot control a second tab. Work-arounds include removing <code>target=&quot;_blank&quot;</code> or checking the link&#39;s <code>href</code> and visiting it directly.</li><li><strong>Origins</strong>: a single test traditionally stays on one superdomain because of browser security. <code>cy.origin()</code> allows commands on a second origin within a test, with limits on sharing variables.</li><li><strong>Languages</strong>: JavaScript and TypeScript only.</li><li><strong>No native events</strong>: it simulates events in JavaScript; for OS-level behaviours such as real file dialogs it needs plugins.</li><li><strong>Browser coverage and parallelism</strong>: a smaller set of browsers than Selenium, and parallel runs rely on the paid dashboard or custom CI splitting.</li></ul>
+<h4>Typical workaround for authentication</h4>
+<p>Log in through the API (<code>cy.request</code>) and set cookies or tokens directly, instead of driving the identity provider&#39;s pages, which also makes tests faster.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does cy.origin help with login flows through another domain?</li><li>How does Cypress stub network requests?</li><li>What does Cypress do about iframes and file downloads?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-25">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-25%3A+Explain+Cypress+in-browser+execution+architecture+and+its%E2%80%A6&amp;question-id=qa-25&amp;context=QA+%2F+SDET%2C+Gear+3%2C+topic%3A+Frameworks%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-25.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

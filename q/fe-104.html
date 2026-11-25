@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is the virtual DOM, and why do list items need a key prop in React? | InterviewGearUp</title>
+<meta name="description" content="The virtual DOM is a lightweight in-memory tree of the UI. When state changes React builds a new tree, diffs it against the previous one and applies only…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-104.html">
+<meta property="og:title" content="What is the virtual DOM, and why do list items need a key prop in React? | InterviewGearUp">
+<meta property="og:description" content="The virtual DOM is a lightweight in-memory tree of the UI. When state changes React builds a new tree, diffs it against the previous one and applies only…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-104.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is the virtual DOM, and why do list items need a key prop in React?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 1 (Junior) · React · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>The virtual DOM is a lightweight in-memory tree of the UI. When state changes React builds a new tree, diffs it against the previous one and applies only the minimal real DOM changes. Keys give list items a stable identity so React can match, reorder and preserve them correctly instead of recreating or mixing them up.</p></div>
+<h4>Explained in depth</h4>
+<h4>Virtual DOM and reconciliation</h4>
+<p>Real DOM operations are comparatively costly (layout, paint). React keeps a tree of plain JavaScript objects describing the UI. After each state change it:</p>
+<ol start="1"><li>Renders a <strong>new virtual tree</strong>.</li><li><strong>Diffs</strong> it with the previous tree (reconciliation) using fast heuristics: elements of different types are replaced, same-type elements are updated, and lists are matched by key.</li><li><strong>Commits</strong> only the differences to the real DOM.</li></ol>
+<p>This lets you write UI as a function of state while React batches and minimises DOM work. It is not magic: for simple pages, direct DOM updates can be faster, and the benefit is the programming model and good-enough performance.</p>
+<h4>Why keys matter</h4>
+<pre><code>{todos.map(todo =&gt; &lt;TodoItem key={todo.id} todo={todo} /&gt;)}</code></pre>
+<p>Keys tell React <strong>which item is which</strong> between renders. With stable keys React can move, insert or remove only the affected items and keep each item&#39;s <strong>state</strong> (input text, focus, animations) attached to the right data.</p>
+<h4>Choosing keys</h4>
+<ul><li>Use a <strong>stable, unique ID</strong> from the data (database ID).</li><li>Avoid <strong>array indexes</strong> when the list can be reordered, filtered or inserted into: after inserting at the top, every index shifts, so React reuses the wrong component instances, leading to wrong input values and wasted re-renders. Indexes are acceptable only for static lists that never change.</li><li>Do not generate keys during render with <code>Math.random()</code>, because every render makes new keys and remounts every item.</li><li>Keys need to be unique <strong>among siblings</strong> only, and are not passed as props.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is using the array index as a key problematic?</li><li>Is the virtual DOM always faster than direct DOM updates?</li><li>What happens if two siblings share the same key?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-104">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-104%3A+What+is+the+virtual+DOM%2C+and+why+do+list+items+need+a+key+prop+in%E2%80%A6&amp;question-id=fe-104&amp;context=Frontend+engineer%2C+Gear+1%2C+topic%3A+React%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-104.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

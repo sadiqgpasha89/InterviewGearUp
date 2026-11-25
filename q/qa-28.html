@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is Consumer-Driven Contract Testing and how does Pact verify microservice contract compatibility? | InterviewGearUp</title>
+<meta name="description" content="Consumer-driven contract testing lets each consumer record the requests it makes and the response fields it needs. With Pact, those expectations become a…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-28.html">
+<meta property="og:title" content="What is Consumer-Driven Contract Testing and how does Pact verify microservice contract compatibility? | InterviewGearUp">
+<meta property="og:description" content="Consumer-driven contract testing lets each consumer record the requests it makes and the response fields it needs. With Pact, those expectations become a…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-28.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is Consumer-Driven Contract Testing and how does Pact verify microservice contract compatibility?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 3 (Senior) · Contract Testing · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Consumer-driven contract testing lets each consumer record the requests it makes and the response fields it needs. With Pact, those expectations become a pact file, which the provider replays against its real implementation in its own CI. It catches breaking API changes without running both services together.</p></div>
+<h4>Explained in depth</h4>
+<h4>The flow</h4>
+<ol start="1"><li><strong>Consumer test</strong>: the consumer&#39;s code is run against a Pact mock provider. The interactions it exercises (request, expected response shape) are written to a <strong>pact file</strong>.</li><li><strong>Publish</strong> the pact to a Pact Broker (or PactFlow), tagged with the consumer version and branch.</li><li><strong>Provider verification</strong>: the provider&#39;s CI fetches the pacts, replays each request against the real service, and checks the responses satisfy the expectations. <strong>Provider states</strong> (&#39;a user with id 7 exists&#39;) set up the data first.</li><li><strong>can-i-deploy</strong>: before releasing either side, ask the broker whether this version is compatible with what is deployed in the target environment.</li></ol>
+<h4>Why it is useful</h4>
+<ul><li>The contract contains only what consumers really use, so the provider is free to change or remove everything else.</li><li>Failures point to the exact consumer and interaction that would break.</li><li>Tests are fast and need no shared environment, so they scale across many microservices.</li></ul>
+<h4>Good practice</h4>
+<ul><li>Use <strong>matchers</strong> (type, regex) rather than exact values so the contract does not break on harmless data changes.</li><li>Keep contracts minimal. Over-specifying makes them brittle.</li><li>Message pacts cover asynchronous events (Kafka, queues) as well as HTTP.</li></ul>
+<h4>Limits</h4>
+<p>Contract tests check compatibility of requests and responses, not business correctness, performance or end-to-end journeys, so you still need some integration and functional tests. It works best when teams agree to maintain the broker and provider states. Provider-driven approaches, such as OpenAPI schema validation, are an alternative or a complement.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What are provider states and why are they needed?</li><li>How does can-i-deploy prevent a breaking release?</li><li>How do contract tests differ from end-to-end tests?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-28">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-28%3A+What+is+Consumer-Driven+Contract+Testing+and+how+does+Pact+verify%E2%80%A6&amp;question-id=qa-28&amp;context=QA+%2F+SDET%2C+Gear+3%2C+topic%3A+Contract+Testing%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-28.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

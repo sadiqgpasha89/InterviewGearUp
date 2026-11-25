@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How would you write test cases for a login page, covering positive, negative and edge scenarios? | InterviewGearUp</title>
+<meta name="description" content="Start from the requirements, then design cases for valid login, invalid credentials, empty and malformed input, boundary lengths, account states such as…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-106.html">
+<meta property="og:title" content="How would you write test cases for a login page, covering positive, negative and edge scenarios? | InterviewGearUp">
+<meta property="og:description" content="Start from the requirements, then design cases for valid login, invalid credentials, empty and malformed input, boundary lengths, account states such as…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-106.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How would you write test cases for a login page, covering positive, negative and edge scenarios?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 1 (Junior) · Test design · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Start from the requirements, then design cases for valid login, invalid credentials, empty and malformed input, boundary lengths, account states such as locked or disabled, security behaviours such as lockout, rate limiting and no user enumeration, session handling, and usability and accessibility. Write each case with clear steps, test data and expected results, and prioritise by risk.</p></div>
+<h4>Explained in depth</h4>
+<h4>Clarify requirements</h4>
+<p>Fields (username or email, password), rules (length, allowed characters), &quot;remember me&quot;, forgot password, lockout policy, MFA, supported browsers, and error message rules.</p>
+<h4>Positive tests</h4>
+<ul><li>Valid username and password logs in and lands on the correct page.</li><li>Case handling: email in different capitalisation (if allowed).</li><li>&quot;Remember me&quot; keeps the session; logout ends it.</li><li>Login using Enter key and button; works with browser password manager.</li></ul>
+<h4>Negative tests</h4>
+<ul><li>Wrong password; unknown username; both empty; only one field empty; spaces only.</li><li>Expected: a <strong>generic message</strong> (&quot;invalid email or password&quot;) that does not reveal which part is wrong, and no login.</li><li>Locked, disabled or unverified accounts show appropriate messages.</li><li>Expired password or required MFA step.</li></ul>
+<h4>Boundary and input validation</h4>
+<ul><li>Minimum and maximum password lengths, very long input (1000 characters), unicode and emoji, leading and trailing spaces.</li><li>Special characters and injection strings (<code>&#39; OR 1=1 --</code>, <code>&lt;script&gt;</code>) are handled safely.</li></ul>
+<h4>Security</h4>
+<ul><li>Lockout or throttling after N failed attempts; CAPTCHA behaviour.</li><li>Password field masked; not shown in URLs, logs or autofill risks; HTTPS only.</li><li>Session cookie flags (<code>HttpOnly</code>, <code>Secure</code>, <code>SameSite</code>), session fixation, and token expiry.</li><li>Cannot access protected pages without login; back button after logout does not reveal data.</li></ul>
+<h4>Non-functional</h4>
+<ul><li>Response time under load; behaviour when the server is slow or offline (clear error).</li><li><strong>Accessibility</strong>: labels, keyboard navigation, focus order, screen reader announcements for errors, colour contrast.</li><li>Responsive layout on mobile; works across supported browsers; localisation of messages.</li></ul>
+<h4>Format</h4>
+<div class="md-table"><table><thead><tr><th>ID</th><th>Scenario</th><th>Steps and data</th><th>Expected result</th><th>Priority</th></tr></thead><tbody><tr><td>L-01</td><td>Valid login</td><td>Enter valid email and password, click Sign in</td><td>Dashboard opens</td><td>High</td></tr><tr><td>L-02</td><td>Wrong password</td><td>Valid email, wrong password</td><td>Generic error, no login</td><td>High</td></tr></tbody></table></div>
+<p>Automate the high-priority regression cases through the UI or API, and keep exploratory sessions for unusual behaviours.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Which of these would you automate first?</li><li>How would you test the lockout after repeated failed attempts?</li><li>What security checks belong in login testing?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-106">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-106%3A+How+would+you+write+test+cases+for+a+login+page%2C+covering+positive%2C%E2%80%A6&amp;question-id=qa-106&amp;context=QA+%2F+SDET%2C+Gear+1%2C+topic%3A+Test+design%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-106.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

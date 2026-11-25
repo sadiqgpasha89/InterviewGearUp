@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain Kafka consumer groups, offset commits, and the partition rebalance protocol. | InterviewGearUp</title>
+<meta name="description" content="A consumer group shares a topic&#39;s partitions among its members so each partition is read by exactly one consumer in the group. Consumers commit offsets…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-32.html">
+<meta property="og:title" content="Explain Kafka consumer groups, offset commits, and the partition rebalance protocol. | InterviewGearUp">
+<meta property="og:description" content="A consumer group shares a topic&#39;s partitions among its members so each partition is read by exactly one consumer in the group. Consumers commit offsets…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-32.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain Kafka consumer groups, offset commits, and the partition rebalance protocol.</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · Messaging · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A consumer group shares a topic&#39;s partitions among its members so each partition is read by exactly one consumer in the group. Consumers commit offsets to record progress, so after a restart they resume where they left off. When members join, leave or fail, a rebalance reassigns partitions, which briefly pauses processing.</p></div>
+<h4>Explained in depth</h4>
+<h4>Consumer groups</h4>
+<p>All consumers with the same <code>group.id</code> form a group. Kafka assigns each partition to one member, so a topic with 6 partitions can be read by up to 6 consumers in parallel; extra consumers stay idle. Different groups each get <strong>all</strong> messages independently, which is how multiple services read the same topic.</p>
+<h4>Offsets</h4>
+<p>The <strong>committed offset</strong> is the position of the next record the group will read. It is stored in the internal <code>__consumer_offsets</code> topic.</p>
+<ul><li><strong>Auto commit</strong> commits periodically, which risks losing or repeating messages around failures.</li><li><strong>Manual commit after processing</strong> gives <strong>at-least-once</strong>: a crash before commit means the records are processed again, so handlers must be idempotent.</li><li>Committing <strong>before</strong> processing gives at-most-once (possible loss).</li><li>Exactly-once needs transactions, or idempotent writes to the sink.</li></ul>
+<h4>Rebalance protocol</h4>
+<p>A coordinator broker tracks membership with <strong>heartbeats</strong>. A rebalance is triggered when a consumer joins, leaves, crashes, exceeds <code>max.poll.interval.ms</code> (processing is too slow) or the topic&#39;s partitions change.</p>
+<ul><li><strong>Eager rebalancing</strong> revokes all partitions from everyone, then reassigns (stop-the-world).</li><li><strong>Cooperative (incremental)</strong> rebalancing moves only the affected partitions, so most consumers continue.</li></ul>
+<h4>Tuning</h4>
+<p>Keep <code>poll()</code> loops short, use <code>max.poll.records</code> to bound batch time, consider <strong>static membership</strong> (<code>group.instance.id</code>) so a restarting consumer keeps its partitions, and monitor <strong>consumer lag</strong>.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the difference between at-least-once and at-most-once from the point of commit timing?</li><li>What is cooperative incremental rebalancing?</li><li>How do static group membership and session timeouts reduce rebalances?</li></ul>
+<p><a class="btn primary" href="../#/q/be-32">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-32%3A+Explain+Kafka+consumer+groups%2C+offset+commits%2C+and+the+partition%E2%80%A6&amp;question-id=be-32&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+Messaging%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-32.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

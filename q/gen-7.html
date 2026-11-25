@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Design a rate limiter for an API platform. | InterviewGearUp</title>
+<meta name="description" content="Pick the algorithm (token bucket is the usual default), enforce it at the edge using a shared fast store such as Redis with atomic operations, return 429…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-7.html">
+<meta property="og:title" content="Design a rate limiter for an API platform. | InterviewGearUp">
+<meta property="og:description" content="Pick the algorithm (token bucket is the usual default), enforce it at the edge using a shared fast store such as Redis with atomic operations, return 429…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-7.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Design a rate limiter for an API platform.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 4 (Lead / Staff) · System design · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Pick the algorithm (token bucket is the usual default), enforce it at the edge using a shared fast store such as Redis with atomic operations, return 429 with Retry-After, and decide up front whether to fail open or closed if the limiter is down.</p></div>
+<h4>Explained in depth</h4>
+<h4>Clarify first</h4>
+<p>What is limited (user, API key, IP, endpoint), what limits apply, whether bursts are allowed, and whether limits are global or per region.</p>
+<h4>Algorithms</h4>
+<ul><li><strong>Fixed window</strong>: simple, but allows up to double the limit across a window boundary.</li><li><strong>Sliding window log</strong>: exact, memory-heavy.</li><li><strong>Sliding window counter</strong>: cheap approximation.</li><li><strong>Token bucket</strong>: constant memory (token count and last refill time), allows controlled bursts. Common default.</li><li><strong>Leaky bucket</strong>: smooths output rate.</li></ul>
+<h4>Distributed enforcement</h4>
+<p>A central Redis with a Lua script makes check-and-decrement atomic. At very high scale, use local counters that sync periodically: slightly approximate, much lower latency. Shard by key to avoid hot nodes.</p>
+<h4>Lead-level concerns</h4>
+<p>Fail open versus closed, fairness between tenants, priority classes, dry-run mode to roll out new limits safely, visibility into who is being throttled, and client guidance: exponential backoff with jitter. Put the limiter in the gateway or a sidecar and protect it from becoming a single point of failure.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you keep limits accurate across regions?</li><li>How do you handle a single hot key?</li><li>How would you roll out new limits without breaking customers?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-7">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-7%3A+Design+a+rate+limiter+for+an+API+platform.&amp;question-id=gen-7&amp;context=Software+engineer+%28core%29%2C+Gear+4%2C+topic%3A+System+design%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-7.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

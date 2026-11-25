@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare Static Application Security Testing (SAST) and Dynamic Application Security Testing (DAST). | InterviewGearUp</title>
+<meta name="description" content="SAST analyses source code or bytecode without running it, so it finds flaws early (injection patterns, hard-coded secrets) with line-level detail but…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-18.html">
+<meta property="og:title" content="Compare Static Application Security Testing (SAST) and Dynamic Application Security Testing (DAST). | InterviewGearUp">
+<meta property="og:description" content="SAST analyses source code or bytecode without running it, so it finds flaws early (injection patterns, hard-coded secrets) with line-level detail but…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-18.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare Static Application Security Testing (SAST) and Dynamic Application Security Testing (DAST).</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 2 (Mid-level) · AppSec · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>SAST analyses source code or bytecode without running it, so it finds flaws early (injection patterns, hard-coded secrets) with line-level detail but produces false positives and cannot see runtime configuration. DAST attacks the running application from outside, finding real exploitable issues such as misconfigurations and authentication flaws, but later in the cycle and without code location.</p></div>
+<h4>Explained in depth</h4>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th></th><th>SAST</th><th>DAST</th></tr></thead><tbody><tr><td>Needs</td><td>Source code or binaries</td><td>A running application</td></tr><tr><td>Perspective</td><td>White-box (inside)</td><td>Black-box (outside, like an attacker)</td></tr><tr><td>When</td><td>Early: on commit and pull request</td><td>Later: test or staging environments</td></tr><tr><td>Finds</td><td>Injection patterns, insecure APIs, hard-coded secrets, tainted data flows</td><td>Runtime issues: misconfiguration, missing headers, auth and session flaws, server errors, exposed endpoints</td></tr><tr><td>Output</td><td>File and line of the issue</td><td>URL, request and response proof</td></tr><tr><td>Weaknesses</td><td>False positives, language specific, blind to deployment and runtime context</td><td>Slower, limited coverage of paths it cannot reach, hard to pinpoint code</td></tr><tr><td>Examples</td><td>Semgrep, CodeQL, SonarQube, Checkmarx</td><td>OWASP ZAP, Burp Suite, Nuclei</td></tr></tbody></table></div>
+<h4>Using them together</h4>
+<ul><li><strong>SAST</strong> in the IDE and every pull request for fast developer feedback, with rules tuned to the stack.</li><li><strong>SCA</strong> for dependencies.</li><li><strong>DAST</strong> against staging after deployment, with authenticated scans for complete coverage, on a schedule and before releases.</li><li><strong>IAST</strong> places an agent inside the running app during tests, observing real data flows, and can give accurate findings with code context.</li><li>Add secret scanning and infrastructure-as-code scanning.</li></ul>
+<h4>Making them useful</h4>
+<p>Fail the build only on high-confidence, high-severity findings; triage the rest in a backlog. Tune or suppress known false positives with a recorded reason, track fix times, and train developers on common findings. No automated tool replaces manual review and penetration testing for business-logic flaws.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Where in the pipeline would you place each and why?</li><li>What is IAST and how does it combine both?</li><li>How do you reduce SAST false positives?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-18">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-18%3A+Compare+Static+Application+Security+Testing+%28SAST%29+and+Dynamic%E2%80%A6&amp;question-id=sec-18&amp;context=Security+engineer%2C+Gear+2%2C+topic%3A+AppSec%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-18.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

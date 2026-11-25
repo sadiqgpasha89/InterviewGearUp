@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is a message queue and why would you use one in a backend system? | InterviewGearUp</title>
+<meta name="description" content="A message queue stores messages from producers until consumers process them, decoupling services in time and load. It lets you do slow or unreliable work…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-106.html">
+<meta property="og:title" content="What is a message queue and why would you use one in a backend system? | InterviewGearUp">
+<meta property="og:description" content="A message queue stores messages from producers until consumers process them, decoupling services in time and load. It lets you do slow or unreliable work…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-106.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is a message queue and why would you use one in a backend system?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 1 (Junior) · Messaging · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A message queue stores messages from producers until consumers process them, decoupling services in time and load. It lets you do slow or unreliable work asynchronously, smooth traffic spikes, retry failures, and scale workers independently. The trade-offs are eventual consistency, at-least-once delivery that needs idempotent consumers, and extra infrastructure to run.</p></div>
+<h4>Explained in depth</h4>
+<h4>The idea</h4>
+<p>A <strong>producer</strong> sends a message to a queue; one or more <strong>consumers</strong> read and process it, then acknowledge it. The producer does not wait for the processing to finish.</p>
+<h4>Why use one</h4>
+<ul><li><strong>Asynchronous work</strong>: return to the user quickly and do slow tasks (send email, resize images, generate reports, call third-party APIs) in the background.</li><li><strong>Load levelling</strong>: absorb traffic bursts and let workers process at their own pace instead of overloading the database.</li><li><strong>Decoupling</strong>: producer and consumer can be deployed, scaled and fail independently, and use different languages.</li><li><strong>Reliability</strong>: messages persist; if a consumer crashes, the message is redelivered. Retries with backoff handle temporary failures.</li><li><strong>Scaling</strong>: add more consumers (competing consumers) to increase throughput.</li></ul>
+<h4>Key concepts</h4>
+<ul><li><strong>Acknowledgement</strong>: the consumer confirms success; otherwise the broker redelivers. This gives <strong>at-least-once</strong> delivery, so duplicates can occur and consumers must be <strong>idempotent</strong> (for example by storing processed message IDs).</li><li><strong>Dead letter queue (DLQ)</strong>: messages that keep failing go here for inspection instead of blocking the queue.</li><li><strong>Queue versus topic</strong>: in a queue each message goes to one consumer; in publish-subscribe each subscriber gets a copy.</li><li><strong>Ordering</strong>: usually guaranteed only per queue or partition.</li><li><strong>Backpressure</strong>: limits and prefetch settings so consumers are not overwhelmed.</li></ul>
+<h4>Common tools</h4>
+<p>RabbitMQ, Amazon SQS and SNS, Google Pub/Sub, Apache Kafka (a distributed log), and Redis streams.</p>
+<h4>Trade-offs</h4>
+<p>More moving parts, harder debugging and end-to-end tracing, eventual consistency (the user may see old data briefly), and the need to monitor queue depth and age.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the difference between a queue and a publish-subscribe topic?</li><li>What is a dead letter queue?</li><li>How do you handle duplicate messages?</li></ul>
+<p><a class="btn primary" href="../#/q/be-106">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-106%3A+What+is+a+message+queue+and+why+would+you+use+one+in+a+backend+system%3F&amp;question-id=be-106&amp;context=Backend+engineer%2C+Gear+1%2C+topic%3A+Messaging%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-106.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

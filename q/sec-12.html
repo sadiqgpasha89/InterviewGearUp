@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is Server-Side Request Forgery (SSRF) and how do attackers exploit cloud metadata endpoints (IMDSv1/v2)? | InterviewGearUp</title>
+<meta name="description" content="SSRF makes a server fetch a URL chosen by the attacker, so it reaches internal services and cloud metadata that the attacker cannot reach directly. On…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-12.html">
+<meta property="og:title" content="What is Server-Side Request Forgery (SSRF) and how do attackers exploit cloud metadata endpoints (IMDSv1/v2)? | InterviewGearUp">
+<meta property="og:description" content="SSRF makes a server fetch a URL chosen by the attacker, so it reaches internal services and cloud metadata that the attacker cannot reach directly. On…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-12.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is Server-Side Request Forgery (SSRF) and how do attackers exploit cloud metadata endpoints (IMDSv1/v2)?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · AppSec · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>SSRF makes a server fetch a URL chosen by the attacker, so it reaches internal services and cloud metadata that the attacker cannot reach directly. On AWS, IMDSv1 hands out the instance role&#39;s credentials to a plain GET to 169.254.169.254; IMDSv2 requires a session token obtained with a PUT, which defeats most simple SSRF.</p></div>
+<h4>Explained in depth</h4>
+<h4>How it arises</h4>
+<p>Features that fetch URLs: webhooks, link previews, image or file import, PDF renderers, and SSO metadata fetch. If the user controls the URL, the server&#39;s network position becomes the attacker&#39;s.</p>
+<h4>Cloud metadata</h4>
+<p><code>http://169.254.169.254/latest/meta-data/iam/security-credentials/&lt;role&gt;</code> returned temporary credentials with <strong>IMDSv1</strong>, needing nothing but a GET request. A well-known 2019 breach of a large bank started with an SSRF in a misconfigured web application firewall that read such credentials.</p>
+<p><strong>IMDSv2</strong> is session-oriented: the caller first sends <code>PUT /latest/api/token</code> with a TTL header to obtain a token, then includes it in a header on each metadata request. Requests carrying an <code>X-Forwarded-For</code> header are rejected, and the response hop limit defaults to 1, so a request relayed through a proxy or from a container cannot pull the token. A GET-only SSRF usually cannot get a token. Other clouds require a special header too (<code>Metadata-Flavor: Google</code>, <code>Metadata: true</code> on Azure).</p>
+<h4>Defences</h4>
+<ol start="1"><li><strong>Require IMDSv2</strong> and use least-privilege instance roles, so a stolen credential does little.</li><li>Allow-list destination hosts where possible; otherwise resolve the name yourself and <strong>block loopback, private, link-local and metadata ranges</strong>, then connect to the validated IP to avoid DNS rebinding.</li><li>Allow only <code>http</code> and <code>https</code>; do not follow redirects blindly, and re-validate after each one.</li><li>Restrict outbound traffic with egress filtering or a dedicated fetch proxy.</li><li>Do not return raw upstream responses or error details to the user.</li></ol>
+<p>Be aware of bypasses: alternative IP encodings (decimal, octal, IPv6), open redirects and DNS tricks. Deny-lists alone are fragile.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How can DNS rebinding defeat a check that validates the hostname before fetching?</li><li>Why does IMDSv2&#39;s hop limit matter for containers?</li><li>How would you design a safe link-preview feature?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-12">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-12%3A+What+is+Server-Side+Request+Forgery+%28SSRF%29+and+how+do+attackers%E2%80%A6&amp;question-id=sec-12&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+AppSec%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-12.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

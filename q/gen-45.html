@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Solve the 0/1 Knapsack problem with 2D dynamic programming and optimize it to 1D array space. | InterviewGearUp</title>
+<meta name="description" content="0/1 knapsack: dp[i][w] is the best value using the first i items with capacity w, equal to the max of skipping item i or taking it. That is O(N*W) time…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-45.html">
+<meta property="og:title" content="Solve the 0/1 Knapsack problem with 2D dynamic programming and optimize it to 1D array space. | InterviewGearUp">
+<meta property="og:description" content="0/1 knapsack: dp[i][w] is the best value using the first i items with capacity w, equal to the max of skipping item i or taking it. That is O(N*W) time…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-45.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Solve the 0/1 Knapsack problem with 2D dynamic programming and optimize it to 1D array space.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 3 (Senior) · Dynamic programming · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>0/1 knapsack: dp[i][w] is the best value using the first i items with capacity w, equal to the max of skipping item i or taking it. That is O(N*W) time and space. Since row i only needs row i-1, you can use a 1D array if you loop capacity downwards so each item is used once.</p></div>
+<h4>Explained in depth</h4>
+<h4>Recurrence</h4>
+<pre><code>dp[i][w] = dp[i-1][w]                                     if weight[i] &gt; w
+dp[i][w] = max(dp[i-1][w], dp[i-1][w - weight[i]] + value[i])  otherwise</code></pre>
+<p>Base case: dp[0][w] = 0. The answer is dp[N][W]. Time O(N*W), which is pseudo-polynomial because W is a number, not the input length.</p>
+<h4>1D optimisation</h4>
+<pre><code>function knapsack(weights, values, W) {
+  const dp = new Array(W + 1).fill(0);
+  for (let i = 0; i &lt; weights.length; i++) {
+    for (let w = W; w &gt;= weights[i]; w--) {      // downwards!
+      dp[w] = Math.max(dp[w], dp[w - weights[i]] + values[i]);
+    }
+  }
+  return dp[W];
+}</code></pre>
+<h4>Why the direction matters</h4>
+<p>Going from high capacity to low means dp[w - weight] still holds the value from the <strong>previous item</strong>, so each item is used at most once. Going upwards would reuse the current item and solve the <strong>unbounded</strong> knapsack instead.</p>
+<h4>Extras</h4>
+<ul><li>To recover which items were chosen, keep the 2D table (or a bit table) and walk back from dp[N][W].</li><li>Space is O(W) in the 1D version.</li><li>When W is huge but values are small, swap the dimensions: dp over value, storing minimum weight.</li><li>The problem is NP-hard in general; this DP is not a polynomial-time algorithm in the input size.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you reconstruct the chosen items?</li><li>How does the code change for unbounded knapsack?</li><li>Why is the DP pseudo-polynomial and not truly polynomial?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-45">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-45%3A+Solve+the+0%2F1+Knapsack+problem+with+2D+dynamic+programming+and%E2%80%A6&amp;question-id=gen-45&amp;context=Software+engineer+%28core%29%2C+Gear+3%2C+topic%3A+Dynamic+programming%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-45.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

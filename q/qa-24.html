@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does Playwright auto-waiting and network interception architecture eliminate flaky test timing? | InterviewGearUp</title>
+<meta name="description" content="Playwright waits automatically before each action: it checks that the element is attached, visible, stable, enabled and not covered, and retries until a…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-24.html">
+<meta property="og:title" content="How does Playwright auto-waiting and network interception architecture eliminate flaky test timing? | InterviewGearUp">
+<meta property="og:description" content="Playwright waits automatically before each action: it checks that the element is attached, visible, stable, enabled and not covered, and retries until a…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-24.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does Playwright auto-waiting and network interception architecture eliminate flaky test timing?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 3 (Senior) · Frameworks · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Playwright waits automatically before each action: it checks that the element is attached, visible, stable, enabled and not covered, and retries until a timeout. Web-first assertions retry too, and route() lets tests mock or block network calls. Together these remove most fixed sleeps, the usual cause of timing flakiness.</p></div>
+<h4>Explained in depth</h4>
+<h4>Auto-waiting</h4>
+<p>Locators are lazy: each action finds the element again and runs <strong>actionability checks</strong> first. For a click that means attached to the DOM, visible, <strong>stable</strong> (not moving between animation frames), able to receive events (not hidden behind an overlay) and enabled. If checks fail, Playwright retries until the timeout, then fails with a useful log.</p>
+<pre><code>await page.getByRole(&#39;button&#39;, { name: &#39;Pay&#39; }).click();     // waits until clickable
+await expect(page.getByText(&#39;Payment received&#39;)).toBeVisible();  // retries until true or timeout</code></pre>
+<p>Web-first assertions (<code>expect(locator)...</code>) poll until the condition holds. Avoid reading a value once and asserting on it, which reintroduces a race.</p>
+<h4>Network control</h4>
+<pre><code>await page.route(&#39;**/api/orders&#39;, (route) =&gt;
+  route.fulfill({ json: [{ id: 1, status: &#39;paid&#39; }] }));      // deterministic backend</code></pre>
+<p><code>route</code> can fulfil, modify, abort or continue requests, so you can simulate errors and slow responses. <code>page.waitForResponse</code> waits for a specific call, and HAR replay records and replays traffic.</p>
+<h4>Architecture points</h4>
+<p>Each test gets an isolated <strong>browser context</strong> (cookies, storage), which is cheap to create and keeps tests independent. Playwright talks to the browser out of process through a control protocol.</p>
+<h4>Limits</h4>
+<p>Auto-waiting does not fix shared test data, unawaited backend work or animation your app controls. Avoid <code>waitForTimeout</code>, use <code>expect.poll</code> for non-UI conditions, and use the trace viewer to debug the remaining failures.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What does the stable check in actionability mean and why does it matter?</li><li>How would you make a test deterministic when it depends on a slow third-party API?</li><li>When is waitForTimeout acceptable, if ever?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-24">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-24%3A+How+does+Playwright+auto-waiting+and+network+interception%E2%80%A6&amp;question-id=qa-24&amp;context=QA+%2F+SDET%2C+Gear+3%2C+topic%3A+Frameworks%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-24.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

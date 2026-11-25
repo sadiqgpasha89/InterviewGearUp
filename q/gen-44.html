@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare top-down memoization and bottom-up tabulation in dynamic programming. | InterviewGearUp</title>
+<meta name="description" content="Top-down memoization writes the natural recursion and caches results by state, so only reachable subproblems are solved. Bottom-up tabulation fills a…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-44.html">
+<meta property="og:title" content="Compare top-down memoization and bottom-up tabulation in dynamic programming. | InterviewGearUp">
+<meta property="og:description" content="Top-down memoization writes the natural recursion and caches results by state, so only reachable subproblems are solved. Bottom-up tabulation fills a…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-44.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare top-down memoization and bottom-up tabulation in dynamic programming.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 2 (Mid-level) · Dynamic programming · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Top-down memoization writes the natural recursion and caches results by state, so only reachable subproblems are solved. Bottom-up tabulation fills a table iteratively from the base cases. Both give the same time complexity; tabulation avoids recursion depth limits and can reduce memory by keeping only the last rows.</p></div>
+<h4>Explained in depth</h4>
+<h4>Example: Fibonacci</h4>
+<p><strong>Top-down</strong>:</p>
+<pre><code>from functools import lru_cache
+
+@lru_cache(maxsize=None)
+def fib(n):
+    if n &lt; 2:
+        return n
+    return fib(n - 1) + fib(n - 2)</code></pre>
+<p><strong>Bottom-up</strong>:</p>
+<pre><code>def fib(n):
+    a, b = 0, 1
+    for _ in range(n):
+        a, b = b, a + b
+    return a</code></pre>
+<p>Both take O(n) time; the plain recursion without caching is exponential.</p>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th></th><th>Top-down</th><th>Bottom-up</th></tr></thead><tbody><tr><td>Style</td><td>Recursion plus cache</td><td>Loops filling a table</td></tr><tr><td>Subproblems solved</td><td>Only those needed</td><td>All of them in the table</td></tr><tr><td>Stack depth</td><td>Can overflow on deep recursion</td><td>None</td></tr><tr><td>Space optimisation</td><td>Hard</td><td>Easy, keep only the previous row</td></tr><tr><td>Ease of writing</td><td>Close to the recurrence</td><td>Needs the correct fill order</td></tr></tbody></table></div>
+<h4>Process</h4>
+<ol start="1"><li>Define the <strong>state</strong> (what identifies a subproblem).</li><li>Write the <strong>recurrence</strong> and base cases.</li><li>Pick top-down for clarity or when many states are unreachable, and bottom-up for speed and memory.</li></ol>
+<p>DP applies when the problem has <strong>overlapping subproblems</strong> and <strong>optimal substructure</strong>.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you recognise a problem that needs dynamic programming?</li><li>How do you reduce the space of a two-dimensional DP table?</li><li>When can memoization be faster than tabulation?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-44">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-44%3A+Compare+top-down+memoization+and+bottom-up+tabulation+in+dynamic%E2%80%A6&amp;question-id=gen-44&amp;context=Software+engineer+%28core%29%2C+Gear+2%2C+topic%3A+Dynamic+programming%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-44.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

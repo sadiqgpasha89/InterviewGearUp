@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare optimistic locking and pessimistic locking. When should each be applied? | InterviewGearUp</title>
+<meta name="description" content="Optimistic locking does not lock while reading; it checks at write time that the row has not changed (usually with a version column) and retries or fails…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-18.html">
+<meta property="og:title" content="Compare optimistic locking and pessimistic locking. When should each be applied? | InterviewGearUp">
+<meta property="og:description" content="Optimistic locking does not lock while reading; it checks at write time that the row has not changed (usually with a version column) and retries or fails…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-18.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare optimistic locking and pessimistic locking. When should each be applied?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · Databases · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Optimistic locking does not lock while reading; it checks at write time that the row has not changed (usually with a version column) and retries or fails if it has. Pessimistic locking locks the row up front with SELECT ... FOR UPDATE. Use optimistic for low contention, and pessimistic when conflicts are frequent or retries are expensive.</p></div>
+<h4>Explained in depth</h4>
+<h4>Optimistic</h4>
+<pre><code>UPDATE accounts SET balance = :new, version = version + 1
+WHERE id = :id AND version = :seen_version;
+-- 0 rows updated means someone else changed it: reload and retry, or report a conflict</code></pre>
+<p>No locks are held while the user or service thinks, so it scales well for read-heavy data and long interactions (editing a profile). Under heavy contention, many attempts fail and retry, wasting work.</p>
+<h4>Pessimistic</h4>
+<pre><code>BEGIN;
+SELECT * FROM stock WHERE sku = &#39;A1&#39; FOR UPDATE;   -- others wait here
+UPDATE stock SET qty = qty - 1 WHERE sku = &#39;A1&#39;;
+COMMIT;</code></pre>
+<p>Other writers wait, so conflicts are prevented rather than detected. It suits hot rows with short critical sections, such as the last items in stock. The costs are blocking, lower throughput, and the risk of <strong>deadlocks</strong> and long waits if a lock is held across a slow call.</p>
+<h4>Choosing</h4>
+<div class="md-table"><table><thead><tr><th>Situation</th><th>Prefer</th></tr></thead><tbody><tr><td>Conflicts are rare, reads dominate</td><td>Optimistic</td></tr><tr><td>Conflicts are frequent, a retry is costly</td><td>Pessimistic</td></tr><tr><td>Work spans user think time</td><td>Optimistic</td></tr><tr><td>Short transaction on a hot row</td><td>Pessimistic or an atomic update</td></tr></tbody></table></div>
+<h4>Tips</h4>
+<ul><li>Often the best answer is a single atomic statement: <code>UPDATE stock SET qty = qty - 1 WHERE sku = &#39;A1&#39; AND qty &gt; 0</code>.</li><li>Take locks in a consistent order, keep transactions short, and set lock timeouts.</li><li><code>SKIP LOCKED</code> lets workers claim different rows from a job table without blocking each other.</li><li>In distributed systems, a version or ETag with a conditional write (<code>If-Match</code>) is the optimistic approach for HTTP APIs.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How would you implement a job queue on a SQL table without workers blocking each other?</li><li>How do you avoid deadlocks when two transactions lock multiple rows?</li><li>How do ETags and If-Match implement optimistic concurrency in an HTTP API?</li></ul>
+<p><a class="btn primary" href="../#/q/be-18">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-18%3A+Compare+optimistic+locking+and+pessimistic+locking.+When+should+each%E2%80%A6&amp;question-id=be-18&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+Databases%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-18.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do HTTP status codes and error responses help clients handle failures, and which ones should an API use? | InterviewGearUp</title>
+<meta name="description" content="Status codes tell clients the outcome class: 2xx success, 3xx redirect, 4xx the client&#39;s request was wrong, 5xx the server failed. Use specific codes…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-104.html">
+<meta property="og:title" content="How do HTTP status codes and error responses help clients handle failures, and which ones should an API use? | InterviewGearUp">
+<meta property="og:description" content="Status codes tell clients the outcome class: 2xx success, 3xx redirect, 4xx the client&#39;s request was wrong, 5xx the server failed. Use specific codes…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-104.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do HTTP status codes and error responses help clients handle failures, and which ones should an API use?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 1 (Junior) · APIs · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Status codes tell clients the outcome class: 2xx success, 3xx redirect, 4xx the client&#39;s request was wrong, 5xx the server failed. Use specific codes such as 201, 204, 400, 401, 403, 404, 409, 422, 429 and 503, and return a consistent JSON error body with a machine-readable code, a human message and a request ID, never leaking stack traces.</p></div>
+<h4>Explained in depth</h4>
+<h4>The classes</h4>
+<ul><li><strong>2xx success</strong>: <code>200 OK</code>, <code>201 Created</code> (include <code>Location</code>), <code>202 Accepted</code> (queued for later), <code>204 No Content</code>.</li><li><strong>3xx redirection</strong>: <code>301</code> and <code>308</code> permanent, <code>302</code> and <code>307</code> temporary, <code>304 Not Modified</code> for caching.</li><li><strong>4xx client errors</strong>: the request should be changed before retrying.</li><li><strong>5xx server errors</strong>: the server failed; retrying may succeed.</li></ul>
+<h4>Common 4xx and 5xx codes</h4>
+<div class="md-table"><table><thead><tr><th>Code</th><th>Meaning</th><th>Use when</th></tr></thead><tbody><tr><td>400</td><td>Bad Request</td><td>Malformed JSON or missing parameters</td></tr><tr><td>401</td><td>Unauthorized</td><td>Not authenticated or token invalid</td></tr><tr><td>403</td><td>Forbidden</td><td>Authenticated but not allowed</td></tr><tr><td>404</td><td>Not Found</td><td>Resource does not exist (also used to hide existence)</td></tr><tr><td>409</td><td>Conflict</td><td>State conflict, such as duplicate or version mismatch</td></tr><tr><td>422</td><td>Unprocessable Content</td><td>Well-formed but fails validation</td></tr><tr><td>429</td><td>Too Many Requests</td><td>Rate limited, send <code>Retry-After</code></td></tr><tr><td>500</td><td>Internal Server Error</td><td>Unexpected bug</td></tr><tr><td>502/504</td><td>Bad Gateway / Gateway Timeout</td><td>Upstream failure</td></tr><tr><td>503</td><td>Service Unavailable</td><td>Overloaded or in maintenance, send <code>Retry-After</code></td></tr></tbody></table></div>
+<h4>A good error body</h4>
+<pre><code>{
+  &quot;error&quot;: {
+    &quot;code&quot;: &quot;VALIDATION_FAILED&quot;,
+    &quot;message&quot;: &quot;Email address is not valid.&quot;,
+    &quot;details&quot;: [{ &quot;field&quot;: &quot;email&quot;, &quot;issue&quot;: &quot;invalid_format&quot; }],
+    &quot;requestId&quot;: &quot;9f2c1a&quot;
+  }
+}</code></pre>
+<p>RFC 9457 (<strong>Problem Details</strong>, <code>application/problem+json</code>) standardises this shape.</p>
+<h4>Rules</h4>
+<ul><li>Never return <code>200</code> with an error inside the body.</li><li>Do not leak stack traces, SQL or internal hostnames; log them with the request ID instead.</li><li>Keep codes stable so clients can program against them.</li><li>Clients retry <strong>idempotent</strong> requests on 5xx, 429 and timeouts with exponential backoff and jitter, and do not retry most 4xx.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the difference between 401 and 403?</li><li>When would you return 409 versus 422?</li><li>How should clients treat 429 and 503 responses?</li></ul>
+<p><a class="btn primary" href="../#/q/be-104">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-104%3A+How+do+HTTP+status+codes+and+error+responses+help+clients+handle%E2%80%A6&amp;question-id=be-104&amp;context=Backend+engineer%2C+Gear+1%2C+topic%3A+APIs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-104.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

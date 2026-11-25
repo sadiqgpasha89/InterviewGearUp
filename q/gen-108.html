@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Design a metrics monitoring and alerting system that ingests millions of data points per second. | InterviewGearUp</title>
+<meta name="description" content="Agents or SDKs push or scrape metrics into a stateless ingestion tier, which writes through a queue such as Kafka to a time-series database sharded by…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-108.html">
+<meta property="og:title" content="Design a metrics monitoring and alerting system that ingests millions of data points per second. | InterviewGearUp">
+<meta property="og:description" content="Agents or SDKs push or scrape metrics into a stateless ingestion tier, which writes through a queue such as Kafka to a time-series database sharded by…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-108.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Design a metrics monitoring and alerting system that ingests millions of data points per second.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 4 (Lead / Staff) · System design · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Agents or SDKs push or scrape metrics into a stateless ingestion tier, which writes through a queue such as Kafka to a time-series database sharded by series and time, with downsampling and retention tiers. A query engine serves dashboards, and a separate rule evaluator checks alert conditions and routes deduplicated notifications. Control cardinality or the system will fall over.</p></div>
+<h4>Explained in depth</h4>
+<h4>Requirements</h4>
+<ul><li>Ingest <strong>millions of points per second</strong> with seconds of latency, query dashboards quickly, evaluate alerts reliably, and retain data cheaply for months or years.</li><li>Data model: metric name, <strong>labels or tags</strong> (service, region, host), timestamp, value.</li></ul>
+<h4>Ingestion</h4>
+<ol start="1"><li><strong>Collection</strong>: a pull model (Prometheus scrapes endpoints, good for service discovery and health) or a push model (agents, StatsD, OpenTelemetry for short-lived jobs). Local agents batch and compress.</li><li><strong>Ingestion gateways</strong>: stateless, authenticated, rate-limited per tenant, validating metrics and enforcing label limits.</li><li><strong>Message queue (Kafka)</strong> absorbs bursts and decouples producers from storage, with partitions by series hash.</li><li><strong>Writers</strong> consume and write to storage in batches.</li></ol>
+<h4>Storage</h4>
+<p>A <strong>time-series database</strong> (Prometheus TSDB with Thanos or Mimir, VictoriaMetrics, InfluxDB, or a column store) using columnar compression (delta-of-delta timestamps, XOR float compression; about 1 to 2 bytes per point). Shard by series ID and time block; replicate for durability.</p>
+<ul><li><strong>Tiers</strong>: raw data for days, <strong>downsampled</strong> rollups (1 minute, 1 hour averages, max, count) for months or years, and object storage for cold data.</li><li><strong>Cardinality control</strong>: every unique label combination is a new series. IDs like user or request in labels explode memory and indexes, so enforce limits and drop or aggregate offenders.</li></ul>
+<h4>Query and visualisation</h4>
+<p>A query layer with caching and time-range splitting (PromQL-style), pre-computed <strong>recording rules</strong> for expensive queries, and dashboards (Grafana).</p>
+<h4>Alerting</h4>
+<ul><li>A separate <strong>rule evaluator</strong> runs queries periodically and tracks states (pending, firing, resolved) with a <code>for</code> duration to avoid flapping.</li><li><strong>Alert manager</strong>: groups, deduplicates, silences and routes to pager, chat and email by severity, with escalation.</li><li>Alert on <strong>symptoms</strong> (SLO burn rate), include runbook links, and add a <strong>dead man&#39;s switch</strong> (a heartbeat alert that must always fire) with an external watchdog, so a broken monitoring system is itself noticed.</li></ul>
+<h4>Scale and reliability</h4>
+<p>Run multiple replicas, shard rule evaluation, monitor the monitoring system, and test failure modes.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is high cardinality and why is it dangerous for time-series databases?</li><li>How would you do downsampling and retention?</li><li>How do you make alerting reliable when the monitoring system itself is failing?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-108">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-108%3A+Design+a+metrics+monitoring+and+alerting+system+that+ingests%E2%80%A6&amp;question-id=gen-108&amp;context=Software+engineer+%28core%29%2C+Gear+4%2C+topic%3A+System+design%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-108.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

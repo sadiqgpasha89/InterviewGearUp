@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you design a data platform that is privacy-by-design for GDPR and CCPA? | InterviewGearUp</title>
+<meta name="description" content="Know where personal data is by cataloguing and tagging it, minimise what you collect and keep, separate identifiers from analytical data with…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-120.html">
+<meta property="og:title" content="How do you design a data platform that is privacy-by-design for GDPR and CCPA? | InterviewGearUp">
+<meta property="og:description" content="Know where personal data is by cataloguing and tagging it, minimise what you collect and keep, separate identifiers from analytical data with…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-120.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you design a data platform that is privacy-by-design for GDPR and CCPA?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 4 (Lead / Staff) · Privacy · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Know where personal data is by cataloguing and tagging it, minimise what you collect and keep, separate identifiers from analytical data with pseudonymisation or tokenisation, enforce purpose-based access and masking, automate retention and deletion across all copies including backups and derived data, record consent, and keep audit trails. Build these into the platform so each team does not reinvent them.</p></div>
+<h4>Explained in depth</h4>
+<h4>Principles</h4>
+<p>Lawfulness and purpose limitation, <strong>data minimisation</strong>, storage limitation, security, and accountability. Individuals have rights: access, correction, <strong>erasure</strong>, portability, objection, and opt-out of sale (CCPA).</p>
+<h4>Platform capabilities</h4>
+<ol start="1"><li><strong>Discovery and classification</strong>: automatic scanning to find personal data (names, emails, IDs, location), tags in the catalog (PII, sensitive, financial, health), and lineage so you know every table and system derived from it. Maintain a <strong>record of processing activities</strong>.</li><li><strong>Minimise at ingestion</strong>: collect only needed fields, drop or hash unnecessary identifiers, and apply retention at the source.</li><li><strong>Pseudonymise and separate</strong>: replace direct identifiers with tokens or keyed hashes; store the mapping (identity vault) separately with strict access. Analysts work on pseudonymised data; re-identification requires approval. Truly <strong>anonymised</strong> data (not reversible and not linkable) falls outside the regulations, but is hard to achieve, so prefer aggregation, generalisation and differential privacy where valid.</li><li><strong>Access control</strong>: role and attribute-based policies by tag, <strong>column masking and row filtering</strong>, purpose declarations, time-boxed access, and audit logs of reads.</li><li><strong>Consent and preferences</strong>: store consent state and purposes as data, propagate changes by events to downstream pipelines, and filter processing accordingly.</li><li><strong>Retention and deletion</strong>:</li></ol>
+<ul><li>Define retention per data class; automate expiry with lifecycle rules.</li><li><strong>Erasure requests</strong>: locate the subject via the identity graph, delete from operational stores, lake tables (using table formats that support row-level deletes, Iceberg and Delta, followed by compaction and vacuum), derived tables and feature stores. For backups, use <strong>crypto-shredding</strong> (per-subject encryption keys deleted) or documented expiry. Track completion within the legal deadline (one month under GDPR).</li></ul>
+<ol start="7"><li><strong>Security</strong>: encryption at rest and in transit, key management, network isolation, and breach detection with response procedures (72-hour notification).</li><li><strong>Third parties and transfers</strong>: data processing agreements, region controls for residency and transfer mechanisms.</li></ol>
+<h4>Processes and proof</h4>
+<p>Privacy impact assessments for new uses, privacy reviews in design, testing of deletion with synthetic subjects, dashboards for request SLAs, and training. Keep documentation ready for regulators.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you implement the right to erasure in an immutable data lake?</li><li>What is the difference between anonymisation and pseudonymisation?</li><li>How do you handle consent changes in downstream systems?</li></ul>
+<p><a class="btn primary" href="../#/q/de-120">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-120%3A+How+do+you+design+a+data+platform+that+is+privacy-by-design+for+GDPR%E2%80%A6&amp;question-id=de-120&amp;context=Data+engineer%2C+Gear+4%2C+topic%3A+Privacy%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-120.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

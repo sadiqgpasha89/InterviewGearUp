@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is defence in depth, and why is relying on a single security control risky? | InterviewGearUp</title>
+<meta name="description" content="Defence in depth layers independent controls across people, process and technology so that if one fails or is bypassed, others still protect the asset.…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-110.html">
+<meta property="og:title" content="What is defence in depth, and why is relying on a single security control risky? | InterviewGearUp">
+<meta property="og:description" content="Defence in depth layers independent controls across people, process and technology so that if one fails or is bypassed, others still protect the asset.…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-110.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is defence in depth, and why is relying on a single security control risky?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 1 (Junior) · Fundamentals · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Defence in depth layers independent controls across people, process and technology so that if one fails or is bypassed, others still protect the asset. Layers include network segmentation, authentication, authorisation, input validation, encryption, monitoring and backups. A single control is a single point of failure, since every control has gaps, misconfigurations or bypasses.</p></div>
+<h4>Explained in depth</h4>
+<h4>The idea</h4>
+<p>Like a castle with a moat, walls, gates and guards, an attacker should have to defeat <strong>multiple, different controls</strong> in sequence. Assume that any single layer can fail because of bugs, misconfiguration, stolen credentials or insider mistakes.</p>
+<h4>Layers (example for a web application)</h4>
+<div class="md-table"><table><thead><tr><th>Layer</th><th>Controls</th></tr></thead><tbody><tr><td>Policy and people</td><td>Security training, onboarding and offboarding, least privilege, change management</td></tr><tr><td>Perimeter and network</td><td>Firewalls, WAF, DDoS protection, segmentation into tiers, private subnets, network ACLs</td></tr><tr><td>Host</td><td>Patching, hardened images, EDR, minimal packages, disabled unused services</td></tr><tr><td>Application</td><td>Input validation, output encoding, parameterised queries, secure session handling, dependency scanning, secure code review</td></tr><tr><td>Identity and access</td><td>Strong authentication, MFA, role-based access, short-lived tokens, secrets management</td></tr><tr><td>Data</td><td>Encryption in transit and at rest, key management, masking, backups with tested restores</td></tr><tr><td>Detection and response</td><td>Logging, SIEM, alerts, incident response plan, regular exercises</td></tr></tbody></table></div>
+<h4>Control types</h4>
+<p>Combine <strong>preventive</strong> (stop), <strong>detective</strong> (notice), <strong>corrective</strong> (recover) and <strong>deterrent</strong> controls. For example, a firewall (prevent), IDS and logs (detect), and backups (recover).</p>
+<h4>Principles</h4>
+<ul><li>Layers should be <strong>diverse</strong> and <strong>independent</strong>, so a single flaw does not defeat several at once (avoid all layers depending on the same credential).</li><li>Fail <strong>securely</strong> (deny by default) and avoid security through obscurity as the only protection.</li><li>Apply least privilege at each layer to limit the <strong>blast radius</strong>.</li></ul>
+<h4>Why one control is not enough</h4>
+<p>A WAF can be bypassed, an authenticated user can be phished, patching lags behind exploits. If the app also validates input, the database account has minimal rights and data is encrypted, an attacker&#39;s exploit gains little. Defence in depth also supports <strong>zero trust</strong>, where no network location is automatically trusted.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Give an example of defence in depth for a web application.</li><li>How does defence in depth relate to zero trust?</li><li>What is the difference between prevention, detection and response controls?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-110">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-110%3A+What+is+defence+in+depth%2C+and+why+is+relying+on+a+single+security%E2%80%A6&amp;question-id=sec-110&amp;context=Security+engineer%2C+Gear+1%2C+topic%3A+Fundamentals%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-110.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

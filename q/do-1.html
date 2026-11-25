@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is the difference between a container and a virtual machine? And an image versus a container? | InterviewGearUp</title>
+<meta name="description" content="A container packages an app and its dependencies and runs as an isolated process sharing the host kernel, so it starts in seconds and is light. A VM…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-1.html">
+<meta property="og:title" content="What is the difference between a container and a virtual machine? And an image versus a container? | InterviewGearUp">
+<meta property="og:description" content="A container packages an app and its dependencies and runs as an isolated process sharing the host kernel, so it starts in seconds and is light. A VM…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-1.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is the difference between a container and a virtual machine? And an image versus a container?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 1 (Junior) · Containers · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A container packages an app and its dependencies and runs as an isolated process sharing the host kernel, so it starts in seconds and is light. A VM virtualises a whole machine with its own OS. An image is the read-only template; a container is a running instance of it.</p></div>
+<h4>Explained in depth</h4>
+<p><strong>Isolation</strong>: containers use Linux namespaces (process, network, mounts) for isolation and cgroups for resource limits. VMs use a hypervisor and run a full guest OS, giving stronger isolation at higher cost.</p>
+<p><strong>Image versus container</strong>: an image is a layered, immutable filesystem built from a Dockerfile. A container is an image plus a writable layer plus a running process. Persistent data belongs in volumes.</p>
+<pre><code>FROM node:22-slim AS build
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+FROM node:22-slim
+WORKDIR /app
+COPY --from=build /app/dist ./dist
+USER node
+CMD [&quot;node&quot;, &quot;dist/server.js&quot;]</code></pre>
+<p><strong>Good practice</strong>: multi-stage builds for small images, copy dependency manifests before source so layers cache, run as a non-root user, pin versions, one main process per container, never bake secrets into images, and use a <code>.dockerignore</code>.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What are namespaces and cgroups?</li><li>CMD versus ENTRYPOINT?</li><li>How would you shrink a large image?</li></ul>
+<p><a class="btn primary" href="../#/q/do-1">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-1%3A+What+is+the+difference+between+a+container+and+a+virtual+machine%3F%E2%80%A6&amp;question-id=do-1&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+1%2C+topic%3A+Containers%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-1.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare singly linked lists and doubly linked lists: Pointer overheads and operation trade-offs. | InterviewGearUp</title>
+<meta name="description" content="A singly linked node stores one next pointer; a doubly linked node adds a prev pointer. Doubly linked lists allow O(1) removal of a known node and…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-10.html">
+<meta property="og:title" content="Compare singly linked lists and doubly linked lists: Pointer overheads and operation trade-offs. | InterviewGearUp">
+<meta property="og:description" content="A singly linked node stores one next pointer; a doubly linked node adds a prev pointer. Doubly linked lists allow O(1) removal of a known node and…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-10.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare singly linked lists and doubly linked lists: Pointer overheads and operation trade-offs.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 1 (Junior) · Data structures · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A singly linked node stores one next pointer; a doubly linked node adds a prev pointer. Doubly linked lists allow O(1) removal of a known node and backward traversal, at the cost of an extra pointer per node and more pointer updates on every insert or delete.</p></div>
+<h4>Explained in depth</h4>
+<h4>Structure</h4>
+<ul><li><strong>Singly linked</strong>: each node holds a value and <code>next</code>. You can only walk forward.</li><li><strong>Doubly linked</strong>: each node holds a value, <code>next</code> and <code>prev</code>. You can walk both ways, and usually keep both <code>head</code> and <code>tail</code>.</li></ul>
+<h4>Operation costs</h4>
+<div class="md-table"><table><thead><tr><th>Operation</th><th>Singly</th><th>Doubly</th></tr></thead><tbody><tr><td>Insert or delete at head</td><td>O(1)</td><td>O(1)</td></tr><tr><td>Insert at tail (with tail pointer)</td><td>O(1)</td><td>O(1)</td></tr><tr><td>Delete at tail</td><td>O(n), you need the predecessor</td><td>O(1)</td></tr><tr><td>Delete a node you already hold a reference to</td><td>O(n), find the predecessor first</td><td>O(1)</td></tr><tr><td>Search by value</td><td>O(n)</td><td>O(n)</td></tr><tr><td>Traverse backwards</td><td>Not possible</td><td>O(n)</td></tr></tbody></table></div>
+<h4>Trade-offs</h4>
+<ul><li><strong>Memory</strong>: the extra pointer is 8 bytes per node on a 64-bit machine, which is a large share of a small node.</li><li><strong>Update cost</strong>: an insert in a doubly linked list rewrites four pointers instead of two, and mistakes at the boundaries (null head or tail) are easy to make. A sentinel node removes most special cases.</li><li><strong>Use cases</strong>: singly linked suits stacks, simple queues and hash table chains. Doubly linked suits LRU caches (move a node to the front in O(1)), undo history and deques.</li><li>Both have poor cache locality compared with arrays, because nodes are scattered in memory.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>When would you still pick a singly linked list?</li><li>How does an XOR linked list save the extra pointer, and why is it rarely used?</li><li>Why does LinkedList in many standard libraries use a doubly linked design?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-10">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-10%3A+Compare+singly+linked+lists+and+doubly+linked+lists%3A+Pointer%E2%80%A6&amp;question-id=gen-10&amp;context=Software+engineer+%28core%29%2C+Gear+1%2C+topic%3A+Data+structures%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-10.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

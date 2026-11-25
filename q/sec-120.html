@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you build resilience against ransomware, from prevention to recovery? | InterviewGearUp</title>
+<meta name="description" content="Reduce compromise through patching, phishing-resistant MFA and least privilege, limit spread with segmentation and tiered admin accounts, detect early…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-120.html">
+<meta property="og:title" content="How do you build resilience against ransomware, from prevention to recovery? | InterviewGearUp">
+<meta property="og:description" content="Reduce compromise through patching, phishing-resistant MFA and least privilege, limit spread with segmentation and tiered admin accounts, detect early…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-120.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you build resilience against ransomware, from prevention to recovery?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 4 (Lead / Staff) · Resilience · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Reduce compromise through patching, phishing-resistant MFA and least privilege, limit spread with segmentation and tiered admin accounts, detect early with EDR and monitoring, keep immutable isolated backups with tested restores, rehearse the incident and communication plan, and decide your payment stance in advance.</p></div>
+<h4>Explained in depth</h4>
+<h4>Understand the threat</h4>
+<p>Modern groups steal data first (<strong>double extortion</strong>), disable backups and security tools, move laterally with stolen credentials, and encrypt at scale, often at night or on holidays. Common entry points: phishing, exposed remote access (RDP, VPN) without MFA, unpatched edge devices, stolen credentials, and compromised vendors.</p>
+<h4>Prevention</h4>
+<ul><li><strong>Patch and harden</strong> internet-facing systems quickly; remove unused exposure; require <strong>phishing-resistant MFA</strong> on VPN, email, admin and remote access.</li><li><strong>Email and web filtering</strong>, macro and script restrictions, application control, and <strong>EDR</strong> on all endpoints and servers.</li><li><strong>Least privilege</strong> and <strong>tiered administration</strong>: no domain-admin logins on workstations, separate admin accounts, LAPS for local admin passwords, and privileged access management.</li></ul>
+<h4>Limit blast radius and detect early</h4>
+<ul><li>Network <strong>segmentation</strong>, restricted lateral movement (SMB, RDP, WinRM), and egress filtering.</li><li>Monitoring for ransomware precursors: credential dumping, unusual admin tool use, mass file renames, disabled backups or antivirus, large outbound transfers. A 24 by 7 detection and response capability (in-house or managed).</li></ul>
+<h4>Backups and recovery capability</h4>
+<ul><li>Follow <strong>3-2-1-1-0</strong>: three copies, two media, one offsite, one <strong>immutable or offline</strong>, zero errors after verification.</li><li>Immutable storage (object lock, WORM), backups in a separate account or security domain with separate credentials, and protected backup consoles.</li><li><strong>Test restores</strong> regularly and measure actual recovery time; know the <strong>order of recovery</strong> (identity, networking, critical applications) and keep golden images and infrastructure as code to rebuild clean systems.</li><li>Document dependencies and maintain offline copies of runbooks, contacts and the incident plan.</li></ul>
+<h4>Incident response plan</h4>
+<ul><li>Roles (incident commander, technical lead, legal, communications, executives), outside help on retainer (IR firm, counsel, insurer), and regulator and customer notification obligations.</li><li>First hour: isolate affected systems (network containment, not powering off if forensics matter), disable compromised accounts, preserve evidence, and activate the plan; avoid reconnecting until the intrusion is understood and credentials reset (including KRBTGT where relevant).</li><li><strong>Tabletop exercises</strong> with executives, including the <strong>payment decision</strong> (legal, sanctions and operational considerations, no guarantee of recovery), made in advance.</li></ul>
+<h4>Measure</h4>
+<p>Time to detect, percentage of systems with EDR, backup restore test success and duration, MFA coverage, and time to patch critical edge vulnerabilities.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why are immutable and offline backups essential against modern ransomware?</li><li>What is double extortion and how does it change the response?</li><li>What should the first hour of a ransomware response look like?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-120">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-120%3A+How+do+you+build+resilience+against+ransomware%2C+from+prevention+to%E2%80%A6&amp;question-id=sec-120&amp;context=Security+engineer%2C+Gear+4%2C+topic%3A+Resilience%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-120.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

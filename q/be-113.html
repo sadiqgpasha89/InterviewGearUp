@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Design an idempotent payment processing service that never charges a customer twice. | InterviewGearUp</title>
+<meta name="description" content="Require a client-generated idempotency key for every payment request, store the key with the request hash and result atomically in the database, return…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-113.html">
+<meta property="og:title" content="Design an idempotent payment processing service that never charges a customer twice. | InterviewGearUp">
+<meta property="og:description" content="Require a client-generated idempotency key for every payment request, store the key with the request hash and result atomically in the database, return…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-113.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Design an idempotent payment processing service that never charges a customer twice.</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 4 (Lead / Staff) · Payments · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Require a client-generated idempotency key for every payment request, store the key with the request hash and result atomically in the database, return the stored result on retries, and pass the key to the payment provider. Model payments as a state machine, reconcile with provider webhooks and periodic reports, and use a ledger with double-entry records for auditability.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why it is hard</h4>
+<p>Networks fail between every step. A client times out and retries; a provider call succeeds but the response is lost; webhooks arrive twice or out of order. The system must produce <strong>exactly one charge</strong> despite at-least-once delivery.</p>
+<h4>Idempotency keys</h4>
+<ol start="1"><li>The client sends <code>Idempotency-Key: &lt;uuid&gt;</code> with <code>POST /payments</code>.</li><li>In <strong>one database transaction</strong>, the service inserts a record keyed by <code>(merchant, key)</code> with the request hash and status <code>IN_PROGRESS</code>. A unique constraint makes concurrent duplicates fail.</li><li>If the key exists: same request hash and finished, <strong>return the stored response</strong>; still in progress, return <code>409</code> or wait; different request body, return <code>422</code> (key misuse).</li><li>Keys expire after a window (such as 24 hours) and are scoped per customer.</li></ol>
+<h4>Payment state machine</h4>
+<p><code>CREATED -&gt; AUTHORIZING -&gt; AUTHORIZED -&gt; CAPTURED -&gt; (REFUNDED)</code>, with <code>FAILED</code> and <code>UNKNOWN</code>. Only valid transitions are allowed, enforced in code and with conditional updates (<code>UPDATE ... WHERE status = &#39;AUTHORIZING&#39;</code>), so late or duplicate events cannot move a payment backwards.</p>
+<h4>Calling the provider</h4>
+<ul><li>Send the <strong>same idempotency key</strong> to the provider (Stripe, Adyen and others support it), so a retried call does not charge twice.</li><li><strong>Crash between provider success and local write</strong>: on recovery, a job finds <code>AUTHORIZING</code> payments older than a few minutes and <strong>queries the provider</strong> by the key or reference to learn the true outcome. A payment in doubt becomes <code>UNKNOWN</code> and is resolved, never blindly retried as a new charge.</li><li>Use the <strong>transactional outbox</strong> to publish events (payment succeeded) reliably.</li></ul>
+<h4>Webhooks and reconciliation</h4>
+<ul><li>Verify webhook signatures, deduplicate by event ID, and process idempotently and out of order.</li><li>Run <strong>daily reconciliation</strong> comparing your ledger with provider settlement reports; raise alerts for mismatches.</li></ul>
+<h4>Data and security</h4>
+<ul><li>A <strong>double-entry ledger</strong> (immutable entries, never updated) with amounts as integers in minor units and a currency code.</li><li>Do not store card numbers (use tokens and a PCI-compliant provider), encrypt sensitive data, and keep audit logs.</li><li>Retries with exponential backoff, timeouts, circuit breakers, and clear customer-facing statuses.</li></ul>
+<h4>Testing</h4>
+<p>Fault injection tests that kill the process at each step, duplicate and reordered webhooks, concurrent identical requests, and provider timeouts.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What happens if the service crashes after calling the provider but before recording the result?</li><li>How do you handle a client reusing a key with a different request body?</li><li>How do you reconcile your records with the payment provider?</li></ul>
+<p><a class="btn primary" href="../#/q/be-113">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-113%3A+Design+an+idempotent+payment+processing+service+that+never+charges+a%E2%80%A6&amp;question-id=be-113&amp;context=Backend+engineer%2C+Gear+4%2C+topic%3A+Payments%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-113.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

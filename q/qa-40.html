@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you implement test suite sharding and parallel execution in GitHub Actions or GitLab CI? | InterviewGearUp</title>
+<meta name="description" content="Shard a test suite by splitting it into N slices that run as parallel jobs, using a matrix in GitHub Actions or the parallel keyword in GitLab CI, with…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-40.html">
+<meta property="og:title" content="How do you implement test suite sharding and parallel execution in GitHub Actions or GitLab CI? | InterviewGearUp">
+<meta property="og:description" content="Shard a test suite by splitting it into N slices that run as parallel jobs, using a matrix in GitHub Actions or the parallel keyword in GitLab CI, with…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-40.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you implement test suite sharding and parallel execution in GitHub Actions or GitLab CI?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 3 (Senior) · CI/CD · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Shard a test suite by splitting it into N slices that run as parallel jobs, using a matrix in GitHub Actions or the parallel keyword in GitLab CI, with each job running its slice via the runner&#39;s shard flag or a timing-based splitter. Balance shards by historical durations, give each job its own isolated resources, and merge the reports and coverage afterwards.</p></div>
+<h4>Explained in depth</h4>
+<h4>Two levels of parallelism</h4>
+<ul><li><strong>Within a job</strong>: the test runner uses several workers or processes (Jest <code>--maxWorkers</code>, pytest-xdist <code>-n auto</code>, Playwright <code>--workers</code>).</li><li><strong>Across jobs (sharding)</strong>: split the suite over several machines, which is what you need when one runner is not enough.</li></ul>
+<h4>GitHub Actions: matrix</h4>
+<pre><code>jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci
+      - run: npx playwright test --shard=${{ matrix.shard }}/4
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: report-${{ matrix.shard }}
+          path: test-results</code></pre>
+<h4>GitLab CI</h4>
+<pre><code>test:
+  parallel: 4
+  script:
+    - npx playwright test --shard=$CI_NODE_INDEX/$CI_NODE_TOTAL</code></pre>
+<p><code>CI_NODE_INDEX</code> and <code>CI_NODE_TOTAL</code> are provided automatically.</p>
+<h4>Choosing how to split</h4>
+<ol start="1"><li><strong>By file with a built-in shard flag</strong> (Jest, Playwright, Cypress with a splitter): simple, but may be uneven.</li><li><strong>By historical timing</strong> (pytest-split, knapsack, CircleCI-style timing): balances run time so no shard becomes the slowest straggler.</li><li>Keep tests independent so any split is valid.</li></ol>
+<h4>Good practices</h4>
+<ul><li>Each shard needs <strong>isolated state</strong>: its own database, unique test data, and non-overlapping ports.</li><li>Use <code>fail-fast: false</code> so one failure does not hide others, and <code>if: always()</code> for artifacts.</li><li><strong>Merge reports</strong> (blob reports, JUnit XML, coverage with lcov or <code>nyc merge</code>) in a final job that depends on all shards.</li><li>Cache dependencies and browsers, and measure the slowest shard because it sets the total time.</li><li>Quarantine flaky tests and keep a tracked rerun policy.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you balance shards when test durations vary a lot?</li><li>How do you handle a flaky test that appears only in sharded runs?</li><li>How do you merge coverage and test reports from several shards?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-40">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-40%3A+How+do+you+implement+test+suite+sharding+and+parallel+execution+in%E2%80%A6&amp;question-id=qa-40&amp;context=QA+%2F+SDET%2C+Gear+3%2C+topic%3A+CI%2FCD%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-40.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

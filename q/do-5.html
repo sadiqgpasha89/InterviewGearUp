@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is Terraform state, and why use a remote backend with locking? | InterviewGearUp</title>
+<meta name="description" content="State maps your configuration to the real resources and is how Terraform computes what to change. Keep it in a remote, encrypted backend with locking so…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-5.html">
+<meta property="og:title" content="What is Terraform state, and why use a remote backend with locking? | InterviewGearUp">
+<meta property="og:description" content="State maps your configuration to the real resources and is how Terraform computes what to change. Keep it in a remote, encrypted backend with locking so…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-5.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is Terraform state, and why use a remote backend with locking?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 2 (Mid-level) · Infrastructure as code · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>State maps your configuration to the real resources and is how Terraform computes what to change. Keep it in a remote, encrypted backend with locking so a team shares one source of truth and two applies cannot run at once.</p></div>
+<h4>Explained in depth</h4>
+<p>State holds resource IDs and sometimes secrets, so never commit it. Use S3 with locking, GCS, Azure Blob or Terraform Cloud.</p>
+<p><strong>Drift</strong> is when someone changes a resource outside Terraform. <code>terraform plan</code> reveals it. Prevent it by routing all changes through code, and use <code>terraform import</code> to adopt existing resources.</p>
+<h4>Workflow</h4>
+<p>Pull request, <code>plan</code> posted for review, <code>apply</code> from CI with a least-privilege role.</p>
+<h4>Structure</h4>
+<p>Reusable modules, separate state per environment and per blast radius (not one giant state), pinned provider versions, <code>prevent_destroy</code> on critical resources.</p>
+<h4>Danger zones</h4>
+<p>A plan that replaces a stateful resource (database, disk) will destroy data. Read plans carefully and add policy-as-code checks (OPA, Sentinel, Checkov) in CI.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you handle secrets that end up in state?</li><li>How would you split state across teams and environments?</li><li>What does terraform import do?</li></ul>
+<p><a class="btn primary" href="../#/q/do-5">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-5%3A+What+is+Terraform+state%2C+and+why+use+a+remote+backend+with+locking%3F&amp;question-id=do-5&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+2%2C+topic%3A+Infrastructure+as+code%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-5.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

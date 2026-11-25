@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are the advantages of gRPC over REST with JSON, and when should you choose each? | InterviewGearUp</title>
+<meta name="description" content="gRPC uses HTTP/2 and Protocol Buffers, giving compact binary messages, strongly typed contracts, generated clients, streaming in both directions and…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-11.html">
+<meta property="og:title" content="What are the advantages of gRPC over REST with JSON, and when should you choose each? | InterviewGearUp">
+<meta property="og:description" content="gRPC uses HTTP/2 and Protocol Buffers, giving compact binary messages, strongly typed contracts, generated clients, streaming in both directions and…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-11.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are the advantages of gRPC over REST with JSON, and when should you choose each?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 2 (Mid-level) · APIs · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>gRPC uses HTTP/2 and Protocol Buffers, giving compact binary messages, strongly typed contracts, generated clients, streaming in both directions and built-in deadlines. That makes it faster and stricter than REST with JSON for service-to-service calls. REST remains better for public APIs, browsers and simple cacheable resources.</p></div>
+<h4>Explained in depth</h4>
+<h4>What gRPC adds</h4>
+<ul><li><strong>Protocol Buffers</strong>: a schema (<code>.proto</code>) defines messages and services; binary encoding is smaller and faster to parse than JSON.</li><li><strong>HTTP/2</strong>: multiplexed streams over one connection, header compression and full-duplex streaming.</li><li><strong>Code generation</strong>: clients and server stubs in many languages from one contract.</li><li><strong>Deadlines, cancellation, metadata</strong> and standard status codes are part of the protocol.</li></ul>
+<pre><code>service Orders {
+  rpc GetOrder (OrderRequest) returns (Order);
+  rpc WatchOrders (Filter) returns (stream Order);   // server streaming
+}
+message OrderRequest { string id = 1; }</code></pre>
+<h4>Four call types</h4>
+<p>Unary, server streaming, client streaming and bidirectional streaming.</p>
+<h4>Compare with REST and JSON</h4>
+<div class="md-table"><table><thead><tr><th></th><th>gRPC</th><th>REST and JSON</th></tr></thead><tbody><tr><td>Payload</td><td>Binary, compact</td><td>Text, human readable</td></tr><tr><td>Contract</td><td>Strict schema</td><td>Optional (OpenAPI)</td></tr><tr><td>Browser support</td><td>Needs gRPC-Web and a proxy</td><td>Native</td></tr><tr><td>Debugging</td><td>Needs tools (grpcurl)</td><td>curl and browser</td></tr><tr><td>Caching</td><td>Not by HTTP caches</td><td>Native HTTP caching</td></tr><tr><td>Streaming</td><td>Built in</td><td>Needs SSE or WebSockets</td></tr></tbody></table></div>
+<h4>When to choose</h4>
+<ul><li><strong>gRPC</strong>: internal microservices, low latency and high throughput, polyglot teams, streaming.</li><li><strong>REST</strong>: public APIs, third-party developers, browser clients, and resources that benefit from CDN caching.</li></ul>
+<p>Schema evolution in protobuf is safe if you only add fields with new numbers and never reuse or renumber old ones.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is gRPC awkward to call directly from a browser?</li><li>How does protobuf support backward-compatible schema changes?</li><li>What are the four gRPC call types?</li></ul>
+<p><a class="btn primary" href="../#/q/be-11">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-11%3A+What+are+the+advantages+of+gRPC+over+REST+with+JSON%2C+and+when+should%E2%80%A6&amp;question-id=be-11&amp;context=Backend+engineer%2C+Gear+2%2C+topic%3A+APIs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-11.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is the difference between Kubernetes Deployments, StatefulSets, and DaemonSets? | InterviewGearUp</title>
+<meta name="description" content="A Deployment runs interchangeable stateless pods and handles rolling updates. A StatefulSet gives each pod a stable name, stable network identity and its…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-32.html">
+<meta property="og:title" content="What is the difference between Kubernetes Deployments, StatefulSets, and DaemonSets? | InterviewGearUp">
+<meta property="og:description" content="A Deployment runs interchangeable stateless pods and handles rolling updates. A StatefulSet gives each pod a stable name, stable network identity and its…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-32.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is the difference between Kubernetes Deployments, StatefulSets, and DaemonSets?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 2 (Mid-level) · Kubernetes · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A Deployment runs interchangeable stateless pods and handles rolling updates. A StatefulSet gives each pod a stable name, stable network identity and its own persistent volume, with ordered start and update, for databases and clustered systems. A DaemonSet runs one pod on every node (or a chosen subset), for agents such as log collectors.</p></div>
+<h4>Explained in depth</h4>
+<div class="md-table"><table><thead><tr><th></th><th>Deployment</th><th>StatefulSet</th><th>DaemonSet</th></tr></thead><tbody><tr><td>Pods are</td><td>Identical and replaceable</td><td>Individually identified (<code>db-0</code>, <code>db-1</code>)</td><td>One per node</td></tr><tr><td>Storage</td><td>Shared or none</td><td>Own PersistentVolumeClaim per pod (<code>volumeClaimTemplates</code>)</td><td>Usually host paths or none</td></tr><tr><td>Network identity</td><td>Random names behind a Service</td><td>Stable DNS through a headless Service</td><td>Per node</td></tr><tr><td>Ordering</td><td>None</td><td>Ordered create, scale and rolling update (unless Parallel)</td><td>None</td></tr><tr><td>Typical use</td><td>Web apps, APIs, workers</td><td>Databases, Kafka, ZooKeeper, Elasticsearch</td><td>Log shippers, monitoring agents, CNI and storage plugins</td></tr></tbody></table></div>
+<h4>Deployment</h4>
+<p>Manages ReplicaSets. A rolling update creates a new ReplicaSet and shifts pods gradually (<code>maxSurge</code>, <code>maxUnavailable</code>), and a rollback restores the previous one.</p>
+<h4>StatefulSet</h4>
+<p>If <code>db-1</code> is rescheduled, it comes back as <code>db-1</code> and re-attaches to <strong>its</strong> volume, so a cluster member keeps its identity and data. A headless Service (<code>clusterIP: None</code>) gives each pod a DNS name such as <code>db-1.db.default.svc</code>. Caveats: volumes are <strong>not deleted</strong> when the StatefulSet is deleted, and scaling or upgrading a stateful system safely still needs application knowledge, which is why operators are common.</p>
+<h4>DaemonSet</h4>
+<p>New nodes automatically get the pod, and removed nodes lose it. Use node selectors or tolerations to restrict it (for example only GPU nodes, or to run on tainted control-plane nodes).</p>
+<p>For one-off or scheduled work use <strong>Job</strong> and <strong>CronJob</strong> instead.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does a StatefulSet use a headless Service?</li><li>What happens to the volumes when you delete a StatefulSet?</li><li>How would you run a monitoring agent only on a subset of nodes?</li></ul>
+<p><a class="btn primary" href="../#/q/do-32">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-32%3A+What+is+the+difference+between+Kubernetes+Deployments%2C+StatefulSets%2C%E2%80%A6&amp;question-id=do-32&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+2%2C+topic%3A+Kubernetes%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-32.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

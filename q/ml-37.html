@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain Multi-Head Attention and how multiple heads learn diverse representation subspaces. | InterviewGearUp</title>
+<meta name="description" content="Multi-head attention projects the input into several smaller query, key and value subspaces, runs scaled dot-product attention in each head in parallel,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-37.html">
+<meta property="og:title" content="Explain Multi-Head Attention and how multiple heads learn diverse representation subspaces. | InterviewGearUp">
+<meta property="og:description" content="Multi-head attention projects the input into several smaller query, key and value subspaces, runs scaled dot-product attention in each head in parallel,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-37.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain Multi-Head Attention and how multiple heads learn diverse representation subspaces.</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · Transformers · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Multi-head attention projects the input into several smaller query, key and value subspaces, runs scaled dot-product attention in each head in parallel, then concatenates the heads and applies an output projection. Each head can attend to different relationships (syntax, position, coreference), so the model captures several kinds of dependencies at once at about the same cost as one big head.</p></div>
+<h4>Explained in depth</h4>
+<h4>Scaled dot-product attention</h4>
+<p>For queries Q, keys K and values V: <code>Attention(Q, K, V) = softmax(Q K^T / sqrt(d_k)) V</code> Each token&#39;s query is compared with every key; the softmax weights decide how much of each value is mixed into the output. Dividing by <code>sqrt(d_k)</code> keeps the dot products from growing with dimension and pushing the softmax into saturation (tiny gradients).</p>
+<h4>Multiple heads</h4>
+<p>With model dimension <code>d_model</code> and <code>h</code> heads, each head uses dimension <code>d_k = d_model / h</code> (for example 512 / 8 = 64):</p>
+<pre><code>head_i = Attention(X W_Q_i, X W_K_i, X W_V_i)
+MultiHead(X) = Concat(head_1, ..., head_h) W_O</code></pre>
+<p>Because each head has its own learned projections, it works in a <strong>different representation subspace</strong>. Analyses of trained models show heads specialising: one attends to the previous token, another to syntactic dependents, another to rare matching words. A single head would average these into one pattern.</p>
+<h4>Cost</h4>
+<ul><li>Total computation is similar to one full-width head, since each head is smaller.</li><li>Self-attention costs **O(n^2 * d)** time and O(n^2) memory in sequence length n for the attention matrix, which limits long contexts (FlashAttention reduces memory traffic; sparse and linear variants change the complexity).</li></ul>
+<h4>Variants for efficient inference</h4>
+<ul><li><strong>Multi-query attention (MQA)</strong>: all heads share one key and value projection.</li><li><strong>Grouped-query attention (GQA)</strong>: groups of heads share keys and values; used in many modern LLMs.</li></ul>
+<p>Both shrink the <strong>KV cache</strong>, which dominates memory during generation.</p>
+<h4>Masking</h4>
+<p>Decoder self-attention uses a causal mask so a token cannot see future tokens, and encoder-decoder models add cross-attention from decoder queries to encoder keys and values.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why divide the dot product by the square root of the key dimension?</li><li>What is the computational complexity of self-attention in the sequence length?</li><li>How do multi-query and grouped-query attention reduce inference memory?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-37">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-37%3A+Explain+Multi-Head+Attention+and+how+multiple+heads+learn+diverse%E2%80%A6&amp;question-id=ml-37&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+Transformers%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-37.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

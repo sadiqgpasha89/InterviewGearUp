@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Design an enterprise AI assistant that answers from company documents and can take actions. | InterviewGearUp</title>
+<meta name="description" content="Design around trust: permission-aware retrieval, grounded answers with citations, guardrails and human escalation, a continuous evaluation loop, and cost…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-7.html">
+<meta property="og:title" content="Design an enterprise AI assistant that answers from company documents and can take actions. | InterviewGearUp">
+<meta property="og:description" content="Design around trust: permission-aware retrieval, grounded answers with citations, guardrails and human escalation, a continuous evaluation loop, and cost…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-7.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Design an enterprise AI assistant that answers from company documents and can take actions.</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 4 (Lead / Staff) · System design · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Design around trust: permission-aware retrieval, grounded answers with citations, guardrails and human escalation, a continuous evaluation loop, and cost and latency controls. Launch to one narrow use case first and widen.</p></div>
+<h4>Explained in depth</h4>
+<p><strong>Requirements</strong>: users, use cases, data sources, accuracy bar, risk level (regulated?), SLAs.</p>
+<h4>Architecture</h4>
+<p>Gateway (authentication, rate limits, PII redaction, logging), then an orchestrator (prompt assembly, tool use), retrieval over connectors that enforces each user&#39;s access rights, one or more models with routing (small model for easy queries, larger for hard ones), output checks (grounding, policy), and a UI with citations and feedback buttons.</p>
+<h4>Actions</h4>
+<p>Least-privilege tools, human confirmation before anything that changes state, and audit logs.</p>
+<h4>Safety</h4>
+<p>Treat retrieved content as untrusted (prompt-injection defence), separate instructions from data, restrict tool scope, address data residency and vendor terms (no training on your data).</p>
+<h4>Quality and cost</h4>
+<p>Evaluation harness with golden sets, shadow mode before launch, red-teaming, monitoring of answer quality and escalation rate. Control cost with caching, prompt compression, model routing and batch processing.</p>
+<h4>Rollout</h4>
+<p>Pilot cohort, feedback loop, kill switch, named owners, and success metrics tied to business outcomes.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you defend against prompt injection from documents?</li><li>How would you control cost?</li><li>When would you let the assistant take actions on its own?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-7">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-7%3A+Design+an+enterprise+AI+assistant+that+answers+from+company%E2%80%A6&amp;question-id=ml-7&amp;context=ML+%2F+AI+engineer%2C+Gear+4%2C+topic%3A+System+design%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-7.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

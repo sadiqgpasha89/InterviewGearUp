@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do Service Workers intercept network requests to implement offline-first PWA caching strategies? | InterviewGearUp</title>
+<meta name="description" content="A service worker is a script that runs separately from the page and sits between it and the network. Its fetch handler can answer from the Cache API, so…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-46.html">
+<meta property="og:title" content="How do Service Workers intercept network requests to implement offline-first PWA caching strategies? | InterviewGearUp">
+<meta property="og:description" content="A service worker is a script that runs separately from the page and sits between it and the network. Its fetch handler can answer from the Cache API, so…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-46.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do Service Workers intercept network requests to implement offline-first PWA caching strategies?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 3 (Senior) · Performance · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A service worker is a script that runs separately from the page and sits between it and the network. Its fetch handler can answer from the Cache API, so you choose a strategy per resource: cache-first for versioned static assets, network-first or stale-while-revalidate for content, with a cache fallback for offline use.</p></div>
+<h4>Explained in depth</h4>
+<h4>Lifecycle</h4>
+<p>Register the worker (HTTPS or localhost only), then it goes <strong>install</strong> (precache the app shell), <strong>waiting</strong>, and <strong>activate</strong> (delete old caches). A new version waits until old tabs close unless you call <code>skipWaiting()</code> and <code>clients.claim()</code>, which is convenient but can mix old page code with new worker code.</p>
+<h4>Strategies</h4>
+<div class="md-table"><table><thead><tr><th>Strategy</th><th>Use for</th><th>Trade-off</th></tr></thead><tbody><tr><td>Cache first</td><td>Hashed, immutable assets</td><td>Fast; stale until the version changes</td></tr><tr><td>Network first</td><td>HTML, API data</td><td>Fresh; slow when offline or flaky</td></tr><tr><td>Stale-while-revalidate</td><td>Content that can lag a little</td><td>Fast now, updated for next time</td></tr><tr><td>Network only / cache only</td><td>Auth calls, or precached shell</td><td>Simple</td></tr></tbody></table></div>
+<pre><code>self.addEventListener(&#39;fetch&#39;, (event) =&gt; {
+  if (event.request.method !== &#39;GET&#39;) return;          // never cache writes
+  event.respondWith(
+    fetch(event.request)
+      .then((res) =&gt; {
+        const copy = res.clone();
+        caches.open(&#39;v2&#39;).then((c) =&gt; c.put(event.request, copy));
+        return res;
+      })
+      .catch(() =&gt; caches.match(event.request).then((hit) =&gt; hit || caches.match(&#39;/offline.html&#39;)))
+  );
+});</code></pre>
+<h4>Pitfalls</h4>
+<ul><li>Version your cache names and delete old ones in <code>activate</code>, or users get stuck on stale files.</li><li>Do not cache authenticated or personalised responses in shared caches, and watch opaque (cross-origin, no-CORS) responses and storage quotas.</li><li>A buggy worker can break the whole site, so keep a kill-switch plan; the browser re-checks the worker script itself on navigation.</li><li>Libraries such as Workbox implement these strategies, expiry and update flows for you.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you ship an update so users do not stay on an old version?</li><li>Why must a service worker not cache POST requests?</li><li>How would you test offline behaviour?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-46">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-46%3A+How+do+Service+Workers+intercept+network+requests+to+implement%E2%80%A6&amp;question-id=fe-46&amp;context=Frontend+engineer%2C+Gear+3%2C+topic%3A+Performance%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-46.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you design multi-tenancy on Kubernetes: namespaces per team, shared clusters or separate clusters? | InterviewGearUp</title>
+<meta name="description" content="Choose isolation by trust level and blast radius: namespaces with quotas, RBAC, network policies and Pod Security for trusted internal teams in a shared…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-114.html">
+<meta property="og:title" content="How do you design multi-tenancy on Kubernetes: namespaces per team, shared clusters or separate clusters? | InterviewGearUp">
+<meta property="og:description" content="Choose isolation by trust level and blast radius: namespaces with quotas, RBAC, network policies and Pod Security for trusted internal teams in a shared…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-114.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you design multi-tenancy on Kubernetes: namespaces per team, shared clusters or separate clusters?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 4 (Lead / Staff) · Kubernetes · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Choose isolation by trust level and blast radius: namespaces with quotas, RBAC, network policies and Pod Security for trusted internal teams in a shared cluster, virtual clusters or node pools for stronger separation, and separate clusters for untrusted tenants, regulatory boundaries or very different upgrade needs. Add cost attribution and policy as code regardless.</p></div>
+<h4>Explained in depth</h4>
+<h4>Isolation spectrum</h4>
+<div class="md-table"><table><thead><tr><th>Model</th><th>Isolation</th><th>Cost and ops</th><th>Good for</th></tr></thead><tbody><tr><td>Namespace per team in a shared cluster</td><td>Logical (soft)</td><td>Cheapest, fewest clusters</td><td>Trusted internal teams</td></tr><tr><td>Dedicated node pools per tenant</td><td>Compute separation</td><td>Moderate</td><td>Noisy workloads, compliance for compute</td></tr><tr><td>Virtual clusters (vcluster)</td><td>Separate API server and control plane view</td><td>Moderate</td><td>Teams needing cluster-admin-like freedom</td></tr><tr><td><strong>Cluster per tenant or environment</strong></td><td>Strong (hard)</td><td>Highest, many clusters to manage</td><td>Untrusted tenants, regulated data, different upgrade cadence</td></tr></tbody></table></div>
+<h4>Controls for namespace-based tenancy</h4>
+<ul><li><strong>RBAC</strong>: tenants administer only their namespaces; no cluster-wide permissions; map groups from the identity provider.</li><li><strong>ResourceQuota and LimitRange</strong>: cap CPU, memory, storage and object counts, and set defaults so one tenant cannot starve others. Use PriorityClasses carefully.</li><li><strong>NetworkPolicies</strong>: default deny between namespaces, allow explicit paths (and use a CNI that enforces them).</li><li><strong>Pod Security Standards (restricted)</strong> and admission policies (Kyverno, OPA Gatekeeper): no privileged pods, no hostPath, approved registries, required labels.</li><li><strong>Secrets and identity</strong>: external secrets and workload identity per namespace service account.</li><li><strong>Node isolation</strong>: taints and tolerations, sandboxed runtimes (gVisor, Kata) for risky code.</li><li><strong>Cluster-wide shared resources</strong>: CRDs, ingress controllers, and admission webhooks are shared, so one tenant&#39;s CRD or bad webhook can affect everyone.</li></ul>
+<h4>Operating model</h4>
+<ul><li><strong>Self-service onboarding</strong>: a tenant request creates namespace, quotas, roles, network defaults and dashboards via GitOps.</li><li><strong>Cost allocation</strong>: labels and tools (OpenCost, Kubecost) for showback or chargeback.</li><li><strong>Observability</strong> per tenant, and audit logs.</li><li><strong>Blast radius planning</strong>: number of clusters per region and environment, regular upgrades, and a process to move tenants.</li></ul>
+<h4>Decision rule</h4>
+<p>Start with shared clusters and strong policies for internal teams, and move to cluster-level isolation when threat model, compliance, performance sensitivity or independent upgrade needs justify the extra cost.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What does a namespace not isolate?</li><li>When are separate clusters worth the operational cost?</li><li>How do you prevent one tenant from starving others of resources?</li></ul>
+<p><a class="btn primary" href="../#/q/do-114">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-114%3A+How+do+you+design+multi-tenancy+on+Kubernetes%3A+namespaces+per+team%2C%E2%80%A6&amp;question-id=do-114&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+4%2C+topic%3A+Kubernetes%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-114.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

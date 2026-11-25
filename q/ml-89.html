@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain Diffusion Models: Forward noise process and reverse denoising U-Net score matching. | InterviewGearUp</title>
+<meta name="description" content="A diffusion model gradually adds Gaussian noise to data in a fixed forward process, then trains a network, typically a U-Net, to predict the noise at…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-89.html">
+<meta property="og:title" content="Explain Diffusion Models: Forward noise process and reverse denoising U-Net score matching. | InterviewGearUp">
+<meta property="og:description" content="A diffusion model gradually adds Gaussian noise to data in a fixed forward process, then trains a network, typically a U-Net, to predict the noise at…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-89.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain Diffusion Models: Forward noise process and reverse denoising U-Net score matching.</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 4 (Lead / Staff) · Generative · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A diffusion model gradually adds Gaussian noise to data in a fixed forward process, then trains a network, typically a U-Net, to predict the noise at each step. That prediction equals a scaled score (the gradient of the log density), so training is denoising score matching. To generate, it starts from pure noise and removes it step by step.</p></div>
+<h4>Explained in depth</h4>
+<h4>Forward process (fixed)</h4>
+<p>Over T steps, add noise with a schedule beta_t:</p>
+<pre><code>q(x_t | x_{t-1}) = N( sqrt(1 - beta_t) * x_{t-1}, beta_t * I )
+x_t = sqrt(abar_t) * x_0 + sqrt(1 - abar_t) * eps,   eps ~ N(0, I),   abar_t = product of (1 - beta_s)</code></pre>
+<p>The closed form lets you jump straight to any step t, so training does not simulate the chain. By the last step, x_T is nearly pure Gaussian noise.</p>
+<h4>Reverse process (learned)</h4>
+<p>A network <code>eps_theta(x_t, t)</code> takes a noisy input and the time step and predicts the noise that was added. The simple training loss is:</p>
+<pre><code>L = E_{x_0, eps, t} || eps - eps_theta( x_t, t ) ||^2</code></pre>
+<p>This is <strong>denoising score matching</strong>: the score of the noised distribution is <code>-eps / sqrt(1 - abar_t)</code>, so predicting noise is the same as estimating the direction toward higher probability.</p>
+<h4>U-Net</h4>
+<p>An encoder-decoder with skip connections (so fine detail survives), residual blocks, self-attention at lower resolutions, and the time step injected through a sinusoidal embedding. Transformer-based denoisers (DiT) are now common as well.</p>
+<h4>Sampling</h4>
+<p>Start with <code>x_T ~ N(0, I)</code> and apply the denoiser repeatedly. <strong>DDPM</strong> sampling is stochastic and uses around a thousand steps. <strong>DDIM</strong> and other samplers are deterministic or higher-order and need roughly 20 to 50 steps.</p>
+<h4>Conditioning and efficiency</h4>
+<ul><li>Text conditioning feeds an embedding into the denoiser through cross-attention. <strong>Classifier-free guidance</strong> blends conditional and unconditional predictions, <code>eps_uncond + w * (eps_cond - eps_uncond)</code>, to trade diversity for prompt fidelity.</li><li><strong>Latent diffusion</strong> (Stable Diffusion) runs the process in the compressed latent space of an autoencoder, which makes training and sampling far cheaper.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>Why can training jump directly to a random time step without simulating the chain?</li><li>How does classifier-free guidance work and what does the scale w control?</li><li>Why does latent diffusion make generation cheaper?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-89">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-89%3A+Explain+Diffusion+Models%3A+Forward+noise+process+and+reverse%E2%80%A6&amp;question-id=ml-89&amp;context=ML+%2F+AI+engineer%2C+Gear+4%2C+topic%3A+Generative%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-89.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

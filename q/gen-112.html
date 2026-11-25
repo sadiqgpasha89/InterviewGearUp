@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Design a chat system supporting millions of concurrent connections with delivery guarantees and message history. | InterviewGearUp</title>
+<meta name="description" content="Clients keep WebSocket connections to stateless-ish gateway servers, which map users to connections through a presence and routing service. Messages go…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-112.html">
+<meta property="og:title" content="Design a chat system supporting millions of concurrent connections with delivery guarantees and message history. | InterviewGearUp">
+<meta property="og:description" content="Clients keep WebSocket connections to stateless-ish gateway servers, which map users to connections through a presence and routing service. Messages go…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-112.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Design a chat system supporting millions of concurrent connections with delivery guarantees and message history.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 4 (Lead / Staff) · System design · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Clients keep WebSocket connections to stateless-ish gateway servers, which map users to connections through a presence and routing service. Messages go through a log such as Kafka and are stored by conversation in a wide-column store. Use per-conversation sequence numbers, client acknowledgements and retries for at-least-once delivery with deduplication, and push notifications for offline users.</p></div>
+<h4>Explained in depth</h4>
+<h4>Requirements</h4>
+<p>1-to-1 and group chat, near real-time delivery (under a few hundred milliseconds), history, read receipts, presence, multi-device sync, and <strong>no lost messages</strong>. Scale: tens of millions of daily users and millions of concurrent connections.</p>
+<h4>Connection layer</h4>
+<ul><li>Clients use <strong>WebSocket</strong> (or MQTT) connections to <strong>gateway servers</strong>. One server can hold hundreds of thousands of idle connections with tuned file descriptors and memory.</li><li>A <strong>session registry</strong> (Redis or a distributed map) records which gateway holds each user&#39;s connection, so any server can find the recipient. Heartbeats detect dead connections; clients reconnect with exponential backoff.</li></ul>
+<h4>Message flow</h4>
+<ol start="1"><li>Sender transmits <code>{clientMsgId, conversationId, body}</code>.</li><li>The chat service assigns a <strong>per-conversation monotonic sequence number</strong>, persists the message, and publishes it to a log such as Kafka partitioned by conversation ID, which <strong>preserves order within a conversation</strong>.</li><li>A delivery worker looks up recipients&#39; gateways and pushes the message. If a recipient is offline, it is stored and a <strong>push notification</strong> (APNs, FCM) is sent.</li><li>The client <strong>acknowledges</strong>; the sender receives &quot;sent&quot;, &quot;delivered&quot; and &quot;read&quot; updates.</li><li><strong>Retries</strong> until acknowledged give at-least-once delivery, and <code>clientMsgId</code> lets the server <strong>deduplicate</strong>, making effective delivery exactly-once.</li></ol>
+<h4>Storage</h4>
+<p>A wide-column or distributed store (Cassandra, DynamoDB) keyed by <code>(conversationId, sequence)</code> for fast range reads of history, with an index of each user&#39;s conversations. Media goes to object storage plus a CDN, referenced by URL.</p>
+<h4>Group chat</h4>
+<p>For small groups, <strong>fan-out on write</strong> to each member&#39;s inbox. For very large groups or channels, use <strong>fan-out on read</strong> (members pull from the channel log) to avoid write amplification.</p>
+<h4>Multi-device and sync</h4>
+<p>Each device stores a cursor (last seen sequence per conversation) and fetches missed messages on reconnect, so devices converge.</p>
+<h4>Other concerns</h4>
+<p>End-to-end encryption (key exchange, per-device keys) changes server capabilities such as search; rate limiting and abuse controls; presence updates throttled to avoid storms; and multi-region deployment with users homed to a region.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you guarantee ordering of messages within a conversation?</li><li>How do you design group chat fan-out for very large groups?</li><li>How do you handle a user connected from several devices?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-112">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-112%3A+Design+a+chat+system+supporting+millions+of+concurrent+connections%E2%80%A6&amp;question-id=gen-112&amp;context=Software+engineer+%28core%29%2C+Gear+4%2C+topic%3A+System+design%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-112.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

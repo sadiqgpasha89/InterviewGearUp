@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does the browser Same-Origin Policy (SOP) enforce isolation, and how does CORS relax it safely? | InterviewGearUp</title>
+<meta name="description" content="The same-origin policy (an origin is scheme, host and port) stops a page from reading responses, DOM or storage belonging to a different origin, while…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-51.html">
+<meta property="og:title" content="How does the browser Same-Origin Policy (SOP) enforce isolation, and how does CORS relax it safely? | InterviewGearUp">
+<meta property="og:description" content="The same-origin policy (an origin is scheme, host and port) stops a page from reading responses, DOM or storage belonging to a different origin, while…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-51.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does the browser Same-Origin Policy (SOP) enforce isolation, and how does CORS relax it safely?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · Security · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>The same-origin policy (an origin is scheme, host and port) stops a page from reading responses, DOM or storage belonging to a different origin, while still allowing it to embed or send requests to them. CORS lets a server opt in to specific cross-origin reads by sending Access-Control-Allow-* headers that the browser enforces.</p></div>
+<h4>Explained in depth</h4>
+<h4>What the policy isolates</h4>
+<p>Two URLs are same-origin only if scheme, host and port all match. Script on <code>https://a.com</code> cannot:</p>
+<ul><li>Read the <strong>response</strong> of a <code>fetch</code> or <code>XMLHttpRequest</code> to <code>https://b.com</code>.</li><li>Access the DOM of a cross-origin iframe or window, or its <code>localStorage</code> and IndexedDB (these are per origin).</li></ul>
+<p>What is <strong>still allowed</strong>: embedding images, scripts, stylesheets and frames from other origins, and sending form posts and simple requests cross-origin. That is why CSRF exists and why SOP is not a defence against it. Cookies follow different rules: they are scoped by domain and path, not port, and <code>SameSite</code> controls whether they are sent cross-site.</p>
+<h4>How CORS relaxes it</h4>
+<p>The browser asks, and the <strong>server</strong> decides. A response with <code>Access-Control-Allow-Origin: https://a.com</code> allows script on that origin to read it. For requests that could have side effects (non-simple methods or headers), the browser first sends a <strong>preflight</strong> <code>OPTIONS</code> request and proceeds only if the server approves the method and headers. Cookies and auth need <code>Access-Control-Allow-Credentials: true</code> and a specific origin, not <code>*</code>.</p>
+<h4>Safe practice</h4>
+<ul><li>Allow-list trusted origins and add <code>Vary: Origin</code>; never reflect any origin back when credentials are allowed.</li><li>CORS is enforced <strong>only by browsers</strong>. It does not protect an API from curl or other servers, so keep authentication and authorisation on the server.</li><li>A CORS error is fixed on the server (or by a same-origin proxy), not in the front-end code. <code>mode: &#39;no-cors&#39;</code> only gives an opaque response you cannot read.</li></ul>
+<h4>Other cross-origin tools</h4>
+<p><code>window.postMessage</code> for controlled messaging between windows (always check <code>event.origin</code>), and headers such as COOP, COEP and CORP for stronger isolation against side-channel attacks.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does the same-origin policy not prevent CSRF?</li><li>How do you safely exchange messages between an iframe and its parent page?</li><li>Why can you not fix a CORS error with front-end code alone?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-51">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-51%3A+How+does+the+browser+Same-Origin+Policy+%28SOP%29+enforce+isolation%2C+and%E2%80%A6&amp;question-id=fe-51&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+Security%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-51.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

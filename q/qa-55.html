@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you test zero-downtime database migrations to ensure backward compatibility with older app versions? | InterviewGearUp</title>
+<meta name="description" content="Test expand-and-contract migrations by running the old and new application versions against the migrated schema. Apply each migration step, then run the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-55.html">
+<meta property="og:title" content="How do you test zero-downtime database migrations to ensure backward compatibility with older app versions? | InterviewGearUp">
+<meta property="og:description" content="Test expand-and-contract migrations by running the old and new application versions against the migrated schema. Apply each migration step, then run the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-55.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you test zero-downtime database migrations to ensure backward compatibility with older app versions?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 3 (Senior) · Database · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Test expand-and-contract migrations by running the old and new application versions against the migrated schema. Apply each migration step, then run the previous release&#39;s test suite and the new one, test rollback, check behaviour under live traffic and lock times on production-sized data, and only drop old columns after no old version remains.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why it is tricky</h4>
+<p>During a rolling deploy, <strong>old and new application versions run at the same time</strong> against one database. A migration that is correct for the new code can break the old code, so every step must be compatible with both.</p>
+<h4>Expand and contract</h4>
+<ol start="1"><li><strong>Expand</strong>: add new columns, tables or indexes in a backward-compatible way (nullable or defaulted, no renames, no drops).</li><li><strong>Migrate</strong>: deploy code that writes to both old and new structures (dual write) or reads with a fallback, and <strong>backfill</strong> existing data in small batches.</li><li><strong>Switch</strong>: reads move to the new structure.</li><li><strong>Contract</strong>: after every old version is retired, remove the old columns in a later release.</li></ol>
+<h4>Test approach</h4>
+<ul><li><strong>Compatibility matrix in CI</strong>: spin up a database with Testcontainers; apply migrations up to step N; run the <strong>previous release&#39;s</strong> integration tests and the <strong>current</strong> tests against it. Both must pass.</li><li><strong>Rollback tests</strong>: apply the migration, roll back the app (and the migration where it is reversible), and confirm data is still valid.</li><li><strong>Schema linting</strong>: tools such as <code>squawk</code> or custom rules flag unsafe operations (adding a non-null column without default, creating an index without <code>CONCURRENTLY</code>, taking long locks).</li><li><strong>Production-like data volume</strong>: run the migration on a restored, anonymised copy, and measure duration, lock waits, replication lag and query plan changes.</li><li><strong>Under load</strong>: run a load test while the migration executes, and watch error rate and latency for old and new app versions.</li><li><strong>Backfill checks</strong>: idempotent, resumable, batch size limits, verification queries comparing old and new values, and monitoring.</li><li>Verify <strong>data integrity</strong> afterwards: row counts, checksums, constraints and application smoke tests.</li></ul>
+<h4>Release gates</h4>
+<p>Require a documented rollback plan, an owner on call, a feature flag for the switch step, and a post-migration verification checklist.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the expand and contract pattern?</li><li>How do you measure the locking impact of a migration before production?</li><li>How do you test the backfill of a large table without downtime?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-55">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-55%3A+How+do+you+test+zero-downtime+database+migrations+to+ensure+backward%E2%80%A6&amp;question-id=qa-55&amp;context=QA+%2F+SDET%2C+Gear+3%2C+topic%3A+Database%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-55.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

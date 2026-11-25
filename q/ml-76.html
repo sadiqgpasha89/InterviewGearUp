@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain ZeRO (Zero Redundancy Optimizer) memory stages: Partitioning optimizer states, gradients, and parameters. | InterviewGearUp</title>
+<meta name="description" content="ZeRO removes the redundancy in data-parallel training by splitting model states across GPUs in three stages: stage 1 partitions optimizer states, stage 2…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-76.html">
+<meta property="og:title" content="Explain ZeRO (Zero Redundancy Optimizer) memory stages: Partitioning optimizer states, gradients, and parameters. | InterviewGearUp">
+<meta property="og:description" content="ZeRO removes the redundancy in data-parallel training by splitting model states across GPUs in three stages: stage 1 partitions optimizer states, stage 2…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-76.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain ZeRO (Zero Redundancy Optimizer) memory stages: Partitioning optimizer states, gradients, and parameters.</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 4 (Lead / Staff) · Distributed · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>ZeRO removes the redundancy in data-parallel training by splitting model states across GPUs in three stages: stage 1 partitions optimizer states, stage 2 also partitions gradients, and stage 3 also partitions the parameters themselves. Each stage cuts memory per GPU further, with stage 3 needing extra communication.</p></div>
+<h4>Explained in depth</h4>
+<h4>Memory in standard data parallelism</h4>
+<p>With mixed-precision Adam, each parameter needs about <strong>16 bytes</strong>: 2 for the fp16 or bf16 weight, 2 for its gradient, and 12 of optimizer state (fp32 master copy 4, momentum 4, variance 4). Plain data parallelism stores all of it on every GPU. A 7B-parameter model needs roughly 112 GB of model states before counting activations.</p>
+<h4>The stages (N = number of data-parallel GPUs)</h4>
+<div class="md-table"><table><thead><tr><th>Stage</th><th>Partitioned across GPUs</th><th>Approx. bytes per parameter per GPU</th></tr></thead><tbody><tr><td>Baseline</td><td>Nothing</td><td>16</td></tr><tr><td><strong>1</strong></td><td>Optimizer states</td><td>4 + 12/N</td></tr><tr><td><strong>2</strong></td><td>+ Gradients</td><td>2 + 14/N</td></tr><tr><td><strong>3</strong></td><td>+ Parameters</td><td>16/N</td></tr></tbody></table></div>
+<p>With 64 GPUs, stage 3 brings that 112 GB down to under 2 GB of states per GPU, leaving room for activations.</p>
+<h4>How it works</h4>
+<ul><li><strong>Stage 1</strong>: each GPU updates only its slice of the optimizer states and parameters, then the updated parameters are all-gathered.</li><li><strong>Stage 2</strong>: gradients are reduce-scattered so each GPU keeps only the slice it owns.</li><li><strong>Stage 3</strong>: parameters are gathered on demand for each layer&#39;s forward and backward pass and then discarded.</li></ul>
+<h4>Communication</h4>
+<p>Stages 1 and 2 use about the same volume as ordinary data parallelism. Stage 3 needs roughly <strong>1.5x</strong> more, because parameters are gathered in both passes.</p>
+<h4>Extensions and limits</h4>
+<p>ZeRO-Offload and ZeRO-Infinity push states to CPU memory or NVMe, trading speed for capacity. ZeRO does not shard <strong>activations</strong>, so activation checkpointing is still needed, and it is combined with tensor and pipeline parallelism for the largest models. PyTorch FSDP implements the same ideas as stage 3.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why do optimizer states dominate memory in mixed-precision training?</li><li>Why does stage 3 cost more communication than stage 2?</li><li>How do ZeRO and tensor parallelism complement each other?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-76">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-76%3A+Explain+ZeRO+%28Zero+Redundancy+Optimizer%29+memory+stages%3A+Partitioning%E2%80%A6&amp;question-id=ml-76&amp;context=ML+%2F+AI+engineer%2C+Gear+4%2C+topic%3A+Distributed%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-76.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

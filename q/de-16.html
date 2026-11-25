@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does the Spark Catalyst Optimizer optimize logical plans into physical execution plans? | InterviewGearUp</title>
+<meta name="description" content="Catalyst turns a query into a logical plan, analyses it against the catalog, then applies rule-based optimisations such as predicate pushdown, column…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-16.html">
+<meta property="og:title" content="How does the Spark Catalyst Optimizer optimize logical plans into physical execution plans? | InterviewGearUp">
+<meta property="og:description" content="Catalyst turns a query into a logical plan, analyses it against the catalog, then applies rule-based optimisations such as predicate pushdown, column…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-16.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does the Spark Catalyst Optimizer optimize logical plans into physical execution plans?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Spark · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Catalyst turns a query into a logical plan, analyses it against the catalog, then applies rule-based optimisations such as predicate pushdown, column pruning and constant folding. It generates candidate physical plans, picks the cheapest using statistics (cost-based optimisation), and hands the chosen plan to Tungsten for code generation and execution.</p></div>
+<h4>Explained in depth</h4>
+<h4>Phases</h4>
+<ol start="1"><li><strong>Parsing</strong>: SQL or DataFrame code becomes an unresolved logical plan.</li><li><strong>Analysis</strong>: names are resolved using the catalog (tables, columns, types), producing a resolved logical plan.</li><li><strong>Logical optimisation</strong>: rule-based transformations that preserve results:</li></ol>
+<ul><li><strong>Predicate pushdown</strong>: filters move close to the data source (and into Parquet reads).</li><li><strong>Column pruning</strong>: read only needed columns.</li><li><strong>Constant folding</strong> and expression simplification, and <strong>join reordering</strong>.</li></ul>
+<ol start="4"><li><strong>Physical planning</strong>: for each logical operator, Spark generates alternative physical strategies (for a join: broadcast hash join, sort-merge join, shuffle hash join) and picks one, using <strong>statistics</strong> and cost estimates (cost-based optimiser, which needs <code>ANALYZE TABLE</code>).</li><li><strong>Code generation</strong>: Tungsten compiles the chosen plan (whole-stage codegen) into efficient bytecode.</li></ol>
+<pre><code>df.filter(&quot;country = &#39;IN&#39;&quot;).select(&#39;user_id&#39;).explain(True)
+# Look for PushedFilters in the scan and a pruned column list (ReadSchema)</code></pre>
+<h4>Adaptive Query Execution (Spark 3+)</h4>
+<p>At runtime, after shuffle stages finish and real sizes are known, AQE can <strong>coalesce small shuffle partitions</strong>, <strong>switch to a broadcast join</strong> if one side turns out to be small, and <strong>split skewed partitions</strong> in joins.</p>
+<h4>Practical tips</h4>
+<ul><li>Prefer built-in functions: Catalyst can optimise them, but treats UDFs as a black box.</li><li>Keep statistics fresh for good join ordering, use hints (<code>BROADCAST</code>) when you know better, and read <code>EXPLAIN FORMATTED</code> to verify the plan.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you read an EXPLAIN output to confirm predicate pushdown?</li><li>What does adaptive query execution (AQE) change at runtime?</li><li>How do join hints such as BROADCAST influence the physical plan?</li></ul>
+<p><a class="btn primary" href="../#/q/de-16">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-16%3A+How+does+the+Spark+Catalyst+Optimizer+optimize+logical+plans+into%E2%80%A6&amp;question-id=de-16&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Spark%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-16.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

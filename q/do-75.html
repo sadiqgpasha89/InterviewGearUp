@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you architect a multi-region disaster recovery (Active-Passive vs Active-Active) strategy? | InterviewGearUp</title>
+<meta name="description" content="Pick the disaster recovery pattern from the RTO and RPO you need. Active-passive keeps a standby region that takes over on failure: cheaper and simpler,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-75.html">
+<meta property="og:title" content="How do you architect a multi-region disaster recovery (Active-Passive vs Active-Active) strategy? | InterviewGearUp">
+<meta property="og:description" content="Pick the disaster recovery pattern from the RTO and RPO you need. Active-passive keeps a standby region that takes over on failure: cheaper and simpler,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-75.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you architect a multi-region disaster recovery (Active-Passive vs Active-Active) strategy?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 4 (Lead / Staff) · Cloud · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Pick the disaster recovery pattern from the RTO and RPO you need. Active-passive keeps a standby region that takes over on failure: cheaper and simpler, with minutes of downtime and possible data loss. Active-active serves traffic from several regions at once: near-zero downtime but needs multi-region data replication, conflict handling and much more cost and complexity.</p></div>
+<h4>Explained in depth</h4>
+<h4>Start with the targets</h4>
+<ul><li><strong>RTO</strong>: how long you can be down. <strong>RPO</strong>: how much data you can lose, measured in time.</li></ul>
+<h4>The spectrum (cost rises as RTO and RPO fall)</h4>
+<ol start="1"><li><strong>Backup and restore</strong>: hours of recovery, cheapest.</li><li><strong>Pilot light</strong>: data replicated, core services minimal and scaled up on failover.</li><li><strong>Warm standby</strong>: a scaled-down but running copy of the stack.</li><li><strong>Active-active</strong>: every region serves live traffic.</li></ol>
+<h4>Active-passive</h4>
+<p>Primary serves, secondary waits. Data replicates <strong>asynchronously</strong> (RPO above zero) or synchronously (higher write latency). Failover is by DNS, a global load balancer or a routing change. It is simpler and easier to reason about. Risks are an untested failover path, configuration drift in the standby, and paying for idle capacity.</p>
+<h4>Active-active</h4>
+<p>All regions serve users, so a regional loss mainly reduces capacity. The hard part is <strong>data</strong>: either a database built for multi-region writes (Spanner, DynamoDB global tables, CockroachDB, Cassandra) with its consistency trade-offs and conflict resolution, or pinning each user or tenant to a <strong>home region</strong> with the other region as a replica. Each region must be sized to absorb the others&#39; load.</p>
+<h4>Always needed</h4>
+<ul><li>Health checks and automated or well-rehearsed traffic failover.</li><li>Infrastructure as code so a region can be rebuilt, and replicated secrets and configuration.</li><li><strong>Avoid split brain</strong> with fencing and a quorum or tie-breaker in a third location.</li><li>Check hidden dependencies on a single region (a control plane, an identity provider, a shared service).</li><li>Regular <strong>game days</strong> that actually fail over, plus a plan for failback.</li><li>Immutable, separate backups, because replication copies corruption and deletes too.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How would you decide between active-passive and active-active for a payments system?</li><li>How do you avoid split brain during a regional failover?</li><li>Why are replicas not a substitute for backups?</li></ul>
+<p><a class="btn primary" href="../#/q/do-75">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-75%3A+How+do+you+architect+a+multi-region+disaster+recovery%E2%80%A6&amp;question-id=do-75&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+4%2C+topic%3A+Cloud%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-75.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

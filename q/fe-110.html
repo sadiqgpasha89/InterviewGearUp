@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How would you design a frontend observability strategy covering errors, performance and user journeys? | InterviewGearUp</title>
+<meta name="description" content="Instrument the browser with real user monitoring for Web Vitals, JavaScript errors with source maps, network failures and key user journeys, correlate…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-110.html">
+<meta property="og:title" content="How would you design a frontend observability strategy covering errors, performance and user journeys? | InterviewGearUp">
+<meta property="og:description" content="Instrument the browser with real user monitoring for Web Vitals, JavaScript errors with source maps, network failures and key user journeys, correlate…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-110.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How would you design a frontend observability strategy covering errors, performance and user journeys?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 4 (Lead / Staff) · Observability · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Instrument the browser with real user monitoring for Web Vitals, JavaScript errors with source maps, network failures and key user journeys, correlate frontend sessions to backend traces with a shared trace ID, sample and scrub data for cost and privacy, and define SLOs and alerts on user-facing outcomes, not raw error counts.</p></div>
+<h4>Explained in depth</h4>
+<h4>What to capture</h4>
+<ol start="1"><li><strong>Errors</strong>: uncaught exceptions (<code>window.onerror</code>, <code>unhandledrejection</code>), React error boundaries, failed <code>fetch</code> and XHR calls, resource load failures, and console errors. Attach release version, route, browser, device and user or session ID (hashed), plus <strong>breadcrumbs</strong> (clicks, navigation, recent requests).</li><li><strong>Performance (RUM)</strong>: Core Web Vitals (LCP, INP, CLS), navigation and resource timing, long tasks, and custom marks such as &quot;search results rendered&quot;.</li><li><strong>User journeys</strong>: funnel steps (search to cart to checkout), success and failure of critical flows, and rage clicks or dead clicks.</li><li><strong>Session replay</strong> for debugging, with masking by default for inputs and sensitive elements.</li></ol>
+<h4>Making data usable</h4>
+<ul><li><strong>Source maps</strong> uploaded privately to the monitoring tool at build time (not served publicly), so minified stack traces are readable. Tag every event with the <strong>release</strong> for regression detection.</li><li><strong>Correlation</strong>: propagate a W3C <code>traceparent</code> header on API calls so a slow or failed frontend request links to the backend trace and logs.</li><li><strong>Grouping and de-duplication</strong> of errors by stack fingerprint, with ownership rules mapping files to teams.</li><li><strong>Noise control</strong>: filter extension errors, known bot traffic, and third-party script errors; sample high-volume events; use rate limits.</li></ul>
+<h4>Privacy and cost</h4>
+<p>Scrub PII and tokens, respect consent and regional laws, avoid logging request bodies, and use sampling and tiered retention.</p>
+<h4>Alerting and process</h4>
+<p>Define <strong>SLOs on user outcomes</strong> (for example 99.5 percent of checkout attempts succeed, 75th percentile LCP below 2.5 s). Alert on <strong>new errors after a release</strong>, error rate spikes and SLO burn, not on every exception. Tie releases to automatic comparison, support rollback via feature flags, and review top issues in a regular triage.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do source maps fit into error monitoring without exposing source code?</li><li>How do you reduce noise from browser extension and bot errors?</li><li>How do you connect a frontend error to a backend trace?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-110">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-110%3A+How+would+you+design+a+frontend+observability+strategy+covering%E2%80%A6&amp;question-id=fe-110&amp;context=Frontend+engineer%2C+Gear+4%2C+topic%3A+Observability%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-110.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

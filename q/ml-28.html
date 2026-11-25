@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Derive the backpropagation algorithm using the calculus chain rule for neural network weights. | InterviewGearUp</title>
+<meta name="description" content="Backpropagation applies the chain rule layer by layer from the loss backwards, reusing the values stored in the forward pass. For each layer it computes…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-28.html">
+<meta property="og:title" content="Derive the backpropagation algorithm using the calculus chain rule for neural network weights. | InterviewGearUp">
+<meta property="og:description" content="Backpropagation applies the chain rule layer by layer from the loss backwards, reusing the values stored in the forward pass. For each layer it computes…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-28.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Derive the backpropagation algorithm using the calculus chain rule for neural network weights.</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 2 (Mid-level) · Deep Learning · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Backpropagation applies the chain rule layer by layer from the loss backwards, reusing the values stored in the forward pass. For each layer it computes the error signal delta at the pre-activation, then the weight gradient as the outer product of delta and the layer&#39;s input, and passes delta back through the transposed weights, multiplied by the activation&#39;s derivative.</p></div>
+<h4>Explained in depth</h4>
+<h4>Setup (two-layer network)</h4>
+<p><code>z1 = W1 x + b1</code>, <code>a1 = f(z1)</code>, <code>z2 = W2 a1 + b2</code>, <code>y_hat = z2</code>, loss <code>L = 0.5 * (y_hat - y)^2</code>.</p>
+<h4>Backward pass with the chain rule</h4>
+<ol start="1"><li>Output error: <code>dL/dz2 = delta2 = y_hat - y</code>.</li><li>Gradients for layer 2:</li></ol>
+<ul><li><code>dL/dW2 = delta2 * a1^T</code> (outer product of the error and the layer&#39;s input)</li><li><code>dL/db2 = delta2</code></li></ul>
+<ol start="3"><li>Propagate to the hidden layer: <code>dL/da1 = W2^T delta2</code>.</li><li>Through the activation: <code>delta1 = dL/dz1 = (W2^T delta2) * f&#39;(z1)</code> (elementwise).</li><li>Gradients for layer 1: <code>dL/dW1 = delta1 * x^T</code>, <code>dL/db1 = delta1</code>.</li></ol>
+<p>General rule for layer l: <code>delta_l = (W_{l+1}^T delta_{l+1}) * f&#39;(z_l)</code>, then <code>dW_l = delta_l * a_{l-1}^T</code>.</p>
+<h4>Update</h4>
+<p><code>W = W - lr * dL/dW</code> (or via an optimiser such as Adam). For a batch, average the gradients.</p>
+<h4>Key insights</h4>
+<ul><li>The cost of the backward pass is about the same as two forward passes, since it reuses stored <code>z</code> and <code>a</code> values; that is why memory goes up with depth.</li><li>With softmax and cross-entropy, the output error simplifies to <code>probs - one_hot_label</code>.</li><li>Repeated multiplication by <code>W^T</code> and <code>f&#39;</code> explains <strong>vanishing</strong> (products below 1) and <strong>exploding</strong> (above 1) gradients.</li><li>Modern frameworks implement this with <strong>automatic differentiation</strong>: each operation knows its local derivative and the engine applies the chain rule over the computation graph.</li><li>Check an implementation with a numerical gradient: <code>(L(w + eps) - L(w - eps)) / (2 * eps)</code>.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>Why do we store activations during the forward pass?</li><li>How does automatic differentiation generalise these formulas?</li><li>How would you verify gradients numerically?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-28">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-28%3A+Derive+the+backpropagation+algorithm+using+the+calculus+chain+rule%E2%80%A6&amp;question-id=ml-28&amp;context=ML+%2F+AI+engineer%2C+Gear+2%2C+topic%3A+Deep+Learning%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-28.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

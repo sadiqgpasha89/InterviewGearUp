@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain cross-validation strategies: K-Fold, Stratified K-Fold, and Time-Series Split. | InterviewGearUp</title>
+<meta name="description" content="Cross-validation estimates how a model will perform on unseen data by training and testing on several different splits. K-fold rotates which of k folds…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-11.html">
+<meta property="og:title" content="Explain cross-validation strategies: K-Fold, Stratified K-Fold, and Time-Series Split. | InterviewGearUp">
+<meta property="og:description" content="Cross-validation estimates how a model will perform on unseen data by training and testing on several different splits. K-fold rotates which of k folds…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-11.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain cross-validation strategies: K-Fold, Stratified K-Fold, and Time-Series Split.</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 1 (Junior) · Fundamentals · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Cross-validation estimates how a model will perform on unseen data by training and testing on several different splits. K-fold rotates which of k folds is held out; stratified k-fold keeps class proportions in each fold for imbalanced data; a time-series split always trains on the past and tests on the future so it never uses future information.</p></div>
+<h4>Explained in depth</h4>
+<ul><li><strong>K-fold</strong>: split the data into k parts, train on k − 1 and validate on the held-out part, repeat k times and average the scores (k = 5 or 10 is typical). The spread of the scores tells you how stable the estimate is.</li><li><strong>Stratified k-fold</strong>: each fold keeps roughly the class ratio of the full data. Use it for classification, especially with rare classes, so no fold ends up with almost no positives.</li><li><strong>Group k-fold</strong>: keeps all rows from one group (a user, a patient) in the same fold. Without it the same entity appears in both training and validation and the score is inflated.</li><li><strong>Time-series split</strong> (forward chaining): train on the first t periods, validate on the next h, then expand the window. Random shuffling would let the model learn from the future, which is data leakage.</li></ul>
+<pre><code>from sklearn.model_selection import StratifiedKFold
+skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=0)
+for train_idx, val_idx in skf.split(X, y):
+    ...  # fit on train_idx, score on val_idx</code></pre>
+<p><strong>Pitfalls</strong>: do preprocessing (scaling, imputation, feature selection) *inside* each fold, for example with a pipeline, or information leaks from the validation fold. Keep a separate final test set that you touch once, and use nested cross-validation when tuning hyperparameters.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why can scaling the whole dataset before cross-validation leak information?</li><li>When is leave-one-out cross-validation a bad idea?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-11">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-11%3A+Explain+cross-validation+strategies%3A+K-Fold%2C+Stratified+K-Fold%2C+and%E2%80%A6&amp;question-id=ml-11&amp;context=ML+%2F+AI+engineer%2C+Gear+1%2C+topic%3A+Fundamentals%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-11.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

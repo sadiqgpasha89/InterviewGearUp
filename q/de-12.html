@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>When is One Big Table (OBT) preferred over normalized dimensional schemas in modern warehouses? | InterviewGearUp</title>
+<meta name="description" content="One Big Table denormalises the facts and all their dimensions into a single wide table. In modern columnar warehouses, where storage is cheap, joins can…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-12.html">
+<meta property="og:title" content="When is One Big Table (OBT) preferred over normalized dimensional schemas in modern warehouses? | InterviewGearUp">
+<meta property="og:description" content="One Big Table denormalises the facts and all their dimensions into a single wide table. In modern columnar warehouses, where storage is cheap, joins can…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-12.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>When is One Big Table (OBT) preferred over normalized dimensional schemas in modern warehouses?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 2 (Mid-level) · Data Modeling · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>One Big Table denormalises the facts and all their dimensions into a single wide table. In modern columnar warehouses, where storage is cheap, joins can be costly at scale and columnar compression handles repeated values, OBT can give simple, fast queries for dashboards. The costs are duplicated data, harder updates and less flexibility for new dimensions.</p></div>
+<h4>Explained in depth</h4>
+<h4>What it is</h4>
+<p>Instead of joining <code>fact_orders</code> to <code>dim_customer</code>, <code>dim_product</code> and <code>dim_date</code> at query time, you pre-join them into <code>orders_wide</code> with every column in one table. Analysts and BI tools query one table with no joins.</p>
+<h4>Why it works in modern warehouses</h4>
+<ul><li><strong>Columnar storage</strong> reads only the columns a query needs, and repeated values compress well, so width and duplication cost little.</li><li>Cheap storage and elastic compute shift the trade-off from saving space to saving query time and analyst effort.</li><li>Avoiding joins removes shuffle cost in distributed engines and prevents wrong joins or fan-out mistakes.</li></ul>
+<h4>Good fits</h4>
+<ul><li>Stable, well-understood reporting domains and dashboards that need fast, simple queries.</li><li>Self-service analytics with less SQL skill, and semantic layers or ML feature sets.</li></ul>
+<h4>Drawbacks</h4>
+<ul><li><strong>Redundancy</strong>: changing a customer attribute means rewriting many rows (or a rebuild).</li><li>Table size and rebuild time grow, and a very wide table is hard to document.</li><li>Less flexible: adding a new relationship means restructuring, and one grain only (mixed grains are hard).</li><li>Historical correctness (slowly changing dimensions) needs decisions at build time.</li></ul>
+<h4>Practical pattern</h4>
+<p>Keep a clean <strong>dimensional or normalised core</strong> as the source of truth, then build <strong>OBT marts</strong> (often with dbt) for specific consumption needs. This gets the flexibility of a model and the speed of wide tables.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you keep an OBT up to date when a dimension attribute changes?</li><li>How does OBT interact with slowly changing dimensions?</li><li>Would you build an OBT as the only layer or on top of a dimensional model?</li></ul>
+<p><a class="btn primary" href="../#/q/de-12">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-12%3A+When+is+One+Big+Table+%28OBT%29+preferred+over+normalized+dimensional%E2%80%A6&amp;question-id=de-12&amp;context=Data+engineer%2C+Gear+2%2C+topic%3A+Data+Modeling%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-12.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

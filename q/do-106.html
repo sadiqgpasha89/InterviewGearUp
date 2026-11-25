@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is the difference between Docker volumes and bind mounts, and how do you persist container data? | InterviewGearUp</title>
+<meta name="description" content="Containers have a throwaway writable layer, so data must be stored outside it. A named volume is created and managed by Docker, portable and suited to…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-106.html">
+<meta property="og:title" content="What is the difference between Docker volumes and bind mounts, and how do you persist container data? | InterviewGearUp">
+<meta property="og:description" content="Containers have a throwaway writable layer, so data must be stored outside it. A named volume is created and managed by Docker, portable and suited to…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-106.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is the difference between Docker volumes and bind mounts, and how do you persist container data?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 1 (Junior) · Containers · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Containers have a throwaway writable layer, so data must be stored outside it. A named volume is created and managed by Docker, portable and suited to databases, while a bind mount maps a specific host path into the container, handy for development and config. tmpfs mounts keep data in memory only. Production orchestrators use persistent volumes backed by network or block storage.</p></div>
+<h4>Explained in depth</h4>
+<h4>The problem</h4>
+<p>A container&#39;s filesystem is built from read-only image layers plus a thin <strong>writable layer</strong> that is <strong>deleted with the container</strong>. Anything written there is lost when the container is replaced.</p>
+<h4>Options</h4>
+<div class="md-table"><table><thead><tr><th>Type</th><th>What it is</th><th>Typical use</th></tr></thead><tbody><tr><td><strong>Named volume</strong></td><td>Storage managed by Docker (<code>/var/lib/docker/volumes</code>), referenced by name</td><td>Databases, uploads, data that must outlive containers</td></tr><tr><td><strong>Bind mount</strong></td><td>A host directory or file mounted at a path in the container</td><td>Local development (live code reload), injecting config</td></tr><tr><td><strong>tmpfs mount</strong></td><td>In-memory filesystem</td><td>Sensitive or temporary data you do not want on disk</td></tr></tbody></table></div>
+<pre><code>docker volume create pgdata
+docker run -d -v pgdata:/var/lib/postgresql/data postgres:16     # named volume
+docker run -v &quot;$(pwd)&quot;:/app -w /app node:20 npm test              # bind mount
+docker run --tmpfs /tmp:rw,size=64m myapp                         # tmpfs</code></pre>
+<h4>Why prefer volumes</h4>
+<ul><li>Managed by Docker and independent of host directory layout, so more portable.</li><li>Easier to back up, migrate and share between containers, and work with volume drivers (NFS, cloud block storage).</li><li>Correct initial permissions and content from the image when empty.</li></ul>
+<h4>Bind mount cautions</h4>
+<p>They tie containers to host paths, can expose sensitive host files, and have permission mismatches (UID/GID). Use <code>:ro</code> where possible.</p>
+<h4>In orchestrators</h4>
+<p>Kubernetes uses <strong>PersistentVolumes and PersistentVolumeClaims</strong> backed by cloud disks or network file systems, often with StatefulSets. Remember that volumes are not backups: schedule snapshots and test restores.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What happens to data when a container is removed?</li><li>Why are bind mounts risky in production?</li><li>How do Kubernetes PersistentVolumes relate to Docker volumes?</li></ul>
+<p><a class="btn primary" href="../#/q/do-106">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-106%3A+What+is+the+difference+between+Docker+volumes+and+bind+mounts%2C+and%E2%80%A6&amp;question-id=do-106&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+1%2C+topic%3A+Containers%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-106.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

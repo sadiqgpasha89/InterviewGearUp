@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is the danger of Target Encoding, and how do you prevent target leakage during training? | InterviewGearUp</title>
+<meta name="description" content="Target encoding replaces a category with the average target value for that category, which is powerful for high-cardinality features but leaks the label:…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-18.html">
+<meta property="og:title" content="What is the danger of Target Encoding, and how do you prevent target leakage during training? | InterviewGearUp">
+<meta property="og:description" content="Target encoding replaces a category with the average target value for that category, which is powerful for high-cardinality features but leaks the label:…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-18.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is the danger of Target Encoding, and how do you prevent target leakage during training?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 2 (Mid-level) · Preprocessing · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Target encoding replaces a category with the average target value for that category, which is powerful for high-cardinality features but leaks the label: a row&#39;s own target is included in its encoding, so rare categories encode their own answer and the model overfits. Prevent it with out-of-fold encoding, smoothing toward the global mean and noise, and fitting encoders only on training folds.</p></div>
+<h4>Explained in depth</h4>
+<h4>What it does</h4>
+<p>For a categorical feature like <code>zip_code</code>, replace each value with the mean target of rows that have it (for classification, the positive rate). It gives one dense numeric column even for thousands of categories, unlike one-hot encoding.</p>
+<h4>The leakage problem</h4>
+<p>If you compute the means on the <strong>full training set</strong> and then train on those same rows, each row&#39;s own label contributes to its feature. For a category with only one row, the encoding <strong>equals that row&#39;s label</strong>, so the model learns &quot;this feature perfectly predicts the target&quot; and fails on new data. Validation scores look great and production results collapse.</p>
+<h4>Safeguards</h4>
+<ol start="1"><li><strong>K-fold (out-of-fold) encoding</strong>: split training data into folds; encode each fold using statistics computed from the <strong>other</strong> folds. The row&#39;s own label never affects its feature.</li><li><strong>Smoothing (shrinkage)</strong>: blend category mean with the global mean by size:</li></ol>
+<p>   <code>enc = (n * cat_mean + m * global_mean) / (n + m)</code>    Rare categories move toward the global average.</p>
+<ol start="3"><li><strong>Noise</strong>: add small random noise to the training encodings.</li><li><strong>Fit on training data only</strong> and apply the learned mapping to validation and test (inside a pipeline); unseen categories get the global mean.</li><li>Use <strong>ordered target statistics</strong> (CatBoost), where each row is encoded using only rows before it in a random permutation.</li></ol>
+<h4>Alternatives</h4>
+<p>One-hot for few categories, hashing, frequency encoding, learned embeddings, or leave-one-out encoding (which still leaks unless carefully handled).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does a category appearing once give a perfect but useless encoding?</li><li>How does CatBoost avoid target leakage with ordered target statistics?</li><li>When would you choose one-hot, hashing or embeddings instead?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-18">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-18%3A+What+is+the+danger+of+Target+Encoding%2C+and+how+do+you+prevent+target%E2%80%A6&amp;question-id=ml-18&amp;context=ML+%2F+AI+engineer%2C+Gear+2%2C+topic%3A+Preprocessing%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-18.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

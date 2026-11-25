@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain the rules of `this` binding in JavaScript: default, implicit, explicit, and arrow functions. | InterviewGearUp</title>
+<meta name="description" content="What this refers to depends on how a function is called, not where it is written. The rules in priority order: new binding, explicit binding with call,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-15.html">
+<meta property="og:title" content="Explain the rules of `this` binding in JavaScript: default, implicit, explicit, and arrow functions. | InterviewGearUp">
+<meta property="og:description" content="What this refers to depends on how a function is called, not where it is written. The rules in priority order: new binding, explicit binding with call,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-15.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain the rules of `this` binding in JavaScript: default, implicit, explicit, and arrow functions.</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · JavaScript · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>What this refers to depends on how a function is called, not where it is written. The rules in priority order: new binding, explicit binding with call, apply or bind, implicit binding as the object before the dot, then default binding (undefined in strict mode, the global object otherwise). Arrow functions have no this of their own and use the one from where they are defined.</p></div>
+<h4>Explained in depth</h4>
+<h4>The rules</h4>
+<ol start="1"><li><strong>new</strong>: <code>new Foo()</code> makes <code>this</code> the newly created object.</li><li><strong>Explicit</strong>: <code>fn.call(obj, a)</code>, <code>fn.apply(obj, [a])</code> or <code>fn.bind(obj)</code> set <code>this</code> to <code>obj</code>.</li><li><strong>Implicit</strong>: <code>obj.method()</code> sets <code>this</code> to <code>obj</code>.</li><li><strong>Default</strong>: a plain call <code>fn()</code> gives <code>this</code> as <code>undefined</code> in strict mode (modules and classes are strict) or the global object in sloppy mode.</li></ol>
+<h4>Losing this</h4>
+<pre><code>const user = { name: &#39;Ana&#39;, hi() { return this.name; } };
+user.hi();                  // &#39;Ana&#39;
+const f = user.hi;
+f();                        // undefined: plain call, this is lost
+setTimeout(user.hi, 0);     // same problem
+setTimeout(() =&gt; user.hi(), 0);   // fine, or use user.hi.bind(user)</code></pre>
+<h4>Arrow functions</h4>
+<p>They do not have their own <code>this</code>, <code>arguments</code> or <code>new</code> behaviour. They capture <code>this</code> lexically from the surrounding scope, which makes them good for callbacks inside methods:</p>
+<pre><code>class Timer {
+  start() { setInterval(() =&gt; this.tick(), 1000); }   // this is the Timer
+  tick() {}
+}</code></pre>
+<p>But do not use arrows for object methods that need dynamic <code>this</code>, nor as constructors. <code>call</code>, <code>apply</code> and <code>bind</code> cannot change an arrow function&#39;s <code>this</code>.</p>
+<h4>Class methods as handlers</h4>
+<p>Methods lose <code>this</code> when passed as handlers; fix with an arrow function class field or <code>bind</code> in the constructor.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does passing an object method as a callback lose its this?</li><li>What does bind return and can you rebind it?</li><li>How does this behave in a class method used as an event handler?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-15">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-15%3A+Explain+the+rules+of+%60this%60+binding+in+JavaScript%3A+default%2C%E2%80%A6&amp;question-id=fe-15&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+JavaScript%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-15.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain the difference between `==` loose equality and `===` strict equality, and how `Object.is()` differs. | InterviewGearUp</title>
+<meta name="description" content="`===` compares without type conversion: values of different types are never equal. `==` first coerces both sides to a common type using complicated…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-93.html">
+<meta property="og:title" content="Explain the difference between `==` loose equality and `===` strict equality, and how `Object.is()` differs. | InterviewGearUp">
+<meta property="og:description" content="`===` compares without type conversion: values of different types are never equal. `==` first coerces both sides to a common type using complicated…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-93.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain the difference between `==` loose equality and `===` strict equality, and how `Object.is()` differs.</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 1 (Junior) · JavaScript · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p><code>===</code> compares without type conversion: values of different types are never equal. <code>==</code> first coerces both sides to a common type using complicated rules, which gives surprises such as <code>0 == &#39;&#39;</code> being true. <code>Object.is</code> is like <code>===</code> except that <code>NaN</code> equals <code>NaN</code> and <code>+0</code> differs from <code>-0</code>. Use <code>===</code> by default.</p></div>
+<h4>Explained in depth</h4>
+<h4>Examples</h4>
+<pre><code>0 == &#39;&#39;               // true  (both coerce to 0)
+null == undefined     // true  (a special rule)
+null == 0             // false (null only equals undefined)
+&#39;1&#39; == 1              // true
+[] == false           // true  ([] -&gt; &#39;&#39; -&gt; 0, false -&gt; 0)
+NaN === NaN           // false
+Object.is(NaN, NaN)   // true
+Object.is(0, -0)      // false, while 0 === -0 is true</code></pre>
+<p><strong>Rules of thumb</strong>: use <code>===</code> for almost everything. The one common deliberate use of <code>==</code> is <code>x == null</code>, which is true for both <code>null</code> and <code>undefined</code>. Use <code>Number.isNaN(x)</code> to test for <code>NaN</code>, and <code>Object.is</code> when you must tell <code>-0</code> from <code>0</code>. React uses <code>Object.is</code> to compare state and dependency values.</p>
+<p>Objects are compared by reference with every operator: <code>{} === {}</code> is false.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does `typeof null` return &#39;object&#39;?</li><li>How does React decide whether a dependency has changed?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-93">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-93%3A+Explain+the+difference+between+%60%3D%3D%60+loose+equality+and+%60%3D%3D%3D%60+strict%E2%80%A6&amp;question-id=fe-93&amp;context=Frontend+engineer%2C+Gear+1%2C+topic%3A+JavaScript%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-93.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

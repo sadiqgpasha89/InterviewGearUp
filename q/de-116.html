@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you design disaster recovery and multi-region resilience for a cloud data platform? | InterviewGearUp</title>
+<meta name="description" content="Define RPO and RTO per data tier, then pick patterns to match: cross-region replication of object storage and table metadata, warehouse replication or…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-116.html">
+<meta property="og:title" content="How do you design disaster recovery and multi-region resilience for a cloud data platform? | InterviewGearUp">
+<meta property="og:description" content="Define RPO and RTO per data tier, then pick patterns to match: cross-region replication of object storage and table metadata, warehouse replication or…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-116.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you design disaster recovery and multi-region resilience for a cloud data platform?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 4 (Lead / Staff) · Reliability · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Define RPO and RTO per data tier, then pick patterns to match: cross-region replication of object storage and table metadata, warehouse replication or failover groups for serving, infrastructure as code to rebuild compute, replayable ingestion from durable logs, and tested runbooks. Not everything needs active-active, so spend on critical data and rehearse failover regularly.</p></div>
+<h4>Explained in depth</h4>
+<h4>Start with requirements</h4>
+<ul><li><strong>RPO</strong> (how much data loss is acceptable) and <strong>RTO</strong> (how long recovery may take) for each dataset and service, agreed with the business. A regulatory reporting table and an experimentation sandbox deserve different tiers.</li><li>Identify failure types: component or AZ failure, region outage, <strong>logical corruption or deletion</strong> (human error, bad pipeline), ransomware or account compromise. Replication alone does not protect against corruption.</li></ul>
+<h4>Strategies by tier</h4>
+<div class="md-table"><table><thead><tr><th>Tier</th><th>Pattern</th><th>RPO and RTO</th><th>Cost</th></tr></thead><tbody><tr><td>Critical</td><td><strong>Active-active or warm standby</strong> in a second region</td><td>Minutes or less</td><td>Highest</td></tr><tr><td>Important</td><td><strong>Pilot light</strong>: replicated data, minimal compute, scale up on failover</td><td>Minutes to hours</td><td>Medium</td></tr><tr><td>Standard</td><td><strong>Backup and restore</strong> from cross-region copies</td><td>Hours to a day</td><td>Lowest</td></tr></tbody></table></div>
+<h4>Components</h4>
+<ol start="1"><li><strong>Object storage</strong>: cross-region replication (S3 CRR, GCS dual-region) with versioning, object lock for protection from deletion, and replication of encryption keys (multi-region KMS).</li><li><strong>Table formats and catalog</strong>: Iceberg and Delta metadata point to file paths, so replicate <strong>data and metadata together</strong> in a consistent order (or use managed replication features) and keep catalog databases replicated. Time travel and snapshots help recover from logical errors.</li><li><strong>Warehouse</strong>: native replication and failover groups (Snowflake, BigQuery cross-region datasets, Redshift snapshots), with client connections that can be redirected (DNS or connection URLs).</li><li><strong>Streaming and ingestion</strong>: Kafka MirrorMaker or cluster linking; keep sources <strong>replayable</strong> (retain logs, offsets stored) so consumers rebuild state after failover; idempotent sinks.</li><li><strong>Compute and pipelines</strong>: all in <strong>infrastructure as code</strong> with pipelines deployed to both regions, orchestrator metadata backed up, and secrets replicated.</li><li><strong>Networking and identity</strong>: private connectivity, DNS failover, IAM roles and SSO working in the secondary region.</li></ol>
+<h4>Operating it</h4>
+<ul><li><strong>Runbooks</strong> with decision criteria, roles, and communication; and automation for failover and failback.</li><li><strong>Regular game days</strong>: restore tests, failover drills in a non-production or controlled production window; measure actual RTO and RPO.</li><li>Monitor replication lag and alert on breaches; protect backups in a separate account.</li><li>Cost control: keep standby small, use tiered storage, and review tiers periodically.</li><li>Document data <strong>residency</strong> constraints, since replication across regions may conflict with legal requirements.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you replicate lakehouse table metadata consistently with data files?</li><li>What is the cost difference between backup and restore, warm standby and active-active?</li><li>How do you test a data platform failover without disrupting production?</li></ul>
+<p><a class="btn primary" href="../#/q/de-116">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-116%3A+How+do+you+design+disaster+recovery+and+multi-region+resilience+for%E2%80%A6&amp;question-id=de-116&amp;context=Data+engineer%2C+Gear+4%2C+topic%3A+Reliability%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-116.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

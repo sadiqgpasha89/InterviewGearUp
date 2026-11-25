@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Write SQL to find the top 2 earners in each department, and a running total of revenue by month. | InterviewGearUp</title>
+<meta name="description" content="Use window functions: DENSE_RANK() OVER (PARTITION BY dept ORDER BY salary DESC) and filter on the rank in an outer query; SUM(...) OVER (ORDER BY month)…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-3.html">
+<meta property="og:title" content="Write SQL to find the top 2 earners in each department, and a running total of revenue by month. | InterviewGearUp">
+<meta property="og:description" content="Use window functions: DENSE_RANK() OVER (PARTITION BY dept ORDER BY salary DESC) and filter on the rank in an outer query; SUM(...) OVER (ORDER BY month)…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-3.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Write SQL to find the top 2 earners in each department, and a running total of revenue by month.</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 2 (Mid-level) · SQL · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Use window functions: DENSE_RANK() OVER (PARTITION BY dept ORDER BY salary DESC) and filter on the rank in an outer query; SUM(...) OVER (ORDER BY month) for running totals.</p></div>
+<h4>Explained in depth</h4>
+<pre><code>SELECT * FROM (
+  SELECT name, dept, salary,
+         DENSE_RANK() OVER (PARTITION BY dept ORDER BY salary DESC) AS rnk
+  FROM employees
+) t
+WHERE rnk &lt;= 2;
+
+SELECT month, revenue,
+       SUM(revenue) OVER (ORDER BY month) AS running_total,
+       revenue - LAG(revenue) OVER (ORDER BY month) AS change
+FROM monthly_revenue;</code></pre>
+<ul><li><code>ROW_NUMBER</code> gives unique numbers. <code>RANK</code> gives ties the same rank and leaves gaps. <code>DENSE_RANK</code> gives ties the same rank with no gaps.</li><li>Window functions run after <code>WHERE</code> and <code>GROUP BY</code>, so filter on them in an outer query or CTE (some engines, such as Snowflake and BigQuery, offer <code>QUALIFY</code>).</li><li>A moving average uses a frame: <code>AVG(x) OVER (ORDER BY d ROWS BETWEEN 6 PRECEDING AND CURRENT ROW)</code>.</li><li>With <code>ORDER BY</code> and no explicit frame, the default frame is <code>RANGE</code> from the start to the current row, which treats ties as peers.</li></ul>
+<p>To dedupe keeping the latest row per key, use <code>ROW_NUMBER() OVER (PARTITION BY key ORDER BY updated_at DESC) = 1</code>.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>RANK versus DENSE_RANK?</li><li>How would you dedupe rows keeping the latest?</li><li>How do you compute a 7-day moving average?</li></ul>
+<p><a class="btn primary" href="../#/q/de-3">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-3%3A+Write+SQL+to+find+the+top+2+earners+in+each+department%2C+and+a%E2%80%A6&amp;question-id=de-3&amp;context=Data+engineer%2C+Gear+2%2C+topic%3A+SQL%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-3.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

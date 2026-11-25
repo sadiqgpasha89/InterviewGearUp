@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you tune `spark.sql.shuffle.partitions` to avoid small files and spill-to-disk? | InterviewGearUp</title>
+<meta name="description" content="spark.sql.shuffle.partitions sets how many partitions a shuffle (join or aggregation) produces; the default of 200 is often wrong. Too few partitions…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-21.html">
+<meta property="og:title" content="How do you tune `spark.sql.shuffle.partitions` to avoid small files and spill-to-disk? | InterviewGearUp">
+<meta property="og:description" content="spark.sql.shuffle.partitions sets how many partitions a shuffle (join or aggregation) produces; the default of 200 is often wrong. Too few partitions…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-21.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you tune `spark.sql.shuffle.partitions` to avoid small files and spill-to-disk?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Spark · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>spark.sql.shuffle.partitions sets how many partitions a shuffle (join or aggregation) produces; the default of 200 is often wrong. Too few partitions create huge partitions that spill to disk or run out of memory; too many create tiny tasks and small output files. Aim for roughly 100 to 200 MB per partition, or let adaptive query execution coalesce them automatically.</p></div>
+<h4>Explained in depth</h4>
+<h4>What the setting controls</h4>
+<p>After a wide transformation, rows are redistributed into <code>spark.sql.shuffle.partitions</code> partitions (default 200). Each becomes one task in the next stage, and it also determines how many output files a write may produce.</p>
+<h4>Symptoms</h4>
+<ul><li><strong>Too few</strong> (partitions larger than about 1 GB): executors <strong>spill to disk</strong> or fail with out-of-memory, tasks run long, and cores sit idle. Look in the Spark UI for high shuffle spill and long, uneven task times.</li><li><strong>Too many</strong> (partitions of a few KB): scheduling overhead dominates, thousands of tiny tasks, and a flood of <strong>small output files</strong>.</li></ul>
+<h4>Sizing</h4>
+<p>A common target is <strong>100 to 200 MB of shuffle data per partition</strong>: <code>partitions ~ total shuffle size / 128 MB</code> Also keep it at roughly 2 to 3 times the total executor cores, so all cores stay busy. For a 500 GB shuffle that suggests about 4,000 partitions; for a 2 GB shuffle, about 16.</p>
+<h4>Easier: adaptive query execution (Spark 3.2+, on by default)</h4>
+<pre><code>spark.conf.set(&#39;spark.sql.adaptive.enabled&#39;, &#39;true&#39;)
+spark.conf.set(&#39;spark.sql.adaptive.coalescePartitions.enabled&#39;, &#39;true&#39;)
+spark.conf.set(&#39;spark.sql.shuffle.partitions&#39;, &#39;2000&#39;)    # set high as an upper bound</code></pre>
+<p>AQE measures real shuffle output sizes and <strong>coalesces</strong> small partitions toward <code>advisoryPartitionSizeInBytes</code> (64 MB by default), and can split skewed ones.</p>
+<h4>Related techniques</h4>
+<p><code>repartition(n)</code> or <code>coalesce(n)</code> for write layout, salting for skewed keys, broadcasting small tables to avoid a shuffle entirely, and using compact formats.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you estimate the right number from the shuffle size in the Spark UI?</li><li>What does AQE do about skewed partitions?</li><li>How does this setting differ from repartition()?</li></ul>
+<p><a class="btn primary" href="../#/q/de-21">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-21%3A+How+do+you+tune+%60spark.sql.shuffle.partitions%60+to+avoid+small+files%E2%80%A6&amp;question-id=de-21&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Spark%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-21.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

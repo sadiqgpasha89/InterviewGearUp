@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain JavaScript closures, lexical environments, and practical memory leak risks. | InterviewGearUp</title>
+<meta name="description" content="A closure is a function that keeps access to the variables of the scope where it was created, even after that scope has finished. This works because each…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-13.html">
+<meta property="og:title" content="Explain JavaScript closures, lexical environments, and practical memory leak risks. | InterviewGearUp">
+<meta property="og:description" content="A closure is a function that keeps access to the variables of the scope where it was created, even after that scope has finished. This works because each…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-13.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain JavaScript closures, lexical environments, and practical memory leak risks.</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · JavaScript · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A closure is a function that keeps access to the variables of the scope where it was created, even after that scope has finished. This works because each function stores a reference to its lexical environment. It enables private state and callbacks, but a closure that holds a large object or is never released can keep that memory alive and cause a leak.</p></div>
+<h4>Explained in depth</h4>
+<h4>How it works</h4>
+<p>Each time a function runs, JavaScript creates a <strong>lexical environment</strong> for its variables. A function created inside keeps a reference to that environment (its outer scope), so it can still read and change those variables later.</p>
+<pre><code>function counter() {
+  let n = 0;                       // private variable
+  return () =&gt; ++n;
+}
+const next = counter();
+next();  // 1
+next();  // 2   n is still alive because the inner function references it</code></pre>
+<h4>Common uses</h4>
+<p>Private state and the module pattern, factories, partial application, event handlers, memoisation caches, and callbacks that remember context.</p>
+<h4>The loop gotcha</h4>
+<pre><code>for (var i = 0; i &lt; 3; i++) setTimeout(() =&gt; console.log(i));   // 3, 3, 3
+for (let i = 0; i &lt; 3; i++) setTimeout(() =&gt; console.log(i));   // 0, 1, 2</code></pre>
+<p><code>var</code> is function scoped, so every callback shares one <code>i</code>; <code>let</code> creates a new binding for each iteration.</p>
+<h4>Memory leak risks</h4>
+<ul><li>A long-lived closure (an event listener, timer or cache) that references a large object keeps it from being garbage collected.</li><li>Listeners and intervals that are never removed keep their whole captured scope alive.</li><li>Mitigations: remove listeners and clear timers on cleanup, null out big references you no longer need, avoid capturing more than necessary, and use <code>WeakMap</code> or <code>WeakRef</code> for caches.</li><li>Use the Memory panel&#39;s heap snapshots and look at the retaining path (the &quot;closure&quot; entries) to find what holds an object.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the classic var-in-a-loop closure bug and how does let fix it?</li><li>How do closures implement private variables or the module pattern?</li><li>How would you find a closure-related leak in DevTools?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-13">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-13%3A+Explain+JavaScript+closures%2C+lexical+environments%2C+and+practical%E2%80%A6&amp;question-id=fe-13&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+JavaScript%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-13.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

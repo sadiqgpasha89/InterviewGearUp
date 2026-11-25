@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is a CDN and how does it improve performance and reliability? | InterviewGearUp</title>
+<meta name="description" content="A content delivery network is a globally distributed set of edge servers that cache copies of content close to users. Requests are routed to a nearby…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-112.html">
+<meta property="og:title" content="What is a CDN and how does it improve performance and reliability? | InterviewGearUp">
+<meta property="og:description" content="A content delivery network is a globally distributed set of edge servers that cache copies of content close to users. Requests are routed to a nearby…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-112.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is a CDN and how does it improve performance and reliability?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 1 (Junior) · Networking · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A content delivery network is a globally distributed set of edge servers that cache copies of content close to users. Requests are routed to a nearby edge, which serves cached responses with low latency or fetches from the origin on a miss. CDNs cut load on origin servers, absorb traffic spikes and DDoS attacks, and can terminate TLS and compress content.</p></div>
+<h4>Explained in depth</h4>
+<h4>How it works</h4>
+<ol start="1"><li>The user requests <code>cdn.example.com/app.js</code>. DNS or <strong>anycast</strong> routing sends the request to the nearest <strong>edge location</strong> (PoP).</li><li><strong>Cache hit</strong>: the edge returns the stored copy immediately.</li><li><strong>Cache miss</strong>: the edge fetches from the <strong>origin</strong> (your servers or object storage), returns it, and stores it according to caching headers (<code>Cache-Control</code>, <code>s-maxage</code>) for later users.</li></ol>
+<h4>Benefits</h4>
+<ul><li><strong>Lower latency</strong>: content travels a shorter distance, with optimised connections to the origin and modern protocols (HTTP/2, HTTP/3).</li><li><strong>Reduced origin load and cost</strong>: the edge serves most requests, so you need fewer servers and less bandwidth.</li><li><strong>Availability</strong>: edges can serve stale content if the origin is down (<code>stale-if-error</code>), and absorb spikes.</li><li><strong>Security</strong>: DDoS protection, a web application firewall, bot management, TLS termination, and hiding origin addresses.</li><li><strong>Edge compute</strong>: functions at the edge (Cloudflare Workers, Lambda@Edge) for redirects, personalisation and authentication.</li></ul>
+<h4>What to cache</h4>
+<p>Static assets (JS, CSS, images, video) with long lifetimes and <strong>fingerprinted filenames</strong>; semi-static pages with short TTLs; API responses that are public. Do not cache personalised or private responses unless the cache key includes what makes them different, and set <code>Vary</code> correctly.</p>
+<h4>Operations</h4>
+<ul><li><strong>Invalidation (purge)</strong> after changes, or avoid it by versioned URLs.</li><li>Monitor cache hit ratio, origin latency and error rates, and use an <strong>origin shield</strong> (a middle cache tier) to reduce origin fetches.</li><li>Common providers: CloudFront, Cloudflare, Fastly, Akamai.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How do cache keys and TTLs determine what the CDN stores?</li><li>How do you invalidate content after a deployment?</li><li>What is an origin shield?</li></ul>
+<p><a class="btn primary" href="../#/q/do-112">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-112%3A+What+is+a+CDN+and+how+does+it+improve+performance+and+reliability%3F&amp;question-id=do-112&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+1%2C+topic%3A+Networking%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-112.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

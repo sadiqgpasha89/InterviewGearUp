@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does Kubernetes handle split-brain in multi-master clusters during network partitions? | InterviewGearUp</title>
+<meta name="description" content="Kubernetes avoids split-brain by keeping all cluster state in etcd, which uses the Raft consensus protocol: only the partition holding a majority…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-89.html">
+<meta property="og:title" content="How does Kubernetes handle split-brain in multi-master clusters during network partitions? | InterviewGearUp">
+<meta property="og:description" content="Kubernetes avoids split-brain by keeping all cluster state in etcd, which uses the Raft consensus protocol: only the partition holding a majority…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-89.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does Kubernetes handle split-brain in multi-master clusters during network partitions?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 4 (Lead / Staff) · Kubernetes · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Kubernetes avoids split-brain by keeping all cluster state in etcd, which uses the Raft consensus protocol: only the partition holding a majority (quorum) of etcd members can accept writes. The minority side cannot change cluster state, so there is never a second authoritative copy.</p></div>
+<h4>Explained in depth</h4>
+<p><strong>Control plane vs workloads</strong>: API servers are stateless and sit in front of etcd. In a partition, API servers that cannot reach an etcd quorum cannot serve writes; those on the quorum side keep working.</p>
+<h4>What happens to running workloads</h4>
+<p>Pods already running on nodes in the minority keep running; the kubelet keeps running the containers it knows about. On the majority side, the node controller marks unreachable nodes <code>NotReady</code> and, after the toleration period (5 minutes by default through taints), evicts their pods so they are rescheduled. Stateful workloads need care: use StatefulSets and storage that enforces single attachment, because a pod can briefly run in two places if its node was only partitioned, not dead.</p>
+<h4>Design guidance</h4>
+<ul><li>Run an <strong>odd number</strong> of etcd members (3 or 5) spread across failure domains. Three tolerate one failure and five tolerate two. Never split members evenly across two sites.</li><li>Keep etcd on fast disks, monitor leader changes and fsync latency, and take regular snapshots (<code>etcdctl snapshot save</code>).</li><li>The controller manager and scheduler use leader-election leases stored in the API, so only one active instance runs at a time.</li><li>For two regions, either place the majority in one region or run separate clusters per region.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>What happens if you lose etcd quorum entirely, and how do you recover?</li><li>How do leases prevent two controller managers from acting at once?</li></ul>
+<p><a class="btn primary" href="../#/q/do-89">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-89%3A+How+does+Kubernetes+handle+split-brain+in+multi-master+clusters%E2%80%A6&amp;question-id=do-89&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+4%2C+topic%3A+Kubernetes%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-89.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

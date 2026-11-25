@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Design a URL shortener. | InterviewGearUp</title>
+<meta name="description" content="Generate a unique short key per URL (base62 of an ID, or random with a collision check), store key to URL in a key-value store, redirect with 301 or 302,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-5.html">
+<meta property="og:title" content="Design a URL shortener. | InterviewGearUp">
+<meta property="og:description" content="Generate a unique short key per URL (base62 of an ID, or random with a collision check), store key to URL in a key-value store, redirect with 301 or 302,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-5.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Design a URL shortener.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 3 (Senior) · System design · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Generate a unique short key per URL (base62 of an ID, or random with a collision check), store key to URL in a key-value store, redirect with 301 or 302, and cache hot keys. Reads far outnumber writes, so design for read throughput.</p></div>
+<h4>Explained in depth</h4>
+<h4>Requirements and numbers</h4>
+<p>Shorten a URL, redirect fast, optional custom alias and expiry, basic analytics. Suppose 100M new links a month: about 40 writes per second. At 100 reads per link that is roughly 4,000 reads per second on average, with higher peaks.</p>
+<h4>Key generation</h4>
+<ul><li>Seven base62 characters give 62^7, about 3.5 trillion keys.</li><li><strong>ID plus base62</strong>: no collisions, but sequential keys are guessable. Allocate ID ranges to each app server to avoid a central bottleneck, and scramble if guessability matters.</li><li><strong>Random key plus insert-if-absent</strong>: simple, with rare retries on collision.</li><li><strong>Hash of the URL, truncated</strong>: dedupes identical URLs but collides, so you need handling anyway.</li></ul>
+<h4>Storage and serving</h4>
+<p>A key-value store keyed by short code (DynamoDB, Cassandra, or a sharded SQL table) with Redis or a CDN in front for hot keys. A 301 is cacheable by browsers and cuts load but hides repeat clicks from your analytics; a 302 keeps traffic flowing through you.</p>
+<h4>Hardening</h4>
+<p>Rate-limit creation, check destinations against malware and phishing lists, block internal addresses, send click events to a queue so analytics never slows the redirect, and replicate across regions.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you avoid ID collisions across many servers?</li><li>How would you record analytics without slowing redirects?</li><li>How would link expiry and deletion work?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-5">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-5%3A+Design+a+URL+shortener.&amp;question-id=gen-5&amp;context=Software+engineer+%28core%29%2C+Gear+3%2C+topic%3A+System+design%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-5.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

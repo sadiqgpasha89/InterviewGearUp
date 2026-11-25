@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do parameterized queries prevent SQL injection compared to dynamic string concatenation? | InterviewGearUp</title>
+<meta name="description" content="A parameterized query sends the SQL text and the values separately: the database parses and plans the statement first and then binds the values as data,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-65.html">
+<meta property="og:title" content="How do parameterized queries prevent SQL injection compared to dynamic string concatenation? | InterviewGearUp">
+<meta property="og:description" content="A parameterized query sends the SQL text and the values separately: the database parses and plans the statement first and then binds the values as data,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-65.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do parameterized queries prevent SQL injection compared to dynamic string concatenation?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 1 (Junior) · Security · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A parameterized query sends the SQL text and the values separately: the database parses and plans the statement first and then binds the values as data, so user input can never change the structure of the query. String concatenation mixes input into the SQL text, which lets an attacker add their own SQL.</p></div>
+<h4>Explained in depth</h4>
+<pre><code># Vulnerable: input becomes part of the SQL
+cur.execute(&quot;SELECT * FROM users WHERE email = &#39;&quot; + email + &quot;&#39;&quot;)
+# email = &quot;x&#39; OR &#39;1&#39;=&#39;1&quot; returns every row
+
+# Safe: placeholder, value bound separately
+cur.execute(&quot;SELECT * FROM users WHERE email = %s&quot;, (email,))</code></pre>
+<p>With a placeholder the statement is compiled with a hole in it; whatever is bound to that hole is treated as a literal value, even if it contains quotes or semicolons. Many drivers do this on the server (prepared statements); some emulate it by escaping on the client, which is weaker.</p>
+<h4>Limits</h4>
+<ul><li>Placeholders only work for <strong>values</strong>. Table names, column names and <code>ORDER BY</code> direction cannot be bound, so validate them against an allow-list.</li><li>ORMs use parameters under the hood, but their raw-query escape hatches (and any string-built <code>WHERE</code>) are still injectable.</li><li>Add defense in depth: least-privilege database accounts, input validation, and never showing database errors to users.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How would you safely build a dynamic ORDER BY column from user input?</li><li>Does using stored procedures prevent SQL injection?</li></ul>
+<p><a class="btn primary" href="../#/q/be-65">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-65%3A+How+do+parameterized+queries+prevent+SQL+injection+compared+to%E2%80%A6&amp;question-id=be-65&amp;context=Backend+engineer%2C+Gear+1%2C+topic%3A+Security%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-65.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

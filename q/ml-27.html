@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare activation functions: Sigmoid, Tanh, ReLU, Leaky ReLU, GELU, and Swish. | InterviewGearUp</title>
+<meta name="description" content="Sigmoid and tanh squash values but saturate, causing vanishing gradients. ReLU is cheap and does not saturate for positive inputs, but neurons can die…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-27.html">
+<meta property="og:title" content="Compare activation functions: Sigmoid, Tanh, ReLU, Leaky ReLU, GELU, and Swish. | InterviewGearUp">
+<meta property="og:description" content="Sigmoid and tanh squash values but saturate, causing vanishing gradients. ReLU is cheap and does not saturate for positive inputs, but neurons can die…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-27.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare activation functions: Sigmoid, Tanh, ReLU, Leaky ReLU, GELU, and Swish.</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 2 (Mid-level) · Deep Learning · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Sigmoid and tanh squash values but saturate, causing vanishing gradients. ReLU is cheap and does not saturate for positive inputs, but neurons can die when stuck at zero. Leaky ReLU keeps a small slope for negatives. GELU and Swish are smooth, slightly non-monotonic activations that work well in transformers and modern deep networks.</p></div>
+<h4>Explained in depth</h4>
+<h4>Functions</h4>
+<div class="md-table"><table><thead><tr><th>Activation</th><th>Formula</th><th>Range</th><th>Notes</th></tr></thead><tbody><tr><td>Sigmoid</td><td>1 / (1 + e^-x)</td><td>(0, 1)</td><td>Probabilities for binary outputs; saturates, not zero-centred</td></tr><tr><td>Tanh</td><td>(e^x - e^-x) / (e^x + e^-x)</td><td>(-1, 1)</td><td>Zero-centred; still saturates</td></tr><tr><td>ReLU</td><td>max(0, x)</td><td>[0, inf)</td><td>Fast, sparse, standard default for CNNs and MLPs</td></tr><tr><td>Leaky ReLU</td><td>x if x &gt; 0 else 0.01x</td><td>(-inf, inf)</td><td>Avoids dead neurons</td></tr><tr><td>GELU</td><td>x * Phi(x) (Gaussian CDF)</td><td>about (-0.17, inf)</td><td>Smooth; used in BERT and GPT</td></tr><tr><td>Swish / SiLU</td><td>x * sigmoid(x)</td><td>about (-0.28, inf)</td><td>Smooth, used in EfficientNet and LLMs</td></tr></tbody></table></div>
+<h4>Gradients</h4>
+<ul><li>Sigmoid&#39;s derivative is at most 0.25 and near zero for large inputs, so gradients shrink layer after layer (vanishing gradients). Tanh peaks at 1 but also saturates.</li><li>ReLU&#39;s gradient is 1 for positive inputs and 0 for negative ones: cheap and no saturation on the positive side. A neuron whose input is always negative has zero gradient and stops learning (<strong>dying ReLU</strong>), often caused by a large learning rate or bad initialisation.</li><li>Leaky ReLU, PReLU and ELU keep a nonzero gradient for negatives.</li></ul>
+<h4>Choosing</h4>
+<ul><li>Hidden layers: <strong>ReLU</strong> first; try Leaky ReLU if many units are dead.</li><li>Transformers and large language models: <strong>GELU</strong> or gated variants such as SwiGLU.</li><li>Outputs: sigmoid for binary probability, softmax for multi-class, linear for regression, tanh for bounded outputs.</li><li>Pair ReLU-family activations with He initialisation, and sigmoid or tanh with Xavier.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does the sigmoid cause vanishing gradients in deep networks?</li><li>What is the dying ReLU problem and how do you detect it?</li><li>Why do transformers use GELU or SwiGLU?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-27">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-27%3A+Compare+activation+functions%3A+Sigmoid%2C+Tanh%2C+ReLU%2C+Leaky+ReLU%2C+GELU%2C%E2%80%A6&amp;question-id=ml-27&amp;context=ML+%2F+AI+engineer%2C+Gear+2%2C+topic%3A+Deep+Learning%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-27.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

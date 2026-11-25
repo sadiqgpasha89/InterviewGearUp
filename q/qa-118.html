@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you build a performance engineering practice across an organisation, from SLOs to capacity planning? | InterviewGearUp</title>
+<meta name="description" content="Define performance SLOs per service tied to user experience, embed performance checks throughout delivery with lightweight benchmarks and load tests in…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-118.html">
+<meta property="og:title" content="How do you build a performance engineering practice across an organisation, from SLOs to capacity planning? | InterviewGearUp">
+<meta property="og:description" content="Define performance SLOs per service tied to user experience, embed performance checks throughout delivery with lightweight benchmarks and load tests in…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-118.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you build a performance engineering practice across an organisation, from SLOs to capacity planning?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 4 (Lead / Staff) · Strategy · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Define performance SLOs per service tied to user experience, embed performance checks throughout delivery with lightweight benchmarks and load tests in CI and regular full-scale tests before peaks, instrument production with percentile latency and saturation metrics, model capacity from measured scalability, and make owners accountable. Provide shared tooling and expertise, and treat regressions like functional bugs.</p></div>
+<h4>Explained in depth</h4>
+<h4>Define goals</h4>
+<ul><li>Work with product and SRE to set <strong>SLOs</strong> based on user needs and business impact: for example 99 percent of API calls under 300 ms, page LCP under 2.5 seconds at the 75th percentile, throughput of 2,000 requests per second at peak plus 30 percent headroom.</li><li>Use percentiles (p95, p99), not averages; include error rates and saturation.</li></ul>
+<h4>Practices across the lifecycle</h4>
+<ol start="1"><li><strong>Design</strong>: performance requirements and budgets in design reviews; reference architectures and known-good patterns (caching, async processing, connection pooling).</li><li><strong>Development</strong>: profiling tools, micro-benchmarks for hot paths, query plan review, and performance guidance in code review.</li><li><strong>CI</strong>: lightweight <strong>performance smoke tests</strong> (a few endpoints at low load, comparing to a baseline with thresholds) and benchmark regression checks on every merge, plus nightly longer tests.</li><li><strong>Pre-release</strong>: <strong>load, stress, spike and soak tests</strong> in a production-like environment with realistic data and traffic mixes (modelled from production logs), including dependency behaviour (slow downstream).</li><li><strong>Before peak events</strong>: game days and full-scale rehearsals with capacity checks.</li><li><strong>Production</strong>: continuous monitoring, <strong>RUM and APM</strong>, saturation signals (queue depth, pool utilisation, GC), continuous profiling, and alerts on SLO burn.</li></ol>
+<h4>Capacity planning</h4>
+<p>Measure how throughput scales with resources (find the knee of the curve), derive the <strong>cost per request</strong>, forecast demand from business growth and seasonality, and plan headroom, autoscaling parameters and quotas. Review quarterly.</p>
+<h4>Diagnosing problems</h4>
+<p>Follow a method: reproduce, observe the <strong>USE method</strong> (utilisation, saturation, errors) per resource and the <strong>RED method</strong> (rate, errors, duration) per service; use distributed traces to find slow spans; check database queries, locks, connection pools, thread pools, garbage collection, network and external calls.</p>
+<h4>Organisation and tooling</h4>
+<ul><li>A small <strong>performance engineering</strong> group provides tools (k6, Gatling, JMeter, profilers, dashboards), runbooks and consultation, while teams own their service&#39;s performance.</li><li>Standard test scenarios and data generators, and an ability to run tests on demand.</li><li>Report performance trends and regressions in release reviews, track cost efficiency, and share lessons from incidents.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you decide the performance targets for a new service?</li><li>How do you detect performance regressions before release?</li><li>How do you find the bottleneck when latency is high but CPU looks fine?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-118">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-118%3A+How+do+you+build+a+performance+engineering+practice+across+an%E2%80%A6&amp;question-id=qa-118&amp;context=QA+%2F+SDET%2C+Gear+4%2C+topic%3A+Strategy%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-118.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

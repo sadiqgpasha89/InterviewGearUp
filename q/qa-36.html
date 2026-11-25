@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you manage test data generation to ensure deterministic, isolated, and repeatable test runs? | InterviewGearUp</title>
+<meta name="description" content="Make test data deterministic by owning it in the test: create the records each test needs through factories or builders with fixed seeds and clocks,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-36.html">
+<meta property="og:title" content="How do you manage test data generation to ensure deterministic, isolated, and repeatable test runs? | InterviewGearUp">
+<meta property="og:description" content="Make test data deterministic by owning it in the test: create the records each test needs through factories or builders with fixed seeds and clocks,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-36.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you manage test data generation to ensure deterministic, isolated, and repeatable test runs?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 2 (Mid-level) · Test Data · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Make test data deterministic by owning it in the test: create the records each test needs through factories or builders with fixed seeds and clocks, isolate them per test or per worker with unique keys, transactions or schemas, and clean up or discard the database afterwards. Avoid shared mutable fixtures and production copies, and use masked or synthetic data when realism is needed.</p></div>
+<h4>Explained in depth</h4>
+<h4>Goals</h4>
+<ul><li><strong>Deterministic</strong>: the same inputs give the same results every run.</li><li><strong>Isolated</strong>: one test never depends on, or breaks, another test&#39;s data.</li><li><strong>Repeatable</strong>: tests pass in any order, in parallel, locally and in CI.</li></ul>
+<h4>Techniques</h4>
+<ol start="1"><li><strong>Create data inside the test</strong>, using <strong>factories or builders</strong> (for example <code>UserBuilder().withRole(&quot;admin&quot;).build()</code>), with sensible defaults and only the relevant fields overridden. This makes each test self-explanatory.</li><li><strong>Control randomness and time</strong>: seed random generators (log the seed on failure so the run can be replayed), inject a fixed clock, and avoid real timestamps or auto-generated IDs in assertions.</li><li><strong>Unique keys per test or worker</strong>: prefix names and emails with a test ID or UUID so parallel runs do not collide on unique constraints.</li><li><strong>Isolation strategy</strong> by cost:</li></ol>
+<ul><li>Wrap each test in a <strong>transaction that rolls back</strong> (fast, but not suitable when code commits internally).</li><li>A <strong>schema or database per worker</strong>, created from a migration or template.</li><li>A <strong>fresh container</strong> with Testcontainers for full isolation.</li></ul>
+<ol start="5"><li><strong>Seed only static reference data</strong> (countries, currencies, roles) once, and treat it as read-only.</li><li><strong>Clean up</strong> after tests, or better, make cleanup unnecessary by discarding the environment.</li></ol>
+<h4>Realistic data</h4>
+<ul><li>Use <strong>synthetic data</strong> (a faker library with a fixed seed) or <strong>masked and anonymised</strong> production snapshots. Never copy raw personal data into test systems.</li><li>Add edge cases deliberately: empty strings, unicode, very long values, boundaries and null.</li></ul>
+<h4>Pitfalls</h4>
+<p>Order-dependent tests, shared &quot;golden&quot; accounts that someone edits, hard-coded IDs, leftover data from failed runs, and snapshots that silently drift from the schema. Version the data setup with the code and run tests in random order to expose hidden coupling.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>When do you use shared seed data versus per-test data?</li><li>How do you generate realistic data without exposing personal information?</li><li>How do you make parallel tests not collide on the same database?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-36">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-36%3A+How+do+you+manage+test+data+generation+to+ensure+deterministic%2C%E2%80%A6&amp;question-id=qa-36&amp;context=QA+%2F+SDET%2C+Gear+2%2C+topic%3A+Test+Data%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-36.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

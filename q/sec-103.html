@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How should an application store user passwords? | InterviewGearUp</title>
+<meta name="description" content="Never store passwords in plaintext or with fast hashes like MD5 or SHA-256. Store the output of a slow, salted password-hashing function such as…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-103.html">
+<meta property="og:title" content="How should an application store user passwords? | InterviewGearUp">
+<meta property="og:description" content="Never store passwords in plaintext or with fast hashes like MD5 or SHA-256. Store the output of a slow, salted password-hashing function such as…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-103.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How should an application store user passwords?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 1 (Junior) · Authentication · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Never store passwords in plaintext or with fast hashes like MD5 or SHA-256. Store the output of a slow, salted password-hashing function such as Argon2id, bcrypt or scrypt, with a unique random salt per password, and check passwords with the library&#39;s verify function. Also support multi-factor authentication and rate limiting.</p></div>
+<h4>Explained in depth</h4>
+<p><strong>Why a slow hash</strong>: if the database leaks, attackers can try billions of guesses per second against fast hashes using GPUs. Password-hashing functions are deliberately expensive in time (and, for Argon2 and scrypt, memory), so each guess costs real resources.</p>
+<ul><li><strong>Salt</strong>: a unique random value per user stops precomputed (rainbow table) attacks and hides the fact that two users share a password. Libraries generate the salt and store it inside the hash string.</li><li><strong>Work factor</strong>: tune it so that a hash takes a noticeable fraction of a second on your servers (roughly 100 to 500 ms) and revisit it as hardware improves. Store the parameters so you can rehash on the next login.</li><li><strong>Pepper (optional)</strong>: a secret key stored outside the database, for example in a KMS or HSM, mixed into the hash so that a database-only leak is not enough.</li><li>Use the library&#39;s <code>verify</code> function, which compares in constant time.</li></ul>
+<h4>Around the hash</h4>
+<ul><li>Enforce a sensible minimum length and check new passwords against breached-password lists; avoid arbitrary complexity rules.</li><li>Rate-limit and monitor login attempts, offer MFA or passkeys, and return generic error messages.</li><li>Better still, delegate authentication to an identity provider.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is SHA-256 a poor choice for passwords even with a salt?</li><li>How would you migrate users from an old hashing scheme to Argon2?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-103">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-103%3A+How+should+an+application+store+user+passwords%3F&amp;question-id=sec-103&amp;context=Security+engineer%2C+Gear+1%2C+topic%3A+Authentication%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-103.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

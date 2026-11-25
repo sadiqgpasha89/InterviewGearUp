@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you diagnose performance bottlenecks: Database connection pool exhaustion, memory leaks, and CPU locks? | InterviewGearUp</title>
+<meta name="description" content="Diagnose performance problems by reproducing them under load and observing the right signals: pool wait time and active connections for exhaustion, heap…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-35.html">
+<meta property="og:title" content="How do you diagnose performance bottlenecks: Database connection pool exhaustion, memory leaks, and CPU locks? | InterviewGearUp">
+<meta property="og:description" content="Diagnose performance problems by reproducing them under load and observing the right signals: pool wait time and active connections for exhaustion, heap…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-35.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you diagnose performance bottlenecks: Database connection pool exhaustion, memory leaks, and CPU locks?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 3 (Senior) · Performance · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Diagnose performance problems by reproducing them under load and observing the right signals: pool wait time and active connections for exhaustion, heap growth and garbage collection behaviour over time for leaks, and thread dumps and CPU profiles for lock contention. Change one thing at a time, confirm with metrics, and add a regression test.</p></div>
+<h4>Explained in depth</h4>
+<h4>General method</h4>
+<ol start="1"><li><strong>Reproduce</strong> with a load test that matches production traffic shape and run it long enough (soak) to show slow problems.</li><li><strong>Observe</strong> application and host metrics together: latency percentiles, throughput, error rate, CPU, memory, threads, pool statistics, GC.</li><li><strong>Form a hypothesis, change one variable, and re-measure.</strong></li></ol>
+<h4>Connection pool exhaustion</h4>
+<ul><li>Symptoms: latency rises while CPU stays low, errors such as &quot;timeout waiting for connection&quot;, many threads blocked waiting.</li><li>Check pool metrics (active, idle, pending, wait time) and database-side connections.</li><li>Causes: connections <strong>not returned</strong> (missing close, exceptions skipping release), long transactions, slow queries holding connections, or a pool smaller than concurrency needs.</li><li>Diagnose: leak detection (HikariCP <code>leakDetectionThreshold</code>), thread dumps showing waiting threads, slow query logs. Fix leaks and slow queries first; resize only after, remembering that the database has its own connection limit.</li></ul>
+<h4>Memory leaks</h4>
+<ul><li>Symptoms: heap or RSS rises steadily after each garbage collection cycle, longer GC pauses, eventual out-of-memory.</li><li>Diagnose: take <strong>heap dumps</strong> at intervals and compare (Eclipse MAT, VisualVM, Chrome DevTools or <code>tracemalloc</code>); find objects with growing counts and the reference chain that retains them. Typical culprits: unbounded caches, static collections, listeners never removed, and thread-locals.</li><li>Verify with a soak test that memory plateaus.</li></ul>
+<h4>CPU and lock contention</h4>
+<ul><li>High CPU: a <strong>CPU profile or flame graph</strong> (async-profiler, <code>perf</code>, py-spy) shows hot functions.</li><li>Low CPU but poor throughput: take several <strong>thread dumps</strong> a few seconds apart; many threads in BLOCKED or WAITING on the same lock indicates contention; a cycle indicates deadlock.</li><li>Fixes: reduce the critical section, use finer-grained or lock-free structures, or batch work.</li></ul>
+<h4>Close the loop</h4>
+<p>Add a performance test with thresholds to CI or a nightly job, and dashboards and alerts on the leading indicators.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you tell a connection leak from simply an undersized pool?</li><li>How do you find a memory leak in a long-running service?</li><li>What does a thread dump reveal about deadlocks versus contention?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-35">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-35%3A+How+do+you+diagnose+performance+bottlenecks%3A+Database+connection%E2%80%A6&amp;question-id=qa-35&amp;context=QA+%2F+SDET%2C+Gear+3%2C+topic%3A+Performance%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-35.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

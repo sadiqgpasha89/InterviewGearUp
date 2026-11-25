@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does a lock-free queue work, and what is the ABA problem? | InterviewGearUp</title>
+<meta name="description" content="Lock-free structures use atomic compare-and-swap (CAS) instead of locks: a thread reads the state, prepares a change and retries if another thread…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-101.html">
+<meta property="og:title" content="How does a lock-free queue work, and what is the ABA problem? | InterviewGearUp">
+<meta property="og:description" content="Lock-free structures use atomic compare-and-swap (CAS) instead of locks: a thread reads the state, prepares a change and retries if another thread…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-101.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does a lock-free queue work, and what is the ABA problem?</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 4 (Lead / Staff) · Concurrency · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Lock-free structures use atomic compare-and-swap (CAS) instead of locks: a thread reads the state, prepares a change and retries if another thread changed it first, so some thread always makes progress. The ABA problem is when a value changes from A to B and back to A, so a CAS succeeds even though the structure changed underneath.</p></div>
+<h4>Explained in depth</h4>
+<p><strong>How a CAS loop works</strong>: read the head pointer, compute the new head, then <code>compareAndSet(old, new)</code>. If another thread won the race the CAS fails and you retry. A stalled thread cannot block the others, which is the difference between lock-free (the system as a whole makes progress) and wait-free (every thread makes progress).</p>
+<h4>Michael-Scott queue</h4>
+<p>A linked list with a dummy node, a <code>head</code> and a <code>tail</code>. Enqueue CASes the last node&#39;s <code>next</code> from null to the new node, then tries to swing <code>tail</code>; any thread that sees a lagging tail helps advance it. Dequeue CASes <code>head</code> to <code>head.next</code>.</p>
+<h4>The ABA problem</h4>
+<p>Thread 1 reads head = A and is paused. Thread 2 pops A, pops B and pushes A back, possibly reusing the same memory address. Thread 1 resumes, its CAS sees A and succeeds, but the <code>next</code> pointer it read earlier is stale, which corrupts the list.</p>
+<ul><li><strong>Tagged pointers or version counters</strong>: pair the pointer with a counter that changes on every update (a double-width CAS).</li><li><strong>Safe memory reclamation</strong>: hazard pointers or epoch-based reclamation stop a node from being freed and reused while another thread can still see it. Garbage-collected languages avoid most ABA problems because an address is not reused while it is referenced.</li></ul>
+<h4>When not to use it</h4>
+<p>Lock-free code is hard to get right and is often not faster under low contention. Prefer a well-tested library queue and measure first.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What memory-ordering guarantees do you need around the CAS (acquire and release)?</li><li>What is the difference between lock-free and wait-free?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-101">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-101%3A+How+does+a+lock-free+queue+work%2C+and+what+is+the+ABA+problem%3F&amp;question-id=gen-101&amp;context=Software+engineer+%28core%29%2C+Gear+4%2C+topic%3A+Concurrency%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-101.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain the leftmost prefix rule for composite indexes. When will an index on (A, B, C) be used? | InterviewGearUp</title>
+<meta name="description" content="A composite index on (A, B, C) is sorted by A, then B within A, then C within B. The database can seek efficiently only when the query constrains a…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-15.html">
+<meta property="og:title" content="Explain the leftmost prefix rule for composite indexes. When will an index on (A, B, C) be used? | InterviewGearUp">
+<meta property="og:description" content="A composite index on (A, B, C) is sorted by A, then B within A, then C within B. The database can seek efficiently only when the query constrains a…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-15.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain the leftmost prefix rule for composite indexes. When will an index on (A, B, C) be used?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 2 (Mid-level) · Databases · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A composite index on (A, B, C) is sorted by A, then B within A, then C within B. The database can seek efficiently only when the query constrains a leftmost prefix: A, or A and B, or A, B and C. A query on B or C alone cannot use the index to narrow the search, and a range condition stops later columns from narrowing.</p></div>
+<h4>Explained in depth</h4>
+<p>Think of a phone book sorted by last name, then first name, then city. You can find &#39;Smith&#39;, or &#39;Smith, Anna&#39;, but not everyone named Anna.</p>
+<div class="md-table"><table><thead><tr><th>Query predicate</th><th>Uses the index to seek?</th></tr></thead><tbody><tr><td><code>A = 1</code></td><td>Yes (prefix A)</td></tr><tr><td><code>A = 1 AND B = 2</code></td><td>Yes (prefix A, B)</td></tr><tr><td><code>A = 1 AND B = 2 AND C = 3</code></td><td>Yes, full key</td></tr><tr><td><code>A = 1 AND C = 3</code></td><td>Seeks on A only; C is checked while scanning that range</td></tr><tr><td><code>B = 2</code> or <code>B = 2 AND C = 3</code></td><td>Not as a seek (some engines can skip-scan, but do not rely on it)</td></tr><tr><td><code>A = 1 AND B &gt; 5 AND C = 3</code></td><td>Seeks on A and the range on B; C filters afterwards</td></tr></tbody></table></div>
+<h4>The range rule</h4>
+<p>Once a column has a <strong>range</strong> condition (<code>&gt;</code>, <code>&lt;</code>, <code>BETWEEN</code>, <code>LIKE &#39;x%&#39;</code>), later columns in the index cannot narrow the scan, because the entries are no longer contiguous for them.</p>
+<h4>Designing the order</h4>
+<ol start="1"><li>Put columns used with <strong>equality</strong> first.</li><li>Then the column used for a <strong>range</strong> or for <code>ORDER BY</code>, so the index can return rows already sorted.</li><li>Consider selectivity, but equality-before-range usually matters more.</li><li>An index on (A, B) already serves queries on A, so a separate index on A alone is usually redundant.</li><li>If the index also contains every column the query selects, it is <strong>covering</strong> and the table need not be read.</li></ol>
+<p>Use <code>EXPLAIN</code> to confirm which columns are used for the seek; the planner may still ignore an index if it expects to read most of the table.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does a range condition on B stop C from narrowing the search?</li><li>How would you index a query with WHERE status = ? AND created_at &gt; ? ORDER BY created_at?</li><li>What is a covering index?</li></ul>
+<p><a class="btn primary" href="../#/q/be-15">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-15%3A+Explain+the+leftmost+prefix+rule+for+composite+indexes.+When+will+an%E2%80%A6&amp;question-id=be-15&amp;context=Backend+engineer%2C+Gear+2%2C+topic%3A+Databases%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-15.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

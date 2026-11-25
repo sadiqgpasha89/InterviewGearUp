@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Design a real-time collaborative document editor. How do Operational Transformation and CRDTs differ? | InterviewGearUp</title>
+<meta name="description" content="Clients send edits over WebSockets to a server that orders and broadcasts them. Operational Transformation rewrites concurrent operations against each…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-103.html">
+<meta property="og:title" content="Design a real-time collaborative document editor. How do Operational Transformation and CRDTs differ? | InterviewGearUp">
+<meta property="og:description" content="Clients send edits over WebSockets to a server that orders and broadcasts them. Operational Transformation rewrites concurrent operations against each…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-103.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Design a real-time collaborative document editor. How do Operational Transformation and CRDTs differ?</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 4 (Lead / Staff) · System design · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Clients send edits over WebSockets to a server that orders and broadcasts them. Operational Transformation rewrites concurrent operations against each other and relies on a central server for ordering, while CRDTs give every character or element a unique identity so edits merge in any order without a central authority. Add presence, persistence, snapshots and offline sync.</p></div>
+<h4>Explained in depth</h4>
+<h4>Problem</h4>
+<p>Two users edit the same text at the same time, with network delay. Every replica must end in the <strong>same state</strong> while keeping each person&#39;s intent (convergence plus intention preservation), and the editor must feel instant, so edits apply locally first.</p>
+<h4>Operational Transformation (OT)</h4>
+<ul><li>Edits are operations like <code>insert(pos, &quot;a&quot;)</code> and <code>delete(pos)</code>.</li><li>When concurrent operations meet, the server <strong>transforms</strong> one against the other: if Alice inserts at position 5 while Bob inserted at position 2, Alice&#39;s operation shifts to 6.</li><li>Usually needs a <strong>central server</strong> to serialise operations (Google Docs works this way). Transformation functions are hard to get right for rich structures, and proofs are subtle.</li><li>Compact in memory and mature.</li></ul>
+<h4>CRDTs (Conflict-free Replicated Data Types)</h4>
+<ul><li>Each element has a <strong>unique ID</strong> and a position defined relative to others (for example in a tree or list: RGA, Logoot, Yjs and Automerge use variants). Operations are <strong>commutative</strong>, so merging in any order gives the same result.</li><li>Works peer-to-peer and <strong>offline-first</strong>; no central transformation server needed.</li><li>Costs: <strong>metadata overhead</strong> (IDs and tombstones for deleted characters), which needs garbage collection and compaction, and sometimes surprising interleaving of concurrent inserts.</li></ul>
+<h4>Architecture</h4>
+<ol start="1"><li>Client keeps a local copy; edits apply immediately and are sent over a <strong>WebSocket</strong>.</li><li>A <strong>document server</strong> (sharded by document ID, one active owner per document) orders or relays updates, persists an <strong>append-only log</strong>, and takes periodic <strong>snapshots</strong> so loading is fast.</li><li>Presence and cursors travel on a separate lightweight channel.</li><li>Authorisation per document, with comments and suggestions as separate structures.</li><li>Reconnect with a <strong>version vector</strong> to fetch only missed operations.</li><li>For very hot documents, limit editors or split heavy traffic (presence sampling, batching updates every 50 to 100 ms).</li></ol>
+<h4>Choice</h4>
+<p>OT suits a central-server product; CRDTs suit offline-first, peer-to-peer or decentralised designs. Many teams adopt a library (Yjs, Automerge) rather than inventing either.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why do CRDTs usually use more memory than OT?</li><li>How would you support offline editing and later merge?</li><li>How do you scale to thousands of concurrent editors on one document?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-103">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-103%3A+Design+a+real-time+collaborative+document+editor.+How+do+Operational%E2%80%A6&amp;question-id=gen-103&amp;context=Software+engineer+%28core%29%2C+Gear+4%2C+topic%3A+System+design%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-103.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

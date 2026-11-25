@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare multi-tenant database designs: Shared Database/Shared Schema versus Isolated Schemas versus Isolated Databases. | InterviewGearUp</title>
+<meta name="description" content="Shared database with a shared schema (a tenant_id column) is cheapest and simplest to operate but has the weakest isolation. Schema-per-tenant gives…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-99.html">
+<meta property="og:title" content="Compare multi-tenant database designs: Shared Database/Shared Schema versus Isolated Schemas versus Isolated Databases. | InterviewGearUp">
+<meta property="og:description" content="Shared database with a shared schema (a tenant_id column) is cheapest and simplest to operate but has the weakest isolation. Schema-per-tenant gives…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-99.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare multi-tenant database designs: Shared Database/Shared Schema versus Isolated Schemas versus Isolated Databases.</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 4 (Lead / Staff) · Architecture · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Shared database with a shared schema (a tenant_id column) is cheapest and simplest to operate but has the weakest isolation. Schema-per-tenant gives logical separation with more migration work, and database-per-tenant gives the strongest isolation and per-tenant backup at the highest cost. Many SaaS products mix them by tenant size and compliance needs.</p></div>
+<h4>Explained in depth</h4>
+<div class="md-table"><table><thead><tr><th></th><th>Shared schema</th><th>Schema per tenant</th><th>Database per tenant</th></tr></thead><tbody><tr><td>Isolation</td><td>Logical only (rows)</td><td>Logical (namespaces)</td><td>Strongest</td></tr><tr><td>Cost and density</td><td>Best</td><td>Medium</td><td>Highest</td></tr><tr><td>Migrations</td><td>One for everyone</td><td>One per schema</td><td>One per database</td></tr><tr><td>Per-tenant backup and restore</td><td>Hard</td><td>Possible</td><td>Easy</td></tr><tr><td>Noisy neighbour</td><td>High risk</td><td>Medium</td><td>Contained</td></tr><tr><td>Scale limit</td><td>Large tables</td><td>Catalog size at thousands of schemas</td><td>Connections and operations</td></tr></tbody></table></div>
+<h4>Shared schema</h4>
+<p>Every table carries <code>tenant_id</code>, and every query must filter on it. The biggest risk is a <strong>missing filter that leaks data between tenants</strong>. Reduce it with PostgreSQL row-level security, a tenant-scoped data-access layer and tests. Put <code>tenant_id</code> first in indexes. One huge tenant can slow everyone down.</p>
+<h4>Schema per tenant</h4>
+<p>Better separation and easy per-tenant customisation, but schema changes must be rolled out to every schema, and very large numbers of schemas strain the database catalog and tooling.</p>
+<h4>Database per tenant</h4>
+<p>Strong isolation, simple tenant-level restore or deletion, data residency, and per-tenant tuning. Cost, connection management and running migrations across many databases become the main burden, so it usually needs automation.</p>
+<h4>Choosing</h4>
+<p>Consider the number of tenants, how different they are in size, compliance or residency requirements, whether tenants can customise the schema, and the cost per tenant. A common approach is a <strong>pool model for many small tenants and siloed databases for large or regulated ones</strong>, with a tenant routing layer so the application does not care. Plan how to move a tenant between models later.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How would you prevent one tenant from reading another&#39;s rows in a shared schema?</li><li>How do you roll out a schema migration to thousands of tenant databases?</li><li>How do you handle one very large tenant in a pooled design?</li></ul>
+<p><a class="btn primary" href="../#/q/be-99">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-99%3A+Compare+multi-tenant+database+designs%3A+Shared+Database%2FShared+Schema%E2%80%A6&amp;question-id=be-99&amp;context=Backend+engineer%2C+Gear+4%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-99.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

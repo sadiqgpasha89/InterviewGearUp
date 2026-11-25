@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain OAuth 2.0 grant types and why Authorization Code with PKCE is required for public and SPA clients. | InterviewGearUp</title>
+<meta name="description" content="OAuth 2.0 grants include Authorization Code (user login through a browser redirect), Client Credentials (machine to machine), Refresh Token, and the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-33.html">
+<meta property="og:title" content="Explain OAuth 2.0 grant types and why Authorization Code with PKCE is required for public and SPA clients. | InterviewGearUp">
+<meta property="og:description" content="OAuth 2.0 grants include Authorization Code (user login through a browser redirect), Client Credentials (machine to machine), Refresh Token, and the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-33.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain OAuth 2.0 grant types and why Authorization Code with PKCE is required for public and SPA clients.</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 2 (Mid-level) · IAM · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>OAuth 2.0 grants include Authorization Code (user login through a browser redirect), Client Credentials (machine to machine), Refresh Token, and the legacy Implicit and Password grants that are now discouraged. Public clients such as SPAs and mobile apps cannot keep a secret, so they use Authorization Code with PKCE, which binds the code to the client that requested it and replaces the insecure implicit flow.</p></div>
+<h4>Explained in depth</h4>
+<h4>Main grant types</h4>
+<div class="md-table"><table><thead><tr><th>Grant</th><th>Used for</th><th>Notes</th></tr></thead><tbody><tr><td><strong>Authorization Code (with PKCE)</strong></td><td>User signs in through a browser redirect, for web, SPA and mobile apps</td><td>Recommended for almost all user-facing apps</td></tr><tr><td><strong>Client Credentials</strong></td><td>Service to service with no user</td><td>The client authenticates with its own secret or certificate</td></tr><tr><td><strong>Refresh Token</strong></td><td>Get new access tokens without prompting the user again</td><td>Store securely, rotate on use</td></tr><tr><td><strong>Device Authorization</strong></td><td>TVs and consoles with no browser</td><td>User enters a code on another device</td></tr><tr><td>Implicit</td><td>Old SPA flow returning tokens in the URL</td><td><strong>Deprecated</strong>: tokens leak through history, referrers and logs</td></tr><tr><td>Resource Owner Password</td><td>Client collects the password directly</td><td><strong>Deprecated</strong>: breaks delegation and is incompatible with MFA</td></tr></tbody></table></div>
+<h4>Why public clients need PKCE</h4>
+<p>A single-page app or mobile app is a <strong>public client</strong>: any secret shipped with it can be extracted. The authorisation code travels through the browser redirect, so another app or script could intercept it. With <strong>PKCE</strong>:</p>
+<ol start="1"><li>The client creates a random <code>code_verifier</code> and sends its SHA-256 hash (<code>code_challenge</code>) with the authorisation request.</li><li>When redeeming the code, it sends the original verifier.</li><li>The server checks that the hash matches the earlier challenge, so a stolen code is useless without the verifier.</li></ol>
+<h4>Also required</h4>
+<p>Exact redirect URI matching, a <code>state</code> parameter against CSRF, short-lived access tokens, refresh token rotation, tokens kept out of <code>localStorage</code> where possible (a backend-for-frontend with cookies is safer), and system browsers for mobile apps.</p>
+<h4>Current direction</h4>
+<p>OAuth 2.1 consolidates this: PKCE for all code flows, no implicit or password grants, and exact redirect matching.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why was the implicit grant deprecated?</li><li>When would you use the client credentials grant?</li><li>What is the device authorization grant used for?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-33">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-33%3A+Explain+OAuth+2.0+grant+types+and+why+Authorization+Code+with+PKCE%E2%80%A6&amp;question-id=sec-33&amp;context=Security+engineer%2C+Gear+2%2C+topic%3A+IAM%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-33.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

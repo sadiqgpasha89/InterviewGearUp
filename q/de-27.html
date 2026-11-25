@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare Snappy, Zstandard (Zstd), and Gzip compression algorithms in data engineering. | InterviewGearUp</title>
+<meta name="description" content="Gzip gives high compression but is slow and not splittable on its own. Snappy compresses and decompresses very fast with a modest ratio, which suits hot…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-27.html">
+<meta property="og:title" content="Compare Snappy, Zstandard (Zstd), and Gzip compression algorithms in data engineering. | InterviewGearUp">
+<meta property="og:description" content="Gzip gives high compression but is slow and not splittable on its own. Snappy compresses and decompresses very fast with a modest ratio, which suits hot…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-27.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare Snappy, Zstandard (Zstd), and Gzip compression algorithms in data engineering.</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 2 (Mid-level) · Storage · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Gzip gives high compression but is slow and not splittable on its own. Snappy compresses and decompresses very fast with a modest ratio, which suits hot analytics data. Zstandard offers a tunable range, usually better ratios than Snappy and faster than Gzip, and is increasingly the default. Choose by the balance of storage cost, CPU time and read speed.</p></div>
+<h4>Explained in depth</h4>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th></th><th>Snappy</th><th>Gzip (DEFLATE)</th><th>Zstandard</th></tr></thead><tbody><tr><td>Compression ratio</td><td>Moderate</td><td>High</td><td>High, adjustable</td></tr><tr><td>Compression speed</td><td>Very fast</td><td>Slow</td><td>Fast to moderate by level</td></tr><tr><td>Decompression speed</td><td>Very fast</td><td>Moderate</td><td>Very fast</td></tr><tr><td>Levels</td><td>None</td><td>1 to 9</td><td>1 to 22 (plus fast negative levels)</td></tr><tr><td>Typical use</td><td>Hot data, Parquet default in many tools</td><td>Archives, text logs, HTTP</td><td>Modern default for Parquet, Kafka, backups</td></tr></tbody></table></div>
+<h4>Splittability</h4>
+<p>A compressed file is <strong>splittable</strong> if a reader can start in the middle and decompress an independent block, so many tasks can process one file in parallel. A plain <code>.gz</code> file is <strong>not splittable</strong>, so one task must read the entire file. Columnar formats such as Parquet and ORC compress <strong>internally per page or stripe</strong>, so they stay splittable with any codec. Container formats compress blocks, so files are splittable too.</p>
+<h4>Choosing</h4>
+<ul><li><strong>Frequently queried data</strong>: favour speed, so Snappy or low-level Zstd. CPU is often the bottleneck for scans.</li><li><strong>Cold or archival data</strong>, large text logs: higher Zstd levels or Gzip to save storage and network.</li><li><strong>Network-bound pipelines</strong> (cross-region replication, Kafka): Zstd often reduces bytes enough to pay for its CPU.</li><li>Measure with your own data, because ratios depend on content (repeated strings compress well, encrypted or already-compressed data does not).</li></ul>
+<h4>Notes</h4>
+<p>Zstd supports trained dictionaries for many small records. Take care that all consumers of a topic or file support the codec.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What does splittable mean and why does it matter in Hadoop and Spark?</li><li>How do compression levels trade speed against size in Zstd?</li><li>Does compression apply per file or per block in Parquet?</li></ul>
+<p><a class="btn primary" href="../#/q/de-27">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-27%3A+Compare+Snappy%2C+Zstandard+%28Zstd%29%2C+and+Gzip+compression+algorithms+in%E2%80%A6&amp;question-id=de-27&amp;context=Data+engineer%2C+Gear+2%2C+topic%3A+Storage%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-27.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

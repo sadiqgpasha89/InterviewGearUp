@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you reverse a singly linked list in-place both iteratively and recursively? | InterviewGearUp</title>
+<meta name="description" content="Iteratively, walk the list with three pointers (prev, curr, next) and flip each next pointer to point backwards; this takes O(n) time and O(1) space.…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-12.html">
+<meta property="og:title" content="How do you reverse a singly linked list in-place both iteratively and recursively? | InterviewGearUp">
+<meta property="og:description" content="Iteratively, walk the list with three pointers (prev, curr, next) and flip each next pointer to point backwards; this takes O(n) time and O(1) space.…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-12.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you reverse a singly linked list in-place both iteratively and recursively?</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 1 (Junior) · Algorithms · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Iteratively, walk the list with three pointers (prev, curr, next) and flip each next pointer to point backwards; this takes O(n) time and O(1) space. Recursively, reverse the rest of the list and then attach the head at the end, which is O(n) time but O(n) stack space.</p></div>
+<h4>Explained in depth</h4>
+<h4>Iterative (preferred)</h4>
+<pre><code>def reverse(head):
+    prev = None
+    curr = head
+    while curr:
+        nxt = curr.next      # save the rest
+        curr.next = prev     # flip the link
+        prev = curr          # advance prev
+        curr = nxt           # advance curr
+    return prev              # new head</code></pre>
+<p>Each node is visited once. Only three pointers are used, so the extra space is O(1).</p>
+<h4>Recursive</h4>
+<pre><code>def reverse(head):
+    if head is None or head.next is None:
+        return head
+    new_head = reverse(head.next)   # reverse everything after head
+    head.next.next = head           # the next node now points back to head
+    head.next = None                # head becomes the tail
+    return new_head</code></pre>
+<p>The call stack holds one frame per node, so the space is O(n) and a very long list can overflow the stack.</p>
+<h4>Interview tips</h4>
+<ul><li>Draw three or four nodes and step through the pointer changes.</li><li>Check edge cases: empty list, one node, two nodes.</li><li>The common bug is losing the rest of the list by overwriting <code>next</code> before saving it.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the recursion depth risk for a list of a million nodes?</li><li>How would you reverse only the nodes between positions m and n?</li><li>How would you reverse the list in groups of k nodes?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-12">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-12%3A+How+do+you+reverse+a+singly+linked+list+in-place+both+iteratively%E2%80%A6&amp;question-id=gen-12&amp;context=Software+engineer+%28core%29%2C+Gear+1%2C+topic%3A+Algorithms%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-12.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

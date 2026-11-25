@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Design the frontend architecture for a real-time collaborative application such as a whiteboard or document editor. | InterviewGearUp</title>
+<meta name="description" content="Keep an authoritative local state that applies edits instantly and syncs through WebSocket with a CRDT or operational transform layer, separate document…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-111.html">
+<meta property="og:title" content="Design the frontend architecture for a real-time collaborative application such as a whiteboard or document editor. | InterviewGearUp">
+<meta property="og:description" content="Keep an authoritative local state that applies edits instantly and syncs through WebSocket with a CRDT or operational transform layer, separate document…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-111.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Design the frontend architecture for a real-time collaborative application such as a whiteboard or document editor.</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 4 (Lead / Staff) · Architecture · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Keep an authoritative local state that applies edits instantly and syncs through WebSocket with a CRDT or operational transform layer, separate document state from ephemeral presence, render efficiently with canvas or virtualised DOM and workers, persist offline with IndexedDB, and design for reconnection, undo per user and permission changes.</p></div>
+<h4>Explained in depth</h4>
+<h4>Layers</h4>
+<ol start="1"><li><strong>Document model</strong>: a data structure shared by all clients, such as a CRDT (Yjs, Automerge) or an operation log with server-side transformation. Edits apply <strong>locally first</strong> (optimistic), then sync, so the UI never waits for the network.</li><li><strong>Transport</strong>: WebSocket (or WebRTC for peer-to-peer) with batching (for example every 30 to 50 ms), compression, heartbeats and reconnect with backoff. On reconnect, send a <strong>state vector</strong> or version to fetch only missed updates.</li><li><strong>Presence and ephemeral state</strong>: cursors, selections and &quot;typing&quot; indicators are sent separately, throttled, and never stored in the document history.</li><li><strong>Persistence</strong>: local copy in <strong>IndexedDB</strong> for offline editing and fast start; the server stores snapshots plus an update log.</li><li><strong>View layer</strong>: React or similar renders from a store, but heavy canvases use <strong>Canvas, WebGL or SVG with virtualisation</strong> (draw only visible objects, use spatial indexes such as quadtrees for hit testing) and <code>OffscreenCanvas</code> or Web Workers to keep the main thread free.</li></ol>
+<h4>Key design decisions</h4>
+<ul><li><strong>Undo and redo</strong> must be <strong>per user</strong>: undo your own operations, not a collaborator&#39;s. Track local operation stacks and generate inverse operations.</li><li><strong>Conflict semantics</strong>: define what happens when two users move or delete the same object, and show lightweight indicators.</li><li><strong>Permissions</strong>: view, comment and edit roles enforced on the server, with live updates when a role changes.</li><li><strong>Performance</strong>: coalesce updates, use immutable structural sharing, split the store so one cursor move does not re-render the whole app, and measure frame time.</li><li><strong>Large documents</strong>: lazy-load sections, paginate history, and compact CRDT metadata with snapshots.</li><li><strong>Accessibility</strong>: keyboard operations, screen reader announcements for remote changes, and reduced motion.</li></ul>
+<h4>Testing</h4>
+<p>Simulate latency, packet loss and concurrent edits with multi-client tests, property-based convergence tests, and chaos testing of reconnections.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you implement undo and redo in a multi-user document?</li><li>How would you render a canvas with tens of thousands of objects smoothly?</li><li>How do you handle reconnection and missed updates?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-111">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-111%3A+Design+the+frontend+architecture+for+a+real-time+collaborative%E2%80%A6&amp;question-id=fe-111&amp;context=Frontend+engineer%2C+Gear+4%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-111.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

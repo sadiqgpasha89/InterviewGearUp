@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do AWS IAM policy evaluation mechanics work: Explicit Deny, SCPs, Permission Boundaries, and Role Assumption? | InterviewGearUp</title>
+<meta name="description" content="AWS evaluates every request by starting from an implicit deny, then collecting all applicable policies. An explicit Deny in any policy always wins.…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-41.html">
+<meta property="og:title" content="How do AWS IAM policy evaluation mechanics work: Explicit Deny, SCPs, Permission Boundaries, and Role Assumption? | InterviewGearUp">
+<meta property="og:description" content="AWS evaluates every request by starting from an implicit deny, then collecting all applicable policies. An explicit Deny in any policy always wins.…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-41.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do AWS IAM policy evaluation mechanics work: Explicit Deny, SCPs, Permission Boundaries, and Role Assumption?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · Cloud · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>AWS evaluates every request by starting from an implicit deny, then collecting all applicable policies. An explicit Deny in any policy always wins. Otherwise, the request needs an Allow, and it must also be allowed by every restricting layer: Service Control Policies at the organisation level, any permission boundary on the principal, and session policies. Cross-account access needs allowance on both sides.</p></div>
+<h4>Explained in depth</h4>
+<h4>Evaluation logic (simplified)</h4>
+<ol start="1"><li><strong>Default</strong>: everything is <strong>implicitly denied</strong>.</li><li>If <strong>any</strong> applicable policy has an <strong>explicit Deny</strong> that matches, the request is denied. Nothing overrides it.</li><li><strong>Organisation SCPs</strong> (if the account is in AWS Organizations) must <strong>allow</strong> the action. SCPs only set maximum permissions for accounts; they never grant anything.</li><li>A <strong>permission boundary</strong> on the user or role, if present, must also allow the action; it sets the maximum the identity-based policies can grant.</li><li>A <strong>session policy</strong> (passed when assuming a role or federating) further restricts the temporary session.</li><li>Finally, the request needs an <strong>Allow</strong> from an identity-based policy (or a resource-based policy, in the same account).</li></ol>
+<p>The effective permission is the <strong>intersection</strong> of the identity policy and each of the guardrails (SCP, boundary, session policy).</p>
+<h4>Example</h4>
+<p>A role has <code>s3:*</code> allowed in its identity policy, but the account&#39;s SCP denies <code>s3:DeleteBucket</code>; the delete fails. The SCP is a guardrail across the whole account, including its root user.</p>
+<h4>Role assumption</h4>
+<ul><li>The <strong>trust policy</strong> on a role decides who may assume it (<code>sts:AssumeRole</code>). A caller needs both permission to call it and to be trusted by the role.</li><li>The assumed role session has only the role&#39;s permissions, not the caller&#39;s original ones (unless it is a resource-based policy that names the original principal).</li><li><strong>Cross-account</strong>: the identity in the source account needs permission to assume, <strong>and</strong> the target role&#39;s trust policy must allow that account.</li></ul>
+<h4>Resource-based policies</h4>
+<p>For same-account access, either an identity policy or a resource policy allowing the principal is enough (apart from explicit denies and guardrails). For cross-account access both sides must allow.</p>
+<h4>Debugging</h4>
+<p>Use the IAM Policy Simulator, Access Analyzer and CloudTrail error messages, which often state which kind of policy caused the denial.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do resource-based policies change the evaluation for same-account access?</li><li>What is the difference between a permission boundary and an SCP?</li><li>How does role assumption interact with the trust policy and session policies?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-41">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-41%3A+How+do+AWS+IAM+policy+evaluation+mechanics+work%3A+Explicit+Deny%2C%E2%80%A6&amp;question-id=sec-41&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+Cloud%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-41.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

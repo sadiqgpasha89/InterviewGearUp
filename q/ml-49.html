@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does PagedAttention (vLLM) allocate KV cache memory non-contiguously like virtual memory in operating systems? | InterviewGearUp</title>
+<meta name="description" content="PagedAttention stores each sequence&#39;s KV cache in fixed-size blocks that need not be contiguous, and a per-sequence block table maps logical positions to…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-49.html">
+<meta property="og:title" content="How does PagedAttention (vLLM) allocate KV cache memory non-contiguously like virtual memory in operating systems? | InterviewGearUp">
+<meta property="og:description" content="PagedAttention stores each sequence&#39;s KV cache in fixed-size blocks that need not be contiguous, and a per-sequence block table maps logical positions to…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-49.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does PagedAttention (vLLM) allocate KV cache memory non-contiguously like virtual memory in operating systems?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 4 (Lead / Staff) · LLMs · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>PagedAttention stores each sequence&#39;s KV cache in fixed-size blocks that need not be contiguous, and a per-sequence block table maps logical positions to physical blocks, like an OS page table. Memory is allocated on demand as tokens are generated, so fragmentation and over-reservation nearly disappear, and blocks can be shared between sequences.</p></div>
+<h4>Explained in depth</h4>
+<h4>The problem</h4>
+<p>During generation, the KV cache grows token by token and the final length is unknown. Traditional servers reserve one <strong>contiguous</strong> buffer sized for the maximum length per request. That wastes memory through <strong>internal fragmentation</strong> (reserved but unused slots) and <strong>external fragmentation</strong> (gaps between buffers), and it blocks sharing. The vLLM paper measured that much of the cache memory was wasted this way, which limits batch size and therefore throughput.</p>
+<h4>The idea</h4>
+<ul><li>Split each sequence&#39;s KV cache into fixed-size <strong>blocks</strong> (for example 16 tokens).</li><li>Keep a <strong>block table</strong> per sequence from logical block index to physical block in GPU memory.</li><li>Allocate a new physical block only when the current one fills. Waste is limited to the last, partly filled block.</li><li>The attention kernel is written to <strong>gather keys and values from non-contiguous blocks</strong> through the table.</li></ul>
+<h4>What it enables</h4>
+<ul><li><strong>Larger batches</strong> in the same memory, which raises throughput (the paper reports several-fold gains over earlier serving systems at similar latency).</li><li><strong>Sharing with copy-on-write</strong>: parallel sampling, beam search and requests with the same prompt prefix point to the same physical blocks, copying a block only when one sequence diverges. This is the basis of prefix caching.</li><li><strong>Preemption</strong>: when memory runs out, a sequence&#39;s blocks can be swapped to CPU memory or recomputed later.</li></ul>
+<h4>Trade-offs</h4>
+<p>The attention kernel is more complex, and block-table lookups add some overhead. Block size is a tuning choice: small blocks waste less memory but make gathers less efficient.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does contiguous KV cache allocation waste memory?</li><li>How does copy-on-write help with beam search and shared prompts?</li><li>How does block size affect memory waste and kernel efficiency?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-49">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-49%3A+How+does+PagedAttention+%28vLLM%29+allocate+KV+cache+memory%E2%80%A6&amp;question-id=ml-49&amp;context=ML+%2F+AI+engineer%2C+Gear+4%2C+topic%3A+LLMs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-49.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

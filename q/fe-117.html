@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you architect client-side state in a large application, separating server state from client state? | InterviewGearUp</title>
+<meta name="description" content="Treat server data as a cache owned by the server and manage it with a dedicated library such as TanStack Query or SWR, keep only genuinely client-side…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-117.html">
+<meta property="og:title" content="How do you architect client-side state in a large application, separating server state from client state? | InterviewGearUp">
+<meta property="og:description" content="Treat server data as a cache owned by the server and manage it with a dedicated library such as TanStack Query or SWR, keep only genuinely client-side…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-117.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you architect client-side state in a large application, separating server state from client state?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 4 (Lead / Staff) · State management · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Treat server data as a cache owned by the server and manage it with a dedicated library such as TanStack Query or SWR, keep only genuinely client-side state (UI state, form drafts, preferences) in local component state, context or a small store, derive instead of duplicating, put URL state in the router, and avoid one global store for everything.</p></div>
+<h4>Explained in depth</h4>
+<h4>Kinds of state</h4>
+<div class="md-table"><table><thead><tr><th>Kind</th><th>Examples</th><th>Best home</th></tr></thead><tbody><tr><td><strong>Server state</strong></td><td>Users, orders, search results</td><td>A server-cache library (TanStack Query, SWR, RTK Query, Apollo)</td></tr><tr><td><strong>URL state</strong></td><td>Filters, pagination, selected tab</td><td>Router and search params, so links and refresh work</td></tr><tr><td><strong>Local UI state</strong></td><td>Open modal, hover, input draft</td><td><code>useState</code> or <code>useReducer</code> in the component</td></tr><tr><td><strong>Shared client state</strong></td><td>Theme, auth session, wizard progress</td><td>Context, or a small store (Zustand, Redux Toolkit, Jotai)</td></tr><tr><td><strong>Form state</strong></td><td>Field values, validation</td><td>A form library (React Hook Form)</td></tr><tr><td><strong>Derived state</strong></td><td>Totals, filtered lists</td><td>Computed during render or with selectors, <strong>not stored</strong></td></tr></tbody></table></div>
+<h4>Why separate server state</h4>
+<p>Server data is <strong>asynchronous, shared, and can become stale</strong>. A cache library gives deduplicated requests, caching with keys, background refetching, retries, invalidation after mutations, pagination, and loading and error states. Copying server responses into a global store means rebuilding all this by hand and creating <strong>two sources of truth</strong>.</p>
+<h4>Practices</h4>
+<ul><li>Co-locate state as close as possible to where it is used; lift it only when needed.</li><li><strong>Normalise</strong> when the same entity appears in many views, or rely on cache keys and invalidation by entity.</li><li><strong>Optimistic updates</strong>: update the cache immediately, send the mutation, and roll back on failure, then refetch to reconcile.</li><li>Define a clear <strong>data access layer</strong> (typed API client, query key factory) so components do not scatter fetch calls.</li><li>Keep stores small and typed, with actions that describe events, and use selectors to limit re-renders.</li><li>Avoid putting non-serialisable objects or derived data in state.</li></ul>
+<h4>Governance</h4>
+<p>Document which tool is used for which kind of state, review new global stores, and measure re-render performance with the profiler.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does copying API data into Redux create stale state bugs?</li><li>How do you handle optimistic updates and rollback?</li><li>When is global state justified?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-117">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-117%3A+How+do+you+architect+client-side+state+in+a+large+application%2C%E2%80%A6&amp;question-id=fe-117&amp;context=Frontend+engineer%2C+Gear+4%2C+topic%3A+State+management%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-117.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

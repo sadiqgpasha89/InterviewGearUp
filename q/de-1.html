@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is the difference between OLTP and OLAP? What is a star schema? | InterviewGearUp</title>
+<meta name="description" content="OLTP systems handle many small, fast transactions on current data (orders, payments) with normalised, row-oriented storage. OLAP systems answer…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-1.html">
+<meta property="og:title" content="What is the difference between OLTP and OLAP? What is a star schema? | InterviewGearUp">
+<meta property="og:description" content="OLTP systems handle many small, fast transactions on current data (orders, payments) with normalised, row-oriented storage. OLAP systems answer…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-1.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is the difference between OLTP and OLAP? What is a star schema?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 1 (Junior) · Data modelling · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>OLTP systems handle many small, fast transactions on current data (orders, payments) with normalised, row-oriented storage. OLAP systems answer analytical queries that scan large volumes of history, usually with denormalised star schemas and columnar storage.</p></div>
+<h4>Explained in depth</h4>
+<ul><li><strong>Workload</strong>: OLTP does many short reads and writes. OLAP does fewer, heavy, read-mostly scans and aggregations.</li><li><strong>Schema</strong>: OLTP is normalised to avoid duplication. OLAP is denormalised for fewer joins and simple queries.</li><li><strong>Storage</strong>: row stores suit fetching whole records. Column stores read only the columns a query needs and compress well.</li></ul>
+<h4>Star schema</h4>
+<p>A central <strong>fact table</strong> (measurable events such as sales, with foreign keys and numeric measures) surrounded by <strong>dimension tables</strong> (customer, product, date). Decide the <strong>grain</strong> first: what does one fact row represent?</p>
+<p>A snowflake schema normalises the dimensions further, trading simplicity for less duplication.</p>
+<h4>Slowly changing dimensions</h4>
+<p>Type 1 overwrites the old value. Type 2 adds a new row with validity dates, preserving history (for example, a customer&#39;s region over time).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the grain of a fact table?</li><li>Give an example of a type 2 slowly changing dimension.</li><li>Why are column stores good for analytics?</li></ul>
+<p><a class="btn primary" href="../#/q/de-1">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-1%3A+What+is+the+difference+between+OLTP+and+OLAP%3F+What+is+a+star+schema%3F&amp;question-id=de-1&amp;context=Data+engineer%2C+Gear+1%2C+topic%3A+Data+modelling%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-1.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

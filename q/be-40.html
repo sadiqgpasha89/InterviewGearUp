@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does the Circuit Breaker pattern transition between Closed, Open, and Half-Open states? | InterviewGearUp</title>
+<meta name="description" content="A circuit breaker watches calls to a dependency. Closed: calls pass through and failures are counted. When failures exceed a threshold it opens: calls…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-40.html">
+<meta property="og:title" content="How does the Circuit Breaker pattern transition between Closed, Open, and Half-Open states? | InterviewGearUp">
+<meta property="og:description" content="A circuit breaker watches calls to a dependency. Closed: calls pass through and failures are counted. When failures exceed a threshold it opens: calls…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-40.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does the Circuit Breaker pattern transition between Closed, Open, and Half-Open states?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · Architecture · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A circuit breaker watches calls to a dependency. Closed: calls pass through and failures are counted. When failures exceed a threshold it opens: calls fail immediately for a cool-down period instead of waiting on a sick service. After the cool-down it goes half-open and allows a few trial calls; success closes it, failure opens it again.</p></div>
+<h4>Explained in depth</h4>
+<pre><code>          failures &gt; threshold                cool-down elapsed
+ CLOSED ---------------------&gt; OPEN ----------------------&gt; HALF-OPEN
+   ^                             ^                              |
+   |        trial calls succeed  |        a trial call fails    |
+   +-----------------------------+------------------------------+</code></pre>
+<h4>States</h4>
+<ul><li><strong>Closed</strong>: normal operation. The breaker tracks failures over a window (a failure rate, such as 50% of at least 20 calls, or consecutive failures) and slow calls.</li><li><strong>Open</strong>: requests are rejected at once or served by a <strong>fallback</strong> (cached data, default response). This protects the caller&#39;s threads and lets the dependency recover instead of piling more load on it.</li><li><strong>Half-open</strong>: after a wait, a limited number of probe requests go through. If they succeed, the breaker closes; if any fail, it reopens and the wait starts again.</li></ul>
+<h4>Configuration choices</h4>
+<ul><li>What counts as a failure: timeouts, connection errors and 5xx responses, but usually not 4xx client errors.</li><li>Window size, minimum call volume, failure and slow-call thresholds, wait duration, and number of half-open probes.</li><li>One breaker <strong>per dependency</strong> (or per endpoint), so one failing service does not trip calls to healthy ones.</li></ul>
+<h4>Working with other patterns</h4>
+<p>Always set timeouts, so failures are detected quickly. Retries need exponential backoff with jitter, and should not hammer an open breaker. Combine with <strong>bulkheads</strong> to cap concurrency per dependency, and expose breaker state in metrics and alerts. Libraries include Resilience4j, Polly and Envoy&#39;s outlier detection.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What fallback would you use when the breaker for a recommendations service is open?</li><li>Why should retries and circuit breakers be coordinated?</li><li>How do you choose threshold values without causing false trips?</li></ul>
+<p><a class="btn primary" href="../#/q/be-40">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-40%3A+How+does+the+Circuit+Breaker+pattern+transition+between+Closed%2C%E2%80%A6&amp;question-id=be-40&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-40.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

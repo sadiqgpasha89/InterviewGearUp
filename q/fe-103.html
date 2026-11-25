@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does the this keyword work in JavaScript? | InterviewGearUp</title>
+<meta name="description" content="The value of this depends on how a function is called, not where it is defined: a method call uses the object before the dot, a plain call gives…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-103.html">
+<meta property="og:title" content="How does the this keyword work in JavaScript? | InterviewGearUp">
+<meta property="og:description" content="The value of this depends on how a function is called, not where it is defined: a method call uses the object before the dot, a plain call gives…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-103.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does the this keyword work in JavaScript?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 1 (Junior) · JavaScript · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>The value of this depends on how a function is called, not where it is defined: a method call uses the object before the dot, a plain call gives undefined in strict mode, new creates a fresh object, call, apply and bind set it explicitly, and arrow functions take this from the surrounding scope. Losing this when passing methods as callbacks is the classic bug.</p></div>
+<h4>Explained in depth</h4>
+<h4>The rules (in order of priority)</h4>
+<ol start="1"><li><strong><code>new Foo()</code></strong>: <code>this</code> is the newly created object.</li><li><strong>Explicit binding</strong>: <code>fn.call(obj, a, b)</code>, <code>fn.apply(obj, [a, b])</code>, or <code>fn.bind(obj)</code> set <code>this</code> to <code>obj</code>. <code>bind</code> returns a new function with <code>this</code> fixed.</li><li><strong>Method call</strong>: <code>user.greet()</code> sets <code>this</code> to <code>user</code> (the object before the dot).</li><li><strong>Plain function call</strong>: <code>greet()</code> gives <code>undefined</code> in strict mode and modules (the global object in sloppy mode).</li><li><strong>Arrow functions</strong> have <strong>no own <code>this</code></strong>; they use the <code>this</code> of the enclosing scope at definition time, and <code>call</code> or <code>bind</code> cannot change it.</li></ol>
+<h4>Example of losing <code>this</code></h4>
+<pre><code>const user = { name: &#39;Asha&#39;, greet() { return &#39;Hi &#39; + this.name; } };
+const f = user.greet;
+f();               // this is undefined, so this.name throws (strict mode)
+setTimeout(user.greet, 0);                 // same problem
+setTimeout(() =&gt; user.greet(), 0);         // fine
+setTimeout(user.greet.bind(user), 0);      // fine</code></pre>
+<h4>Arrow functions in practice</h4>
+<p>Great for callbacks inside methods because they keep the outer <code>this</code>:</p>
+<pre><code>class Timer {
+  start() { setInterval(() =&gt; this.tick(), 1000); }
+}</code></pre>
+<p>Avoid arrow functions as <strong>object methods</strong> or <strong>prototype methods</strong>, where you want <code>this</code> to be the receiver.</p>
+<h4>In React and the DOM</h4>
+<p>Event handlers called by the browser set <code>this</code> to the element for regular functions; in class components, bind handlers or use class fields with arrow functions. Modern function components with hooks avoid the issue.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does a method lose this when you pass it as a callback?</li><li>What is the difference between call, apply and bind?</li><li>Why shouldn&#39;t you use arrow functions as object methods?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-103">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-103%3A+How+does+the+this+keyword+work+in+JavaScript%3F&amp;question-id=fe-103&amp;context=Frontend+engineer%2C+Gear+1%2C+topic%3A+JavaScript%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-103.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

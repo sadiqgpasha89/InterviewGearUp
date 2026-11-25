@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain Key Management Services (KMS): Hardware Security Modules (HSM) and Envelope Encryption. | InterviewGearUp</title>
+<meta name="description" content="A KMS creates, stores and controls cryptographic keys behind an API with access policies and audit logs, and keeps master keys inside Hardware Security…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-30.html">
+<meta property="og:title" content="Explain Key Management Services (KMS): Hardware Security Modules (HSM) and Envelope Encryption. | InterviewGearUp">
+<meta property="og:description" content="A KMS creates, stores and controls cryptographic keys behind an API with access policies and audit logs, and keeps master keys inside Hardware Security…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-30.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain Key Management Services (KMS): Hardware Security Modules (HSM) and Envelope Encryption.</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · Cryptography · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A KMS creates, stores and controls cryptographic keys behind an API with access policies and audit logs, and keeps master keys inside Hardware Security Modules, tamper-resistant devices where keys are never exported in clear. Envelope encryption encrypts data with a data key and then encrypts that data key with a master key in the KMS, so large data never goes to the KMS and keys can be rotated cheaply.</p></div>
+<h4>Explained in depth</h4>
+<h4>HSM</h4>
+<p>A <strong>Hardware Security Module</strong> is a dedicated, tamper-resistant device (certified to FIPS 140-2 or 140-3) that generates keys and performs cryptographic operations internally. Keys cannot be extracted in plaintext, and physical or logical attacks cause key erasure. Cloud HSMs (AWS CloudHSM, Azure Managed HSM) give you dedicated hardware.</p>
+<h4>KMS</h4>
+<p>A <strong>Key Management Service</strong> (AWS KMS, Google Cloud KMS, Azure Key Vault, HashiCorp Vault) manages the key lifecycle:</p>
+<ul><li>Create, rotate, disable and delete keys.</li><li>Enforce <strong>policies</strong> on who may use or administer each key (separation of duties).</li><li><strong>Audit</strong> every use (for example CloudTrail).</li><li>Perform encrypt and decrypt with keys held in HSMs, so the master key never leaves.</li></ul>
+<h4>Envelope encryption</h4>
+<p>KMS calls have size limits and latency, so you do not send bulk data to it.</p>
+<ol start="1"><li>Ask the KMS for a <strong>data encryption key (DEK)</strong>; it returns the DEK in plaintext plus a copy encrypted under the master key (the <strong>key encryption key</strong>, KEK).</li><li>Encrypt the data locally with the plaintext DEK (AES-GCM), then <strong>discard the plaintext DEK</strong>.</li><li>Store the encrypted data together with the <strong>encrypted DEK</strong>.</li><li>To read, send the encrypted DEK to the KMS to decrypt, then decrypt the data locally.</li></ol>
+<pre><code>plaintext --AES-GCM(DEK)--&gt; ciphertext        DEK --KMS encrypt(KEK)--&gt; wrapped DEK
+store: ciphertext + wrapped DEK</code></pre>
+<h4>Benefits</h4>
+<ul><li>Fast local encryption of large data, with one small KMS call per object.</li><li><strong>Cheap rotation</strong>: rotating the KEK only requires re-wrapping the DEKs, not re-encrypting terabytes.</li><li>Unique DEK per object limits the damage of a single key leak.</li><li>Central access control and a full audit trail, and the ability to <strong>revoke</strong> access by disabling the KEK.</li></ul>
+<h4>Good practices</h4>
+<p>Use encryption context (authenticated metadata) to bind keys to purposes, separate keys per environment and data class, restrict key administrators from using keys, and plan multi-region replication and recovery.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is it cheaper to rotate a key encryption key than to re-encrypt all data?</li><li>What is the difference between customer-managed and provider-managed keys?</li><li>How do encryption context and key policies limit misuse?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-30">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-30%3A+Explain+Key+Management+Services+%28KMS%29%3A+Hardware+Security+Modules%E2%80%A6&amp;question-id=sec-30&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+Cryptography%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-30.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

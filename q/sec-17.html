@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is Software Composition Analysis (SCA) and how does it detect vulnerabilities in open-source dependencies? | InterviewGearUp</title>
+<meta name="description" content="Software Composition Analysis builds an inventory of the open-source libraries an application uses, directly and transitively, then matches their names…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-17.html">
+<meta property="og:title" content="What is Software Composition Analysis (SCA) and how does it detect vulnerabilities in open-source dependencies? | InterviewGearUp">
+<meta property="og:description" content="Software Composition Analysis builds an inventory of the open-source libraries an application uses, directly and transitively, then matches their names…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-17.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is Software Composition Analysis (SCA) and how does it detect vulnerabilities in open-source dependencies?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 2 (Mid-level) · AppSec · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Software Composition Analysis builds an inventory of the open-source libraries an application uses, directly and transitively, then matches their names and versions against vulnerability databases (such as the NVD, OSV and GitHub advisories) and licence data. It reports known vulnerable components and fixed versions, and increasingly reachability and SBOM output.</p></div>
+<h4>Explained in depth</h4>
+<h4>What it does</h4>
+<p>Most application code is open-source dependencies, so most known vulnerabilities come from them (Log4Shell is the classic example). SCA tools:</p>
+<ol start="1"><li><strong>Inventory</strong> the components from lock files and manifests (<code>package-lock.json</code>, <code>pom.xml</code>, <code>requirements.txt</code>, container images).</li><li><strong>Resolve the dependency graph</strong>, including transitive dependencies.</li><li><strong>Match</strong> each package and version against vulnerability sources, assigning CVEs and severity scores (CVSS, EPSS for exploit likelihood).</li><li>Check <strong>licences</strong> for legal risk (for example copyleft in a proprietary product).</li><li>Suggest <strong>fixed versions</strong> or open automated pull requests (Dependabot, Renovate).</li></ol>
+<h4>Where it runs</h4>
+<ul><li>In the IDE and on every pull request.</li><li>In CI as a gate, for example failing on critical vulnerabilities with a fix available.</li><li>Continuously against deployed software, since new CVEs appear after release.</li><li>Tools: Dependabot, Snyk, OWASP Dependency-Check, Trivy, Grype, OSV-Scanner.</li></ul>
+<h4>Triage</h4>
+<ul><li><strong>False positives</strong>: a vulnerable function may never be called. Reachability analysis and VEX statements (&quot;not affected&quot;) help.</li><li>Prioritise by severity, exploitability (EPSS, known exploited list), exposure (internet-facing or not), and fix availability.</li><li>For transitive packages, use overrides or resolutions, or upgrade the direct parent.</li></ul>
+<h4>SBOM</h4>
+<p>A Software Bill of Materials (CycloneDX or SPDX) lists every component in a build. Generating one per release lets you answer &quot;are we affected?&quot; within minutes when a new vulnerability is announced.</p>
+<h4>Related supply chain controls</h4>
+<p>Pin versions, verify checksums and signatures, use a private registry, watch for typosquatting, and reduce dependencies.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you handle transitive dependencies that you cannot upgrade directly?</li><li>What is an SBOM and how is it used?</li><li>Why do SCA tools produce false positives and how do you triage them?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-17">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-17%3A+What+is+Software+Composition+Analysis+%28SCA%29+and+how+does+it+detect%E2%80%A6&amp;question-id=sec-17&amp;context=Security+engineer%2C+Gear+2%2C+topic%3A+AppSec%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-17.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

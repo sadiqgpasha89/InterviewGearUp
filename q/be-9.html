@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How would you migrate a monolith to microservices? | InterviewGearUp</title>
+<meta name="description" content="Do not migrate for its own sake. Fix the pain you actually have, extract services incrementally with the strangler pattern along clear business…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-9.html">
+<meta property="og:title" content="How would you migrate a monolith to microservices? | InterviewGearUp">
+<meta property="og:description" content="Do not migrate for its own sake. Fix the pain you actually have, extract services incrementally with the strangler pattern along clear business…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-9.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How would you migrate a monolith to microservices?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 4 (Lead / Staff) · Architecture · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Do not migrate for its own sake. Fix the pain you actually have, extract services incrementally with the strangler pattern along clear business boundaries, and invest in the platform (CI/CD, observability, ownership) before multiplying services.</p></div>
+<h4>Explained in depth</h4>
+<p><strong>First ask why</strong>: deploy coupling, scaling hotspots, team autonomy, technology limits? A well-structured modular monolith often solves it at far lower cost.</p>
+<h4>If you proceed</h4>
+<ul><li>Find bounded contexts (domain-driven design). Start with seams that have low entanglement or a high rate of change.</li><li>Put a facade or API gateway in front, extract one slice, run it in shadow or parallel, then cut traffic over.</li><li>Each service owns its data. Avoid a shared database. Handle cross-service consistency with sagas, the outbox pattern and eventual consistency.</li><li>Avoid a distributed monolith: chatty synchronous calls and lockstep deploys.</li></ul>
+<h4>Prerequisites</h4>
+<p>Automated tests, CI/CD, distributed tracing and logging, SLOs and on-call.</p>
+<h4>Costs to state honestly</h4>
+<p>Network failure modes, latency, operational load, and harder data joins.</p>
+<p>Measure success by deploy frequency, lead time and change failure rate, not by number of services.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How would you split the database?</li><li>How do you handle transactions across services?</li><li>When would you decide not to use microservices?</li></ul>
+<p><a class="btn primary" href="../#/q/be-9">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-9%3A+How+would+you+migrate+a+monolith+to+microservices%3F&amp;question-id=be-9&amp;context=Backend+engineer%2C+Gear+4%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-9.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

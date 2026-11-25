@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does Spark Structured Streaming handle late data using event-time watermarking? | InterviewGearUp</title>
+<meta name="description" content="A watermark tells Structured Streaming how late event-time data may arrive. It trails the maximum event time seen by a configured delay; windows older…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-24.html">
+<meta property="og:title" content="How does Spark Structured Streaming handle late data using event-time watermarking? | InterviewGearUp">
+<meta property="og:description" content="A watermark tells Structured Streaming how late event-time data may arrive. It trails the maximum event time seen by a configured delay; windows older…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-24.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does Spark Structured Streaming handle late data using event-time watermarking?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Spark · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A watermark tells Structured Streaming how late event-time data may arrive. It trails the maximum event time seen by a configured delay; windows older than the watermark are finalised and their state is dropped, and events later than that may be discarded. It bounds state size at the price of some latency.</p></div>
+<h4>Explained in depth</h4>
+<pre><code>from pyspark.sql import functions as F
+counts = (events
+  .withWatermark(&#39;event_time&#39;, &#39;10 minutes&#39;)
+  .groupBy(F.window(&#39;event_time&#39;, &#39;5 minutes&#39;), &#39;user&#39;)
+  .count())</code></pre>
+<h4>How it works</h4>
+<ul><li>After each micro-batch the engine computes <strong>watermark = max(event_time seen) - 10 minutes</strong>.</li><li>Data arriving less than 10 minutes behind the newest event is still aggregated into its window.</li><li>Windows that end before the watermark are closed: in <strong>append</strong> output mode they are emitted once, and their state is removed from memory.</li><li>Events older than the watermark may be dropped. Spark guarantees that data within the delay is handled, not that data beyond it is dropped or kept.</li></ul>
+<h4>Trade-offs</h4>
+<p>A longer delay handles later data but keeps more state and, in append mode, delays results. A shorter delay lowers memory and latency but drops more late data. Choose it from the real distribution of lateness in your source.</p>
+<h4>Details worth knowing</h4>
+<ul><li>Event time comes from the data, not the processing clock, so results are reproducible.</li><li>With several input streams (for example a stream-stream join) the global watermark defaults to the minimum of them, so a slow stream holds everything back.</li><li>Without a watermark, state for aggregations, joins and deduplication grows without bound.</li><li>Update mode emits changed rows early, and append mode waits for the watermark.</li><li>Use <code>dropDuplicatesWithinWatermark</code> or <code>dropDuplicates</code> with the event-time column to deduplicate without keeping all history.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>What happens to state if you omit the watermark in a windowed aggregation?</li><li>How would you choose the watermark delay for a mobile app that sends events when it comes back online?</li><li>How does a watermark differ between append and update output modes?</li></ul>
+<p><a class="btn primary" href="../#/q/de-24">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-24%3A+How+does+Spark+Structured+Streaming+handle+late+data+using%E2%80%A6&amp;question-id=de-24&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Spark%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-24.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

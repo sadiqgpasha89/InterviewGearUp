@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does the Horizontal Pod Autoscaler (HPA) scale pods based on metrics, and how does KEDA extend it? | InterviewGearUp</title>
+<meta name="description" content="The Horizontal Pod Autoscaler periodically compares an observed metric (CPU, memory, custom or external) with a target and computes desiredReplicas =…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-35.html">
+<meta property="og:title" content="How does the Horizontal Pod Autoscaler (HPA) scale pods based on metrics, and how does KEDA extend it? | InterviewGearUp">
+<meta property="og:description" content="The Horizontal Pod Autoscaler periodically compares an observed metric (CPU, memory, custom or external) with a target and computes desiredReplicas =…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-35.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does the Horizontal Pod Autoscaler (HPA) scale pods based on metrics, and how does KEDA extend it?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · Kubernetes · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>The Horizontal Pod Autoscaler periodically compares an observed metric (CPU, memory, custom or external) with a target and computes desiredReplicas = ceil(currentReplicas x current / target), within min and max bounds and with stabilisation windows. KEDA extends this by scaling on event sources such as queue depth, and can scale to and from zero.</p></div>
+<h4>Explained in depth</h4>
+<h4>How the HPA works</h4>
+<p>A controller loop (every 15 seconds by default) reads metrics from the <strong>metrics API</strong> (metrics-server for CPU and memory, adapters for custom metrics) and calculates:</p>
+<p><code>desiredReplicas = ceil( currentReplicas * currentMetric / targetMetric )</code></p>
+<p>Example: 4 pods at 90% CPU with a target of 60% gives ceil(4 * 90 / 60) = 6 replicas.</p>
+<pre><code>apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: api }
+  minReplicas: 2
+  maxReplicas: 20
+  metrics:
+    - type: Resource
+      resource: { name: cpu, target: { type: Utilization, averageUtilization: 60 } }
+  behavior:
+    scaleDown: { stabilizationWindowSeconds: 300 }</code></pre>
+<h4>Details</h4>
+<ul><li>CPU <strong>utilisation</strong> is relative to the pod&#39;s <strong>request</strong>, so requests must be set.</li><li>A <strong>stabilisation window</strong> (longer for scale-down) and rate policies prevent flapping.</li><li>New pods need time to become ready; readiness and startup probes matter.</li><li>HPA cannot scale to zero, and it works with a Deployment or StatefulSet.</li></ul>
+<h4>KEDA (Kubernetes Event-driven Autoscaling)</h4>
+<p>Adds <strong>scalers</strong> for many sources (Kafka lag, SQS or RabbitMQ queue length, Prometheus query, cron). It feeds the HPA with external metrics and can <strong>activate from zero</strong> replicas when events arrive and scale back to zero when idle, saving cost for bursty workers.</p>
+<h4>Related autoscalers</h4>
+<p>The <strong>Vertical Pod Autoscaler</strong> adjusts requests per pod, and the <strong>Cluster Autoscaler</strong> (or Karpenter) adds nodes when pods cannot be scheduled. They work together: HPA creates pods, and the node autoscaler provides capacity.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why must pods set resource requests for CPU-based HPA to work?</li><li>How do you avoid flapping with the scaleDown stabilisation window?</li><li>How does HPA differ from the Vertical Pod Autoscaler and the Cluster Autoscaler?</li></ul>
+<p><a class="btn primary" href="../#/q/do-35">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-35%3A+How+does+the+Horizontal+Pod+Autoscaler+%28HPA%29+scale+pods+based+on%E2%80%A6&amp;question-id=do-35&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+Kubernetes%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-35.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

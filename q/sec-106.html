@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is a firewall, and how do stateless, stateful and application-layer firewalls differ? | InterviewGearUp</title>
+<meta name="description" content="A firewall filters network traffic according to rules about addresses, ports, protocols and sometimes content. Stateless firewalls judge each packet…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-106.html">
+<meta property="og:title" content="What is a firewall, and how do stateless, stateful and application-layer firewalls differ? | InterviewGearUp">
+<meta property="og:description" content="A firewall filters network traffic according to rules about addresses, ports, protocols and sometimes content. Stateless firewalls judge each packet…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-106.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is a firewall, and how do stateless, stateful and application-layer firewalls differ?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 1 (Junior) · Network security · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A firewall filters network traffic according to rules about addresses, ports, protocols and sometimes content. Stateless firewalls judge each packet alone, stateful firewalls track connections and allow replies to permitted requests, and application-layer or next-generation firewalls inspect traffic content, applications and users. Use default deny, least-open rules and layered defences.</p></div>
+<h4>Explained in depth</h4>
+<h4>Purpose</h4>
+<p>A firewall enforces <strong>network policy</strong> between zones (internet, internal network, DMZ, cloud VPCs): which traffic may pass, in which direction.</p>
+<h4>Types</h4>
+<div class="md-table"><table><thead><tr><th>Type</th><th>How it decides</th><th>Notes</th></tr></thead><tbody><tr><td><strong>Stateless packet filter</strong></td><td>Examines each packet in isolation (source and destination IP, port, protocol, flags)</td><td>Fast and simple; must explicitly allow return traffic; examples: cloud network ACLs</td></tr><tr><td><strong>Stateful firewall</strong></td><td>Tracks connection state in a table; automatically permits replies for allowed outbound connections and blocks unsolicited inbound ones</td><td>Standard today; examples: Linux <code>iptables</code> and <code>nftables</code> with conntrack, cloud security groups</td></tr><tr><td><strong>Application-layer (proxy, NGFW)</strong></td><td>Inspects payload and application protocol; identifies applications (not just ports), users, TLS contents, malware and intrusion signatures</td><td>More powerful, more expensive and CPU-intensive; needs TLS inspection to see encrypted traffic</td></tr><tr><td><strong>Web application firewall (WAF)</strong></td><td>Understands HTTP and blocks attacks such as SQL injection and XSS</td><td>Protects web apps specifically</td></tr></tbody></table></div>
+<h4>Good rule design</h4>
+<ul><li><strong>Default deny</strong>: block everything, then allow only what is needed (specific sources, ports and protocols).</li><li>Least privilege and <strong>segmentation</strong>: separate web, application and database tiers; limit lateral movement between them.</li><li>Control <strong>egress</strong> too, not only ingress, to limit data exfiltration and command-and-control traffic.</li><li>Keep rules documented, reviewed and cleaned up (remove unused ones), and log denied traffic for detection.</li></ul>
+<h4>In the cloud</h4>
+<p><strong>Security groups</strong> (stateful, attached to instances) and <strong>network ACLs</strong> (stateless, on subnets) provide layered filtering. Combine with private subnets, no public IPs on databases, and managed WAF and DDoS services.</p>
+<h4>Limits</h4>
+<p>Firewalls do not stop attacks over allowed channels (a phished user, a vulnerable web app on port 443), so combine them with patching, authentication, monitoring and endpoint protection.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the difference between a firewall and a web application firewall?</li><li>What does default deny mean?</li><li>Where do security groups and network ACLs fit in cloud networks?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-106">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-106%3A+What+is+a+firewall%2C+and+how+do+stateless%2C+stateful+and%E2%80%A6&amp;question-id=sec-106&amp;context=Security+engineer%2C+Gear+1%2C+topic%3A+Network+security%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-106.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

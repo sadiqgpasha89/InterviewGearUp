@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare Selenium WebDriver, Playwright, and Cypress: Execution architecture, speed, and limitations. | InterviewGearUp</title>
+<meta name="description" content="Selenium WebDriver drives browsers through the standard WebDriver protocol over HTTP, supports many languages and browsers, and is the most mature but…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-23.html">
+<meta property="og:title" content="Compare Selenium WebDriver, Playwright, and Cypress: Execution architecture, speed, and limitations. | InterviewGearUp">
+<meta property="og:description" content="Selenium WebDriver drives browsers through the standard WebDriver protocol over HTTP, supports many languages and browsers, and is the most mature but…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-23.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare Selenium WebDriver, Playwright, and Cypress: Execution architecture, speed, and limitations.</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 2 (Mid-level) · Frameworks · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Selenium WebDriver drives browsers through the standard WebDriver protocol over HTTP, supports many languages and browsers, and is the most mature but needs explicit waits and more setup. Playwright talks to browsers over a persistent connection, auto-waits and is fast and multi-browser. Cypress runs inside the browser, giving great debugging but with limits on tabs and origins.</p></div>
+<h4>Explained in depth</h4>
+<h4>Architecture</h4>
+<ul><li><strong>Selenium WebDriver</strong>: your test sends HTTP commands to a browser driver (ChromeDriver, GeckoDriver), which controls the browser. Many language bindings (Java, Python, C#, JavaScript, Ruby). Selenium Grid distributes tests across machines.</li><li><strong>Playwright</strong>: a Node, Python, Java or .NET library that talks to Chromium, Firefox and WebKit through a persistent socket connection, using the browser&#39;s debugging protocol or patched builds. It runs out of process but is tightly integrated.</li><li><strong>Cypress</strong>: the test code runs <strong>inside the browser</strong> next to the app, with a Node process for the plumbing. This gives direct access to the app and network.</li></ul>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th></th><th>Selenium</th><th>Playwright</th><th>Cypress</th></tr></thead><tbody><tr><td>Languages</td><td>Many</td><td>JS/TS, Python, Java, .NET</td><td>JS/TS</td></tr><tr><td>Browsers</td><td>All major, including older ones</td><td>Chromium, Firefox, WebKit</td><td>Chromium family, Firefox, WebKit (experimental)</td></tr><tr><td>Auto-wait</td><td>No, you write waits</td><td>Yes</td><td>Yes</td></tr><tr><td>Speed and stability</td><td>Slower, more flaky</td><td>Fast, parallel by default</td><td>Fast for single page tests</td></tr><tr><td>Multiple tabs and origins</td><td>Yes</td><td>Yes, with multiple contexts</td><td>Limited</td></tr><tr><td>Debugging</td><td>Basic</td><td>Trace viewer, codegen</td><td>Excellent time-travel runner</td></tr><tr><td>Mobile</td><td>Via Appium</td><td>Device emulation</td><td>Viewport only</td></tr></tbody></table></div>
+<h4>Choosing</h4>
+<p>Pick Playwright for most new web projects, Selenium when you need broad language support, legacy browsers or an existing Grid, and Cypress when the team is JavaScript-first and the app fits its single-origin model.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Which tool would you pick for a new project and why?</li><li>How does each handle parallel execution?</li><li>What can Cypress not do that the others can?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-23">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-23%3A+Compare+Selenium+WebDriver%2C+Playwright%2C+and+Cypress%3A+Execution%E2%80%A6&amp;question-id=qa-23&amp;context=QA+%2F+SDET%2C+Gear+2%2C+topic%3A+Frameworks%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-23.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

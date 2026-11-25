@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain the Test Automation Pyramid and the recommended balance between Unit, Integration, and E2E tests. | InterviewGearUp</title>
+<meta name="description" content="The test pyramid recommends many fast unit tests at the base, fewer integration tests in the middle and a small number of slow end-to-end tests at the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-7.html">
+<meta property="og:title" content="Explain the Test Automation Pyramid and the recommended balance between Unit, Integration, and E2E tests. | InterviewGearUp">
+<meta property="og:description" content="The test pyramid recommends many fast unit tests at the base, fewer integration tests in the middle and a small number of slow end-to-end tests at the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-7.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain the Test Automation Pyramid and the recommended balance between Unit, Integration, and E2E tests.</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 1 (Junior) · Fundamentals · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>The test pyramid recommends many fast unit tests at the base, fewer integration tests in the middle and a small number of slow end-to-end tests at the top. Lower layers are cheaper, faster and more precise at locating bugs, so most checking should happen there; a common rough split is 70 percent unit, 20 percent integration and 10 percent E2E.</p></div>
+<h4>Explained in depth</h4>
+<h4>The layers</h4>
+<ul><li><strong>Unit tests</strong>: one function or class in isolation, with dependencies faked. They run in milliseconds, are stable and point at the exact failing code.</li><li><strong>Integration tests</strong>: several components together, such as a service with a real database or an API with its dependencies. They catch wiring, configuration and query problems. They take seconds.</li><li><strong>End-to-end (E2E) tests</strong>: the whole system through the UI or public API, closest to the real user. They are slow, flaky-prone and expensive to maintain, so keep them for critical journeys such as sign-up and checkout.</li></ul>
+<h4>Why a pyramid</h4>
+<p>Cost and feedback speed grow as you go up. A thousand unit tests might run in seconds, while a hundred browser tests take many minutes. If most tests are at the top, the pipeline is slow and flaky and failures are hard to diagnose.</p>
+<h4>Anti-pattern: ice-cream cone</h4>
+<p>Few unit tests, a large manual or E2E layer on top. It feels safe but gives slow feedback and high maintenance.</p>
+<h4>Practical guidance</h4>
+<ul><li>The ratio is a guide, not a rule. Some teams prefer a <strong>trophy</strong> shape that stresses integration tests, which give more confidence per test in service-heavy code.</li><li>Push each check as low as it can go: if a unit test can verify the rule, do not repeat it in the UI.</li><li>Add a few contract tests between services and a small set of smoke tests in production.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the testing trophy or honeycomb and how does it differ?</li><li>What is the ice-cream cone anti-pattern?</li><li>How do contract tests fit into the pyramid?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-7">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-7%3A+Explain+the+Test+Automation+Pyramid+and+the+recommended+balance%E2%80%A6&amp;question-id=qa-7&amp;context=QA+%2F+SDET%2C+Gear+1%2C+topic%3A+Fundamentals%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-7.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

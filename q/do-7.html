@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Production latency has spiked. Walk me through how you respond. | InterviewGearUp</title>
+<meta name="description" content="Stabilise first (roll back or shed load), then narrow it down with the golden signals: when it started, what changed, who is affected, and where in the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-7.html">
+<meta property="og:title" content="Production latency has spiked. Walk me through how you respond. | InterviewGearUp">
+<meta property="og:description" content="Stabilise first (roll back or shed load), then narrow it down with the golden signals: when it started, what changed, who is affected, and where in the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-7.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Production latency has spiked. Walk me through how you respond.</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · Incidents · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Stabilise first (roll back or shed load), then narrow it down with the golden signals: when it started, what changed, who is affected, and where in the request path time is spent. Confirm the root cause before closing.</p></div>
+<h4>Explained in depth</h4>
+<ol start="1"><li><strong>Declare the incident</strong>, assign roles (incident commander, communications), and keep a timeline.</li><li><strong>Assess impact</strong>: which endpoints, regions and customers; error rate and p50, p95 and p99 latency.</li><li><strong>Check what changed</strong>: deploys, feature flags, config, traffic patterns, dependencies, scheduled jobs. If a change correlates, rolling back is the fastest mitigation.</li><li><strong>Read the golden signals</strong>: latency, traffic, errors, saturation (CPU, memory, DB connections, thread pools, queue depth).</li><li><strong>Follow a trace</strong> to the slow hop: database locks or slow queries, a downstream timeout or retry storm, GC pauses, connection pool exhaustion, DNS.</li><li><strong>Mitigate</strong>: scale out, shed non-critical load, disable the feature, add circuit breakers. Be careful: raising timeouts can make a retry storm worse.</li><li><strong>Verify recovery</strong> against SLIs, then communicate closure.</li><li><strong>Blameless postmortem</strong>: timeline, root cause and contributing factors, action items with owners covering detection, prevention and response.</li></ol>
+<p>Mention retries with exponential backoff and jitter, and why unbounded retries amplify outages.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What if there was no recent deploy?</li><li>How do you avoid retry storms?</li><li>What goes into a good postmortem?</li></ul>
+<p><a class="btn primary" href="../#/q/do-7">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-7%3A+Production+latency+has+spiked.+Walk+me+through+how+you+respond.&amp;question-id=do-7&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+Incidents%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-7.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

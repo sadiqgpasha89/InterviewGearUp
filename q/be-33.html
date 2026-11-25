@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does Kafka achieve exactly-once semantics (EOS) across producer and consumer streams? | InterviewGearUp</title>
+<meta name="description" content="Kafka&#39;s exactly-once semantics combine an idempotent producer (sequence numbers let brokers drop retried duplicates), transactions that write to several…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-33.html">
+<meta property="og:title" content="How does Kafka achieve exactly-once semantics (EOS) across producer and consumer streams? | InterviewGearUp">
+<meta property="og:description" content="Kafka&#39;s exactly-once semantics combine an idempotent producer (sequence numbers let brokers drop retried duplicates), transactions that write to several…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-33.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does Kafka achieve exactly-once semantics (EOS) across producer and consumer streams?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 4 (Lead / Staff) · Messaging · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Kafka&#39;s exactly-once semantics combine an idempotent producer (sequence numbers let brokers drop retried duplicates), transactions that write to several partitions and commit consumer offsets atomically, and consumers reading with read_committed isolation. It makes a consume-process-produce loop atomic within Kafka, but side effects outside Kafka still need idempotency.</p></div>
+<h4>Explained in depth</h4>
+<h4>Building blocks</h4>
+<ol start="1"><li><strong>Idempotent producer</strong> (<code>enable.idempotence=true</code>): each producer has an id and a per-partition sequence number. The broker rejects a retried batch it already wrote, so retries do not create duplicates within a partition.</li><li><strong>Transactions</strong> (<code>transactional.id</code>): a producer can write to multiple partitions and topics <strong>atomically</strong>, and include the consumer&#39;s offset commit in the same transaction (<code>sendOffsetsToTransaction</code>). Either the output records and the input offsets commit together, or neither does.</li><li><strong>read_committed consumers</strong> (<code>isolation.level=read_committed</code>): they skip records from aborted or still-open transactions.</li></ol>
+<pre><code>poll() -&gt; process -&gt; beginTransaction -&gt; send(output) -&gt; sendOffsetsToTransaction -&gt; commitTransaction</code></pre>
+<h4>Zombie fencing</h4>
+<p>The transaction coordinator tracks an <strong>epoch</strong> per <code>transactional.id</code>. If a stalled instance comes back after its replacement started, its writes are rejected, so two copies of a task cannot both commit.</p>
+<p>Kafka Streams enables all of this with <code>processing.guarantee=exactly_once_v2</code>.</p>
+<h4>Limits</h4>
+<ul><li>Guarantees hold <strong>inside Kafka</strong>. If processing writes to a database or calls an API, a retry can repeat that side effect. Use idempotent writes, or a transactional sink with its own mechanism.</li><li>Transactions add latency, and a long-open transaction delays read_committed consumers behind it.</li><li>It is best described as effectively once: the processing may run more than once after a failure, but its visible effects are applied once.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does exactly-once not extend to a database write inside your consumer?</li><li>What is zombie fencing and how do epochs implement it?</li><li>What happens to read_committed consumers while a transaction is open?</li></ul>
+<p><a class="btn primary" href="../#/q/be-33">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-33%3A+How+does+Kafka+achieve+exactly-once+semantics+%28EOS%29+across+producer%E2%80%A6&amp;question-id=be-33&amp;context=Backend+engineer%2C+Gear+4%2C+topic%3A+Messaging%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-33.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

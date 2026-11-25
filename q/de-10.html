@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is the difference between Additive, Semi-Additive, and Non-Additive fact tables? | InterviewGearUp</title>
+<meta name="description" content="Additive facts can be summed across every dimension (sales amount). Semi-additive facts can be summed across some dimensions but not time, such as…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-10.html">
+<meta property="og:title" content="What is the difference between Additive, Semi-Additive, and Non-Additive fact tables? | InterviewGearUp">
+<meta property="og:description" content="Additive facts can be summed across every dimension (sales amount). Semi-additive facts can be summed across some dimensions but not time, such as…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-10.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is the difference between Additive, Semi-Additive, and Non-Additive fact tables?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 2 (Mid-level) · Data Modeling · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Additive facts can be summed across every dimension (sales amount). Semi-additive facts can be summed across some dimensions but not time, such as account balances or inventory levels, where you average or take the last value over time. Non-additive facts, such as ratios and percentages, cannot be summed at all and must be recomputed from additive components.</p></div>
+<h4>Explained in depth</h4>
+<h4>Additive</h4>
+<p>Can be summed over all dimensions: date, product, store, customer. Example: <code>sales_amount</code>, <code>quantity_sold</code>. Total revenue for a year, a region or a product category is a simple <code>SUM</code>.</p>
+<h4>Semi-additive</h4>
+<p>Meaningful to sum across some dimensions but <strong>not across time</strong>. Example: a bank account <code>balance</code> or stock <code>inventory_on_hand</code>.</p>
+<ul><li>Sum of balances across all accounts on one day: valid (total money in the bank that day).</li><li>Sum of one account&#39;s balance over 30 days: meaningless.</li><li>Over time use <strong>average, minimum, maximum or last value</strong>:</li></ul>
+<pre><code>-- month-end balance per account
+SELECT account_id, balance
+FROM fact_daily_balance
+WHERE date_key = (SELECT MAX(date_key) FROM fact_daily_balance WHERE month = &#39;2024-06&#39;)</code></pre>
+<p>These facts usually come from <strong>periodic snapshot</strong> fact tables.</p>
+<h4>Non-additive</h4>
+<p>Cannot be summed over any dimension: ratios, percentages, unit prices, averages, temperatures. Example: <code>margin_pct</code>. Adding 20% and 30% gives nothing useful. Store the <strong>components</strong> (<code>revenue</code> and <code>cost</code>, or numerator and denominator) in the fact table, then compute the ratio <strong>after</strong> aggregation:</p>
+<pre><code>SELECT SUM(revenue - cost) / NULLIF(SUM(revenue), 0) AS margin_pct FROM fact_sales;</code></pre>
+<h4>Why it matters</h4>
+<p>Modelling mistakes lead to wrong dashboards: summing balances across days or averaging pre-computed averages. Document each measure&#39;s additivity and use semantic layers or tested metrics to enforce the correct aggregation.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you aggregate a semi-additive measure like a balance over a month?</li><li>Why should you store the numerator and denominator instead of a ratio?</li><li>What is a periodic snapshot fact table?</li></ul>
+<p><a class="btn primary" href="../#/q/de-10">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-10%3A+What+is+the+difference+between+Additive%2C+Semi-Additive%2C+and%E2%80%A6&amp;question-id=de-10&amp;context=Data+engineer%2C+Gear+2%2C+topic%3A+Data+Modeling%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-10.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

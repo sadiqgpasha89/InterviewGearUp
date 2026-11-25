@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare Cross-Site Scripting (XSS) types: Stored, Reflected, and DOM-based XSS with remediation techniques. | InterviewGearUp</title>
+<meta name="description" content="Reflected XSS echoes a payload from the request into the response, stored XSS saves it and serves it to other users, and DOM-based XSS happens when…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-10.html">
+<meta property="og:title" content="Compare Cross-Site Scripting (XSS) types: Stored, Reflected, and DOM-based XSS with remediation techniques. | InterviewGearUp">
+<meta property="og:description" content="Reflected XSS echoes a payload from the request into the response, stored XSS saves it and serves it to other users, and DOM-based XSS happens when…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-10.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare Cross-Site Scripting (XSS) types: Stored, Reflected, and DOM-based XSS with remediation techniques.</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 2 (Mid-level) · AppSec · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Reflected XSS echoes a payload from the request into the response, stored XSS saves it and serves it to other users, and DOM-based XSS happens when client-side JavaScript writes untrusted data into a dangerous sink. The main fix is context-aware output encoding, backed by safe framework defaults and a strict CSP.</p></div>
+<h4>Explained in depth</h4>
+<div class="md-table"><table><thead><tr><th>Type</th><th>Where the payload goes</th><th>Example</th></tr></thead><tbody><tr><td><strong>Reflected</strong></td><td>In the request (a link or form), echoed straight back</td><td>A search page that prints <code>?q=</code> unescaped</td></tr><tr><td><strong>Stored</strong></td><td>Saved by the server, shown to every viewer</td><td>A comment or profile field rendered as HTML</td></tr><tr><td><strong>DOM-based</strong></td><td>Read by client JS from a source (<code>location.hash</code>) and written to a sink (<code>innerHTML</code>), never touching server output</td><td><code>el.innerHTML = location.hash.slice(1)</code></td></tr></tbody></table></div>
+<p>Stored XSS is usually the most damaging because it needs no victim click and can reach many users, including administrators.</p>
+<h4>Impact</h4>
+<p>Script runs with the user&#39;s privileges on your origin: it can read the page, act as the user, steal tokens that are not HttpOnly, log keystrokes or change what the page shows.</p>
+<h4>Remediation</h4>
+<ol start="1"><li><strong>Encode output for its context</strong>: HTML body, HTML attribute, JavaScript, URL and CSS each need different escaping. Use the framework&#39;s auto-escaping (React and most template engines do this by default) and avoid escape hatches such as <code>dangerouslySetInnerHTML</code> or <code>v-html</code>.</li><li>Use safe sinks: <code>textContent</code> instead of <code>innerHTML</code>.</li><li>When you must allow rich HTML, <strong>sanitise it with an allow-list library</strong> such as DOMPurify, not with regular expressions.</li><li>Add a <strong>Content Security Policy</strong> (nonces, no <code>unsafe-inline</code>) and Trusted Types as defence in depth.</li><li>Mark session cookies <code>HttpOnly</code>, <code>Secure</code> and <code>SameSite</code> so that stolen script access does less damage.</li><li>Input validation helps, but it is not a substitute for output encoding.</li></ol>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is encoding for the output context more reliable than filtering input?</li><li>How does a CSP help against XSS and what can still bypass it?</li><li>Why is DOM-based XSS hard to find with server-side scanning?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-10">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-10%3A+Compare+Cross-Site+Scripting+%28XSS%29+types%3A+Stored%2C+Reflected%2C+and%E2%80%A6&amp;question-id=sec-10&amp;context=Security+engineer%2C+Gear+2%2C+topic%3A+AppSec%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-10.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

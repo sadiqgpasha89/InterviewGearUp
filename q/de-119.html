@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you create a single source of truth for company KPIs and prevent metric definitions from drifting? | InterviewGearUp</title>
+<meta name="description" content="Define each KPI once in version-controlled code, in a semantic or metrics layer with an owner, description and tests, expose it to every tool through…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-119.html">
+<meta property="og:title" content="How do you create a single source of truth for company KPIs and prevent metric definitions from drifting? | InterviewGearUp">
+<meta property="og:description" content="Define each KPI once in version-controlled code, in a semantic or metrics layer with an owner, description and tests, expose it to every tool through…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-119.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you create a single source of truth for company KPIs and prevent metric definitions from drifting?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 4 (Lead / Staff) · Metrics · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Define each KPI once in version-controlled code, in a semantic or metrics layer with an owner, description and tests, expose it to every tool through that layer, and certify the datasets behind it. Review definition changes like code, show lineage and documentation in a catalog, and reconcile against finance sources so executives see the same number everywhere.</p></div>
+<h4>Explained in depth</h4>
+<h4>The problem</h4>
+<p>Revenue, active users or churn are calculated differently in each dashboard, spreadsheet and notebook. Executives see conflicting numbers, and trust in data drops.</p>
+<h4>Solution: define once, reuse everywhere</h4>
+<ol start="1"><li><strong>Governance</strong>: for each KPI assign an <strong>owner</strong>, a precise definition (numerator, denominator, filters, time grain, timezone, currency handling, treatment of refunds and test accounts), and grain and dimensions allowed. Keep a business glossary.</li><li><strong>Metrics as code</strong>: implement them in a <strong>semantic layer or metrics store</strong>: dbt Semantic Layer (MetricFlow), Cube, LookML, AtScale, or warehouse-native semantic views. Definitions live in Git, with pull-request review by the owner and data team, tests, and versioning.</li><li><strong>Single access path</strong>: BI tools, notebooks, reverse ETL and APIs query the layer rather than writing their own SQL for core metrics, so every consumer receives the same calculation.</li><li><strong>Certified datasets</strong>: gold-layer tables for the metric&#39;s inputs, built with tested pipelines, data contracts from source systems, and freshness SLAs. Mark them &quot;certified&quot; in the catalog.</li><li><strong>Reconciliation</strong>: automated checks comparing key numbers with systems of record (finance ledger, billing), with alerts on variance beyond a threshold.</li><li><strong>Change management</strong>: when a definition changes, version it, backfill history, annotate dashboards, and announce. Keep old versions for audit.</li></ol>
+<h4>Handling disagreement</h4>
+<p>If two teams legitimately need different definitions, give them <strong>different names</strong> (&quot;gross revenue&quot; and &quot;net revenue&quot;, &quot;monthly active users (login)&quot; and &quot;(any event)&quot;) and document how they relate, rather than having one name with two meanings.</p>
+<h4>Adoption</h4>
+<p>Make the governed metrics the easiest to use (fast, documented, discoverable in the BI tool), deprecate duplicates, monitor usage of uncertified calculations, and train analysts. Track the number of conflicting definitions and incidents of mismatched numbers.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is a semantic layer and which tools provide one?</li><li>How do you handle two teams who genuinely define a metric differently?</li><li>How do you detect that a dashboard is using an uncertified calculation?</li></ul>
+<p><a class="btn primary" href="../#/q/de-119">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-119%3A+How+do+you+create+a+single+source+of+truth+for+company+KPIs+and%E2%80%A6&amp;question-id=de-119&amp;context=Data+engineer%2C+Gear+4%2C+topic%3A+Metrics%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-119.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

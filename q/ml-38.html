@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare Positional Encodings: Sinusoidal encodings versus Learned embeddings versus RoPE (Rotary Position Embedding). | InterviewGearUp</title>
+<meta name="description" content="Transformers have no inherent sense of order, so positions must be injected. Sinusoidal encodings add fixed sine and cosine patterns; learned embeddings…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-38.html">
+<meta property="og:title" content="Compare Positional Encodings: Sinusoidal encodings versus Learned embeddings versus RoPE (Rotary Position Embedding). | InterviewGearUp">
+<meta property="og:description" content="Transformers have no inherent sense of order, so positions must be injected. Sinusoidal encodings add fixed sine and cosine patterns; learned embeddings…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-38.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare Positional Encodings: Sinusoidal encodings versus Learned embeddings versus RoPE (Rotary Position Embedding).</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · Transformers · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Transformers have no inherent sense of order, so positions must be injected. Sinusoidal encodings add fixed sine and cosine patterns; learned embeddings train a vector per position but cap the context length; RoPE rotates query and key vectors by an angle proportional to position, so attention depends on relative distance and extrapolates and scales better, which is why most recent LLMs use it.</p></div>
+<h4>Explained in depth</h4>
+<h4>The need</h4>
+<p>Self-attention treats its input as a set: permuting tokens permutes the outputs in the same way. Without position information, &quot;dog bites man&quot; and &quot;man bites dog&quot; look alike.</p>
+<h4>Sinusoidal (original transformer)</h4>
+<p>Add a fixed vector to each token embedding: <code>PE(pos, 2i) = sin(pos / 10000^(2i/d))</code>, <code>PE(pos, 2i+1) = cos(pos / 10000^(2i/d))</code> Different dimensions use different wavelengths; the encoding of position <code>pos + k</code> is a linear function of that of <code>pos</code>, so relative offsets are easy to learn. No parameters, and it can in principle handle longer sequences, though quality often degrades beyond the training length.</p>
+<h4>Learned absolute embeddings</h4>
+<p>A trainable matrix with one row per position (BERT, GPT-2). Flexible, but <strong>limited to the maximum length seen</strong> in training and does not generalise to longer inputs.</p>
+<h4>RoPE (rotary position embedding)</h4>
+<p>Applies a <strong>rotation</strong> to each pair of dimensions of the query and key, with angle proportional to the token&#39;s position. The dot product of a rotated query at position m and a rotated key at position n depends on <code>m - n</code>, so attention naturally uses <strong>relative distance</strong>, without adding anything to the embeddings. Benefits: relative-position behaviour, good long-range decay, and it can be extended to longer contexts by scaling the rotation frequencies (position interpolation, NTK or YaRN scaling). Used in LLaMA, Mistral, Qwen and many others.</p>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th></th><th>Sinusoidal</th><th>Learned</th><th>RoPE</th></tr></thead><tbody><tr><td>Parameters</td><td>None</td><td>Many</td><td>None</td></tr><tr><td>Relative position</td><td>Indirect</td><td>No</td><td>Yes, built in</td></tr><tr><td>Length extrapolation</td><td>Limited</td><td>None</td><td>Better, with scaling tricks</td></tr></tbody></table></div>
+<p>ALiBi is another alternative: it adds a linear distance penalty to attention scores.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does RoPE encode relative position through the dot product?</li><li>How do ALiBi and position interpolation extend context length?</li><li>What happens to learned positions beyond the training length?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-38">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-38%3A+Compare+Positional+Encodings%3A+Sinusoidal+encodings+versus+Learned%E2%80%A6&amp;question-id=ml-38&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+Transformers%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-38.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

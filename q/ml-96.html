@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Design a multi-tenant LLM API gateway featuring token budgeting, prompt caching, and semantic routing. | InterviewGearUp</title>
+<meta name="description" content="A multi-tenant LLM gateway authenticates each tenant, enforces token and cost budgets with rate limits, serves repeated prompts from a cache, and routes…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-96.html">
+<meta property="og:title" content="Design a multi-tenant LLM API gateway featuring token budgeting, prompt caching, and semantic routing. | InterviewGearUp">
+<meta property="og:description" content="A multi-tenant LLM gateway authenticates each tenant, enforces token and cost budgets with rate limits, serves repeated prompts from a cache, and routes…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-96.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Design a multi-tenant LLM API gateway featuring token budgeting, prompt caching, and semantic routing.</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 4 (Lead / Staff) · Architecture · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A multi-tenant LLM gateway authenticates each tenant, enforces token and cost budgets with rate limits, serves repeated prompts from a cache, and routes each request to a suitable model by task, cost, latency and health. It tracks usage per tenant for billing, applies guardrails, and fails over between providers, with isolation so one tenant cannot starve others.</p></div>
+<h4>Explained in depth</h4>
+<h4>Request path</h4>
+<ol start="1"><li><strong>Authentication and tenant identity</strong>: API keys or JWTs mapped to a tenant, project and plan.</li><li><strong>Policy checks</strong>: allowed models, regions, data-handling rules, input size limits, and safety filters (PII redaction, prompt injection checks).</li><li><strong>Budget and rate limits</strong> (see below).</li><li><strong>Cache lookup</strong>.</li><li><strong>Routing</strong> to a model and provider.</li><li><strong>Call with retries, timeouts and streaming</strong>, then output filters.</li><li><strong>Metering and logging</strong>: record tokens in and out, latency, cost, model and cache hit.</li></ol>
+<h4>Token budgeting</h4>
+<ul><li>Limit both <strong>requests per minute</strong> and <strong>tokens per minute or per day</strong> per tenant, using token buckets in a shared store such as Redis.</li><li>Output length is unknown before the call, so <strong>reserve</strong> an estimate (input tokens plus <code>max_tokens</code>), then <strong>reconcile</strong> with actual usage afterwards and refund the difference.</li><li>Hard and soft quotas: warn at 80 percent, throttle or fall back to a cheaper model at 100 percent, with configurable overage rules.</li><li>Use weighted fair queuing or per-tenant concurrency caps so one noisy tenant cannot consume the shared provider capacity.</li></ul>
+<h4>Caching</h4>
+<ul><li><strong>Exact-match cache</strong>: hash of normalised prompt, model and parameters. Safe, and works well for repeated system prompts and deterministic calls.</li><li><strong>Semantic cache</strong>: embed the prompt and return a stored answer when similarity exceeds a threshold. It saves cost but risks wrong answers for near-duplicate questions, so apply it only to suitable use cases, with high thresholds, per-tenant keys and short expiry. Never share caches across tenants with private data.</li><li>Support provider <strong>prompt caching</strong> by keeping long stable prefixes at the start of prompts.</li></ul>
+<h4>Semantic routing</h4>
+<p>Classify each request (a small model, rules or embeddings) by complexity and task type: send simple extraction or classification to a small cheap model and hard reasoning to a stronger one. Add <strong>fallbacks</strong> on errors or timeouts, health-aware load balancing across providers, and A/B routing for evaluation. Measure quality with offline evals so routing does not silently degrade answers.</p>
+<h4>Operations</h4>
+<p>Per-tenant dashboards and cost alerts, audit logs, secrets isolation, and region pinning for data residency. Keep the gateway stateless, scale horizontally, and design for provider outages.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How would you design token-based rate limiting when output length is unknown in advance?</li><li>What are the risks of semantic caching and how do you limit them?</li><li>How would you route between a cheap and an expensive model?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-96">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-96%3A+Design+a+multi-tenant+LLM+API+gateway+featuring+token+budgeting%2C%E2%80%A6&amp;question-id=ml-96&amp;context=ML+%2F+AI+engineer%2C+Gear+4%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-96.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

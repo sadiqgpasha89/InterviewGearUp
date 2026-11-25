@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you audit and harden Kubernetes RBAC to prevent excessive ClusterRoleBinding permissions? | InterviewGearUp</title>
+<meta name="description" content="Audit RBAC by listing who holds powerful roles, especially cluster-admin and ClusterRoleBindings, then remove wildcard verbs and resources, replace…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-47.html">
+<meta property="og:title" content="How do you audit and harden Kubernetes RBAC to prevent excessive ClusterRoleBinding permissions? | InterviewGearUp">
+<meta property="og:description" content="Audit RBAC by listing who holds powerful roles, especially cluster-admin and ClusterRoleBindings, then remove wildcard verbs and resources, replace…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-47.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you audit and harden Kubernetes RBAC to prevent excessive ClusterRoleBinding permissions?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · Kubernetes · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Audit RBAC by listing who holds powerful roles, especially cluster-admin and ClusterRoleBindings, then remove wildcard verbs and resources, replace cluster-wide bindings with namespaced RoleBindings, avoid permissions that allow privilege escalation (create pods, bind, escalate, impersonate, read secrets), use dedicated service accounts and review regularly with automated tools.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why it matters</h4>
+<p>In Kubernetes, authorisation is <strong>additive</strong> (no deny rules). Over-broad bindings, especially cluster-wide ones, are a common route to full cluster takeover after one pod or token is compromised.</p>
+<h4>Audit steps</h4>
+<pre><code>kubectl get clusterrolebindings -o wide
+kubectl auth can-i --list --as=system:serviceaccount:app:web -n app
+kubectl get clusterrolebindings -o json | jq &#39;.items[] | select(.roleRef.name==&quot;cluster-admin&quot;) | .subjects&#39;</code></pre>
+<p>Look for:</p>
+<ul><li><strong>cluster-admin</strong> bound to users, groups or service accounts that should not have it, including <code>system:authenticated</code> or <code>system:unauthenticated</code>.</li><li><strong>Wildcards</strong> (<code>verbs: [&quot;*&quot;]</code>, <code>resources: [&quot;*&quot;]</code>, <code>apiGroups: [&quot;*&quot;]</code>).</li><li>Risky verbs and resources: <code>secrets</code> (get, list, watch), <code>pods/exec</code>, <code>create pods</code> (can mount any service account or hostPath), <code>escalate</code>, <code>bind</code>, <code>impersonate</code>, modifying <code>roles</code>, <code>rolebindings</code> or admission webhooks, <code>nodes/proxy</code>.</li><li>Default service accounts in use, and tokens automatically mounted into pods that do not call the API.</li></ul>
+<h4>Hardening</h4>
+<ol start="1"><li><strong>Least privilege</strong>: grant specific verbs on specific resources, using <strong>Roles and RoleBindings</strong> scoped to a namespace rather than ClusterRoles bound cluster-wide.</li><li><strong>One service account per workload</strong>, <code>automountServiceAccountToken: false</code> unless needed, and short-lived bound tokens.</li><li><strong>Humans</strong> authenticate through OIDC single sign-on, mapped to groups; avoid shared admin credentials and long-lived client certificates. Use break-glass procedures with logging.</li><li><strong>Remove stale</strong> bindings, and review as part of change management (RBAC as code in Git).</li><li>Enable <strong>audit logging</strong> and alert on use of powerful permissions.</li></ol>
+<h4>Tools</h4>
+<p><code>kubectl-who-can</code>, <code>rbac-lookup</code>, <strong>KubiScan</strong>, <strong>rakkess</strong>, <strong>Kubescape</strong>, <strong>kube-bench</strong>, and policy engines (Kyverno, Gatekeeper) to block dangerous roles.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is permission to create pods or read secrets effectively a path to cluster admin?</li><li>How do you find unused permissions to remove?</li><li>How should human users authenticate and map to RBAC groups?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-47">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-47%3A+How+do+you+audit+and+harden+Kubernetes+RBAC+to+prevent+excessive%E2%80%A6&amp;question-id=sec-47&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+Kubernetes%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-47.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How would you set up an SRE practice and reliability targets for an organisation with many services? | InterviewGearUp</title>
+<meta name="description" content="Start by classifying services by criticality, define SLIs and SLOs with product owners for the critical ones, adopt error budgets with a clear policy for…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-118.html">
+<meta property="og:title" content="How would you set up an SRE practice and reliability targets for an organisation with many services? | InterviewGearUp">
+<meta property="og:description" content="Start by classifying services by criticality, define SLIs and SLOs with product owners for the critical ones, adopt error budgets with a clear policy for…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-118.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How would you set up an SRE practice and reliability targets for an organisation with many services?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 4 (Lead / Staff) · SRE · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Start by classifying services by criticality, define SLIs and SLOs with product owners for the critical ones, adopt error budgets with a clear policy for what happens when they are spent, build shared tooling and on-call and incident processes, and choose an engagement model such as embedded SREs or a consulting team. Scale by teaching and automation, not by absorbing all operations.</p></div>
+<h4>Explained in depth</h4>
+<h4>Principles</h4>
+<p>Reliability is a feature with a cost. The goal is the <strong>right</strong> reliability for each service, not the highest. SREs apply software engineering to operations: automation, measurement and design for failure.</p>
+<h4>Steps</h4>
+<ol start="1"><li><strong>Tier services</strong> (critical, important, best effort) by business impact and dependencies. Not everything needs 99.99 percent.</li><li><strong>Define SLIs and SLOs</strong> with product owners: user-facing indicators (availability of successful requests, latency at percentiles, freshness), measured at the edge or load balancer, with a window such as 28 days. Example: 99.9 percent of requests succeed in under 300 ms.</li><li><strong>Error budgets</strong>: the allowed unreliability (0.1 percent over 28 days is about 40 minutes). Write a <strong>policy</strong> that is agreed with leadership: while budget remains, ship features; when exhausted, prioritise reliability work and slow risky changes. Use <strong>burn-rate alerts</strong> (multi-window) to page on fast consumption.</li><li><strong>Operational foundations</strong>: observability standards, alerting on symptoms, on-call rotations with escalation, runbooks, <strong>incident management</strong> (roles, severity levels, status communication) and <strong>blameless postmortems</strong> with tracked actions.</li><li><strong>Engineering reliability</strong>: capacity planning, load testing, graceful degradation, safe rollouts (canaries, automated rollback), disaster recovery drills and chaos experiments.</li><li><strong>Toil reduction</strong>: measure the share of time spent on manual repetitive work (cap around 50 percent), and invest in automation.</li></ol>
+<h4>Engagement models</h4>
+<ul><li><strong>Embedded SREs</strong> in critical product teams.</li><li>A <strong>central SRE or platform team</strong> providing tooling, standards and consulting, and taking on the most critical services with a <strong>production readiness review</strong> that the service must pass (and can lose, if its reliability falls and the team does not fix it).</li><li><strong>&quot;You build it, you run it&quot;</strong> with SRE coaching for the long tail.</li></ul>
+<h4>Measure and improve</h4>
+<p>Track SLO attainment, incident count and time to detect and restore, error budget consumption, toil, and on-call load. Review quarterly with leadership, and adjust targets with evidence.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What should the error budget policy say when a budget is exhausted?</li><li>How do you decide which services deserve a dedicated SRE?</li><li>How do you reduce toil and measure it?</li></ul>
+<p><a class="btn primary" href="../#/q/do-118">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-118%3A+How+would+you+set+up+an+SRE+practice+and+reliability+targets+for+an%E2%80%A6&amp;question-id=do-118&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+4%2C+topic%3A+SRE%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-118.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

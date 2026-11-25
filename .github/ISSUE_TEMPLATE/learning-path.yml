@@ -1,0 +1,30 @@
+name: Suggest a learning path
+description: Propose an ordered study path for others. Maintainers review it before it can become a starter path.
+title: "[Learning path] "
+labels: ["learning-path"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Export your path from the Learning paths page (Export as file) and paste the file contents below.
+        A path is only a list of existing question ids in order, with a title and a short note. Do not include confidential or NDA material.
+  - type: input
+    id: audience
+    attributes:
+      label: Who is this path for?
+      description: For example "backend, mid-level, preparing in two weeks".
+    validations:
+      required: true
+  - type: textarea
+    id: path
+    attributes:
+      label: Path file contents
+      render: json
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why this order?
+    validations:
+      required: false

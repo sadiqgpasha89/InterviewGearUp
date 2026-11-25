@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Define Service Level Indicators (SLI), Service Level Objectives (SLO), and Service Level Agreements (SLA). | InterviewGearUp</title>
+<meta name="description" content="An SLI is a measured indicator of service quality, such as the share of requests that succeed within 300 ms. An SLO is the internal target for that SLI…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-53.html">
+<meta property="og:title" content="Define Service Level Indicators (SLI), Service Level Objectives (SLO), and Service Level Agreements (SLA). | InterviewGearUp">
+<meta property="og:description" content="An SLI is a measured indicator of service quality, such as the share of requests that succeed within 300 ms. An SLO is the internal target for that SLI…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-53.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Define Service Level Indicators (SLI), Service Level Objectives (SLO), and Service Level Agreements (SLA).</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 2 (Mid-level) · Observability · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>An SLI is a measured indicator of service quality, such as the share of requests that succeed within 300 ms. An SLO is the internal target for that SLI over a window, such as 99.9% over 30 days. An SLA is a contractual promise to customers with penalties, normally set looser than the SLO. The gap between 100% and the SLO is the error budget.</p></div>
+<h4>Explained in depth</h4>
+<h4>The three terms</h4>
+<ul><li><strong>SLI (indicator)</strong>: a number you measure, best expressed as <code>good events / valid events</code>. Examples: successful requests over all requests, requests faster than 300 ms over all requests, jobs that finish on time.</li><li><strong>SLO (objective)</strong>: the target for the SLI over a time window, such as 99.9% of requests succeed over a rolling 30 days. It is an engineering decision that balances reliability against cost and speed of change.</li><li><strong>SLA (agreement)</strong>: a business contract that says what happens (credits, refunds) if the service falls below a stated level. Set it <strong>below</strong> the SLO so you hear about trouble before you owe money.</li></ul>
+<h4>Error budget</h4>
+<p>Budget = 100% minus the SLO. A 99.9% SLO over 30 days allows about <strong>43 minutes</strong> of failure (30 days x 24 hours x 60 minutes x 0.1%). While there is budget left, the team can ship quickly; if it is exhausted, they slow releases and focus on reliability.</p>
+<h4>Choosing good SLIs</h4>
+<ul><li>Measure what <strong>users</strong> experience on key journeys (checkout, login), not internal CPU numbers.</li><li>Use <strong>percentiles</strong> (p95, p99) for latency, not averages, which hide slow tails.</li><li>Measure at the edge, such as the load balancer or the client, so failures upstream are visible.</li><li>Keep to a few SLIs per service: availability, latency, and where relevant correctness or freshness.</li></ul>
+<h4>Alerting</h4>
+<p>Alert on <strong>burn rate</strong>, how quickly the budget is being consumed, with fast and slow windows, instead of on every error spike. That means you page for real user impact and not for noise.</p>
+<p>Do not aim for 100%: it is unattainable, extremely costly and stops all change.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How would you pick the SLO for a new service with no history?</li><li>How does burn-rate alerting differ from threshold alerting?</li><li>What should happen when a team has used up its error budget?</li></ul>
+<p><a class="btn primary" href="../#/q/do-53">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-53%3A+Define+Service+Level+Indicators+%28SLI%29%2C+Service+Level+Objectives%E2%80%A6&amp;question-id=do-53&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+2%2C+topic%3A+Observability%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-53.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How would you design a CI/CD platform that serves 500 engineers and thousands of repositories? | InterviewGearUp</title>
+<meta name="description" content="Provide golden-path pipeline templates, elastic ephemeral runners, aggressive caching and test selection, security gates built in, progressive delivery…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-113.html">
+<meta property="og:title" content="How would you design a CI/CD platform that serves 500 engineers and thousands of repositories? | InterviewGearUp">
+<meta property="og:description" content="Provide golden-path pipeline templates, elastic ephemeral runners, aggressive caching and test selection, security gates built in, progressive delivery…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-113.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How would you design a CI/CD platform that serves 500 engineers and thousands of repositories?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 4 (Lead / Staff) · Platform · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Provide golden-path pipeline templates, elastic ephemeral runners, aggressive caching and test selection, security gates built in, progressive delivery and environment promotion with approvals, and self-service onboarding. Measure queue time, build time and failure rate, give platform support, and keep the paved road easier than custom pipelines without blocking special cases.</p></div>
+<h4>Explained in depth</h4>
+<h4>Goals</h4>
+<p>Fast feedback (pull request checks in under 10 minutes), safe and frequent deployments, security and compliance by default, low operating burden, and clear ownership.</p>
+<h4>Architecture</h4>
+<ol start="1"><li><strong>Source and triggers</strong>: Git hosting with required checks, branch protection and code owners; webhook events trigger pipelines.</li><li><strong>Pipeline definition</strong>: reusable <strong>templates</strong> (GitHub reusable workflows, GitLab includes, Jenkins shared libraries, Tekton tasks). A repository declares what it is (&quot;Java service&quot;, &quot;React app&quot;) and inherits build, test, scan, package and deploy stages, overriding only what is needed. Versioned templates with release notes and automated upgrade pull requests.</li><li><strong>Compute</strong>: <strong>ephemeral runners</strong> on Kubernetes or autoscaled VMs (Actions Runner Controller, GitLab runners), sized pools (small, large, GPU, macOS), spot instances for cost, and clean isolation per job so no state or credentials leak between builds.</li><li><strong>Speed</strong>: dependency and layer <strong>caches</strong>, remote build cache (Bazel, Nx, Gradle), <strong>affected-only</strong> builds and test selection, test sharding and parallelism, prebuilt base images.</li><li><strong>Artifacts</strong>: an artifact registry for packages and images with immutability, retention, provenance and SBOMs.</li><li><strong>Security</strong>: secret scanning, SAST and dependency scans, image scanning, signing (Sigstore/cosign), policy as code, OIDC to clouds (no static keys), and least-privilege runners.</li><li><strong>Delivery</strong>: environment promotion (dev, staging, production), <strong>GitOps</strong> (Argo CD) or deploy jobs, canary and blue-green with automated rollback, change records for audit.</li></ol>
+<h4>Operating it</h4>
+<ul><li><strong>SLOs</strong>: queue time, pipeline duration, success rate (excluding genuine test failures), runner availability. Dashboards per team.</li><li>Capacity management and cost attribution by team (FinOps).</li><li>Support: documentation, chat support, office hours, and a <strong>self-service</strong> onboarding that creates a pipeline in minutes.</li><li>Governance: required checks for compliance, exceptions through review, and deprecation policy for old templates.</li></ul>
+<h4>Anti-patterns</h4>
+<p>Mandated one-size-fits-all pipelines that block teams, snowflake Jenkins servers, long-lived static runners with shared credentials, and ignoring flaky tests that erode trust.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you keep pipeline templates flexible without everyone forking them?</li><li>How do you scale and secure the build runners?</li><li>What metrics tell you the platform is healthy?</li></ul>
+<p><a class="btn primary" href="../#/q/do-113">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-113%3A+How+would+you+design+a+CI%2FCD+platform+that+serves+500+engineers+and%E2%80%A6&amp;question-id=do-113&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+4%2C+topic%3A+Platform%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-113.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

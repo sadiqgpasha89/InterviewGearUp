@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare Distributed Data Parallel (DDP) with Fully Sharded Data Parallel (FSDP) for multi-GPU training. | InterviewGearUp</title>
+<meta name="description" content="DDP keeps a full copy of the model, gradients and optimizer states on every GPU and all-reduces gradients each step; it is fast and simple while the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-75.html">
+<meta property="og:title" content="Compare Distributed Data Parallel (DDP) with Fully Sharded Data Parallel (FSDP) for multi-GPU training. | InterviewGearUp">
+<meta property="og:description" content="DDP keeps a full copy of the model, gradients and optimizer states on every GPU and all-reduces gradients each step; it is fast and simple while the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-75.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare Distributed Data Parallel (DDP) with Fully Sharded Data Parallel (FSDP) for multi-GPU training.</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 4 (Lead / Staff) · Distributed · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>DDP keeps a full copy of the model, gradients and optimizer states on every GPU and all-reduces gradients each step; it is fast and simple while the model fits in memory. FSDP shards parameters, gradients and optimizer states across GPUs and gathers each layer&#39;s parameters just in time, so models far larger than one GPU can train, at the cost of more communication.</p></div>
+<h4>Explained in depth</h4>
+<div class="md-table"><table><thead><tr><th></th><th>DDP</th><th>FSDP</th></tr></thead><tbody><tr><td>Model, gradients, optimizer states per GPU</td><td>Full copy</td><td>Sharded, about 1/N each</td></tr><tr><td>Communication per step</td><td>All-reduce of gradients</td><td>All-gather of parameters (forward and backward) plus reduce-scatter of gradients</td></tr><tr><td>Relative communication</td><td>1x</td><td>About 1.5x</td></tr><tr><td>Max model size</td><td>Must fit on one GPU, with activations</td><td>Scales with the number of GPUs</td></tr><tr><td>Complexity</td><td>Low</td><td>Higher (wrapping, sharding strategy)</td></tr></tbody></table></div>
+<h4>DDP</h4>
+<p>Each process holds the whole model. During the backward pass, gradients are grouped into buckets and all-reduced while computation continues, so most of the communication is hidden. With mixed precision and Adam, model states take roughly 16 bytes per parameter (weights, gradients, fp32 master weights and two moments), so a 7B model needs about 112 GB for states alone, which does not fit on one 80 GB GPU.</p>
+<h4>FSDP</h4>
+<p>Equivalent to ZeRO stage 3. Parameters are split into units (often one transformer block). Before a unit runs forward or backward, FSDP <strong>all-gathers</strong> its parameters, uses them, then frees them. Gradients are <strong>reduce-scattered</strong> so each GPU keeps only its shard, and the optimizer updates only that shard. Memory is roughly the sharded states plus the activations and the full parameters of one unit at a time. Prefetching overlaps the next all-gather with the current compute.</p>
+<h4>Tuning and options</h4>
+<ul><li><strong>Wrapping policy</strong>: unit size trades memory against communication efficiency.</li><li><strong>Activation checkpointing</strong> to cut activation memory, <strong>CPU offload</strong> for even larger models, and mixed precision to halve memory and traffic.</li><li><strong>Hybrid sharding</strong>: shard inside a node (fast NVLink) and replicate across nodes, reducing slow inter-node traffic.</li></ul>
+<h4>Choosing</h4>
+<p>If the model fits, use <strong>DDP</strong>: it is faster and easier to debug. Use <strong>FSDP</strong> when memory is the limit. A fast interconnect matters much more for FSDP.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does FSDP need roughly 1.5 times the communication of DDP?</li><li>What is hybrid sharding and when does it help?</li><li>How does activation checkpointing complement FSDP?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-75">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-75%3A+Compare+Distributed+Data+Parallel+%28DDP%29+with+Fully+Sharded+Data%E2%80%A6&amp;question-id=ml-75&amp;context=ML+%2F+AI+engineer%2C+Gear+4%2C+topic%3A+Distributed%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-75.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

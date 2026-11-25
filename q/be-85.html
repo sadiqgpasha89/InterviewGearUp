@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does mutual TLS (mTLS) provide service-to-service authentication and encryption in a zero-trust mesh? | InterviewGearUp</title>
+<meta name="description" content="In mutual TLS both sides present certificates and verify each other, so a service proves who it is as well as the server. This gives encrypted traffic…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-85.html">
+<meta property="og:title" content="How does mutual TLS (mTLS) provide service-to-service authentication and encryption in a zero-trust mesh? | InterviewGearUp">
+<meta property="og:description" content="In mutual TLS both sides present certificates and verify each other, so a service proves who it is as well as the server. This gives encrypted traffic…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-85.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does mutual TLS (mTLS) provide service-to-service authentication and encryption in a zero-trust mesh?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 4 (Lead / Staff) · Security · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>In mutual TLS both sides present certificates and verify each other, so a service proves who it is as well as the server. This gives encrypted traffic and a cryptographic workload identity for authorisation, without passwords or tokens. In a service mesh, sidecars or proxies handle certificate issuance and rotation automatically.</p></div>
+<h4>Explained in depth</h4>
+<h4>Plain TLS versus mutual TLS</h4>
+<p>In ordinary TLS only the server presents a certificate, and the client checks it. In <strong>mTLS</strong> the server also <strong>requests a client certificate</strong> and verifies that it is signed by a trusted certificate authority (CA). Both ends prove their identity during the handshake, and all traffic is encrypted.</p>
+<h4>Why it fits zero trust</h4>
+<p>Zero trust assumes the network is hostile, so being inside the cluster is not proof of identity. With mTLS:</p>
+<ul><li>A service authenticates the <strong>caller&#39;s identity</strong> (for example a SPIFFE ID) and can apply policy: only the checkout service may call the payment service.</li><li>Traffic cannot be read or altered on the wire, and impersonation requires a private key signed by the CA.</li></ul>
+<h4>In a service mesh (Istio, Linkerd)</h4>
+<ul><li>A control plane acts as a CA and issues <strong>short-lived workload certificates</strong> (hours) to each sidecar.</li><li>Sidecars perform the handshake, so application code stays unchanged.</li><li><strong>Rotation</strong> is automatic; no one manages long-lived keys.</li><li>Authorisation policies match on the verified identity.</li></ul>
+<h4>Operational points</h4>
+<ul><li>Keep the CA root protected and plan its rotation.</li><li>Monitor certificate expiry and clock skew; expired certificates cause outages.</li><li>mTLS proves <strong>which service</strong> is calling, not that the request is permitted; combine with authorisation rules, and still authenticate end users separately (for example with JWTs).</li><li>The handshake adds CPU and latency, mitigated by connection reuse.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How do short-lived certificates reduce the risk of key theft?</li><li>What is SPIFFE and how does it relate to mTLS identities?</li><li>What breaks when certificates expire and how do you avoid it?</li></ul>
+<p><a class="btn primary" href="../#/q/be-85">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-85%3A+How+does+mutual+TLS+%28mTLS%29+provide+service-to-service+authentication%E2%80%A6&amp;question-id=be-85&amp;context=Backend+engineer%2C+Gear+4%2C+topic%3A+Security%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-85.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

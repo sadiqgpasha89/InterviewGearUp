@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare recursion and iteration: Call stack frames, memory overhead, and tail call optimization (TCO). | InterviewGearUp</title>
+<meta name="description" content="Recursion expresses a problem in terms of smaller versions of itself and pays for it with one stack frame per call, so memory grows with depth and deep…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-41.html">
+<meta property="og:title" content="Compare recursion and iteration: Call stack frames, memory overhead, and tail call optimization (TCO). | InterviewGearUp">
+<meta property="og:description" content="Recursion expresses a problem in terms of smaller versions of itself and pays for it with one stack frame per call, so memory grows with depth and deep…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-41.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare recursion and iteration: Call stack frames, memory overhead, and tail call optimization (TCO).</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 1 (Junior) · Algorithms · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Recursion expresses a problem in terms of smaller versions of itself and pays for it with one stack frame per call, so memory grows with depth and deep recursion can overflow the stack. Iteration reuses one frame and loops. Tail call optimization lets some languages reuse the frame when the recursive call is the last action, but Python and Java do not do this.</p></div>
+<h4>Explained in depth</h4>
+<h4>Costs</h4>
+<ul><li><strong>Recursion</strong>: each call pushes a frame holding arguments, locals and a return address. Depth n means O(n) stack space. A stack of typically 1 MB to 8 MB can hold only some thousands to hundreds of thousands of frames, so very deep recursion raises a stack overflow error.</li><li><strong>Iteration</strong>: a loop uses constant extra space and avoids call overhead.</li></ul>
+<h4>Tail calls</h4>
+<p>A call is in <strong>tail position</strong> when nothing remains to do after it returns.</p>
+<pre><code>def fact(n, acc=1):
+    if n &lt;= 1:
+        return acc
+    return fact(n - 1, acc * n)   # tail call</code></pre>
+<p>A compiler with <strong>tail call optimization</strong> can jump instead of pushing a new frame, giving O(1) stack. Scheme requires it, and Scala and Kotlin can do it for self-recursive functions with a keyword or annotation. <strong>Python and Java do not</strong> perform TCO, so convert such code to a loop.</p>
+<h4>Choosing</h4>
+<p>Prefer recursion for naturally recursive structures such as trees, divide and conquer and backtracking, where it is clearer. Prefer iteration for simple linear loops, very deep inputs and performance-sensitive code. Any recursion can be turned into iteration with an explicit stack.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you convert a recursive DFS into an iterative one?</li><li>What is a tail call and which languages guarantee TCO?</li><li>When is recursion clearly the better choice?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-41">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-41%3A+Compare+recursion+and+iteration%3A+Call+stack+frames%2C+memory+overhead%2C%E2%80%A6&amp;question-id=gen-41&amp;context=Software+engineer+%28core%29%2C+Gear+1%2C+topic%3A+Algorithms%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-41.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

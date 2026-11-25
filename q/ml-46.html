@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does Direct Preference Optimization (DPO) eliminate the separate reward model required by PPO? | InterviewGearUp</title>
+<meta name="description" content="DPO shows that the policy trained under a KL-constrained reward objective implicitly defines its own reward, as beta times the log ratio of the policy to…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-46.html">
+<meta property="og:title" content="How does Direct Preference Optimization (DPO) eliminate the separate reward model required by PPO? | InterviewGearUp">
+<meta property="og:description" content="DPO shows that the policy trained under a KL-constrained reward objective implicitly defines its own reward, as beta times the log ratio of the policy to…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-46.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does Direct Preference Optimization (DPO) eliminate the separate reward model required by PPO?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 4 (Lead / Staff) · LLMs · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>DPO shows that the policy trained under a KL-constrained reward objective implicitly defines its own reward, as beta times the log ratio of the policy to the reference model. Substituting that into the Bradley-Terry preference model gives a simple loss on chosen versus rejected responses, so no separate reward model, value model or on-policy sampling loop is needed.</p></div>
+<h4>Explained in depth</h4>
+<h4>The RLHF pipeline it replaces</h4>
+<p>Supervised fine-tuning, then train a <strong>reward model</strong> on preference pairs (chosen y_w, rejected y_l), then optimise the policy with PPO to maximise reward while a KL penalty keeps it near a reference model. PPO needs the policy, a frozen reference, a reward model and a value model, plus sampling from the policy, and is sensitive to tuning.</p>
+<h4>The key step</h4>
+<p>The KL-regularised objective <code>max E[r(x, y)] - beta * KL(pi || pi_ref)</code> has a closed-form optimal policy:</p>
+<pre><code>pi*(y|x) = pi_ref(y|x) * exp(r(x, y) / beta) / Z(x)</code></pre>
+<p>Rearranged, the reward can be written in terms of the policy: <code>r(x, y) = beta * log( pi*(y|x) / pi_ref(y|x) ) + beta * log Z(x)</code>. In the Bradley-Terry model, preferences depend only on the <strong>difference</strong> of rewards for two responses to the same prompt, so the intractable <code>log Z(x)</code> term cancels.</p>
+<h4>The DPO loss</h4>
+<pre><code>L = -log sigmoid( beta * [ log(pi(y_w|x)/pi_ref(y_w|x)) - log(pi(y_l|x)/pi_ref(y_l|x)) ] )</code></pre>
+<p>It raises the likelihood of the chosen response relative to the rejected one, measured against the reference model. Training is ordinary supervised learning on a fixed preference dataset, needing only the policy and a frozen reference (whose log-probabilities can be precomputed).</p>
+<h4>Role of beta and limits</h4>
+<ul><li>Beta controls how far the policy may move from the reference; small values allow larger changes.</li><li>It is <strong>offline</strong>: it learns from fixed data, so quality and coverage of preferences matter, and it may not match online RL on harder tasks.</li><li>Known issues: the likelihood of both chosen and rejected answers can fall, length bias, and overfitting a small dataset. Variants such as IPO, KTO and SimPO address some of these.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does the partition function cancel in the Bradley-Terry derivation?</li><li>What does the reference model do in the DPO loss?</li><li>When might PPO-style online training still be preferable?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-46">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-46%3A+How+does+Direct+Preference+Optimization+%28DPO%29+eliminate+the+separate%E2%80%A6&amp;question-id=ml-46&amp;context=ML+%2F+AI+engineer%2C+Gear+4%2C+topic%3A+LLMs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-46.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

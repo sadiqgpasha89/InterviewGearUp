@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain precision, recall and F1. When do you prefer each? | InterviewGearUp</title>
+<meta name="description" content="Precision is the share of predicted positives that are correct; recall is the share of actual positives you found. Favour recall when a miss is costly…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-2.html">
+<meta property="og:title" content="Explain precision, recall and F1. When do you prefer each? | InterviewGearUp">
+<meta property="og:description" content="Precision is the share of predicted positives that are correct; recall is the share of actual positives you found. Favour recall when a miss is costly…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-2.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain precision, recall and F1. When do you prefer each?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 1 (Junior) · Metrics · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Precision is the share of predicted positives that are correct; recall is the share of actual positives you found. Favour recall when a miss is costly (disease screening, fraud) and precision when false alarms are costly. F1 balances both.</p></div>
+<h4>Explained in depth</h4>
+<ul><li><strong>Precision</strong> = TP / (TP + FP)</li><li><strong>Recall</strong> = TP / (TP + FN)</li><li><strong>F1</strong> = harmonic mean of the two</li></ul>
+<p><strong>Why not accuracy?</strong> With 99% legitimate transactions, a model that always says &#39;not fraud&#39; scores 99% accuracy and catches nothing.</p>
+<p><strong>Threshold trade-off</strong>: lowering the decision threshold raises recall and lowers precision. Pick the threshold from the precision-recall curve and the real cost of each error type.</p>
+<p><strong>ROC-AUC versus PR-AUC</strong>: PR-AUC is more informative when positives are rare.</p>
+<p>For multi-class problems, macro averaging treats classes equally and micro averaging weights by frequency.</p>
+<p>Always frame it in business terms: what does a false positive cost compared with a false negative?</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is accuracy misleading on imbalanced data?</li><li>ROC curve versus precision-recall curve?</li><li>How do you choose the decision threshold?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-2">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-2%3A+Explain+precision%2C+recall+and+F1.+When+do+you+prefer+each%3F&amp;question-id=ml-2&amp;context=ML+%2F+AI+engineer%2C+Gear+1%2C+topic%3A+Metrics%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-2.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

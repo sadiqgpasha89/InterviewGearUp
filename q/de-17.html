@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is the Tungsten execution engine in Spark and how does whole-stage code generation work? | InterviewGearUp</title>
+<meta name="description" content="Tungsten is Spark&#39;s execution engine layer that manages memory in a compact binary format outside normal Java objects and generates optimised code.…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-17.html">
+<meta property="og:title" content="What is the Tungsten execution engine in Spark and how does whole-stage code generation work? | InterviewGearUp">
+<meta property="og:description" content="Tungsten is Spark&#39;s execution engine layer that manages memory in a compact binary format outside normal Java objects and generates optimised code.…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-17.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is the Tungsten execution engine in Spark and how does whole-stage code generation work?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Spark · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Tungsten is Spark&#39;s execution engine layer that manages memory in a compact binary format outside normal Java objects and generates optimised code. Whole-stage code generation fuses a chain of operators in a stage (scan, filter, project, aggregate) into one generated Java function with tight loops and values in CPU registers, removing virtual calls and intermediate row objects.</p></div>
+<h4>Explained in depth</h4>
+<h4>The problem with the classic iterator model</h4>
+<p>Each operator calls <code>next()</code> on its child for every row (the Volcano model). That means virtual function calls, boxed objects and poor CPU cache use. For simple operations, the call overhead exceeds the actual work.</p>
+<h4>Tungsten&#39;s pieces</h4>
+<ul><li><strong>Off-heap and binary memory management</strong>: rows are stored in a compact binary format (UnsafeRow) managed directly by Spark, so there is less garbage collection pressure and better memory density.</li><li><strong>Cache-aware computation</strong>: algorithms designed to use CPU caches effectively, for example for sorting and hashing.</li><li><strong>Whole-stage code generation</strong>: generates Java source for the whole pipeline and compiles it at runtime (with Janino).</li></ul>
+<h4>Whole-stage code generation</h4>
+<p>For <code>SELECT sum(x) FROM t WHERE y &gt; 5</code>, instead of separate iterator objects, Spark produces something like:</p>
+<pre><code>while (scan.hasNext()) {
+  row = scan.next();
+  if (row.getInt(1) &gt; 5) {        // filter inlined
+    sum += row.getLong(0);        // aggregation inlined
+  }
+}</code></pre>
+<p>The loop is simple enough for the JVM JIT to optimise and keeps data in registers, giving much better performance, close to hand-written code.</p>
+<h4>Seeing it</h4>
+<p><code>df.explain()</code> marks operators in a codegen stage with an asterisk and <code>WholeStageCodegen</code> ids. Operators that cannot be fused (for example some Python UDFs and some complex operators) break the stage.</p>
+<h4>Limits</h4>
+<p>Very large generated methods may exceed the JVM&#39;s size limit (64 KB), so Spark falls back to interpretation. Vectorised readers for Parquet and ORC process batches of column values for similar benefits at the scan.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you see which operators were included in whole-stage codegen?</li><li>Why can code generation be disabled for very wide or complex expressions?</li><li>How does vectorised Parquet reading relate to Tungsten?</li></ul>
+<p><a class="btn primary" href="../#/q/de-17">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-17%3A+What+is+the+Tungsten+execution+engine+in+Spark+and+how+does%E2%80%A6&amp;question-id=de-17&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Spark%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-17.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

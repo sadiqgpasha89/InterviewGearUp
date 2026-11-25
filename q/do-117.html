@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you upgrade Kubernetes safely across dozens of clusters with minimal disruption? | InterviewGearUp</title>
+<meta name="description" content="Treat upgrades as routine, automated work. Track the support window, read release notes and test deprecated API usage in advance, upgrade in order from…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-117.html">
+<meta property="og:title" content="How do you upgrade Kubernetes safely across dozens of clusters with minimal disruption? | InterviewGearUp">
+<meta property="og:description" content="Treat upgrades as routine, automated work. Track the support window, read release notes and test deprecated API usage in advance, upgrade in order from…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-117.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you upgrade Kubernetes safely across dozens of clusters with minimal disruption?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 4 (Lead / Staff) · Kubernetes · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Treat upgrades as routine, automated work. Track the support window, read release notes and test deprecated API usage in advance, upgrade in order from lowest-risk clusters to production, control plane first then node pools, use surge or blue-green node pools with PodDisruptionBudgets, validate with automated checks, and keep rollback paths and a regular cadence of small version steps.</p></div>
+<h4>Explained in depth</h4>
+<h4>Principles</h4>
+<ul><li>Kubernetes releases about three minor versions per year, and each is supported for roughly 14 months, so you must upgrade several times a year. <strong>Small, frequent upgrades are safer</strong> than rare big ones.</li><li>You upgrade <strong>one minor version at a time</strong> (1.29 to 1.30 to 1.31); the control plane first, then nodes (version skew policy allows nodes to lag slightly).</li></ul>
+<h4>Preparation</h4>
+<ol start="1"><li><strong>Inventory and plan</strong>: versions per cluster, add-ons (CNI, CoreDNS, ingress, CSI drivers, service mesh, operators) and their compatibility matrix.</li><li><strong>Deprecated API detection</strong>: tools such as <code>kubent</code>, <code>pluto</code> or <code>kubectl convert</code> and API server metrics (<code>apiserver_requested_deprecated_apis</code>) reveal manifests, Helm charts and operators using APIs removed in the target version. Fix them first.</li><li><strong>Test</strong>: upgrade a <strong>staging cluster</strong> that mirrors production and run smoke and end-to-end tests, load tests, and verify controllers and webhooks.</li><li>Check workload resilience: replicas of at least 2, correct <strong>PodDisruptionBudgets</strong>, readiness probes, graceful shutdown, no single-replica critical apps.</li></ol>
+<h4>Execution</h4>
+<ul><li><strong>Rollout waves</strong>: dev clusters, then staging, then a canary production cluster, then the rest by region or criticality, with soak time and abort criteria between waves.</li><li><strong>Control plane</strong>: managed services (EKS, GKE, AKS) upgrade it for you; self-managed upgrades take etcd backups first.</li><li><strong>Nodes</strong>: either <strong>in-place rolling</strong> with surge capacity, or <strong>blue-green node pools</strong> (create new pool at target version, cordon and drain old pool gradually, delete it). Replacement is cleaner and easier to roll back.</li><li>Automate with Cluster API, Terraform, or the provider&#39;s tooling, driven by GitOps and pipelines, so the process is repeatable.</li></ul>
+<h4>Validation and rollback</h4>
+<p>Health checks after each step (nodes ready, system pods healthy, error and latency SLOs), synthetic probes, and clear rollback criteria. Control plane downgrades are usually not possible, so rollback means moving workloads to the old node pool or restoring from backup.</p>
+<h4>Governance</h4>
+<p>A published upgrade calendar, communication to teams, and metrics such as percent of clusters within the supported window and time to complete a version rollout.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why can you not skip minor versions when upgrading Kubernetes?</li><li>How do you detect removed or deprecated APIs before upgrading?</li><li>When would you replace nodes instead of upgrading in place?</li></ul>
+<p><a class="btn primary" href="../#/q/do-117">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-117%3A+How+do+you+upgrade+Kubernetes+safely+across+dozens+of+clusters+with%E2%80%A6&amp;question-id=do-117&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+4%2C+topic%3A+Kubernetes%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-117.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

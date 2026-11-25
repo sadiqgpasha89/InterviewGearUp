@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is the Transactional Outbox pattern, and how does Change Data Capture (CDC) ensure reliability? | InterviewGearUp</title>
+<meta name="description" content="The outbox pattern solves the dual-write problem: a service cannot atomically update its database and publish to a broker. Instead it writes the business…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-45.html">
+<meta property="og:title" content="What is the Transactional Outbox pattern, and how does Change Data Capture (CDC) ensure reliability? | InterviewGearUp">
+<meta property="og:description" content="The outbox pattern solves the dual-write problem: a service cannot atomically update its database and publish to a broker. Instead it writes the business…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-45.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is the Transactional Outbox pattern, and how does Change Data Capture (CDC) ensure reliability?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · Architecture · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>The outbox pattern solves the dual-write problem: a service cannot atomically update its database and publish to a broker. Instead it writes the business change and an event row to an outbox table in one local transaction, and a separate relay, often a CDC tool like Debezium, publishes those rows to the broker at least once.</p></div>
+<h4>Explained in depth</h4>
+<h4>The problem</h4>
+<pre><code>db.save(order)        // succeeds
+broker.publish(event) // crash here: the event is lost, the order exists</code></pre>
+<p>Doing it in the other order can publish an event for a change that was rolled back. A distributed transaction across the database and broker is usually unavailable or too costly.</p>
+<h4>The pattern</h4>
+<ol start="1"><li>In <strong>one database transaction</strong>, insert the order and a row into <code>outbox(id, aggregate_id, type, payload, created_at)</code>.</li><li>A <strong>relay</strong> reads new outbox rows and publishes them to the broker, then marks or deletes them.</li></ol>
+<p>Relay options:</p>
+<ul><li><strong>Polling publisher</strong>: a job queries unsent rows. Simple, but adds load and latency.</li><li><strong>Log-based CDC</strong> (Debezium reading the WAL or binlog): low latency, no polling queries, commit order preserved. Debezium has an outbox event router that maps rows to topics.</li></ul>
+<h4>Guarantees and consequences</h4>
+<ul><li>Delivery is <strong>at least once</strong>: the relay can crash after publishing and before marking. Consumers must be <strong>idempotent</strong>, for example by tracking processed event ids (an inbox table).</li><li>Use the aggregate id as the message key so events for one entity stay in order.</li><li>Clean old outbox rows, or delete them as they are captured, to stop the table growing.</li><li>Keep event payloads versioned and stable; they are an API for other services.</li></ul>
+<h4>Where it fits</h4>
+<p>Reliable event publishing from services that own a database, as a building block for sagas and for keeping read models or other services in sync.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why must consumers be idempotent when using an outbox?</li><li>What are the pros and cons of polling versus log-based CDC for the relay?</li><li>How does the outbox pattern differ from a distributed transaction?</li></ul>
+<p><a class="btn primary" href="../#/q/be-45">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-45%3A+What+is+the+Transactional+Outbox+pattern%2C+and+how+does+Change+Data%E2%80%A6&amp;question-id=be-45&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-45.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

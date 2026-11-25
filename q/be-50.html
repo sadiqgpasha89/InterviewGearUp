@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is the PACELC theorem and how does it expand upon the CAP theorem during normal operation? | InterviewGearUp</title>
+<meta name="description" content="PACELC says: if there is a Partition, choose between Availability and Consistency (as in CAP); Else, during normal operation, choose between Latency and…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-50.html">
+<meta property="og:title" content="What is the PACELC theorem and how does it expand upon the CAP theorem during normal operation? | InterviewGearUp">
+<meta property="og:description" content="PACELC says: if there is a Partition, choose between Availability and Consistency (as in CAP); Else, during normal operation, choose between Latency and…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-50.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is the PACELC theorem and how does it expand upon the CAP theorem during normal operation?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 4 (Lead / Staff) · Distributed systems · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>PACELC says: if there is a Partition, choose between Availability and Consistency (as in CAP); Else, during normal operation, choose between Latency and Consistency. It adds that replication forces a trade-off even when nothing is failing: waiting for replicas to agree costs latency, while answering from one replica risks stale reads.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why CAP is not enough</h4>
+<p>CAP only describes behaviour during a network partition, which is rare. Most of the time, the design question is different: <strong>how many replicas must a request wait for?</strong></p>
+<ul><li>Synchronous replication or quorum reads and writes give stronger consistency but add latency, including cross-region round trips.</li><li>Answering from the nearest replica or acknowledging before replication is fast, but a reader may see old data.</li></ul>
+<p>PACELC states both choices: <strong>P</strong>artition: A or C; <strong>E</strong>lse: L or C.</p>
+<h4>Examples (commonly cited, and often configurable)</h4>
+<div class="md-table"><table><thead><tr><th>System</th><th>During a partition</th><th>Normally</th></tr></thead><tbody><tr><td>Dynamo-style stores such as Cassandra (default settings)</td><td>Availability</td><td>Latency (PA/EL)</td></tr><tr><td>Google Spanner, HBase</td><td>Consistency</td><td>Consistency (PC/EC)</td></tr><tr><td>Yahoo PNUTS</td><td>Consistency</td><td>Latency (PC/EL)</td></tr></tbody></table></div>
+<p>Many databases are tunable: Cassandra&#39;s consistency levels (ONE, QUORUM, ALL) or DynamoDB&#39;s strongly consistent reads move a request along the latency-consistency axis per query.</p>
+<h4>How to use it in an interview</h4>
+<p>Start from the business requirement: a shopping cart can accept stale reads (EL), a bank balance or inventory reservation usually cannot (EC). Then name what you pay: cross-region synchronous replication might add tens or hundreds of milliseconds, and a partition may make some operations unavailable. Note that the labels are simplifications: real systems offer different guarantees per operation.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Where would you place a multi-region system with strong reads and why does that cost latency?</li><li>How do quorum settings (R + W &gt; N) trade latency for consistency?</li><li>Which parts of an e-commerce system can tolerate EL and which cannot?</li></ul>
+<p><a class="btn primary" href="../#/q/be-50">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-50%3A+What+is+the+PACELC+theorem+and+how+does+it+expand+upon+the+CAP%E2%80%A6&amp;question-id=be-50&amp;context=Backend+engineer%2C+Gear+4%2C+topic%3A+Distributed+systems%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-50.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

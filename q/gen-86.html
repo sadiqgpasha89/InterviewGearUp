@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are atomic operations and Compare-And-Swap (CAS) instructions in lock-free programming? | InterviewGearUp</title>
+<meta name="description" content="An atomic operation completes as a single indivisible step that other threads cannot observe half done. Compare-And-Swap (CAS) is a hardware instruction…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-86.html">
+<meta property="og:title" content="What are atomic operations and Compare-And-Swap (CAS) instructions in lock-free programming? | InterviewGearUp">
+<meta property="og:description" content="An atomic operation completes as a single indivisible step that other threads cannot observe half done. Compare-And-Swap (CAS) is a hardware instruction…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-86.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are atomic operations and Compare-And-Swap (CAS) instructions in lock-free programming?</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 3 (Senior) · Systems · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>An atomic operation completes as a single indivisible step that other threads cannot observe half done. Compare-And-Swap (CAS) is a hardware instruction that sets a memory location to a new value only if it still holds the expected value, returning whether it succeeded. Lock-free algorithms retry CAS in a loop instead of holding a lock.</p></div>
+<h4>Explained in depth</h4>
+<h4>Atomics</h4>
+<p>An increment like <code>counter += 1</code> is really read, add, write. Two threads can interleave and lose an update. Atomic types (<code>AtomicInteger</code>, C++ <code>std::atomic</code>) make the read-modify-write one indivisible step, using CPU instructions such as <code>LOCK XADD</code> or a CAS loop.</p>
+<h4>CAS</h4>
+<p><code>CAS(address, expected, new)</code> does the following atomically: if <code>*address == expected</code> then <code>*address = new</code> and return true; else return false.</p>
+<pre><code>AtomicInteger counter = new AtomicInteger();
+int old, next;
+do {
+    old = counter.get();
+    next = old + 1;
+} while (!counter.compareAndSet(old, next));   // retry if another thread changed it</code></pre>
+<h4>Lock-free stack push</h4>
+<p>Read the head, set <code>node.next = head</code>, then CAS the head from the old value to the new node; on failure, someone else pushed first, so retry. No thread can block others by being suspended while holding a lock.</p>
+<h4>ABA problem</h4>
+<p>A location changes from A to B and back to A; a CAS sees A and succeeds although the structure changed in between (for example a node was popped, freed and reused). Fixes are <strong>version tags</strong> (a counter paired with the pointer), hazard pointers or garbage collection.</p>
+<h4>Trade-offs</h4>
+<p>Lock-free code avoids deadlock and priority inversion and scales on moderate contention. It is difficult to design and verify, and under heavy contention many failed CAS retries waste CPU. Use well-tested library structures rather than writing your own.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the ABA problem and how do you avoid it?</li><li>How do lock-free, wait-free and obstruction-free guarantees differ?</li><li>Why can a lock-free design still be slower than a mutex under heavy contention?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-86">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-86%3A+What+are+atomic+operations+and+Compare-And-Swap+%28CAS%29+instructions%E2%80%A6&amp;question-id=gen-86&amp;context=Software+engineer+%28core%29%2C+Gear+3%2C+topic%3A+Systems%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-86.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

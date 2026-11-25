@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does Huffman Coding build an optimal prefix-free binary tree for lossless data compression? | InterviewGearUp</title>
+<meta name="description" content="Huffman coding builds a prefix-free binary code that gives frequent symbols short codes. Put every symbol in a min-heap by frequency, repeatedly merge…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-50.html">
+<meta property="og:title" content="How does Huffman Coding build an optimal prefix-free binary tree for lossless data compression? | InterviewGearUp">
+<meta property="og:description" content="Huffman coding builds a prefix-free binary code that gives frequent symbols short codes. Put every symbol in a min-heap by frequency, repeatedly merge…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-50.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does Huffman Coding build an optimal prefix-free binary tree for lossless data compression?</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 3 (Senior) · Algorithms · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Huffman coding builds a prefix-free binary code that gives frequent symbols short codes. Put every symbol in a min-heap by frequency, repeatedly merge the two lowest-frequency nodes into a parent whose weight is their sum, and when one tree remains, read each code from the root-to-leaf path. It is optimal among symbol-by-symbol prefix codes.</p></div>
+<h4>Explained in depth</h4>
+<h4>Algorithm</h4>
+<ol start="1"><li>Count the frequency of each symbol.</li><li>Create a leaf per symbol and put them in a <strong>min-heap</strong> by frequency.</li><li>Pop the two smallest nodes, create a parent with their combined weight, and push it back.</li><li>Repeat until one node remains: the root.</li><li>Assign <code>0</code> to each left edge and <code>1</code> to each right edge; a symbol&#39;s code is the path from the root to its leaf.</li></ol>
+<pre><code>import heapq, itertools
+
+def huffman(freqs):                       # freqs: {symbol: count}
+    tie = itertools.count()
+    heap = [(f, next(tie), s) for s, f in freqs.items()]
+    heapq.heapify(heap)
+    while len(heap) &gt; 1:
+        f1, _, a = heapq.heappop(heap)
+        f2, _, b = heapq.heappop(heap)
+        heapq.heappush(heap, (f1 + f2, next(tie), (a, b)))
+    codes = {}
+    def walk(node, prefix=&#39;&#39;):
+        if isinstance(node, tuple):
+            walk(node[0], prefix + &#39;0&#39;)
+            walk(node[1], prefix + &#39;1&#39;)
+        else:
+            codes[node] = prefix or &#39;0&#39;
+    walk(heap[0][2])
+    return codes</code></pre>
+<h4>Properties</h4>
+<ul><li><strong>Prefix-free</strong>: symbols sit at leaves, so no code is a prefix of another and decoding is unambiguous without separators.</li><li><strong>Optimal</strong>: the two rarest symbols belong at the deepest level as siblings, and merging them reduces to a smaller instance of the same problem (an exchange argument).</li><li>Time O(n log n) for n symbols.</li></ul>
+<h4>Limits</h4>
+<p>The code length per symbol is a whole number of bits, so it cannot reach the entropy exactly; arithmetic coding does better. The decoder needs the tree or the frequency table, which is sent as a header. DEFLATE (zip, gzip, PNG) uses Huffman codes after LZ77.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does the greedy merging produce an optimal code?</li><li>How does the decoder know the tree?</li><li>What are the limits of Huffman coding compared with arithmetic coding?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-50">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-50%3A+How+does+Huffman+Coding+build+an+optimal+prefix-free+binary+tree+for%E2%80%A6&amp;question-id=gen-50&amp;context=Software+engineer+%28core%29%2C+Gear+3%2C+topic%3A+Algorithms%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-50.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are controlled versus uncontrolled components in React forms, and when is each preferred? | InterviewGearUp</title>
+<meta name="description" content="A controlled component keeps the form value in React state and updates it through onChange, so React is the single source of truth. An uncontrolled…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-69.html">
+<meta property="og:title" content="What are controlled versus uncontrolled components in React forms, and when is each preferred? | InterviewGearUp">
+<meta property="og:description" content="A controlled component keeps the form value in React state and updates it through onChange, so React is the single source of truth. An uncontrolled…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-69.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are controlled versus uncontrolled components in React forms, and when is each preferred?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 1 (Junior) · React · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A controlled component keeps the form value in React state and updates it through onChange, so React is the single source of truth. An uncontrolled component lets the DOM hold the value and you read it with a ref or on submit. Controlled suits live validation and dependent fields; uncontrolled is simpler and cheaper for basic forms and file inputs.</p></div>
+<h4>Explained in depth</h4>
+<h4>Controlled</h4>
+<pre><code>function Name() {
+  const [name, setName] = useState(&#39;&#39;);
+  return &lt;input value={name} onChange={(e) =&gt; setName(e.target.value)} /&gt;;
+}</code></pre>
+<p>The input always shows <code>name</code>. Every keystroke triggers a state update and a re-render, which lets you format, validate or block input immediately and keep other UI in sync (for example enabling a submit button).</p>
+<h4>Uncontrolled</h4>
+<pre><code>function Name() {
+  const ref = useRef(null);
+  return (
+    &lt;form onSubmit={(e) =&gt; { e.preventDefault(); save(ref.current.value); }}&gt;
+      &lt;input defaultValue=&quot;&quot; ref={ref} /&gt;
+    &lt;/form&gt;
+  );
+}</code></pre>
+<p>The DOM owns the value; React reads it when needed. There are fewer re-renders and less code.</p>
+<h4>Choosing</h4>
+<div class="md-table"><table><thead><tr><th>Need</th><th>Prefer</th></tr></thead><tbody><tr><td>Live validation, masks, dependent fields</td><td>Controlled</td></tr><tr><td>Resetting or setting values from code</td><td>Controlled</td></tr><tr><td>Simple form read on submit, very large forms</td><td>Uncontrolled</td></tr><tr><td>File inputs (<code>type=&quot;file&quot;</code>)</td><td>Uncontrolled (the value is read-only)</td></tr></tbody></table></div>
+<h4>Pitfalls</h4>
+<ul><li>Setting <code>value</code> without <code>onChange</code> makes a read-only field.</li><li>Starting with <code>undefined</code> and later providing a value switches modes and triggers a warning; initialise with an empty string.</li><li>Libraries such as React Hook Form use uncontrolled inputs with refs to avoid re-rendering the whole form on each keystroke.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does React warn when an input switches from uncontrolled to controlled?</li><li>How do form libraries such as React Hook Form reduce re-renders?</li><li>How do you handle a file input?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-69">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-69%3A+What+are+controlled+versus+uncontrolled+components+in+React+forms%2C%E2%80%A6&amp;question-id=fe-69&amp;context=Frontend+engineer%2C+Gear+1%2C+topic%3A+React%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-69.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare LLM quantization approaches: Post-Training Quantization (PTQ) versus Quantization-Aware Training (QAT). | InterviewGearUp</title>
+<meta name="description" content="Post-training quantisation (PTQ) converts an already trained model&#39;s weights, and sometimes activations, to lower precision using a small calibration set…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-47.html">
+<meta property="og:title" content="Compare LLM quantization approaches: Post-Training Quantization (PTQ) versus Quantization-Aware Training (QAT). | InterviewGearUp">
+<meta property="og:description" content="Post-training quantisation (PTQ) converts an already trained model&#39;s weights, and sometimes activations, to lower precision using a small calibration set…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-47.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare LLM quantization approaches: Post-Training Quantization (PTQ) versus Quantization-Aware Training (QAT).</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · LLMs · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Post-training quantisation (PTQ) converts an already trained model&#39;s weights, and sometimes activations, to lower precision using a small calibration set and no retraining, which is quick and cheap but can lose accuracy at very low bit widths. Quantisation-aware training (QAT) simulates quantisation during training so the model adapts to the rounding error, giving better accuracy at the cost of extra training.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why quantise</h4>
+<p>Lower precision (INT8 or INT4 instead of FP16) shrinks memory and bandwidth, which often limits LLM inference speed, and can speed up compute on supported hardware.</p>
+<h4>Post-training quantisation</h4>
+<ul><li>Take trained weights and map them to integers with a scale (and zero point), per tensor, per channel or per group.</li><li><strong>Calibration</strong> data estimates activation ranges if activations are quantised too.</li><li><strong>Weight-only</strong> methods (GPTQ, AWQ, bitsandbytes NF4) keep activations in 16-bit and quantise only weights, giving large memory savings with small loss at 4 bits.</li><li><strong>GPTQ</strong> quantises weights layer by layer, using second-order information to compensate for the rounding error.</li><li><strong>AWQ</strong> protects the small share of weights tied to large activations by scaling them first.</li><li><strong>Weight-and-activation</strong> schemes (such as SmoothQuant for INT8) also quantise activations; <strong>outliers</strong> in activations make this hard, so scaling is moved from activations into weights.</li><li>Pros: no training, minutes to hours, a few hundred calibration samples.</li><li>Cons: accuracy can drop noticeably below 4 bits or on small models.</li></ul>
+<h4>Quantisation-aware training</h4>
+<p>Insert <strong>fake quantisation</strong> operations in the forward pass (quantise then dequantise) while keeping full-precision master weights, and use the <strong>straight-through estimator</strong> to pass gradients through the rounding. The model learns weights that survive quantisation.</p>
+<ul><li>Pros: best accuracy at low bit widths.</li><li>Cons: needs the training pipeline, data and compute, which is expensive for large LLMs (though LoRA-style QAT variants exist).</li></ul>
+<h4>Choosing</h4>
+<p>Try PTQ first (8-bit or 4-bit weight-only). Use QAT when PTQ loses too much accuracy and you can afford the training. Always evaluate on your task, not only perplexity.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why are activation outliers a problem for 8-bit and lower quantisation of LLMs?</li><li>How do GPTQ and AWQ improve on naive round-to-nearest PTQ?</li><li>What is the difference between weight-only and weight-and-activation quantisation?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-47">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-47%3A+Compare+LLM+quantization+approaches%3A+Post-Training+Quantization%E2%80%A6&amp;question-id=ml-47&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+LLMs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-47.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

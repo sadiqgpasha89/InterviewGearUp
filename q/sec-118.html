@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you secure a multi-tenant SaaS platform and guarantee tenant isolation? | InterviewGearUp</title>
+<meta name="description" content="Make tenant identity an enforced context in every request, isolate data by risk (separate schemas or databases, row-level security, tenant-scoped keys),…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-118.html">
+<meta property="og:title" content="How do you secure a multi-tenant SaaS platform and guarantee tenant isolation? | InterviewGearUp">
+<meta property="og:description" content="Make tenant identity an enforced context in every request, isolate data by risk (separate schemas or databases, row-level security, tenant-scoped keys),…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-118.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you secure a multi-tenant SaaS platform and guarantee tenant isolation?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 4 (Lead / Staff) · Architecture · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Make tenant identity an enforced context in every request, isolate data by risk (separate schemas or databases, row-level security, tenant-scoped keys), isolate compute and network for sensitive tenants, test cross-tenant access continuously, guard against noisy neighbours, and offer audit logs and per-tenant encryption. Choose the isolation model by risk, cost and compliance.</p></div>
+<h4>Explained in depth</h4>
+<h4>Isolation models (data)</h4>
+<div class="md-table"><table><thead><tr><th>Model</th><th>Isolation</th><th>Cost and operations</th></tr></thead><tbody><tr><td>Shared tables with a <code>tenant_id</code> column</td><td>Lowest; relies on correct filtering everywhere</td><td>Cheapest, simplest at scale</td></tr><tr><td>Shared database, <strong>schema per tenant</strong></td><td>Medium</td><td>More objects and migrations</td></tr><tr><td><strong>Database per tenant</strong></td><td>High</td><td>More infrastructure; good for large or regulated customers</td></tr><tr><td><strong>Account, cluster or stack per tenant</strong> (&quot;silo&quot;)</td><td>Highest</td><td>Highest cost; offer as premium tier</td></tr></tbody></table></div>
+<p>Hybrids are common: pooled for small tenants, siloed for large or regulated ones.</p>
+<h4>Enforcing isolation in code and infrastructure</h4>
+<ul><li><strong>Tenant context</strong> derived from authenticated identity (token claims), never from client-supplied parameters; propagated through every service and background job.</li><li><strong>Defence in depth for data access</strong>: database <strong>row-level security</strong> (PostgreSQL RLS sets policy by session tenant), repository layers that always add tenant filters, and automated tests that fail if a query lacks one.</li><li><strong>Authorisation</strong> per tenant (roles within tenant, no cross-tenant admin from the UI); strong <strong>BOLA</strong> checks on every object ID.</li><li><strong>Per-tenant encryption keys</strong> (and customer-managed keys for enterprises), so data can be cryptographically separated and deletion can be done by destroying keys.</li><li><strong>Object storage and queues</strong>: tenant-prefixed paths with IAM conditions or separate buckets, tenant-scoped presigned URLs, and message metadata with tenant ID.</li><li><strong>Compute and network</strong>: separate runtime for risky or custom code (sandboxes), namespaces or clusters for sensitive tenants, and egress controls.</li><li><strong>Caches and search indexes</strong>: tenant-aware keys and index filters; the most common leak source is a shared cache key.</li></ul>
+<h4>Reliability and fairness</h4>
+<p>Rate limits, quotas and resource isolation per tenant to prevent <strong>noisy neighbours</strong>; per-tenant observability and cost attribution.</p>
+<h4>Verification</h4>
+<ul><li><strong>Automated cross-tenant tests</strong> in CI (attempt to access tenant B with tenant A credentials across every endpoint and job), fuzzing for ID manipulation, and periodic penetration tests.</li><li>Static analysis rules for unscoped queries; canary tenants with sentinel data to detect leaks in logs or exports.</li><li>Logging and <strong>audit trails</strong> per tenant, anomaly alerts for unusual cross-tenant patterns.</li></ul>
+<h4>Governance</h4>
+<p>Document isolation guarantees in security whitepapers and contracts, support compliance (SOC 2, ISO 27001), data residency options, and incident procedures that scope impact by tenant.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does row-level security help prevent cross-tenant data leaks?</li><li>How do you test for tenant isolation failures?</li><li>When would you offer single-tenant deployments to specific customers?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-118">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-118%3A+How+do+you+secure+a+multi-tenant+SaaS+platform+and+guarantee+tenant%E2%80%A6&amp;question-id=sec-118&amp;context=Security+engineer%2C+Gear+4%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-118.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

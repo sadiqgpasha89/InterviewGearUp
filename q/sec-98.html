@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What causes container escape vulnerabilities and how do User Namespaces prevent root in container from being root on host? | InterviewGearUp</title>
+<meta name="description" content="Containers share the host kernel, so an escape usually comes from a privileged or over-permissive container configuration (privileged mode, dangerous…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-98.html">
+<meta property="og:title" content="What causes container escape vulnerabilities and how do User Namespaces prevent root in container from being root on host? | InterviewGearUp">
+<meta property="og:description" content="Containers share the host kernel, so an escape usually comes from a privileged or over-permissive container configuration (privileged mode, dangerous…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-98.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What causes container escape vulnerabilities and how do User Namespaces prevent root in container from being root on host?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 4 (Lead / Staff) · Containers · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Containers share the host kernel, so an escape usually comes from a privileged or over-permissive container configuration (privileged mode, dangerous capabilities, mounted host paths or the Docker socket) or from a kernel or runtime vulnerability. User namespaces map root inside the container to an unprivileged user on the host, so even after an escape the attacker has no host privileges.</p></div>
+<h4>Explained in depth</h4>
+<h4>Common causes</h4>
+<ul><li><strong><code>--privileged</code></strong> or added capabilities such as <code>CAP_SYS_ADMIN</code>, which allow mounting, cgroup changes and more.</li><li><strong>Host access</strong>: mounting <code>/var/run/docker.sock</code>, host paths such as <code>/</code> or <code>/proc</code>, or using <code>hostPID</code>, <code>hostNetwork</code> or host IPC.</li><li><strong>Kernel vulnerabilities</strong> (for example Dirty COW and Dirty Pipe), since all containers use the same kernel.</li><li><strong>Runtime flaws</strong>, such as the runc bug (CVE-2019-5736) that let a container overwrite the host&#39;s runc binary.</li><li>Running as root in the container with a weak profile, and missing seccomp or AppArmor restrictions.</li></ul>
+<h4>What user namespaces do</h4>
+<p>A user namespace maps a range of IDs inside the container to a different range on the host. Container root (UID 0) can be <strong>UID 100000 on the host</strong>, with no privileges there. Capabilities such as <code>CAP_SYS_ADMIN</code> apply only to resources owned by that namespace, not to the host. If a process escapes, it is just an unprivileged user and cannot read root-owned files or load kernel modules.</p>
+<pre><code># /etc/subuid  -&gt;  dockremap:100000:65536     (maps container UID 0..65535 to host 100000..165535)</code></pre>
+<p>Docker supports this with <code>userns-remap</code>, rootless mode and rootless Podman do it by design, and recent Kubernetes versions let pods opt in with <code>hostUsers: false</code>.</p>
+<h4>Limits</h4>
+<p>It does not fix kernel bugs in the namespace code itself, and it can complicate volume ownership and some features. It is one layer, not a complete defence.</p>
+<h4>Defence in depth</h4>
+<p>Run as non-root, drop all capabilities and add back only what is needed, set <code>no-new-privileges</code>, use a restrictive seccomp profile and AppArmor or SELinux, use a read-only root filesystem, never mount the Docker socket, patch the kernel and runtime, and use sandboxed runtimes (gVisor, Kata Containers) for untrusted workloads.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is mounting the Docker socket into a container effectively giving it root on the host?</li><li>How do user namespaces change what CAP_SYS_ADMIN means inside a container?</li><li>When would you choose gVisor or Kata Containers over regular runc containers?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-98">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-98%3A+What+causes+container+escape+vulnerabilities+and+how+do+User%E2%80%A6&amp;question-id=sec-98&amp;context=Security+engineer%2C+Gear+4%2C+topic%3A+Containers%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-98.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

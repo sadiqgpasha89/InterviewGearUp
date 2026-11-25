@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How would you design a data platform that serves both analytics and machine learning for a large company? | InterviewGearUp</title>
+<meta name="description" content="Build one governed lakehouse foundation on object storage with open table formats, layered ingestion, transformation and serving, a shared catalog and…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-114.html">
+<meta property="og:title" content="How would you design a data platform that serves both analytics and machine learning for a large company? | InterviewGearUp">
+<meta property="og:description" content="Build one governed lakehouse foundation on object storage with open table formats, layered ingestion, transformation and serving, a shared catalog and…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-114.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How would you design a data platform that serves both analytics and machine learning for a large company?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 4 (Lead / Staff) · Architecture · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Build one governed lakehouse foundation on object storage with open table formats, layered ingestion, transformation and serving, a shared catalog and lineage, and consistent access control. Add a feature store and training data tooling for ML, with point-in-time correctness, and support both batch and streaming. Organise ownership by domain and treat data as products with SLAs.</p></div>
+<h4>Explained in depth</h4>
+<h4>Principles</h4>
+<ul><li><strong>One copy of the data</strong>, many engines: avoid duplicating data into separate analytics and ML silos.</li><li><strong>Open formats</strong> (Parquet with Iceberg, Delta or Hudi) on cloud object storage, so SQL engines, Spark and ML frameworks can all read it.</li><li><strong>Governance first</strong>: catalogue, lineage, access control and quality built in.</li></ul>
+<h4>Layers</h4>
+<ol start="1"><li><strong>Ingestion</strong>: batch loads, <strong>CDC</strong> from operational databases, event streams (Kafka), and SaaS connectors. Raw data lands immutable in a <strong>bronze</strong> zone.</li><li><strong>Processing</strong>: Spark, Flink and SQL (dbt) refine into <strong>silver</strong> (cleaned, conformed) and <strong>gold</strong> (business models, metrics). Streaming and batch share the same tables.</li><li><strong>Storage and serving</strong>: lakehouse tables plus a warehouse or query engine (Trino, Snowflake, Databricks SQL) for BI; low-latency stores (Redis, DynamoDB) for online features and applications.</li><li><strong>ML layer</strong>:</li></ol>
+<ul><li><strong>Feature store</strong> (Feast, Tecton, Databricks): features defined once, computed offline for training and served online for inference, preventing <strong>training-serving skew</strong>.</li><li><strong>Point-in-time joins</strong> to build training sets using only information available at that time, avoiding leakage.</li><li>Experiment tracking, a model registry (MLflow), pipelines for training and deployment, and monitoring of data and model drift.</li></ul>
+<ol start="5"><li><strong>Orchestration</strong> (Airflow, Dagster), <strong>CI/CD</strong> for data and models, and infrastructure as code.</li></ol>
+<h4>Cross-cutting</h4>
+<ul><li><strong>Catalogue and lineage</strong> (DataHub, Unity Catalog, OpenLineage), <strong>data contracts</strong> with producers, <strong>quality checks</strong> and SLAs.</li><li><strong>Security</strong>: RBAC and attribute-based policies, row and column masking, encryption, PII tagging, audit logs, and retention rules.</li><li><strong>Cost controls</strong>: tagging, lifecycle policies, autoscaling and workload isolation.</li><li><strong>Observability</strong> of pipelines and freshness.</li></ul>
+<h4>Organisation</h4>
+<p>A central platform team provides the paved road and tooling; <strong>domain teams</strong> own their data products (data mesh style) with defined schemas, owners and SLAs. Consumers discover and request access through the catalogue.</p>
+<h4>Trade-offs and evolution</h4>
+<p>Start with a few critical use cases, avoid over-building, and measure adoption, time to new dataset, and data incident rates. Buy managed components where they fit, and keep interfaces open to avoid lock-in.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does a feature store ensure that training and serving features match?</li><li>How do you avoid data leakage when building training sets?</li><li>How would you separate platform responsibilities from domain team responsibilities?</li></ul>
+<p><a class="btn primary" href="../#/q/de-114">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-114%3A+How+would+you+design+a+data+platform+that+serves+both+analytics+and%E2%80%A6&amp;question-id=de-114&amp;context=Data+engineer%2C+Gear+4%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-114.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

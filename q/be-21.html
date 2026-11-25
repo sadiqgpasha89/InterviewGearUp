@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is Write-Ahead Logging (WAL) and how does it guarantee durability and crash recovery? | InterviewGearUp</title>
+<meta name="description" content="Write-ahead logging means a change is recorded in a sequential log and flushed to durable storage before the modified data pages are written, and before…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-21.html">
+<meta property="og:title" content="What is Write-Ahead Logging (WAL) and how does it guarantee durability and crash recovery? | InterviewGearUp">
+<meta property="og:description" content="Write-ahead logging means a change is recorded in a sequential log and flushed to durable storage before the modified data pages are written, and before…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-21.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is Write-Ahead Logging (WAL) and how does it guarantee durability and crash recovery?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · Databases · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Write-ahead logging means a change is recorded in a sequential log and flushed to durable storage before the modified data pages are written, and before a commit is acknowledged. After a crash, the database replays the log to redo committed work, so durability does not need every data page written at commit time.</p></div>
+<h4>Explained in depth</h4>
+<h4>The rule</h4>
+<p>Modified pages stay in memory (the buffer pool) and are written to disk later. But the <strong>log record describing each change must reach disk first</strong>. A commit returns only after the log up to the commit record has been flushed (<code>fsync</code>).</p>
+<h4>Why it is fast</h4>
+<p>Appending to a log is a sequential write, while flushing scattered data pages is random I/O. One log flush can cover many transactions (<strong>group commit</strong>), so throughput stays high.</p>
+<h4>Crash recovery</h4>
+<ol start="1"><li>Start from the last <strong>checkpoint</strong>, a point where all earlier changes were already flushed to the data files.</li><li><strong>Redo</strong>: replay log records after it, re-applying changes that did not reach the data pages.</li><li><strong>Undo</strong> changes of transactions that never committed. Systems like InnoDB do this explicitly; PostgreSQL relies on MVCC, so uncommitted tuples are simply invisible.</li></ol>
+<p>Checkpoints bound how much log must be replayed and let old log segments be recycled.</p>
+<h4>Torn pages</h4>
+<p>A crash during a page write can leave half a page. PostgreSQL&#39;s <code>full_page_writes</code> logs a whole page image the first time it changes after a checkpoint, so recovery can repair it.</p>
+<h4>Other uses of the log</h4>
+<ul><li><strong>Replication</strong>: replicas apply the same stream of changes.</li><li><strong>Point-in-time recovery</strong>: restore a base backup, then replay archived log up to a chosen moment.</li><li><strong>Change data capture</strong> reads the log through logical decoding.</li></ul>
+<h4>Trade-off knobs</h4>
+<p>Settings such as PostgreSQL&#39;s <code>synchronous_commit = off</code> acknowledge before the flush. A crash can lose the last few transactions but should not corrupt the database. Turning off <code>fsync</code> entirely risks corruption.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why must the log be flushed before the data page is written?</li><li>What does a checkpoint do and what is the trade-off of frequent ones?</li><li>How is WAL used for replication and point-in-time recovery?</li></ul>
+<p><a class="btn primary" href="../#/q/be-21">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-21%3A+What+is+Write-Ahead+Logging+%28WAL%29+and+how+does+it+guarantee%E2%80%A6&amp;question-id=be-21&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+Databases%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-21.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

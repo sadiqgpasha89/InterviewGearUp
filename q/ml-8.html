@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain the Bias-Variance tradeoff and how it relates to model underfitting and overfitting. | InterviewGearUp</title>
+<meta name="description" content="Bias is error from overly simple assumptions (underfitting); variance is error from sensitivity to the training data (overfitting). Expected test error…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-8.html">
+<meta property="og:title" content="Explain the Bias-Variance tradeoff and how it relates to model underfitting and overfitting. | InterviewGearUp">
+<meta property="og:description" content="Bias is error from overly simple assumptions (underfitting); variance is error from sensitivity to the training data (overfitting). Expected test error…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-8.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain the Bias-Variance tradeoff and how it relates to model underfitting and overfitting.</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 1 (Junior) · Fundamentals · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Bias is error from overly simple assumptions (underfitting); variance is error from sensitivity to the training data (overfitting). Expected test error splits into bias squared, variance and irreducible noise. Making a model more complex lowers bias but raises variance, so the goal is the complexity at which total validation error is lowest.</p></div>
+<h4>Explained in depth</h4>
+<h4>The decomposition</h4>
+<p>For squared error, the expected prediction error at a point is: <code>Error = Bias^2 + Variance + Irreducible noise</code></p>
+<ul><li><strong>Bias</strong>: how far the average prediction (over many training sets) is from the truth. High bias means the model is too rigid, for example a straight line for curved data.</li><li><strong>Variance</strong>: how much predictions change if you train on a different sample. High variance means the model chases noise.</li><li><strong>Irreducible noise</strong>: randomness in the data that no model can remove.</li></ul>
+<h4>Underfitting and overfitting</h4>
+<div class="md-table"><table><thead><tr><th></th><th>High bias (underfit)</th><th>High variance (overfit)</th></tr></thead><tbody><tr><td>Training error</td><td>High</td><td>Very low</td></tr><tr><td>Validation error</td><td>High, close to training</td><td>Much higher than training</td></tr><tr><td>Typical cause</td><td>Too simple a model, too few features, too much regularisation</td><td>Too complex a model, too little data, noisy features</td></tr></tbody></table></div>
+<h4>Remedies</h4>
+<ul><li><strong>Fix high bias</strong>: a more flexible model, extra or better features, less regularisation, longer training.</li><li><strong>Fix high variance</strong>: more training data, regularisation (L1, L2, dropout), simpler model, early stopping, ensembling and bagging, feature selection.</li></ul>
+<h4>Diagnosing</h4>
+<p>Plot <strong>learning curves</strong> (error versus training size). If both training and validation errors are high and converge, add capacity (bias). If there is a large gap, add data or regularise (variance). Use cross-validation to choose complexity.</p>
+<h4>Modern note</h4>
+<p>Very large, over-parameterised networks can fit the training set perfectly and still generalise (double descent), so the simple U-shaped picture is incomplete, but the trade-off remains a useful guide for classical models.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do learning curves show whether a model suffers from high bias or high variance?</li><li>How does regularisation move you along the trade-off?</li><li>Does the classic trade-off still hold for very large neural networks?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-8">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-8%3A+Explain+the+Bias-Variance+tradeoff+and+how+it+relates+to+model%E2%80%A6&amp;question-id=ml-8&amp;context=ML+%2F+AI+engineer%2C+Gear+1%2C+topic%3A+Fundamentals%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-8.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

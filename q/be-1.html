@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What makes an API RESTful? Explain HTTP methods, status codes and idempotency. | InterviewGearUp</title>
+<meta name="description" content="REST models things as resources addressed by URLs and manipulated with standard HTTP methods. GET, PUT and DELETE are idempotent (repeating them has the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-1.html">
+<meta property="og:title" content="What makes an API RESTful? Explain HTTP methods, status codes and idempotency. | InterviewGearUp">
+<meta property="og:description" content="REST models things as resources addressed by URLs and manipulated with standard HTTP methods. GET, PUT and DELETE are idempotent (repeating them has the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-1.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What makes an API RESTful? Explain HTTP methods, status codes and idempotency.</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 1 (Junior) · APIs · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>REST models things as resources addressed by URLs and manipulated with standard HTTP methods. GET, PUT and DELETE are idempotent (repeating them has the same effect as once); POST is not; status codes tell the client what happened.</p></div>
+<h4>Explained in depth</h4>
+<h4>Methods</h4>
+<ul><li><strong>GET</strong>: read, safe, idempotent.</li><li><strong>POST</strong>: create or trigger an action, not idempotent.</li><li><strong>PUT</strong>: replace a resource, idempotent.</li><li><strong>PATCH</strong>: partial update, not guaranteed idempotent.</li><li><strong>DELETE</strong>: remove, idempotent.</li></ul>
+<h4>Status codes to know</h4>
+<p>200 OK, 201 Created (with a <code>Location</code> header), 204 No Content, 400 bad request, 401 unauthenticated, 403 forbidden, 404 not found, 409 conflict, 422 validation failed, 429 too many requests, 500 server error, 503 unavailable.</p>
+<h4>Habits of a good REST API</h4>
+<p>Plural nouns for resources (<code>/orders/42</code>), stateless requests, pagination for collections, a consistent error body, and versioning.</p>
+<p>Idempotency matters because networks retry: retrying a PUT is safe. For POST, accept an <strong>idempotency key</strong> so a retried request does not create a duplicate.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the difference between 401 and 403?</li><li>PUT versus PATCH?</li><li>How would you paginate a large collection?</li></ul>
+<p><a class="btn primary" href="../#/q/be-1">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-1%3A+What+makes+an+API+RESTful%3F+Explain+HTTP+methods%2C+status+codes+and%E2%80%A6&amp;question-id=be-1&amp;context=Backend+engineer%2C+Gear+1%2C+topic%3A+APIs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-1.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

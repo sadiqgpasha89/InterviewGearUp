@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does Testcontainers spin up ephemeral databases, message brokers, and Redis instances during test runs? | InterviewGearUp</title>
+<meta name="description" content="Testcontainers uses the Docker API to start real containers such as PostgreSQL, Kafka or Redis from images when the test starts, waits until each is…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-38.html">
+<meta property="og:title" content="How does Testcontainers spin up ephemeral databases, message brokers, and Redis instances during test runs? | InterviewGearUp">
+<meta property="og:description" content="Testcontainers uses the Docker API to start real containers such as PostgreSQL, Kafka or Redis from images when the test starts, waits until each is…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-38.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does Testcontainers spin up ephemeral databases, message brokers, and Redis instances during test runs?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 3 (Senior) · Infrastructure · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Testcontainers uses the Docker API to start real containers such as PostgreSQL, Kafka or Redis from images when the test starts, waits until each is healthy through a wait strategy, exposes a random mapped port, and removes it when the test ends, with a Ryuk sidecar as a safety net. Tests then use real dependencies, with isolation and no shared test environment.</p></div>
+<h4>Explained in depth</h4>
+<h4>How it works</h4>
+<ol start="1"><li>The test (or a JUnit extension, pytest fixture or similar) asks the <strong>Docker daemon</strong> to create a container from a pinned image, such as <code>postgres:16</code>.</li><li>Testcontainers maps the container&#39;s port to a <strong>random free host port</strong>, so parallel runs never collide, and reads the host and port for your connection string.</li><li>A <strong>wait strategy</strong> blocks until the service is ready: a log message, an open port, an HTTP health check or a database query.</li><li>The tests run against the real service.</li><li>On finish the container is stopped and removed. A small helper container, <strong>Ryuk</strong>, also removes leftovers if the test process crashes.</li></ol>
+<h4>Example (Java)</h4>
+<pre><code>@Testcontainers
+class OrderRepoTest {
+  @Container
+  static PostgreSQLContainer&lt;?&gt; pg = new PostgreSQLContainer&lt;&gt;(&quot;postgres:16&quot;);
+
+  @DynamicPropertySource
+  static void props(DynamicPropertyRegistry r) {
+    r.add(&quot;spring.datasource.url&quot;, pg::getJdbcUrl);
+    r.add(&quot;spring.datasource.username&quot;, pg::getUsername);
+    r.add(&quot;spring.datasource.password&quot;, pg::getPassword);
+  }
+}</code></pre>
+<p>Modules exist for Kafka, RabbitMQ, Redis, MongoDB, LocalStack and more, and <strong>Docker Compose</strong> support handles multi-container setups.</p>
+<h4>Why use it</h4>
+<p>Real engines remove the &quot;works on H2, fails on PostgreSQL&quot; gap (SQL dialect, locking, JSON types, migrations). Every developer and CI run gets the same environment from code.</p>
+<h4>Performance tips</h4>
+<ul><li>Make the container <strong>static or shared per test class or suite</strong>, not per test, and enable <strong>reuse</strong> locally.</li><li>Start containers in parallel, use small images, pre-pull them in CI, and reset state between tests with truncation or a template database.</li><li>Pin image versions for repeatable builds.</li></ul>
+<h4>Limits</h4>
+<p>Needs a Docker-compatible runtime (use remote Docker, Testcontainers Cloud or a managed service where it is unavailable), and startup adds seconds, so keep the heavy tests in an integration layer.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you speed up Testcontainers in CI with many test classes?</li><li>What are the trade-offs versus in-memory fakes like H2?</li><li>How do you run Testcontainers where Docker is not available?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-38">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-38%3A+How+does+Testcontainers+spin+up+ephemeral+databases%2C+message%E2%80%A6&amp;question-id=qa-38&amp;context=QA+%2F+SDET%2C+Gear+3%2C+topic%3A+Infrastructure%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-38.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

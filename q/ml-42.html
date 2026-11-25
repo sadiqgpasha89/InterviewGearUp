@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain Parameter-Efficient Fine-Tuning (PEFT): How do LoRA low-rank adaptation matrices work mathematically? | InterviewGearUp</title>
+<meta name="description" content="LoRA freezes the pre-trained weight matrix W and learns a low-rank update ΔW = B A, where A is r by k and B is d by r with a small rank r. Only A and B…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-42.html">
+<meta property="og:title" content="Explain Parameter-Efficient Fine-Tuning (PEFT): How do LoRA low-rank adaptation matrices work mathematically? | InterviewGearUp">
+<meta property="og:description" content="LoRA freezes the pre-trained weight matrix W and learns a low-rank update ΔW = B A, where A is r by k and B is d by r with a small rank r. Only A and B…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-42.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain Parameter-Efficient Fine-Tuning (PEFT): How do LoRA low-rank adaptation matrices work mathematically?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · LLMs · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>LoRA freezes the pre-trained weight matrix W and learns a low-rank update ΔW = B A, where A is r by k and B is d by r with a small rank r. Only A and B are trained, cutting trainable parameters by orders of magnitude. The adapted layer computes Wx + (alpha / r) B A x, and after training B A can be merged into W with no inference overhead.</p></div>
+<h4>Explained in depth</h4>
+<h4>The idea</h4>
+<p>Fine-tuning updates a weight matrix <code>W</code> of shape (d, k) by some change <code>ΔW</code>. Research on intrinsic dimensionality suggests the useful update has <strong>low rank</strong>. LoRA parameterises it as a product of two small matrices: <code>ΔW = B A</code>, with <code>B</code> of shape (d, r), <code>A</code> of shape (r, k) and <code>r</code> much smaller than d and k (for example 8 or 16).</p>
+<p>Forward pass: <code>h = W x + (alpha / r) * B A x</code>.</p>
+<ul><li><code>W</code> is <strong>frozen</strong> (no gradients or optimiser state for it).</li><li><code>A</code> is initialised with small random values and <code>B</code> with <strong>zeros</strong>, so <code>ΔW = 0</code> at the start and training begins exactly at the pre-trained model.</li><li><code>alpha</code> is a scaling constant that keeps the update magnitude stable when changing <code>r</code>.</li></ul>
+<h4>Parameter savings</h4>
+<p>For d = k = 4096 and r = 8: the full matrix has 16.8 million parameters, while LoRA trains 2 * 4096 * 8 = 65,536 (about 0.4 percent). Optimiser memory drops accordingly, so large models fit on much smaller GPUs.</p>
+<h4>Where to apply and how to choose rank</h4>
+<p>Usually the attention projections (query and value, often all of q, k, v and o) and sometimes the MLP layers. Higher rank adds capacity but also cost; 8 to 64 covers most tasks. Tune <code>r</code>, <code>alpha</code> and learning rate (LoRA often needs a larger learning rate than full fine-tuning).</p>
+<h4>Deployment advantages</h4>
+<ul><li>After training, <strong>merge</strong>: <code>W&#39; = W + (alpha / r) B A</code>. Inference then has no extra latency.</li><li>Alternatively keep adapters separate and <strong>swap them per request or per tenant</strong> over one shared base model, and store each adapter in a few megabytes.</li></ul>
+<h4>Limits</h4>
+<p>Slightly lower quality than full fine-tuning on some tasks that need large changes, and it does not reduce the memory used by the frozen base weights (see QLoRA for that).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why initialise B to zero and A randomly?</li><li>Which layers do you apply LoRA to and how do you choose the rank?</li><li>How can several LoRA adapters share one base model in serving?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-42">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-42%3A+Explain+Parameter-Efficient+Fine-Tuning+%28PEFT%29%3A+How+do+LoRA+low-rank%E2%80%A6&amp;question-id=ml-42&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+LLMs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-42.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

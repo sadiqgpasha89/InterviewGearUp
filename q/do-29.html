@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does etcd maintain distributed consensus in Kubernetes, and what happens if etcd loses quorum? | InterviewGearUp</title>
+<meta name="description" content="etcd is Kubernetes&#39; consistent key-value store that holds all cluster state, and it uses the Raft protocol: a leader replicates every write to followers…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-29.html">
+<meta property="og:title" content="How does etcd maintain distributed consensus in Kubernetes, and what happens if etcd loses quorum? | InterviewGearUp">
+<meta property="og:description" content="etcd is Kubernetes&#39; consistent key-value store that holds all cluster state, and it uses the Raft protocol: a leader replicates every write to followers…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-29.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does etcd maintain distributed consensus in Kubernetes, and what happens if etcd loses quorum?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · Kubernetes · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>etcd is Kubernetes&#39; consistent key-value store that holds all cluster state, and it uses the Raft protocol: a leader replicates every write to followers and commits it once a majority (quorum) has it. If quorum is lost, etcd can no longer accept writes and the control plane freezes, although running workloads keep running.</p></div>
+<h4>Explained in depth</h4>
+<h4>Role in Kubernetes</h4>
+<p>Every object (Pods, Deployments, Secrets, ConfigMaps) lives in etcd. Only the API server talks to etcd; all other components use the API server. Losing etcd data means losing the cluster&#39;s state.</p>
+<h4>Raft in brief</h4>
+<ul><li>Members are the <strong>leader</strong>, <strong>followers</strong> and candidates. All writes go through the leader, which appends them to its log and sends them to followers.</li><li>A write is <strong>committed</strong> when a <strong>majority</strong> (quorum) has stored it, so a committed write survives the failure of a minority.</li><li>If the leader stops sending heartbeats, followers wait for a random election timeout, then a candidate requests votes. It becomes leader if it wins a majority, and each term has at most one leader.</li></ul>
+<h4>Quorum maths</h4>
+<p>Quorum is <code>floor(n/2) + 1</code>.</p>
+<div class="md-table"><table><thead><tr><th>Members</th><th>Quorum</th><th>Failures tolerated</th></tr></thead><tbody><tr><td>1</td><td>1</td><td>0</td></tr><tr><td>3</td><td>2</td><td>1</td></tr><tr><td>5</td><td>3</td><td>2</td></tr><tr><td>4</td><td>3</td><td>1 (no better than 3)</td></tr></tbody></table></div>
+<p>That is why clusters use <strong>odd</strong> sizes, usually 3 or 5. More members slow writes, because they must reach a majority.</p>
+<h4>When quorum is lost</h4>
+<p>Writes (and linearizable reads) stop. The API server cannot persist changes: you cannot create or scale objects, and controllers stall. Existing pods keep running because kubelets and containers do not need etcd. Recovery means restoring failed members or, in the worst case, <strong>restoring from a snapshot</strong> (<code>etcdctl snapshot restore</code>) and rebuilding the cluster.</p>
+<h4>Operations</h4>
+<p>Take regular snapshots and test restores, use fast SSDs (etcd is sensitive to disk fsync latency), keep the database size under its quota with compaction and defragmentation, and secure it with mTLS.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why do etcd clusters use an odd number of members?</li><li>How do you back up and restore etcd?</li><li>What happens during leader election?</li></ul>
+<p><a class="btn primary" href="../#/q/do-29">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-29%3A+How+does+etcd+maintain+distributed+consensus+in+Kubernetes%2C+and+what%E2%80%A6&amp;question-id=do-29&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+Kubernetes%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-29.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

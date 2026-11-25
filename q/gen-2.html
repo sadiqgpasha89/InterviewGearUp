@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Given an array of numbers and a target, return the indices of two numbers that add up to the target. | InterviewGearUp</title>
+<meta name="description" content="Scan once with a hash map from value to index: for each number, check whether target minus the number was already seen. O(n) time, O(n) space.">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-2.html">
+<meta property="og:title" content="Given an array of numbers and a target, return the indices of two numbers that add up to the target. | InterviewGearUp">
+<meta property="og:description" content="Scan once with a hash map from value to index: for each number, check whether target minus the number was already seen. O(n) time, O(n) space.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-2.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Given an array of numbers and a target, return the indices of two numbers that add up to the target.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 1 (Junior) · Arrays and hashing · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Scan once with a hash map from value to index: for each number, check whether target minus the number was already seen. O(n) time, O(n) space.</p></div>
+<h4>Explained in depth</h4>
+<p>The brute force tries every pair, which is O(n^2). The map version trades memory for speed:</p>
+<pre><code>function twoSum(nums, target) {
+  const seen = new Map();            // value -&gt; index
+  for (let i = 0; i &lt; nums.length; i++) {
+    const need = target - nums[i];
+    if (seen.has(need)) return [seen.get(need), i];
+    seen.set(nums[i], i);
+  }
+  return [];                         // no pair found
+}</code></pre>
+<p>Checking for the complement <strong>before</strong> inserting the current number stops you using the same element twice, and still handles duplicates: for <code>[3, 3]</code> and target 6, the first 3 is stored and the second finds it.</p>
+<p>Edge cases to mention: empty array, no solution, negative numbers. If the array is already sorted and you must use O(1) extra space, use two pointers moving inward, but note that you then return values unless you track original indices.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What if there are many valid pairs and you need all unique pairs?</li><li>How would you extend it to three numbers?</li><li>What changes if the data does not fit in memory?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-2">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-2%3A+Given+an+array+of+numbers+and+a+target%2C+return+the+indices+of+two%E2%80%A6&amp;question-id=gen-2&amp;context=Software+engineer+%28core%29%2C+Gear+1%2C+topic%3A+Arrays+and+hashing%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-2.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

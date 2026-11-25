@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you build a security programme for AI and LLM applications, including threat modelling and controls? | InterviewGearUp</title>
+<meta name="description" content="Inventory AI systems, threat-model the full pipeline (data, model, prompts, retrieval, tools, outputs), and control the top risks: prompt injection,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-121.html">
+<meta property="og:title" content="How do you build a security programme for AI and LLM applications, including threat modelling and controls? | InterviewGearUp">
+<meta property="og:description" content="Inventory AI systems, threat-model the full pipeline (data, model, prompts, retrieval, tools, outputs), and control the top risks: prompt injection,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-121.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you build a security programme for AI and LLM applications, including threat modelling and controls?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 4 (Lead / Staff) · AI security · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Inventory AI systems, threat-model the full pipeline (data, model, prompts, retrieval, tools, outputs), and control the top risks: prompt injection, excessive agency, data leakage, poisoning, supply chain and unsafe output handling. Use least privilege, isolation, guardrails, red teaming and monitoring, guided by the OWASP Top 10 for LLMs and MITRE ATLAS.</p></div>
+<h4>Explained in depth</h4>
+<h4>Frameworks to use</h4>
+<p><strong>OWASP Top 10 for LLM Applications</strong>, <strong>MITRE ATLAS</strong> (adversarial techniques against AI), <strong>NIST AI RMF</strong>, and ISO 42001 for governance.</p>
+<h4>Threat model the whole system</h4>
+<p>Components: training and fine-tuning data, model weights and hosting, system prompt, retrieval index and documents, tools and APIs the model can call, user inputs, and outputs consumed by people or other systems. Identify trust boundaries and who controls each input.</p>
+<h4>Key risks and controls</h4>
+<div class="md-table"><table><thead><tr><th>Risk</th><th>Controls</th></tr></thead><tbody><tr><td><strong>Prompt injection</strong> (direct, and <strong>indirect</strong> through documents, web pages, emails)</td><td>Treat all model input as untrusted; separate instructions from data; limit what the model can do; require approval for sensitive actions; filter outputs; avoid combining private data, untrusted content and outbound channels</td></tr><tr><td><strong>Sensitive data disclosure</strong></td><td>Data minimisation, redaction of PII before prompts, access-controlled retrieval (permissions enforced in the search layer), tenant isolation, no secrets in prompts, output scanning</td></tr><tr><td><strong>Excessive agency</strong></td><td>Least-privilege tools and credentials, narrow tool schemas, allowlists, spending and rate limits, human approval, sandboxed execution</td></tr><tr><td><strong>Insecure output handling</strong></td><td>Encode and validate model output before using it in browsers, SQL, shells or code execution; never trust generated code or URLs blindly</td></tr><tr><td><strong>Data and model poisoning, supply chain</strong></td><td>Provenance and review of training data and third-party models and datasets, checksum and signature verification, scanning of model files (unsafe pickles), pinned versions, SBOM or model bill of materials</td></tr><tr><td><strong>Model theft and abuse</strong></td><td>Access control and rate limiting on APIs, monitoring for extraction patterns, abuse detection</td></tr><tr><td><strong>Denial of service and cost abuse</strong></td><td>Token and request quotas, input limits, timeouts</td></tr><tr><td><strong>Hallucination and overreliance</strong></td><td>Grounding with citations, confidence handling, human review for high-stakes use</td></tr></tbody></table></div>
+<h4>Programme elements</h4>
+<ul><li><strong>Inventory and risk tiering</strong> of AI use cases (including shadow AI and employee use of public tools), policy for acceptable use and approved providers, and vendor assessments (data retention, training on your data, residency).</li><li><strong>Secure SDLC for AI</strong>: design reviews, threat models, secure prompt and tool design, evaluation sets for safety and security, <strong>red teaming</strong> (jailbreaks, injection, data extraction) before release and on a schedule, and automated regression tests.</li><li><strong>Runtime protection</strong>: guardrail layers, content and PII filters, tool-call policy enforcement, logging of prompts and outputs with privacy controls, anomaly detection, and kill switches.</li><li><strong>Incident response</strong> for AI-specific incidents (data leakage via model, harmful outputs, injection exploitation), with disabling features and retraining or reindexing steps.</li><li><strong>Training and governance</strong>: developer guidance, review board for high-risk use, and metrics (coverage of threat models, findings from red teams, incidents).</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>What is indirect prompt injection and why is it hard to fully prevent?</li><li>How do you protect proprietary data used for fine-tuning or retrieval?</li><li>How do you red team an LLM application?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-121">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-121%3A+How+do+you+build+a+security+programme+for+AI+and+LLM+applications%2C%E2%80%A6&amp;question-id=sec-121&amp;context=Security+engineer%2C+Gear+4%2C+topic%3A+AI+security%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-121.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

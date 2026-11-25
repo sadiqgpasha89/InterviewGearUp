@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Why is keyset (cursor-based) pagination preferred over offset/limit pagination for large datasets? | InterviewGearUp</title>
+<meta name="description" content="OFFSET pagination makes the database read and throw away every skipped row, so deep pages get slower, and rows inserted or deleted between requests cause…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-87.html">
+<meta property="og:title" content="Why is keyset (cursor-based) pagination preferred over offset/limit pagination for large datasets? | InterviewGearUp">
+<meta property="og:description" content="OFFSET pagination makes the database read and throw away every skipped row, so deep pages get slower, and rows inserted or deleted between requests cause…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-87.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Why is keyset (cursor-based) pagination preferred over offset/limit pagination for large datasets?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 2 (Mid-level) · APIs · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>OFFSET pagination makes the database read and throw away every skipped row, so deep pages get slower, and rows inserted or deleted between requests cause duplicates or gaps. Keyset (cursor) pagination continues from the last seen sort key using an index seek, so each page costs about the same and stays stable.</p></div>
+<h4>Explained in depth</h4>
+<h4>The problem with offset</h4>
+<pre><code>SELECT * FROM orders ORDER BY created_at DESC, id DESC LIMIT 50 OFFSET 100000;</code></pre>
+<p>The database must produce 100,050 rows and discard 100,000, so cost grows with the page number. Also, if a new row is inserted at the top while the user pages, every later page shifts and an item is shown twice (or one is skipped).</p>
+<h4>Keyset pagination</h4>
+<p>Remember the sort key of the last row and ask for rows after it:</p>
+<pre><code>SELECT * FROM orders
+WHERE (created_at, id) &lt; (:last_created_at, :last_id)
+ORDER BY created_at DESC, id DESC
+LIMIT 50;</code></pre>
+<p>With an index on <code>(created_at, id)</code>, the database seeks straight to the position and reads 50 rows: O(log N + page size) regardless of depth. The result is stable even when rows are added elsewhere.</p>
+<h4>Requirements and trade-offs</h4>
+<ul><li>The ordering must be <strong>deterministic and unique</strong>: add a tiebreaker such as the primary key, otherwise rows with equal timestamps can be skipped.</li><li>Return an <strong>opaque cursor</strong> (the encoded last key) in the response, so clients cannot depend on its format.</li><li>You cannot jump to page 500 or show &#39;page 3 of 40&#39;. Use offset for small admin tables where that matters, or a separate count (which can itself be expensive).</li><li>Mixed ascending and descending sort columns and nullable columns need extra care.</li><li>Going backwards needs the reverse comparison and ordering.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does the sort need a unique tiebreaker column?</li><li>How would you support &#39;previous page&#39; with keyset pagination?</li><li>When is offset pagination still acceptable?</li></ul>
+<p><a class="btn primary" href="../#/q/be-87">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-87%3A+Why+is+keyset+%28cursor-based%29+pagination+preferred+over+offset%2Flimit%E2%80%A6&amp;question-id=be-87&amp;context=Backend+engineer%2C+Gear+2%2C+topic%3A+APIs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-87.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

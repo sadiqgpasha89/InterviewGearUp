@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Design a distributed key-value store with high availability and tunable consistency. | InterviewGearUp</title>
+<meta name="description" content="Partition data across nodes with consistent hashing and virtual nodes, replicate each key to N nodes, and use quorum reads and writes (R + W &gt; N) for…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-105.html">
+<meta property="og:title" content="Design a distributed key-value store with high availability and tunable consistency. | InterviewGearUp">
+<meta property="og:description" content="Partition data across nodes with consistent hashing and virtual nodes, replicate each key to N nodes, and use quorum reads and writes (R + W &gt; N) for…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-105.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Design a distributed key-value store with high availability and tunable consistency.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 4 (Lead / Staff) · System design · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Partition data across nodes with consistent hashing and virtual nodes, replicate each key to N nodes, and use quorum reads and writes (R + W &gt; N) for tunable consistency. Handle failures with hinted handoff, detect divergence with vector clocks or timestamps and repair with read repair and anti-entropy, using gossip for membership. This is the Dynamo-style design.</p></div>
+<h4>Explained in depth</h4>
+<h4>Requirements</h4>
+<p>Simple <code>get(key)</code> and <code>put(key, value)</code>, horizontal scaling, no single point of failure, low latency, and a choice between availability and consistency (CAP).</p>
+<h4>Partitioning</h4>
+<p><strong>Consistent hashing</strong> places nodes on a hash ring (each node owns many <strong>virtual nodes</strong> for balance). A key is hashed and stored on the next node clockwise; adding or removing a node moves only a small share of keys.</p>
+<h4>Replication</h4>
+<p>Each key is stored on <strong>N</strong> consecutive nodes (a preference list, usually across different racks or zones). A coordinator node handles each request.</p>
+<ul><li><strong>Write</strong> succeeds after <strong>W</strong> replicas acknowledge; <strong>read</strong> consults <strong>R</strong> replicas.</li><li>If <strong>R + W &gt; N</strong>, reads overlap with the latest successful write (strong-ish consistency). <code>N=3, W=2, R=2</code> is a common balance; <code>W=1</code> favours write speed; <code>R=1, W=N</code> favours read speed.</li></ul>
+<h4>Conflicts and versions</h4>
+<p>Concurrent writes to different replicas can diverge. Options: <strong>last-write-wins</strong> with timestamps (simple, can lose data and suffers from clock skew), or <strong>vector clocks</strong> to detect concurrency and let the application or a CRDT merge the siblings.</p>
+<h4>Failure handling</h4>
+<ul><li><strong>Failure detection</strong>: gossip protocol with heartbeats.</li><li><strong>Sloppy quorum and hinted handoff</strong>: when a replica is down, another node accepts the write temporarily and hands it back later, improving availability.</li><li><strong>Read repair</strong>: stale replicas are corrected when a read finds differences.</li><li><strong>Anti-entropy</strong>: background comparison using <strong>Merkle trees</strong> to sync replicas efficiently.</li></ul>
+<h4>Storage engine on each node</h4>
+<p>A write-ahead log plus an <strong>LSM tree</strong> (memtable, SSTables, compaction, Bloom filters) for fast writes, or a B-tree for read-heavy loads.</p>
+<h4>Alternatives</h4>
+<p>For strong consistency, use consensus (<strong>Raft or Paxos</strong>) per partition with a leader, as in etcd, Spanner or CockroachDB; it trades some availability during partitions. Add monitoring, rebalancing tools, backups and multi-region replication on top.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What do R, W and N control in a quorum system?</li><li>How do vector clocks differ from last-write-wins?</li><li>How does a Raft-based store differ from a Dynamo-style one?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-105">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-105%3A+Design+a+distributed+key-value+store+with+high+availability+and%E2%80%A6&amp;question-id=gen-105&amp;context=Software+engineer+%28core%29%2C+Gear+4%2C+topic%3A+System+design%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-105.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

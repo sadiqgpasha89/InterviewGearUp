@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How would you design an audit logging system that is tamper-evident, searchable and compliant? | InterviewGearUp</title>
+<meta name="description" content="Capture structured audit events (who, what, when, where, outcome) at the service boundary, write them append-only to a durable pipeline, protect them…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-115.html">
+<meta property="og:title" content="How would you design an audit logging system that is tamper-evident, searchable and compliant? | InterviewGearUp">
+<meta property="og:description" content="Capture structured audit events (who, what, when, where, outcome) at the service boundary, write them append-only to a durable pipeline, protect them…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-115.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How would you design an audit logging system that is tamper-evident, searchable and compliant?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 4 (Lead / Staff) · Compliance · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Capture structured audit events (who, what, when, where, outcome) at the service boundary, write them append-only to a durable pipeline, protect them with hash chaining or signing and write-once storage, separate them from application logs and from the people they audit, index them for search, and apply retention, access control and privacy rules.</p></div>
+<h4>Explained in depth</h4>
+<h4>What an audit event contains</h4>
+<p>Who (user or service identity, tenant), <strong>what</strong> (action and resource, such as <code>invoice.delete</code>, old and new values or a reference), <strong>when</strong> (timestamp from a trusted clock), <strong>where</strong> (IP, device, region, request ID), <strong>outcome</strong> (success, denied, error), and <strong>why</strong> when relevant (ticket or reason). Use a stable schema and event names. Do not log secrets, passwords, full card numbers or excess personal data; log identifiers and references.</p>
+<h4>Capture reliably</h4>
+<ul><li>Emit events from the <strong>place that makes the decision</strong> (API layer or domain service) rather than relying on clients.</li><li>For changes in a database, write the audit event in the <strong>same transaction</strong> or use the <strong>transactional outbox</strong> or change data capture, so you never record an action that failed or lose one that succeeded.</li><li>Include security-relevant reads (access to sensitive records), admin actions, authentication events and permission changes.</li></ul>
+<h4>Pipeline and storage</h4>
+<ol start="1"><li>Producers publish to a durable stream (Kafka, Kinesis) with retries.</li><li>A consumer writes to <strong>append-only, write-once storage</strong>: object storage with <strong>Object Lock (WORM)</strong> retention, or a ledger database (Amazon QLDB, immudb).</li><li>A separate <strong>search index</strong> (OpenSearch, Elasticsearch) supports investigations and reports, treated as a derived copy.</li></ol>
+<h4>Tamper evidence</h4>
+<ul><li><strong>Hash chain</strong>: each record stores the hash of the previous one, so altering or deleting an entry breaks the chain. Periodically <strong>sign</strong> or publish the chain head (or a Merkle tree root) to an external system or notarisation service.</li><li>Separate duties: application admins and database admins cannot modify the audit store; the audit account has restricted write-only access, with access to read governed by roles and itself audited.</li><li>Synchronised time (NTP) and monitoring for gaps or sequence anomalies.</li></ul>
+<h4>Compliance concerns</h4>
+<ul><li><strong>Retention</strong> by regulation (for example SOC 2, PCI DSS commonly one year or more online, HIPAA longer), with legal holds.</li><li><strong>Privacy</strong>: minimise personal data, pseudonymise identifiers where possible, and design for erasure requests (for example crypto-shredding by encrypting personal fields with per-subject keys that can be deleted).</li><li>Provide <strong>export and reporting</strong> for auditors and customers, and test the whole chain regularly with restore and verification drills.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you make audit logs tamper-evident?</li><li>What should and should not be recorded in an audit event?</li><li>How do you reconcile audit retention with the right to erasure?</li></ul>
+<p><a class="btn primary" href="../#/q/be-115">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-115%3A+How+would+you+design+an+audit+logging+system+that+is+tamper-evident%2C%E2%80%A6&amp;question-id=be-115&amp;context=Backend+engineer%2C+Gear+4%2C+topic%3A+Compliance%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-115.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

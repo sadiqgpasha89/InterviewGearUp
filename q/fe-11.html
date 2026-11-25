@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain event bubbling, event capturing, and how event delegation improves performance. | InterviewGearUp</title>
+<meta name="description" content="An event travels in three phases: capture from the window down to the target, the target itself, then bubbling back up. Listeners run on bubbling by…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-11.html">
+<meta property="og:title" content="Explain event bubbling, event capturing, and how event delegation improves performance. | InterviewGearUp">
+<meta property="og:description" content="An event travels in three phases: capture from the window down to the target, the target itself, then bubbling back up. Listeners run on bubbling by…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-11.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain event bubbling, event capturing, and how event delegation improves performance.</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · DOM · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>An event travels in three phases: capture from the window down to the target, the target itself, then bubbling back up. Listeners run on bubbling by default. Event delegation puts one listener on a common ancestor and uses event.target to find which child was hit, so it needs fewer listeners and also covers elements added later.</p></div>
+<h4>Explained in depth</h4>
+<h4>Phases</h4>
+<ol start="1"><li><strong>Capture</strong>: from <code>window</code> down through ancestors to the target&#39;s parent.</li><li><strong>Target</strong>: the element itself.</li><li><strong>Bubble</strong>: back up through the ancestors.</li></ol>
+<p><code>addEventListener(&#39;click&#39;, fn)</code> listens in the bubble phase. Pass <code>{ capture: true }</code> to listen while the event travels down. <code>event.target</code> is the element that was actually hit, <code>event.currentTarget</code> the element the listener is attached to. <code>stopPropagation()</code> stops the event travelling further, and <code>preventDefault()</code> is a different thing: it cancels the default browser action.</p>
+<h4>Event delegation</h4>
+<pre><code>list.addEventListener(&#39;click&#39;, (e) =&gt; {
+  const item = e.target.closest(&#39;li[data-id]&#39;);   // handles clicks on children of the li too
+  if (!item || !list.contains(item)) return;
+  open(item.dataset.id);
+});</code></pre>
+<h4>Benefits</h4>
+<ul><li><strong>One listener instead of thousands</strong> saves memory and setup time.</li><li>Elements added or removed later are handled automatically, with no re-binding.</li><li>Less cleanup, so fewer listener leaks.</li></ul>
+<h4>Caveats</h4>
+<ul><li>Some events do <strong>not bubble</strong> (<code>focus</code>, <code>blur</code>, <code>mouseenter</code>). Use <code>focusin</code> and <code>focusout</code>, or capture.</li><li>If a child calls <code>stopPropagation()</code>, the delegated listener never sees the event.</li><li>Use <code>closest()</code> because the click may land on a nested element such as an icon inside a button.</li><li>For very high-frequency events (<code>mousemove</code>, <code>scroll</code>), keep the handler cheap and consider throttling.</li><li>Frameworks like React use delegation internally, attaching listeners at the root.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>Why do focus and blur not bubble and how do you delegate them?</li><li>What is the difference between stopPropagation and preventDefault?</li><li>When would you listen in the capture phase?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-11">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-11%3A+Explain+event+bubbling%2C+event+capturing%2C+and+how+event+delegation%E2%80%A6&amp;question-id=fe-11&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+DOM%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-11.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

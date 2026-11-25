@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does mutual TLS (mTLS) with SPIFFE/SPIRE provide verifiable service identities in microservices? | InterviewGearUp</title>
+<meta name="description" content="SPIFFE gives each workload a cryptographic identity, a SPIFFE ID carried in a short-lived certificate (an SVID), instead of relying on IP addresses or…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-87.html">
+<meta property="og:title" content="How does mutual TLS (mTLS) with SPIFFE/SPIRE provide verifiable service identities in microservices? | InterviewGearUp">
+<meta property="og:description" content="SPIFFE gives each workload a cryptographic identity, a SPIFFE ID carried in a short-lived certificate (an SVID), instead of relying on IP addresses or…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-87.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does mutual TLS (mTLS) with SPIFFE/SPIRE provide verifiable service identities in microservices?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 4 (Lead / Staff) · Architecture · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>SPIFFE gives each workload a cryptographic identity, a SPIFFE ID carried in a short-lived certificate (an SVID), instead of relying on IP addresses or long-lived secrets. SPIRE is the system that attests workloads and issues and rotates these certificates. Services then use mutual TLS, verifying each other&#39;s SPIFFE IDs against a trust bundle.</p></div>
+<h4>Explained in depth</h4>
+<h4>The problem</h4>
+<p>In dynamic environments IP addresses change, and static API keys or shared certificates are copied, leaked and rarely rotated. Authorisation needs to answer &#39;which workload is calling?&#39; reliably.</p>
+<h4>SPIFFE (the standard)</h4>
+<ul><li><strong>SPIFFE ID</strong>: a URI that names a workload within a <strong>trust domain</strong>, in the form <code>spiffe://trust-domain/path</code>, for example a payments API service account.</li><li><strong>SVID</strong>: the verifiable document proving the ID, usually an <strong>X.509 certificate</strong> with the ID in the URI Subject Alternative Name (JWT-SVIDs also exist).</li><li><strong>Trust bundle</strong>: the CA certificates of a trust domain, used to verify peers.</li><li><strong>Workload API</strong>: a local endpoint (a Unix socket) through which a workload fetches its SVID and bundles, without handling credentials.</li></ul>
+<h4>SPIRE (the implementation)</h4>
+<p>A <strong>SPIRE server</strong> acts as the CA and holds registration entries (which selectors map to which ID). A <strong>SPIRE agent</strong> runs on each node. Issuance has two steps of <strong>attestation</strong>:</p>
+<ol start="1"><li><strong>Node attestation</strong>: the agent proves what node it runs on, using a cloud instance identity document or a Kubernetes node token.</li><li><strong>Workload attestation</strong>: the agent inspects the calling process, such as its Kubernetes namespace, service account and labels, or its Unix user, and matches it to a registration entry.</li></ol>
+<p>It then issues a short-lived SVID (often an hour or less) and renews it automatically.</p>
+<h4>mTLS with SPIFFE</h4>
+<p>Both sides present their SVIDs and validate the peer&#39;s certificate against the trust bundle, then <strong>check the peer&#39;s SPIFFE ID against policy</strong> (for example only <code>spiffe://.../frontend</code> may call <code>/charge</code>). Traffic is encrypted and both ends are authenticated. A service mesh sidecar such as Envoy can do this transparently by getting certificates over SDS.</p>
+<h4>Benefits and cautions</h4>
+<p>No static secrets, identity bound to the workload, rapid rotation, policy by identity, and federation between trust domains. Protect the SPIRE server and its signing keys (consider HA and an upstream CA), design attestation selectors carefully (weak selectors let the wrong process obtain an identity), and keep clocks in sync.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does SPIRE decide which identity a Kubernetes pod is allowed to receive?</li><li>Why are short-lived certificates better than long-lived ones?</li><li>How does authorisation by SPIFFE ID differ from allow-listing IP addresses?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-87">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-87%3A+How+does+mutual+TLS+%28mTLS%29+with+SPIFFE%2FSPIRE+provide+verifiable%E2%80%A6&amp;question-id=sec-87&amp;context=Security+engineer%2C+Gear+4%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-87.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

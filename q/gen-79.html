@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Why is Composition favored over Inheritance: Fragile base class problems and tight coupling. | InterviewGearUp</title>
+<meta name="description" content="Inheritance couples a subclass tightly to its parent&#39;s implementation, so changes to the base class can break subclasses (the fragile base class…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-79.html">
+<meta property="og:title" content="Why is Composition favored over Inheritance: Fragile base class problems and tight coupling. | InterviewGearUp">
+<meta property="og:description" content="Inheritance couples a subclass tightly to its parent&#39;s implementation, so changes to the base class can break subclasses (the fragile base class…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-79.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Why is Composition favored over Inheritance: Fragile base class problems and tight coupling.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 1 (Junior) · OOP · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Inheritance couples a subclass tightly to its parent&#39;s implementation, so changes to the base class can break subclasses (the fragile base class problem). Composition builds behaviour by holding and delegating to other objects behind an interface, which keeps coupling loose, lets you swap behaviour at runtime and avoids deep hierarchies.</p></div>
+<h4>Explained in depth</h4>
+<h4>Problems with inheritance</h4>
+<ul><li><strong>Fragile base class</strong>: a subclass relies on how the parent works internally. Joshua Bloch&#39;s example is an <code>InstrumentedHashSet</code> that overrides <code>add</code> and <code>addAll</code> to count insertions; because <code>HashSet.addAll</code> calls <code>add</code> internally, items are counted twice. A harmless-looking change in the parent can break the child.</li><li><strong>Tight coupling</strong>: the subclass inherits everything, including methods that do not fit. The Square extends Rectangle problem is an example of breaking substitutability.</li><li><strong>Rigid hierarchies</strong>: single inheritance forces you to pick one axis of variation, and combinations cause class explosions (for example FlyingSwimmingDuck).</li></ul>
+<h4>Composition</h4>
+<pre><code>class Engine:
+    def start(self): ...
+
+class Car:
+    def __init__(self, engine):      # has-a, injected
+        self.engine = engine
+    def start(self):
+        self.engine.start()          # delegate</code></pre>
+<ul><li>Behaviour is replaceable at runtime and in tests (pass a fake engine).</li><li>Classes stay small and focused, and depend on an interface, not on a concrete parent.</li></ul>
+<h4>Guidance</h4>
+<p>&quot;Favor composition over inheritance&quot; is a default, not a ban. Use inheritance for a true is-a relationship with a stable, well-designed base class, or when the base class is built and documented for extension.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>When is inheritance actually the right tool?</li><li>What is the classic HashSet and counting example of the fragile base class problem?</li><li>How does delegation differ from inheritance in practice?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-79">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-79%3A+Why+is+Composition+favored+over+Inheritance%3A+Fragile+base+class%E2%80%A6&amp;question-id=gen-79&amp;context=Software+engineer+%28core%29%2C+Gear+1%2C+topic%3A+OOP%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-79.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

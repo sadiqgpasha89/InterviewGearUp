@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain Breadth-First Search (BFS): Queue implementation and finding shortest paths in unweighted graphs. | InterviewGearUp</title>
+<meta name="description" content="BFS explores a graph level by level using a FIFO queue: visit a node, enqueue its unvisited neighbours and mark them visited when enqueued. It reaches…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-26.html">
+<meta property="og:title" content="Explain Breadth-First Search (BFS): Queue implementation and finding shortest paths in unweighted graphs. | InterviewGearUp">
+<meta property="og:description" content="BFS explores a graph level by level using a FIFO queue: visit a node, enqueue its unvisited neighbours and mark them visited when enqueued. It reaches…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-26.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain Breadth-First Search (BFS): Queue implementation and finding shortest paths in unweighted graphs.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 1 (Junior) · Graphs · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>BFS explores a graph level by level using a FIFO queue: visit a node, enqueue its unvisited neighbours and mark them visited when enqueued. It reaches nodes in order of edge count, so the first time it reaches a node is a shortest path in an unweighted graph. It runs in O(V + E) time and O(V) space.</p></div>
+<h4>Explained in depth</h4>
+<pre><code>from collections import deque
+
+def shortest_path(graph, start, goal):
+    prev = {start: None}
+    q = deque([start])
+    while q:
+        node = q.popleft()
+        if node == goal:
+            path = []
+            while node is not None:
+                path.append(node)
+                node = prev[node]
+            return path[::-1]
+        for nxt in graph[node]:
+            if nxt not in prev:
+                prev[nxt] = node
+                q.append(nxt)
+    return None</code></pre>
+<p><strong>Mark nodes visited when you enqueue them</strong>, not when you dequeue them. Otherwise the same node can be queued many times and the queue can blow up on dense graphs.</p>
+<h4>Why it finds shortest paths</h4>
+<p>The queue always holds nodes at distance d followed by nodes at distance d + 1, so nodes are dequeued in non-decreasing distance. This only holds when every edge costs the same; with weights use Dijkstra, and with only 0 and 1 weights use 0-1 BFS with a deque.</p>
+<h4>Typical uses</h4>
+<p>Fewest hops in a grid or social graph, level-order traversal of a tree, connected components and word-ladder problems. Memory is the usual limit: the queue can hold a whole level, which is large in wide graphs, whereas DFS holds only one path.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How would you run BFS from both ends to speed up a search?</li><li>When would DFS be a better choice than BFS?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-26">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-26%3A+Explain+Breadth-First+Search+%28BFS%29%3A+Queue+implementation+and+finding%E2%80%A6&amp;question-id=gen-26&amp;context=Software+engineer+%28core%29%2C+Gear+1%2C+topic%3A+Graphs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-26.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

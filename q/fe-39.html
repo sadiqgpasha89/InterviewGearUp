@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do server-state libraries like TanStack Query (React Query) handle caching, deduplication, and stale data? | InterviewGearUp</title>
+<meta name="description" content="TanStack Query treats server data as a cache keyed by a query key. It deduplicates identical in-flight requests, returns cached data immediately and…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-39.html">
+<meta property="og:title" content="How do server-state libraries like TanStack Query (React Query) handle caching, deduplication, and stale data? | InterviewGearUp">
+<meta property="og:description" content="TanStack Query treats server data as a cache keyed by a query key. It deduplicates identical in-flight requests, returns cached data immediately and…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-39.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do server-state libraries like TanStack Query (React Query) handle caching, deduplication, and stale data?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 3 (Senior) · State · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>TanStack Query treats server data as a cache keyed by a query key. It deduplicates identical in-flight requests, returns cached data immediately and refetches in the background when data is stale, based on staleTime, with options for retries, window-focus refetching, invalidation after mutations and garbage collection of unused entries.</p></div>
+<h4>Explained in depth</h4>
+<h4>Mental model</h4>
+<p>Server state is data you do not own: it lives remotely and can change without you knowing. TanStack Query manages it as a <strong>cache</strong>.</p>
+<pre><code>const { data, isPending, isError } = useQuery({
+  queryKey: [&#39;todos&#39;, { status }],      // identifies the cache entry
+  queryFn: () =&gt; fetchTodos(status),
+  staleTime: 60_000,                    // fresh for one minute
+});</code></pre>
+<h4>How caching works</h4>
+<ul><li><strong>Query key</strong> uniquely identifies data. Changing the key (for example the filter) is a different cache entry.</li><li><strong>Fresh</strong> data (within <code>staleTime</code>) is returned without a request. <strong>Stale</strong> data is returned instantly and then <strong>refetched in the background</strong>, so the UI updates when new data arrives (stale-while-revalidate).</li><li><strong>gcTime</strong> (formerly cacheTime): how long unused entries stay in memory before removal.</li><li><strong>Deduplication</strong>: if ten components request the same key at once, one network request is made.</li><li><strong>Refetch triggers</strong>: window refocus, network reconnect, mount, interval or manual invalidation.</li></ul>
+<h4>Mutations</h4>
+<pre><code>const mutation = useMutation({
+  mutationFn: addTodo,
+  onSuccess: () =&gt; queryClient.invalidateQueries({ queryKey: [&#39;todos&#39;] }),
+});</code></pre>
+<p><code>invalidateQueries</code> marks matching entries stale so active ones refetch. For optimistic updates, write to the cache in <code>onMutate</code> and roll back in <code>onError</code>.</p>
+<h4>Other features</h4>
+<p>Retries with backoff, pagination and infinite queries, prefetching, request cancellation and Suspense support.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the difference between staleTime and gcTime?</li><li>How do you implement optimistic updates with it?</li><li>Why is server state different from client state and not a good fit for Redux?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-39">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-39%3A+How+do+server-state+libraries+like+TanStack+Query+%28React+Query%29%E2%80%A6&amp;question-id=fe-39&amp;context=Frontend+engineer%2C+Gear+3%2C+topic%3A+State%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-39.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

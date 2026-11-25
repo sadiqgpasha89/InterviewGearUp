@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare Transformer architectures: Encoder-Only (BERT), Decoder-Only (GPT), and Encoder-Decoder (T5). | InterviewGearUp</title>
+<meta name="description" content="Encoder-only models (BERT) read the whole input bidirectionally and are best for understanding tasks such as classification, retrieval embeddings and…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-39.html">
+<meta property="og:title" content="Compare Transformer architectures: Encoder-Only (BERT), Decoder-Only (GPT), and Encoder-Decoder (T5). | InterviewGearUp">
+<meta property="og:description" content="Encoder-only models (BERT) read the whole input bidirectionally and are best for understanding tasks such as classification, retrieval embeddings and…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-39.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare Transformer architectures: Encoder-Only (BERT), Decoder-Only (GPT), and Encoder-Decoder (T5).</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · Transformers · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Encoder-only models (BERT) read the whole input bidirectionally and are best for understanding tasks such as classification, retrieval embeddings and tagging. Decoder-only models (GPT) generate text left to right with causal attention and dominate general-purpose LLMs. Encoder-decoder models (T5) encode an input then generate an output, suiting translation and summarisation.</p></div>
+<h4>Explained in depth</h4>
+<h4>Architectures</h4>
+<div class="md-table"><table><thead><tr><th></th><th>Encoder-only</th><th>Decoder-only</th><th>Encoder-decoder</th></tr></thead><tbody><tr><td>Examples</td><td>BERT, RoBERTa, DeBERTa</td><td>GPT family, LLaMA, Mistral</td><td>T5, BART, original Transformer</td></tr><tr><td>Attention</td><td>Bidirectional (each token sees all)</td><td>Causal (sees only the past)</td><td>Encoder bidirectional; decoder causal plus cross-attention</td></tr><tr><td>Pre-training</td><td>Masked language modelling</td><td>Next-token prediction</td><td>Span corruption or denoising</td></tr><tr><td>Strength</td><td>Understanding, embeddings, classification, NER, reranking</td><td>Open-ended generation, in-context learning, chat</td><td>Sequence-to-sequence: translation, summarisation</td></tr><tr><td>Generation</td><td>Not natural</td><td>Natural, autoregressive</td><td>Natural</td></tr></tbody></table></div>
+<h4>Why decoder-only dominates LLMs</h4>
+<ul><li>One simple objective (predict the next token) scales to huge unlabelled data.</li><li>The same model handles any task through prompting, with no task-specific heads.</li><li>Efficient inference with a <strong>KV cache</strong>, and a uniform architecture that is easy to scale and parallelise.</li><li>Research found decoder-only models match or beat encoder-decoder at scale for generative and few-shot tasks.</li></ul>
+<h4>When others still make sense</h4>
+<ul><li><strong>Encoder-only</strong>: small, fast models for classification, semantic search embeddings and cross-encoder reranking, where bidirectional context helps and generation is not needed.</li><li><strong>Encoder-decoder</strong>: tasks with a clear input and output separation, with strong results in translation, speech recognition (Whisper) and fine-tuned summarisation, especially at modest model sizes.</li></ul>
+<h4>Takeaway</h4>
+<p>Pick the architecture from the task: understanding versus generation, latency and size limits, and whether you can use a pre-trained checkpoint.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why have decoder-only models become the default for large language models?</li><li>How does masked language modelling differ from next-token prediction?</li><li>When would you still choose an encoder-only model today?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-39">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-39%3A+Compare+Transformer+architectures%3A+Encoder-Only+%28BERT%29%2C+Decoder-Only%E2%80%A6&amp;question-id=ml-39&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+Transformers%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-39.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

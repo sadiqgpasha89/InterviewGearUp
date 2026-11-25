@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does Apache Flink achieve stateful fault tolerance using asynchronous barrier checkpointing? | InterviewGearUp</title>
+<meta name="description" content="Flink periodically injects checkpoint barriers into the data streams. When an operator has received the barrier on all its inputs, it snapshots its state…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-52.html">
+<meta property="og:title" content="How does Apache Flink achieve stateful fault tolerance using asynchronous barrier checkpointing? | InterviewGearUp">
+<meta property="og:description" content="Flink periodically injects checkpoint barriers into the data streams. When an operator has received the barrier on all its inputs, it snapshots its state…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-52.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does Apache Flink achieve stateful fault tolerance using asynchronous barrier checkpointing?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 4 (Lead / Staff) · Streaming · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Flink periodically injects checkpoint barriers into the data streams. When an operator has received the barrier on all its inputs, it snapshots its state to durable storage and forwards the barrier, producing a consistent global snapshot without stopping the job. After a failure, Flink restores every operator from the last completed checkpoint and replays the sources from the recorded offsets.</p></div>
+<h4>Explained in depth</h4>
+<p><strong>Flow</strong>: the coordinator triggers a checkpoint; sources record their offsets and emit a barrier. Barriers travel with the records. An operator with several inputs performs <strong>barrier alignment</strong>: it buffers records from channels that already delivered the barrier until all channels have, then snapshots its state and forwards the barrier. Completion is acknowledged to the coordinator.</p>
+<h4>Making it fast</h4>
+<ul><li><strong>Asynchronous snapshots</strong>: state is copied in the background. The RocksDB state backend supports <strong>incremental</strong> checkpoints that upload only changed files.</li><li><strong>Unaligned checkpoints</strong> let barriers overtake buffered data to cut checkpoint time under backpressure, at the cost of storing in-flight records.</li></ul>
+<h4>Guarantees</h4>
+<p>State is exactly-once within Flink after recovery. End-to-end exactly-once also needs a replayable source (such as Kafka offsets) and an idempotent or transactional sink.</p>
+<h4>Operating it</h4>
+<p>Tune the interval (trading recovery time against overhead), set a timeout and a minimum pause between checkpoints, watch checkpoint duration and alignment time, and use <strong>savepoints</strong> for planned upgrades.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is barrier alignment and when would you prefer unaligned checkpoints?</li><li>How does a two-phase-commit sink fit into checkpointing?</li></ul>
+<p><a class="btn primary" href="../#/q/de-52">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-52%3A+How+does+Apache+Flink+achieve+stateful+fault+tolerance+using%E2%80%A6&amp;question-id=de-52&amp;context=Data+engineer%2C+Gear+4%2C+topic%3A+Streaming%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-52.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

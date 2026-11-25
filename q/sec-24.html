@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare cryptographic hash functions: SHA-256 versus SHA-3 and the importance of collision resistance. | InterviewGearUp</title>
+<meta name="description" content="A cryptographic hash maps data to a fixed-size digest and must be one-way, collision resistant and sensitive to any change. SHA-256 (SHA-2 family) is…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-24.html">
+<meta property="og:title" content="Compare cryptographic hash functions: SHA-256 versus SHA-3 and the importance of collision resistance. | InterviewGearUp">
+<meta property="og:description" content="A cryptographic hash maps data to a fixed-size digest and must be one-way, collision resistant and sensitive to any change. SHA-256 (SHA-2 family) is…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-24.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare cryptographic hash functions: SHA-256 versus SHA-3 and the importance of collision resistance.</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 2 (Mid-level) · Cryptography · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A cryptographic hash maps data to a fixed-size digest and must be one-way, collision resistant and sensitive to any change. SHA-256 (SHA-2 family) is widely used and secure; SHA-3 (Keccak) has a different internal design, giving diversity and resistance to length-extension attacks. MD5 and SHA-1 are broken because attackers can find collisions.</p></div>
+<h4>Explained in depth</h4>
+<h4>Properties</h4>
+<ul><li><strong>Preimage resistance</strong>: given a digest, you cannot find an input that produces it.</li><li><strong>Second-preimage resistance</strong>: given one input, you cannot find another with the same digest.</li><li><strong>Collision resistance</strong>: you cannot find any two inputs with the same digest. By the birthday bound, an n-bit hash offers only about n/2 bits of collision security, so SHA-256 gives about 128 bits.</li></ul>
+<h4>SHA-2 versus SHA-3</h4>
+<div class="md-table"><table><thead><tr><th></th><th>SHA-256</th><th>SHA-3-256</th></tr></thead><tbody><tr><td>Design</td><td>Merkle-Damgard construction</td><td>Sponge construction (Keccak)</td></tr><tr><td>Digest size</td><td>256 bits</td><td>256 bits</td></tr><tr><td>Length-extension attack</td><td>Vulnerable if used as <code>H(key + msg)</code></td><td>Not vulnerable</td></tr><tr><td>Speed</td><td>Faster in software, hardware support on many CPUs</td><td>Slower in software, good in hardware</td></tr><tr><td>Status</td><td>Secure, ubiquitous</td><td>Secure, a standardised alternative</td></tr></tbody></table></div>
+<p>SHA-3 was chosen as a backup in case SHA-2 weaknesses emerge, not because SHA-2 is broken. Use SHA-256 or SHA-512 by default; BLAKE2 and BLAKE3 are fast alternatives.</p>
+<h4>Broken hashes</h4>
+<p><strong>MD5</strong> and <strong>SHA-1</strong> have practical collision attacks (a SHA-1 collision was published in 2017), so attackers can craft two different documents or certificates with the same hash. Do not use them for signatures, certificates or integrity against attackers.</p>
+<h4>Important uses and limits</h4>
+<ul><li>A bare hash gives <strong>integrity against accidents</strong>, not authenticity: anyone can recompute it. For authenticity use <strong>HMAC</strong> or a digital signature.</li><li><strong>Never use a fast hash such as SHA-256 alone to store passwords</strong>; use a slow password hashing function (Argon2id, bcrypt).</li><li>Collision resistance matters for digital signatures and certificates, because a signed hash stands for the whole document.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>What is a length-extension attack and which hashes are vulnerable?</li><li>Why is a plain hash not enough for message authentication?</li><li>What are the preimage, second-preimage and collision security levels?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-24">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-24%3A+Compare+cryptographic+hash+functions%3A+SHA-256+versus+SHA-3+and+the%E2%80%A6&amp;question-id=sec-24&amp;context=Security+engineer%2C+Gear+2%2C+topic%3A+Cryptography%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-24.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

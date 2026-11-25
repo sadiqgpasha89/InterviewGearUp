@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How is CSS specificity calculated and how does the cascade resolve conflicting declarations? | InterviewGearUp</title>
+<meta name="description" content="Specificity is compared as a tuple of counts: inline style, then IDs, then classes, attributes and pseudo-classes, then element types and…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-24.html">
+<meta property="og:title" content="How is CSS specificity calculated and how does the cascade resolve conflicting declarations? | InterviewGearUp">
+<meta property="og:description" content="Specificity is compared as a tuple of counts: inline style, then IDs, then classes, attributes and pseudo-classes, then element types and…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-24.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How is CSS specificity calculated and how does the cascade resolve conflicting declarations?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · CSS · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Specificity is compared as a tuple of counts: inline style, then IDs, then classes, attributes and pseudo-classes, then element types and pseudo-elements, compared left to right. When rules from the same origin tie on importance and layer, the higher specificity wins, and if that ties too, the later rule in source order wins.</p></div>
+<h4>Explained in depth</h4>
+<h4>Calculating specificity</h4>
+<p>Count each kind of selector part:</p>
+<ul><li><strong>IDs</strong> (<code>#nav</code>): highest weight</li><li><strong>Classes, attributes, pseudo-classes</strong> (<code>.item</code>, <code>[type=text]</code>, <code>:hover</code>)</li><li><strong>Elements and pseudo-elements</strong> (<code>a</code>, <code>::before</code>)</li><li>The universal selector <code>*</code> and combinators count for nothing. Inline <code>style=</code> beats all selectors.</li></ul>
+<p><code>#nav .item a:hover</code> has 1 ID, 2 (class + pseudo-class) and 1 element, so it is <code>(1, 2, 1)</code>. Compare column by column from the left, so a single ID beats any number of classes.</p>
+<p>Special cases: <code>:where()</code> always contributes <strong>zero</strong>; <code>:is()</code>, <code>:not()</code> and <code>:has()</code> take the specificity of their <strong>most specific argument</strong>.</p>
+<h4>The cascade order</h4>
+<p>When declarations conflict, the browser decides in this order:</p>
+<ol start="1"><li><strong>Origin and importance</strong>: transitions, then <code>!important</code> rules (browser, user, author, in reversed order), then normal rules (author beats browser defaults).</li><li><strong>Cascade layers</strong> (<code>@layer</code>): for normal declarations, later-declared layers win, and unlayered styles beat layered ones; for <code>!important</code>, the order is reversed.</li><li><strong>Specificity.</strong></li><li><strong>Source order</strong>: the last declaration wins.</li></ol>
+<p>Inheritance is a separate mechanism: it only supplies a value for inheritable properties when no rule applies to the element.</p>
+<h4>Practical advice</h4>
+<ul><li>Keep specificity low and flat (a single class per rule, BEM-style) so overrides are predictable.</li><li>Avoid IDs and deep selectors for styling, and avoid <code>!important</code> except for utilities.</li><li>Use <code>@layer</code> to order resets, libraries and your own styles without specificity fights.</li><li>Use <code>:where()</code> for defaults that are easy to override, and the DevTools Styles panel to see which rule won.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>Which wins: two classes or one ID?</li><li>How do cascade layers change the usual specificity rules?</li><li>Why is :where() useful in a design system?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-24">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-24%3A+How+is+CSS+specificity+calculated+and+how+does+the+cascade+resolve%E2%80%A6&amp;question-id=fe-24&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+CSS%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-24.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

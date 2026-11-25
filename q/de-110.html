@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is a CTE in SQL, and when do you use it instead of a subquery? | InterviewGearUp</title>
+<meta name="description" content="A common table expression is a named temporary result defined with WITH that you can reference like a table in the main query. CTEs make complex queries…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-110.html">
+<meta property="og:title" content="What is a CTE in SQL, and when do you use it instead of a subquery? | InterviewGearUp">
+<meta property="og:description" content="A common table expression is a named temporary result defined with WITH that you can reference like a table in the main query. CTEs make complex queries…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-110.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is a CTE in SQL, and when do you use it instead of a subquery?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 1 (Junior) · SQL · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A common table expression is a named temporary result defined with WITH that you can reference like a table in the main query. CTEs make complex queries readable by breaking them into steps, allow reuse of a result several times, and support recursion for hierarchies. Subqueries are fine for small one-off cases, and performance is usually the same because the optimizer treats them similarly.</p></div>
+<h4>Explained in depth</h4>
+<h4>Syntax</h4>
+<pre><code>WITH monthly AS (
+  SELECT customer_id, DATE_TRUNC(&#39;month&#39;, order_date) AS month, SUM(amount) AS revenue
+  FROM orders
+  GROUP BY 1, 2
+),
+ranked AS (
+  SELECT *, RANK() OVER (PARTITION BY month ORDER BY revenue DESC) AS rnk
+  FROM monthly
+)
+SELECT * FROM ranked WHERE rnk &lt;= 3;</code></pre>
+<p>Each CTE is a named step; later steps can use earlier ones.</p>
+<h4>CTE versus subquery</h4>
+<div class="md-table"><table><thead><tr><th></th><th>CTE</th><th>Subquery</th></tr></thead><tbody><tr><td>Readability</td><td>Top-down, named steps</td><td>Nested, harder to follow when deep</td></tr><tr><td>Reuse</td><td>Referenced several times in the same query</td><td>Must be repeated</td></tr><tr><td>Recursion</td><td>Supported (<code>WITH RECURSIVE</code>)</td><td>Not possible</td></tr><tr><td>Scope</td><td>One statement</td><td>Inline</td></tr></tbody></table></div>
+<p>For a simple filter such as <code>WHERE id IN (SELECT ...)</code>, a subquery is fine.</p>
+<h4>Recursive CTEs</h4>
+<p>Walk hierarchies such as an employee-manager tree or a category path, by combining an <strong>anchor</strong> query with a <strong>recursive</strong> member that joins back to itself until no new rows appear. Add a depth limit or cycle check to avoid infinite loops.</p>
+<h4>Performance notes</h4>
+<ul><li>Many engines <strong>inline</strong> CTEs like subqueries (PostgreSQL 12 and later, by default, when referenced once), so there is no automatic speed gain or loss. Some older engines or <code>MATERIALIZED</code> hints compute the CTE once and store it, which can help when it is reused and expensive, or hurt by blocking optimisations.</li><li>A CTE is not an index. For very large intermediate results reused across statements, a <strong>temporary table</strong> (which can be indexed and analysed) may be better.</li></ul>
+<h4>Style tip</h4>
+<p>Name CTEs meaningfully, keep each doing one thing, and avoid very long chains that are better modelled as separate dbt models.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is a recursive CTE and what is it used for?</li><li>Are CTEs materialised and does that affect performance?</li><li>When would you use a temporary table instead of a CTE?</li></ul>
+<p><a class="btn primary" href="../#/q/de-110">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-110%3A+What+is+a+CTE+in+SQL%2C+and+when+do+you+use+it+instead+of+a+subquery%3F&amp;question-id=de-110&amp;context=Data+engineer%2C+Gear+1%2C+topic%3A+SQL%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-110.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

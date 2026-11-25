@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is the Shadow DOM and how does it provide style and DOM encapsulation? | InterviewGearUp</title>
+<meta name="description" content="Shadow DOM attaches a separate, isolated DOM tree to an element. Its internal markup is hidden from the main document&#39;s selectors and queries, and its…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-12.html">
+<meta property="og:title" content="What is the Shadow DOM and how does it provide style and DOM encapsulation? | InterviewGearUp">
+<meta property="og:description" content="Shadow DOM attaches a separate, isolated DOM tree to an element. Its internal markup is hidden from the main document&#39;s selectors and queries, and its…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-12.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is the Shadow DOM and how does it provide style and DOM encapsulation?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · DOM · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Shadow DOM attaches a separate, isolated DOM tree to an element. Its internal markup is hidden from the main document&#39;s selectors and queries, and its styles do not leak out or in, apart from inherited properties and CSS custom properties. It is the encapsulation mechanism behind Web Components such as custom elements.</p></div>
+<h4>Explained in depth</h4>
+<h4>Creating one</h4>
+<pre><code>class UserCard extends HTMLElement {
+  constructor() {
+    super();
+    const root = this.attachShadow({ mode: &#39;open&#39; });
+    root.innerHTML = `
+      &lt;style&gt;p { color: teal; }&lt;/style&gt;   &lt;!-- scoped to this shadow tree --&gt;
+      &lt;p&gt;&lt;slot&gt;&lt;/slot&gt;&lt;/p&gt;`;
+  }
+}
+customElements.define(&#39;user-card&#39;, UserCard);</code></pre>
+<h4>What is encapsulated</h4>
+<ul><li><strong>DOM</strong>: <code>document.querySelector(&#39;p&#39;)</code> does not see the component&#39;s inner <code>&lt;p&gt;</code>. Events cross the boundary but are retargeted so the outside sees the host element.</li><li><strong>Styles</strong>: page CSS does not apply inside, and the component&#39;s CSS does not affect the page.</li></ul>
+<h4>How it still connects to the page</h4>
+<ul><li><strong>Slots</strong> let the user project their own children into marked places (<code>&lt;slot name=&quot;title&quot;&gt;</code>).</li><li><strong>Inheritable properties</strong> (color, font) and <strong>CSS custom properties</strong> pass through, so <code>--brand-color</code> can theme a component.</li><li><code>::part()</code> lets a component expose named elements for outside styling, and <code>:host</code> styles the host element from inside.</li></ul>
+<h4>Modes</h4>
+<p><code>open</code> allows <code>element.shadowRoot</code> access; <code>closed</code> hides it (but is not a security boundary).</p>
+<h4>Benefits and costs</h4>
+<p>Strong isolation avoids global CSS collisions. Costs: global styles and some form or accessibility behaviours need extra work, and server-side rendering needs declarative shadow DOM.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the difference between open and closed shadow roots?</li><li>How do slots let outside content appear inside a shadow tree?</li><li>How can a page theme a component that uses Shadow DOM?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-12">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-12%3A+What+is+the+Shadow+DOM+and+how+does+it+provide+style+and+DOM%E2%80%A6&amp;question-id=fe-12&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+DOM%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-12.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

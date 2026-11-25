@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do advanced optimizers (Momentum, RMSProp, Adam, AdamW) accelerate convergence? | InterviewGearUp</title>
+<meta name="description" content="Momentum accumulates a running average of gradients to speed movement along consistent directions and damp oscillations. RMSProp scales each parameter&#39;s…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-16.html">
+<meta property="og:title" content="How do advanced optimizers (Momentum, RMSProp, Adam, AdamW) accelerate convergence? | InterviewGearUp">
+<meta property="og:description" content="Momentum accumulates a running average of gradients to speed movement along consistent directions and damp oscillations. RMSProp scales each parameter&#39;s…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-16.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do advanced optimizers (Momentum, RMSProp, Adam, AdamW) accelerate convergence?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 2 (Mid-level) · Optimization · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Momentum accumulates a running average of gradients to speed movement along consistent directions and damp oscillations. RMSProp scales each parameter&#39;s step by a running average of its squared gradients. Adam combines both with bias correction, and AdamW decouples weight decay from the gradient update, which regularises correctly and is the standard for transformers.</p></div>
+<h4>Explained in depth</h4>
+<h4>SGD with momentum</h4>
+<p><code>v = beta * v + grad</code>, then <code>w = w - lr * v</code>. Past gradients build up speed along steady directions and cancel in directions that oscillate (such as steep, narrow valleys). A typical beta is 0.9.</p>
+<h4>RMSProp</h4>
+<p>Keeps <code>s = rho * s + (1 - rho) * grad^2</code> and updates <code>w = w - lr * grad / (sqrt(s) + eps)</code>. Parameters with large gradients get smaller steps and rarely updated ones get larger steps, which fixes the problem of a single learning rate for all dimensions.</p>
+<h4>Adam</h4>
+<p>Tracks both the first moment <code>m</code> (momentum of gradients, beta1 about 0.9) and second moment <code>v</code> (squared gradients, beta2 about 0.999):</p>
+<pre><code>m = b1*m + (1-b1)*g
+v = b2*v + (1-b2)*g^2
+m_hat = m / (1 - b1^t);  v_hat = v / (1 - b2^t)     # bias correction for early steps
+w = w - lr * m_hat / (sqrt(v_hat) + eps)</code></pre>
+<p>Bias correction matters because m and v start at zero and are too small in the first steps.</p>
+<h4>AdamW</h4>
+<p>In Adam, adding L2 penalty to the loss puts the penalty through the adaptive scaling, so it does not behave like true weight decay. <strong>AdamW</strong> applies decay directly: <code>w = w - lr * (adaptive_step + wd * w)</code>. It generalises better and makes the best learning rate less dependent on decay.</p>
+<h4>Practical guidance</h4>
+<ul><li>Adam or AdamW with warmup and a decay schedule is the default for transformers and many deep nets.</li><li>SGD with momentum and a tuned schedule often generalises slightly better on vision tasks, but needs more tuning.</li><li>Typical starting rates: 1e-3 for Adam on small models, 1e-4 to 3e-4 for fine-tuning large ones.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does Adam need bias correction?</li><li>Why is L2 regularisation not equivalent to weight decay under Adam?</li><li>When does SGD with momentum generalise better than Adam?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-16">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-16%3A+How+do+advanced+optimizers+%28Momentum%2C+RMSProp%2C+Adam%2C+AdamW%29%E2%80%A6&amp;question-id=ml-16&amp;context=ML+%2F+AI+engineer%2C+Gear+2%2C+topic%3A+Optimization%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-16.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

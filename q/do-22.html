@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What Linux namespaces (PID, Net, MNT, IPC, UTS, User) provide container isolation? | InterviewGearUp</title>
+<meta name="description" content="Linux namespaces give a process its own view of a system resource, which is how containers are isolated: PID (process ids), Net (network stack), MNT…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-22.html">
+<meta property="og:title" content="What Linux namespaces (PID, Net, MNT, IPC, UTS, User) provide container isolation? | InterviewGearUp">
+<meta property="og:description" content="Linux namespaces give a process its own view of a system resource, which is how containers are isolated: PID (process ids), Net (network stack), MNT…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-22.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What Linux namespaces (PID, Net, MNT, IPC, UTS, User) provide container isolation?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 2 (Mid-level) · Containers · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Linux namespaces give a process its own view of a system resource, which is how containers are isolated: PID (process ids), Net (network stack), MNT (mount points), IPC (shared memory and queues), UTS (hostname) and User (user and group ids), plus cgroup and time namespaces. Namespaces limit what a process can see; cgroups limit how much it can use.</p></div>
+<h4>Explained in depth</h4>
+<h4>The namespaces</h4>
+<div class="md-table"><table><thead><tr><th>Namespace</th><th>Isolates</th><th>Effect in a container</th></tr></thead><tbody><tr><td><strong>PID</strong></td><td>Process ids</td><td>The container&#39;s first process is PID 1 and cannot see host processes</td></tr><tr><td><strong>Net</strong></td><td>Interfaces, routes, ports, firewall</td><td>Own <code>eth0</code> and IP address; can bind port 80 without conflicts</td></tr><tr><td><strong>MNT</strong></td><td>Mount points</td><td>Own root filesystem view</td></tr><tr><td><strong>IPC</strong></td><td>System V IPC, POSIX queues</td><td>Separate shared memory</td></tr><tr><td><strong>UTS</strong></td><td>Hostname and domain name</td><td>Own hostname</td></tr><tr><td><strong>User</strong></td><td>UID and GID mappings</td><td>UID 0 inside maps to an unprivileged UID outside</td></tr><tr><td><strong>Cgroup</strong></td><td>View of the cgroup tree</td><td>Container sees its own cgroup root</td></tr></tbody></table></div>
+<h4>Mechanics</h4>
+<pre><code>unshare --pid --fork --mount-proc --uts bash     # new PID and UTS namespace
+nsenter -t &lt;pid&gt; -n -p ip addr                   # enter another process&#39;s namespaces
+ls -l /proc/&lt;pid&gt;/ns                              # namespace handles</code></pre>
+<p>A container runtime creates a process with <code>clone()</code> flags for these namespaces, sets up the filesystem and then applies cgroups and security profiles.</p>
+<h4>Limits of isolation</h4>
+<ul><li>Containers <strong>share the host kernel</strong>. A kernel vulnerability can cross the boundary, so namespaces alone are not a security sandbox; add seccomp, capabilities dropping, AppArmor or SELinux, and rootless mode.</li><li>Options like <code>--net=host</code>, <code>--pid=host</code> or <code>--privileged</code> remove isolation.</li><li><strong>User namespaces</strong> greatly reduce the impact of a container escape by mapping container root to an unprivileged host user.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How does a user namespace let a container run as root without being root on the host?</li><li>What does docker run --pid=host change?</li><li>How would you enter a running container&#39;s namespaces from the host?</li></ul>
+<p><a class="btn primary" href="../#/q/do-22">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-22%3A+What+Linux+namespaces+%28PID%2C+Net%2C+MNT%2C+IPC%2C+UTS%2C+User%29+provide%E2%80%A6&amp;question-id=do-22&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+2%2C+topic%3A+Containers%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-22.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

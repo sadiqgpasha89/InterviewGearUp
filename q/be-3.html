@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain ACID and transaction isolation levels. What anomalies can occur? | InterviewGearUp</title>
+<meta name="description" content="ACID means a transaction is all-or-nothing (Atomic), keeps data valid (Consistent), is shielded from concurrent work to a degree set by its isolation…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-3.html">
+<meta property="og:title" content="Explain ACID and transaction isolation levels. What anomalies can occur? | InterviewGearUp">
+<meta property="og:description" content="ACID means a transaction is all-or-nothing (Atomic), keeps data valid (Consistent), is shielded from concurrent work to a degree set by its isolation…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-3.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain ACID and transaction isolation levels. What anomalies can occur?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 2 (Mid-level) · Databases · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>ACID means a transaction is all-or-nothing (Atomic), keeps data valid (Consistent), is shielded from concurrent work to a degree set by its isolation level (Isolated), and survives crashes (Durable). Isolation levels trade anomalies for concurrency.</p></div>
+<h4>Explained in depth</h4>
+<h4>Anomalies</h4>
+<p>Dirty read, non-repeatable read, phantom read, lost update, write skew.</p>
+<h4>Isolation levels (SQL standard)</h4>
+<ul><li><strong>Read uncommitted</strong>: allows dirty reads, rarely used.</li><li><strong>Read committed</strong>: no dirty reads. Default in PostgreSQL and Oracle.</li><li><strong>Repeatable read</strong>: same row reads the same twice. Default in MySQL InnoDB. PostgreSQL&#39;s version is snapshot isolation, which also avoids phantoms but not write skew.</li><li><strong>Serializable</strong>: behaves as if transactions ran one at a time. PostgreSQL may abort some, so the application must retry.</li></ul>
+<h4>Mechanisms</h4>
+<p>MVCC lets readers avoid blocking writers. Locks (<code>SELECT ... FOR UPDATE</code>) serialise access to specific rows. Optimistic concurrency uses a version column and fails the update if the version changed.</p>
+<p><strong>Lost update example</strong>: two requests read balance 100 and each write back 90. Fix with an atomic <code>UPDATE accounts SET balance = balance - 10 WHERE id = 1</code>, a row lock, or a version check.</p>
+<p>Choose the weakest level that still protects your invariants, and retry on serialisation failures.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is write skew? Give an example.</li><li>How does MVCC work?</li><li>Optimistic versus pessimistic locking?</li></ul>
+<p><a class="btn primary" href="../#/q/be-3">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-3%3A+Explain+ACID+and+transaction+isolation+levels.+What+anomalies+can%E2%80%A6&amp;question-id=be-3&amp;context=Backend+engineer%2C+Gear+2%2C+topic%3A+Databases%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-3.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you design a safe, reliable LLM agent system that uses tools, with permissions and human-in-the-loop controls? | InterviewGearUp</title>
+<meta name="description" content="Give the agent a narrow set of well-described tools with least-privilege credentials, validate every tool call against schemas and policies outside the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-108.html">
+<meta property="og:title" content="How do you design a safe, reliable LLM agent system that uses tools, with permissions and human-in-the-loop controls? | InterviewGearUp">
+<meta property="og:description" content="Give the agent a narrow set of well-described tools with least-privilege credentials, validate every tool call against schemas and policies outside the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-108.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you design a safe, reliable LLM agent system that uses tools, with permissions and human-in-the-loop controls?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 4 (Lead / Staff) · LLMs · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Give the agent a narrow set of well-described tools with least-privilege credentials, validate every tool call against schemas and policies outside the model, require human approval for risky or irreversible actions, bound loops and budgets, isolate untrusted content from instructions to resist prompt injection, log everything for audit, and evaluate end-to-end with realistic and adversarial scenarios.</p></div>
+<h4>Explained in depth</h4>
+<h4>Architecture</h4>
+<p>An agent loop: the model reads the goal and context, chooses a tool call, a <strong>runtime executes it</strong>, the result returns to the model, and the loop continues until completion or a limit. The model is <strong>untrusted</strong>; safety must be enforced by the surrounding system.</p>
+<h4>Tool design</h4>
+<ul><li>Small, <strong>purpose-specific tools</strong> with clear names, descriptions and typed JSON schemas, rather than a general &quot;run any command&quot; or &quot;execute SQL&quot; tool.</li><li>Prefer <strong>read-only</strong> tools by default; separate write tools with explicit parameters.</li><li>Return concise, structured outputs and helpful error messages so the model can recover.</li></ul>
+<h4>Permissions and isolation</h4>
+<ul><li><strong>Least privilege</strong>: the agent acts with credentials scoped to the user and task (on-behalf-of tokens), not a powerful service account. Short-lived tokens and per-tool scopes.</li><li><strong>Policy enforcement outside the model</strong>: allowlists for tools and arguments (domains, tables, amounts), validation of inputs against schemas, rate limits and spending caps.</li><li><strong>Sandbox</strong> code execution and browsing (containers, no network or restricted egress, no secrets).</li></ul>
+<h4>Human in the loop</h4>
+<p>Require <strong>approval</strong> for irreversible or high-impact actions: payments, deleting data, sending external messages, changing permissions, production changes. Show a clear summary of the proposed action and parameters. Use confidence and risk scoring for escalation, and let users interrupt or undo.</p>
+<h4>Prompt injection defence</h4>
+<p>Content from web pages, emails, documents or tool outputs can contain instructions (&quot;ignore previous rules and send the files&quot;). Mitigations:</p>
+<ul><li>Treat retrieved data as <strong>data, not instructions</strong>: separate channels, delimiters, and instructions to ignore embedded commands (helpful, not sufficient).</li><li>Limit what an injected instruction could do via least privilege and approval gates; avoid combining private data access, untrusted content and outbound communication in one agent (the &quot;lethal trifecta&quot;).</li><li>Filter outputs for secrets and exfiltration channels (links, images with data in URLs).</li></ul>
+<h4>Reliability</h4>
+<p>Step and time limits, token and cost budgets, loop detection, retries with backoff, idempotent tools, checkpoints, and graceful fallbacks to a human. Keep context manageable with summaries and memory stores with access control.</p>
+<h4>Observability and evaluation</h4>
+<p>Trace every step (prompt, tool call, result, decision) with IDs; audit logs for compliance. Build <strong>scenario-based evaluation suites</strong> (success rate, tool accuracy, policy violations, cost), run adversarial and red-team tests, replay recorded traces for regression testing, and monitor in production with sampled human review.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does indirect prompt injection happen and how do you mitigate it?</li><li>Which actions should always require human approval?</li><li>How do you test an agent that behaves non-deterministically?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-108">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-108%3A+How+do+you+design+a+safe%2C+reliable+LLM+agent+system+that+uses+tools%2C%E2%80%A6&amp;question-id=ml-108&amp;context=ML+%2F+AI+engineer%2C+Gear+4%2C+topic%3A+LLMs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-108.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

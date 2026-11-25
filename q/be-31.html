@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does Apache Kafka partition topics, and how are strict message ordering guarantees maintained? | InterviewGearUp</title>
+<meta name="description" content="Kafka splits a topic into partitions, each an ordered append-only log. A message&#39;s key is hashed to choose the partition, so all messages with the same…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-31.html">
+<meta property="og:title" content="How does Apache Kafka partition topics, and how are strict message ordering guarantees maintained? | InterviewGearUp">
+<meta property="og:description" content="Kafka splits a topic into partitions, each an ordered append-only log. A message&#39;s key is hashed to choose the partition, so all messages with the same…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-31.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does Apache Kafka partition topics, and how are strict message ordering guarantees maintained?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · Messaging · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Kafka splits a topic into partitions, each an ordered append-only log. A message&#39;s key is hashed to choose the partition, so all messages with the same key stay in order in one partition. Ordering is guaranteed only within a partition, not across the topic, so choose keys that group the events that must be ordered.</p></div>
+<h4>Explained in depth</h4>
+<h4>Partitions</h4>
+<p>A topic is divided into N partitions spread over brokers. Each partition is an immutable, ordered log where records get increasing <strong>offsets</strong>. Partitions provide parallelism: producers write to many in parallel and consumers in a group split them.</p>
+<h4>Choosing a partition</h4>
+<ul><li>With a <strong>key</strong>: <code>partition = hash(key) % numPartitions</code>, so the same key always goes to the same partition.</li><li>Without a key: records are distributed (round-robin or sticky batches).</li></ul>
+<h4>Ordering guarantees</h4>
+<ul><li><strong>Within a partition</strong>: records are read in the order written.</li><li><strong>Across partitions</strong>: no ordering. To keep an entity&#39;s events ordered (for example all events of order 42), use the entity id as the key.</li></ul>
+<h4>Keeping order during failures</h4>
+<ul><li>With retries, a failed batch might be resent after a later one, reordering records. Enable the <strong>idempotent producer</strong> (<code>enable.idempotence=true</code>), which numbers records and keeps order with up to 5 in-flight requests; otherwise set the max in-flight requests per connection setting to 1.</li><li>Consumers process a partition sequentially. Handing messages to a thread pool inside a consumer can break ordering.</li></ul>
+<h4>Gotchas</h4>
+<ul><li><strong>Adding partitions</strong> changes <code>hash % N</code>, so the same key may map to a new partition and lose its ordering relative to older records.</li><li>A <strong>hot key</strong> overloads one partition.</li><li>Parallelism is capped by partition count: consumers in a group beyond that number sit idle.</li><li>Strict global ordering requires one partition, which limits throughput.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How does adding partitions affect ordering for existing keys?</li><li>How does idempotent producing preserve order during retries?</li><li>How many consumers in a group can read one topic in parallel?</li></ul>
+<p><a class="btn primary" href="../#/q/be-31">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-31%3A+How+does+Apache+Kafka+partition+topics%2C+and+how+are+strict+message%E2%80%A6&amp;question-id=be-31&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+Messaging%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-31.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

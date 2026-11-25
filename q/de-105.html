@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are the main stages of a data pipeline, from ingestion to serving? | InterviewGearUp</title>
+<meta name="description" content="A data pipeline typically ingests data from sources, stores it raw, transforms and validates it into clean models, loads it into a warehouse or serving…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-105.html">
+<meta property="og:title" content="What are the main stages of a data pipeline, from ingestion to serving? | InterviewGearUp">
+<meta property="og:description" content="A data pipeline typically ingests data from sources, stores it raw, transforms and validates it into clean models, loads it into a warehouse or serving…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-105.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are the main stages of a data pipeline, from ingestion to serving?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 1 (Junior) · Pipelines · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A data pipeline typically ingests data from sources, stores it raw, transforms and validates it into clean models, loads it into a warehouse or serving store, and exposes it to dashboards, applications or ML, all coordinated by an orchestrator with monitoring. Good pipelines are idempotent, observable, tested and designed so failed runs can be safely repeated.</p></div>
+<h4>Explained in depth</h4>
+<h4>Stages</h4>
+<ol start="1"><li><strong>Ingest</strong>: pull or receive data from sources: databases (batch extracts or CDC), APIs, files, event streams, SaaS tools. Tools: Fivetran or Airbyte, Kafka, custom jobs.</li><li><strong>Store raw</strong>: land data unchanged in a data lake or staging area (object storage), partitioned by date. Keeping the raw copy allows reprocessing.</li><li><strong>Transform</strong>: clean, deduplicate, join, standardise types and business logic using SQL (dbt), Spark or Python. Often layered: raw (bronze), cleaned (silver), business-ready (gold).</li><li><strong>Validate</strong>: data quality checks (nulls, uniqueness, ranges, freshness, row counts) at the stage boundaries; fail or quarantine bad data.</li><li><strong>Load and model</strong>: put curated tables into the warehouse or lakehouse, shaped for use, for example star schemas.</li><li><strong>Serve</strong>: BI dashboards, reverse ETL to business tools, APIs, ML feature stores, and ad-hoc analysis.</li><li><strong>Orchestrate and monitor</strong>: schedule jobs and dependencies (Airflow, Dagster), retry, alert, and track lineage and costs.</li></ol>
+<h4>Qualities to design for</h4>
+<ul><li><strong>Idempotent</strong>: re-running a day&#39;s job produces the same result without duplicates (overwrite partitions or use merge/upsert).</li><li><strong>Incremental</strong> processing instead of full reloads where possible.</li><li><strong>Observable</strong>: logs, metrics, data freshness SLAs, lineage.</li><li><strong>Tested</strong>: unit tests for transformations, data tests, and staging environments.</li><li><strong>Secure and governed</strong>: access control, PII handling.</li></ul>
+<h4>Example</h4>
+<p>Orders database -&gt; CDC into Kafka -&gt; raw files in S3 -&gt; Spark or dbt transforms -&gt; <code>fact_orders</code> in the warehouse -&gt; revenue dashboard, with Airflow orchestrating and data tests gating the load.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What does idempotent mean for a pipeline run?</li><li>What is the difference between a pipeline and a workflow orchestrator?</li><li>How do you decide between batch and streaming ingestion?</li></ul>
+<p><a class="btn primary" href="../#/q/de-105">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-105%3A+What+are+the+main+stages+of+a+data+pipeline%2C+from+ingestion+to%E2%80%A6&amp;question-id=de-105&amp;context=Data+engineer%2C+Gear+1%2C+topic%3A+Pipelines%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-105.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

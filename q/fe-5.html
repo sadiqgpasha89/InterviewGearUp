@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>A React screen feels slow because of unnecessary re-renders. How do you fix it? | InterviewGearUp</title>
+<meta name="description" content="Find out why it re-renders first (React DevTools Profiler), then fix the cause: keep state local, memoise only the expensive children, and split context…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-5.html">
+<meta property="og:title" content="A React screen feels slow because of unnecessary re-renders. How do you fix it? | InterviewGearUp">
+<meta property="og:description" content="Find out why it re-renders first (React DevTools Profiler), then fix the cause: keep state local, memoise only the expensive children, and split context…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-5.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>A React screen feels slow because of unnecessary re-renders. How do you fix it?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · React · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Find out why it re-renders first (React DevTools Profiler), then fix the cause: keep state local, memoise only the expensive children, and split context so unrelated consumers do not update.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why components re-render</h4>
+<p>A parent rendered, state or context changed, or a new object or function identity was passed as a prop.</p>
+<h4>Fixes, roughly in order of preference</h4>
+<ol start="1"><li><strong>Move state down</strong> to the component that needs it, or lift static content up and pass it as <code>children</code>, so unaffected subtrees are skipped.</li><li><strong><code>React.memo</code></strong> on expensive children, with stable props (<code>useCallback</code> and <code>useMemo</code> for functions and objects you pass down).</li><li><strong>Split context</strong> or use selector-based stores (Zustand, Redux selectors) so consumers subscribe only to the slice they use.</li><li><strong>Virtualise long lists</strong> so only visible rows render.</li><li><strong>Defer non-urgent updates</strong> with <code>useTransition</code> or <code>useDeferredValue</code>.</li></ol>
+<p>Memoisation has its own cost and clutters code, so apply it only where the Profiler shows a problem. Newer React versions with the React Compiler can add memoisation automatically, but understanding the cause is still what lets you fix it.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>When does useMemo make things worse?</li><li>Why can context cause performance problems?</li><li>How would you profile a slow interaction?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-5">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-5%3A+A+React+screen+feels+slow+because+of+unnecessary+re-renders.+How+do%E2%80%A6&amp;question-id=fe-5&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+React%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-5.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

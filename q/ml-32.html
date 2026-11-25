@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain Convolutional Neural Networks (CNN): Kernels, Strides, Padding, and Feature Maps. | InterviewGearUp</title>
+<meta name="description" content="A CNN slides small learnable kernels (filters) across an image, computing dot products to produce feature maps that detect patterns such as edges. Stride…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-32.html">
+<meta property="og:title" content="Explain Convolutional Neural Networks (CNN): Kernels, Strides, Padding, and Feature Maps. | InterviewGearUp">
+<meta property="og:description" content="A CNN slides small learnable kernels (filters) across an image, computing dot products to produce feature maps that detect patterns such as edges. Stride…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-32.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain Convolutional Neural Networks (CNN): Kernels, Strides, Padding, and Feature Maps.</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 2 (Mid-level) · Deep Learning · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A CNN slides small learnable kernels (filters) across an image, computing dot products to produce feature maps that detect patterns such as edges. Stride is the step size, padding adds border pixels to control output size, and the output size is floor((W - K + 2P) / S) + 1. Weight sharing and local connectivity make CNNs far more parameter-efficient than fully connected layers for images.</p></div>
+<h4>Explained in depth</h4>
+<h4>Core pieces</h4>
+<ul><li><strong>Kernel (filter)</strong>: a small weight tensor, such as 3x3xC_in. It is moved across the input; at each position it computes a dot product, adding a bias.</li><li><strong>Feature map</strong>: the grid of outputs from one kernel. A layer with 64 kernels produces 64 feature maps (channels).</li><li><strong>Stride (S)</strong>: how many pixels the kernel moves each step. A stride of 2 halves the spatial size.</li><li><strong>Padding (P)</strong>: extra border (usually zeros). &quot;Same&quot; padding keeps the size; &quot;valid&quot; uses none.</li></ul>
+<h4>Output size</h4>
+<p><code>out = floor((W - K + 2P) / S) + 1</code> Example: input 32, kernel 3, padding 1, stride 1 gives 32; with stride 2 it gives 16.</p>
+<h4>Parameters</h4>
+<p>A conv layer has <code>K * K * C_in * C_out + C_out</code> parameters. For 3x3, 64 input and 128 output channels: 3*3*64*128 + 128 = 73,856. This does not depend on the image size, because the weights are <strong>shared</strong> across positions.</p>
+<h4>Why CNNs work for images</h4>
+<ul><li><strong>Local connectivity</strong>: each output depends on a small neighbourhood.</li><li><strong>Weight sharing</strong> gives translation equivariance: the same detector works anywhere.</li><li><strong>Hierarchy</strong>: early layers detect edges and textures; deeper ones combine them into parts and objects. The <strong>receptive field</strong> grows with depth, with pooling and strides.</li><li>Typical blocks: conv, normalisation, activation, optional pooling, finishing with global pooling and a classifier.</li></ul>
+<h4>Related ideas</h4>
+<p>1x1 convolutions mix channels cheaply, dilated convolutions widen the receptive field, depthwise separable convolutions reduce computation, and transposed convolutions upsample.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do pooling layers and strides each reduce spatial size?</li><li>What is the receptive field and how does it grow with depth?</li><li>How many parameters does a convolutional layer have?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-32">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-32%3A+Explain+Convolutional+Neural+Networks+%28CNN%29%3A+Kernels%2C+Strides%2C%E2%80%A6&amp;question-id=ml-32&amp;context=ML+%2F+AI+engineer%2C+Gear+2%2C+topic%3A+Deep+Learning%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-32.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

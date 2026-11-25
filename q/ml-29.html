@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What causes vanishing and exploding gradients, and how do Xavier/Glorot and He initialization help? | InterviewGearUp</title>
+<meta name="description" content="In deep networks, gradients are products of many layer derivatives. If those factors are mostly below 1 (sigmoid, tanh, small weights) the gradient…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-29.html">
+<meta property="og:title" content="What causes vanishing and exploding gradients, and how do Xavier/Glorot and He initialization help? | InterviewGearUp">
+<meta property="og:description" content="In deep networks, gradients are products of many layer derivatives. If those factors are mostly below 1 (sigmoid, tanh, small weights) the gradient…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-29.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What causes vanishing and exploding gradients, and how do Xavier/Glorot and He initialization help?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 2 (Mid-level) · Deep Learning · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>In deep networks, gradients are products of many layer derivatives. If those factors are mostly below 1 (sigmoid, tanh, small weights) the gradient vanishes and early layers stop learning; if above 1 it explodes and training diverges. Xavier initialisation (for tanh and sigmoid) and He initialisation (for ReLU) set the weight variance so signal and gradient magnitudes stay stable across layers.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why it happens</h4>
+<p>Backpropagation multiplies derivatives layer by layer. Over L layers the gradient scales roughly like <code>(w * f&#39;)^L</code>. If the factor is below 1, it shrinks exponentially; above 1, it blows up.</p>
+<ul><li><strong>Vanishing</strong>: saturating activations (sigmoid derivative is at most 0.25), small weights. Early layers get almost no update.</li><li><strong>Exploding</strong>: large weights, long sequences in RNNs. Losses become NaN or the weights jump.</li></ul>
+<h4>Initialisation to keep variance stable</h4>
+<p>Choose the weight variance so that the activations and gradients keep the same scale from layer to layer:</p>
+<ul><li><strong>Xavier / Glorot</strong>: <code>Var(w) = 2 / (fan_in + fan_out)</code>. Suited to tanh and sigmoid (and linear) activations.</li><li><strong>He (Kaiming)</strong>: <code>Var(w) = 2 / fan_in</code>. Suited to ReLU, which zeroes half the inputs and so needs twice the variance.</li></ul>
+<pre><code>nn.init.xavier_uniform_(layer.weight)
+nn.init.kaiming_normal_(layer.weight, nonlinearity=&#39;relu&#39;)</code></pre>
+<p>Initialising all weights to zero (or the same value) breaks symmetry badly, so every neuron learns the same thing.</p>
+<h4>Other remedies</h4>
+<ul><li><strong>ReLU-family activations</strong> instead of saturating ones.</li><li><strong>Normalisation</strong> (batch norm or layer norm) keeps activations in a good range.</li><li><strong>Residual connections</strong> give gradients a direct path.</li><li><strong>Gradient clipping</strong> (by norm) for exploding gradients, especially in RNNs and transformers.</li><li><strong>LSTM or GRU</strong> gating for long sequences, and a lower learning rate or warmup.</li></ul>
+<h4>Diagnosing</h4>
+<p>Log per-layer gradient norms; norms near zero in early layers suggest vanishing, and spikes or NaNs suggest explosion.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does gradient clipping address exploding gradients in RNNs?</li><li>Why do residual connections and normalisation layers help too?</li><li>What are the exact variance formulas for Xavier and He initialisation?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-29">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-29%3A+What+causes+vanishing+and+exploding+gradients%2C+and+how+do%E2%80%A6&amp;question-id=ml-29&amp;context=ML+%2F+AI+engineer%2C+Gear+2%2C+topic%3A+Deep+Learning%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-29.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does the Critical Rendering Path (CRP) work from HTML parsing to pixel paint? | InterviewGearUp</title>
+<meta name="description" content="The browser parses HTML into the DOM and CSS into the CSSOM, combines them into a render tree of visible nodes, computes layout (sizes and positions),…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-9.html">
+<meta property="og:title" content="How does the Critical Rendering Path (CRP) work from HTML parsing to pixel paint? | InterviewGearUp">
+<meta property="og:description" content="The browser parses HTML into the DOM and CSS into the CSSOM, combines them into a render tree of visible nodes, computes layout (sizes and positions),…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-9.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does the Critical Rendering Path (CRP) work from HTML parsing to pixel paint?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 1 (Junior) · DOM · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>The browser parses HTML into the DOM and CSS into the CSSOM, combines them into a render tree of visible nodes, computes layout (sizes and positions), then paints and composites layers. CSS blocks rendering and synchronous JavaScript blocks HTML parsing, so both delay first paint.</p></div>
+<h4>Explained in depth</h4>
+<h4>Steps</h4>
+<ol start="1"><li><strong>Parse HTML</strong> into the DOM, incrementally as bytes arrive.</li><li><strong>Parse CSS</strong> into the CSSOM. Rendering waits for it, so CSS is *render-blocking*.</li><li><strong>Build the render tree</strong> from the DOM and CSSOM, leaving out nodes such as <code>display: none</code> elements and <code>&lt;head&gt;</code>.</li><li><strong>Layout (reflow)</strong>: compute the geometry of every box.</li><li><strong>Paint</strong> the pixels, then <strong>composite</strong> layers, often on the GPU.</li></ol>
+<h4>What blocks what</h4>
+<ul><li>A normal <code>&lt;script&gt;</code> pauses HTML parsing while it downloads and runs, and it also waits for pending CSS because the script might read styles. Use <code>defer</code> (runs after parsing, in order) or <code>async</code> (runs as soon as it arrives).</li><li>Large CSS in the head delays first paint; inline the critical CSS and load the rest later.</li></ul>
+<h4>Optimizing</h4>
+<p>Ship less render-blocking CSS and JavaScript, preload key resources such as fonts and the hero image, avoid layout thrashing (interleaving DOM reads and writes), and animate <code>transform</code> and <code>opacity</code>, which can skip layout and paint.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the difference between reflow and repaint?</li><li>How do defer and async differ?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-9">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-9%3A+How+does+the+Critical+Rendering+Path+%28CRP%29+work+from+HTML+parsing+to%E2%80%A6&amp;question-id=fe-9&amp;context=Frontend+engineer%2C+Gear+1%2C+topic%3A+DOM%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-9.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

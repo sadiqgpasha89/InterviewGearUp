@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain the Dutch National Flag algorithm (three-way partitioning) for sorting 0s, 1s, and 2s in-place. | InterviewGearUp</title>
+<meta name="description" content="The Dutch National Flag algorithm sorts an array of 0s, 1s and 2s in one pass and in place using three pointers: low for the boundary of 0s, high for the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-35.html">
+<meta property="og:title" content="Explain the Dutch National Flag algorithm (three-way partitioning) for sorting 0s, 1s, and 2s in-place. | InterviewGearUp">
+<meta property="og:description" content="The Dutch National Flag algorithm sorts an array of 0s, 1s and 2s in one pass and in place using three pointers: low for the boundary of 0s, high for the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-35.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain the Dutch National Flag algorithm (three-way partitioning) for sorting 0s, 1s, and 2s in-place.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 2 (Mid-level) · Algorithms · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>The Dutch National Flag algorithm sorts an array of 0s, 1s and 2s in one pass and in place using three pointers: low for the boundary of 0s, high for the boundary of 2s and mid scanning. Swap 0s to the front and 2s to the back, leaving 1s in the middle. It runs in O(N) time and O(1) space.</p></div>
+<h4>Explained in depth</h4>
+<h4>Invariant</h4>
+<p>Maintain four regions: <code>[0, low)</code> are 0s, <code>[low, mid)</code> are 1s, <code>[mid, high]</code> are unknown, <code>(high, n)</code> are 2s.</p>
+<pre><code>def sort_colors(a):
+    low, mid, high = 0, 0, len(a) - 1
+    while mid &lt;= high:
+        if a[mid] == 0:
+            a[low], a[mid] = a[mid], a[low]
+            low += 1
+            mid += 1
+        elif a[mid] == 1:
+            mid += 1
+        else:                                  # a[mid] == 2
+            a[mid], a[high] = a[high], a[mid]
+            high -= 1                          # do not advance mid</code></pre>
+<h4>Why mid does not move after a swap with high</h4>
+<p>The element swapped in from <code>high</code> is unexamined, so it must be checked again. After a swap with <code>low</code>, the element that arrives at <code>mid</code> came from the 1s region, so it is already known to be 1 and <code>mid</code> can advance.</p>
+<h4>Complexity</h4>
+<p>A single pass with at most N iterations: O(N) time, O(1) space, versus O(N) time with extra space for counting sort or O(N log N) for a general sort.</p>
+<h4>Where else it is used</h4>
+<p>Three-way quicksort partitions into less than, equal to and greater than the pivot, which makes arrays with many duplicate keys sort in O(N) instead of degrading.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is mid not advanced after swapping with high?</li><li>How does three-way partitioning improve quicksort on many duplicates?</li><li>How would you generalise this to k colours?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-35">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-35%3A+Explain+the+Dutch+National+Flag+algorithm+%28three-way+partitioning%29%E2%80%A6&amp;question-id=gen-35&amp;context=Software+engineer+%28core%29%2C+Gear+2%2C+topic%3A+Algorithms%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-35.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

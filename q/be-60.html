@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does OAuth 2.0 Authorization Code Flow with PKCE protect against authorization code interception? | InterviewGearUp</title>
+<meta name="description" content="In the Authorization Code flow with PKCE, the client creates a random code_verifier, sends its hash (code_challenge) with the authorisation request, and…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-60.html">
+<meta property="og:title" content="How does OAuth 2.0 Authorization Code Flow with PKCE protect against authorization code interception? | InterviewGearUp">
+<meta property="og:description" content="In the Authorization Code flow with PKCE, the client creates a random code_verifier, sends its hash (code_challenge) with the authorisation request, and…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-60.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does OAuth 2.0 Authorization Code Flow with PKCE protect against authorization code interception?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · Security · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>In the Authorization Code flow with PKCE, the client creates a random code_verifier, sends its hash (code_challenge) with the authorisation request, and later proves possession by sending the original verifier when exchanging the code for tokens. An attacker who intercepts the authorisation code cannot redeem it without the verifier.</p></div>
+<h4>Explained in depth</h4>
+<h4>The threat</h4>
+<p>Public clients such as mobile and single-page apps cannot keep a client secret. If another app or a malicious script captures the redirect with the <strong>authorisation code</strong>, it could exchange it for tokens.</p>
+<h4>PKCE (Proof Key for Code Exchange, RFC 7636)</h4>
+<ol start="1"><li>The client generates a random <strong>code_verifier</strong> (43 to 128 characters).</li><li>It computes <code>code_challenge = BASE64URL(SHA256(code_verifier))</code>.</li><li>It sends the user to the authorisation endpoint with response_type=code, the client id, redirect URI, code_challenge, code_challenge_method=S256 and state.</li><li>After login the server redirects back with <code>code</code>, and <strong>remembers the challenge</strong> with that code.</li><li>The client calls <code>/token</code> with <code>code</code> and the <strong>original code_verifier</strong>.</li><li>The server hashes the verifier and compares it with the stored challenge. Only the client that started the flow can pass.</li></ol>
+<p>An attacker who steals the code does not have the verifier, and cannot derive it from the hash.</p>
+<h4>Related protections</h4>
+<ul><li><strong>state</strong>: a random value tied to the user&#39;s session, checked on return, defending against CSRF and mix-up.</li><li>Exact <strong>redirect URI</strong> matching, and use of the system browser instead of embedded webviews.</li><li>Short-lived codes that can be used only once.</li></ul>
+<h4>Current guidance</h4>
+<p>OAuth 2.1 and security best practices require PKCE for <strong>all</strong> clients, including confidential server-side ones, because it also stops code injection. The implicit flow, which returned tokens directly in the URL, is deprecated.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is PKCE now recommended for all clients and not only public ones?</li><li>What does the state parameter protect against?</li><li>Why is the implicit flow deprecated?</li></ul>
+<p><a class="btn primary" href="../#/q/be-60">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-60%3A+How+does+OAuth+2.0+Authorization+Code+Flow+with+PKCE+protect+against%E2%80%A6&amp;question-id=be-60&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+Security%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-60.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

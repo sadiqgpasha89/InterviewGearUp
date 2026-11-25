@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you find the Kth largest element in an unsorted array using Quickselect in $O(N)$ average time? | InterviewGearUp</title>
+<meta name="description" content="Quickselect partitions the array around a pivot like quicksort, but recurses into only the side that contains the target rank. The expected cost is N +…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-21.html">
+<meta property="og:title" content="How do you find the Kth largest element in an unsorted array using Quickselect in $O(N)$ average time? | InterviewGearUp">
+<meta property="og:description" content="Quickselect partitions the array around a pivot like quicksort, but recurses into only the side that contains the target rank. The expected cost is N +…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-21.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you find the Kth largest element in an unsorted array using Quickselect in $O(N)$ average time?</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 2 (Mid-level) · Algorithms · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Quickselect partitions the array around a pivot like quicksort, but recurses into only the side that contains the target rank. The expected cost is N + N/2 + N/4 + ..., which is O(N) on average. A bad pivot sequence gives O(N^2), which a random pivot makes unlikely and median-of-medians removes.</p></div>
+<h4>Explained in depth</h4>
+<h4>Idea</h4>
+<p>The Kth largest element is the element at index <code>N - K</code> in sorted order. Partition so that everything left of the pivot is smaller and everything right is larger; the pivot is then in its final position <code>p</code>.</p>
+<ul><li>If <code>p</code> equals the target index, done.</li><li>If <code>p</code> is smaller, search the right part; otherwise search the left part.</li></ul>
+<pre><code>import random
+
+def kth_largest(nums, k):
+    target = len(nums) - k
+    lo, hi = 0, len(nums) - 1
+    while lo &lt;= hi:
+        r = random.randint(lo, hi)
+        nums[r], nums[hi] = nums[hi], nums[r]
+        pivot, p = nums[hi], lo
+        for i in range(lo, hi):
+            if nums[i] &lt; pivot:
+                nums[i], nums[p] = nums[p], nums[i]
+                p += 1
+        nums[p], nums[hi] = nums[hi], nums[p]
+        if p == target:
+            return nums[p]
+        if p &lt; target:
+            lo = p + 1
+        else:
+            hi = p - 1</code></pre>
+<h4>Complexity</h4>
+<ul><li><strong>Average O(N)</strong>: each partition costs the size of the range and the range roughly halves.</li><li><strong>Worst O(N^2)</strong> with consistently bad pivots; random pivots make this very unlikely. Median-of-medians pivots give a guaranteed O(N) but with a large constant.</li><li>Space O(1) when iterative. It reorders the input.</li></ul>
+<h4>Alternatives</h4>
+<p>A min-heap of size K costs O(N log K), needs O(K) space and works on streams. Sorting costs O(N log N).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does Quickselect compare with a min-heap of size K?</li><li>How does median-of-medians guarantee O(N) in the worst case?</li><li>What changes if you need the K smallest elements in order?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-21">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-21%3A+How+do+you+find+the+Kth+largest+element+in+an+unsorted+array+using%E2%80%A6&amp;question-id=gen-21&amp;context=Software+engineer+%28core%29%2C+Gear+2%2C+topic%3A+Algorithms%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-21.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

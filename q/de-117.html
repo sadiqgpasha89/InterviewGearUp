@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you control the cost of a petabyte-scale data platform without hurting users? | InterviewGearUp</title>
+<meta name="description" content="Attribute cost to teams, then attack the largest drivers in order: storage lifecycle and file formats, compute rightsizing and autoscaling with workload…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-117.html">
+<meta property="og:title" content="How do you control the cost of a petabyte-scale data platform without hurting users? | InterviewGearUp">
+<meta property="og:description" content="Attribute cost to teams, then attack the largest drivers in order: storage lifecycle and file formats, compute rightsizing and autoscaling with workload…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-117.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you control the cost of a petabyte-scale data platform without hurting users?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 4 (Lead / Staff) · Cost · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Attribute cost to teams, then attack the largest drivers in order: storage lifecycle and file formats, compute rightsizing and autoscaling with workload isolation, query optimisation through partitioning and clustering, pruning unused tables and pipelines, and commitment discounts. Set budgets and guardrails, report unit costs, and make teams accountable with showback.</p></div>
+<h4>Explained in depth</h4>
+<h4>Make cost visible</h4>
+<ul><li>Tag compute and storage by team, project and pipeline; use warehouse query tags and resource monitors. Build a <strong>cost dashboard</strong>: spend by team, by job, by dataset, and trends.</li><li>Define <strong>unit metrics</strong>: cost per terabyte processed, per pipeline run, per active user, per business metric produced.</li><li>Set <strong>budgets and alerts</strong>, with anomaly detection for sudden spikes (a runaway query or a loop of retries).</li></ul>
+<h4>Storage</h4>
+<ul><li><strong>Lifecycle policies</strong>: move cold data to cheaper tiers (infrequent access, archive), delete temporary and intermediate data, expire old snapshots and <strong>time travel</strong> retention, and clean up orphaned files.</li><li>Use <strong>columnar compressed formats</strong> (Parquet with Zstd), compaction of small files, and avoid storing duplicate copies and unneeded raw copies.</li><li>Delete or archive <strong>unused tables</strong>: usage logs often show a large share of tables never queried.</li></ul>
+<h4>Compute</h4>
+<ul><li><strong>Right-size</strong> clusters and warehouses; use <strong>autoscaling and auto-suspend</strong>, spot or preemptible instances for fault-tolerant batch jobs, and separate workloads (ETL, BI, ad hoc) so one cannot starve or inflate another.</li><li>Schedule heavy jobs off-peak, avoid unnecessary full refreshes (use <strong>incremental</strong> models), and cache results.</li><li>Tune Spark: partition sizes, avoid skew and excessive shuffles, broadcast small tables, and select needed columns only.</li></ul>
+<h4>Query and modelling practices</h4>
+<ul><li>Partition and cluster large tables on common filters so queries <strong>scan less</strong>, avoid <code>SELECT *</code>, use pre-aggregated tables and materialised views for repeated heavy queries, and set per-query byte limits.</li><li>Review top costly queries weekly and coach authors, using query profiles.</li></ul>
+<h4>Pricing</h4>
+<p>Move steady baseline usage to <strong>commitments</strong> (reserved capacity, slot reservations, savings plans) while keeping on-demand for spikes. Negotiate enterprise agreements, and evaluate whether another engine is cheaper for specific workloads.</p>
+<h4>Governance</h4>
+<p>Showback or chargeback, guardrails (default limits, approval for large clusters), and make optimisation part of team goals. Balance savings with engineering effort and user productivity: remove obvious waste first, then target big recurring costs.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you find the most expensive queries and pipelines?</li><li>When does a commitment or reservation make sense for a warehouse?</li><li>How do you balance cost optimisation with engineering time?</li></ul>
+<p><a class="btn primary" href="../#/q/de-117">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-117%3A+How+do+you+control+the+cost+of+a+petabyte-scale+data+platform%E2%80%A6&amp;question-id=de-117&amp;context=Data+engineer%2C+Gear+4%2C+topic%3A+Cost%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-117.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

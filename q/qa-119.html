@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you learn from production incidents to close test and process gaps, and prevent repeat escapes? | InterviewGearUp</title>
+<meta name="description" content="After each significant incident, run a blameless review that asks why existing tests and controls did not catch the issue, classify the escape by cause…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-119.html">
+<meta property="og:title" content="How do you learn from production incidents to close test and process gaps, and prevent repeat escapes? | InterviewGearUp">
+<meta property="og:description" content="After each significant incident, run a blameless review that asks why existing tests and controls did not catch the issue, classify the escape by cause…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-119.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you learn from production incidents to close test and process gaps, and prevent repeat escapes?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 4 (Lead / Staff) · Process · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>After each significant incident, run a blameless review that asks why existing tests and controls did not catch the issue, classify the escape by cause and detection layer, add the missing tests or monitoring as tracked actions, look for similar risks elsewhere, and measure whether escape categories decline. The goal is improving the system, not finding who erred.</p></div>
+<h4>Explained in depth</h4>
+<h4>Triggers</h4>
+<p>Any customer-impacting incident, any high-severity escaped defect, and recurring minor ones in patterns. Keep the review timely (within days) and blameless.</p>
+<h4>Questions to ask (the &quot;test gap analysis&quot;)</h4>
+<ol start="1"><li><strong>What failed</strong>, and what was the real root cause (code, configuration, data, infrastructure, dependency, process, requirement)?</li><li><strong>Where could it have been caught</strong>? Walk through the lifecycle:</li></ol>
+<ul><li>Requirements or design review: was the risk visible?</li><li>Code review and static analysis.</li><li>Unit, integration, contract and end-to-end tests.</li><li>Exploratory and performance or security testing.</li><li>Pre-production environment and release checks (parity, data volume).</li><li>Canary, monitoring and alerting after release.</li></ul>
+<ol start="3"><li><strong>Why was it not caught</strong>: no test existed, the test was flaky and ignored, environment differed from production, test data was unrepresentative, coverage was low in the risky area, the alert threshold was wrong, or the risk was accepted.</li><li><strong>Why did detection take so long</strong> and why was the impact large (blast radius, no feature flag, no rollback)?</li></ol>
+<h4>Actions</h4>
+<ul><li><strong>Add tests</strong> at the lowest practical layer: a regression test reproducing the failure, plus tests for the class of problem (for example boundary cases, time zones, large payloads).</li><li><strong>Improve detection</strong>: new alerts, SLOs, canary checks, synthetic probes.</li><li><strong>Improve prevention</strong>: checklists, design review items, static analysis rules, linting, schema checks, safer defaults.</li><li><strong>Reduce impact</strong>: feature flags, gradual rollouts, faster rollback.</li><li><strong>Search for siblings</strong>: look for the same pattern elsewhere in the codebase or other services.</li></ul>
+<p>Each action has an owner, due date and tracked ticket, with a short review to confirm completion.</p>
+<h4>Learn at the portfolio level</h4>
+<p>Categorise escapes (requirements, logic, integration, configuration, data, performance, third party) and track trends. If most escapes are configuration issues, invest in configuration testing and infrastructure as code checks, rather than more UI tests. Report results in quality reviews and share stories internally so other teams learn.</p>
+<h4>Culture</h4>
+<p>Praise transparency and quick reporting, avoid naming individuals, and treat each incident as a funded opportunity to improve the system.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you decide whether to add a test or change the process?</li><li>What does a test gap analysis look like for a single incident?</li><li>How do you ensure the action items from incident reviews actually get completed?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-119">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-119%3A+How+do+you+learn+from+production+incidents+to+close+test+and+process%E2%80%A6&amp;question-id=qa-119&amp;context=QA+%2F+SDET%2C+Gear+4%2C+topic%3A+Process%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-119.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

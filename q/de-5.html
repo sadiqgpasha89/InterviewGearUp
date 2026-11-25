@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>A Spark job is slow because of data skew. How do you diagnose and fix it? | InterviewGearUp</title>
+<meta name="description" content="Skew means a few keys hold most of the data, so one or two tasks run far longer than the rest. Fix by broadcasting the small side of a join, enabling…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-5.html">
+<meta property="og:title" content="A Spark job is slow because of data skew. How do you diagnose and fix it? | InterviewGearUp">
+<meta property="og:description" content="Skew means a few keys hold most of the data, so one or two tasks run far longer than the rest. Fix by broadcasting the small side of a join, enabling…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-5.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>A Spark job is slow because of data skew. How do you diagnose and fix it?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Spark · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Skew means a few keys hold most of the data, so one or two tasks run far longer than the rest. Fix by broadcasting the small side of a join, enabling adaptive query execution, or salting hot keys.</p></div>
+<h4>Explained in depth</h4>
+<p><strong>Diagnose</strong>: in the Spark UI one stage shows a maximum task time far above the median, uneven shuffle read sizes, and sometimes spills or out-of-memory errors on a few tasks.</p>
+<h4>Fixes</h4>
+<ol start="1"><li><strong>Broadcast join</strong> when one side is small: <code>broadcast(smallDf)</code> avoids shuffling the large side.</li><li><strong>Adaptive Query Execution</strong> (Spark 3+, <code>spark.sql.adaptive.enabled</code>) can split skewed partitions in joins automatically.</li><li><strong>Salting</strong>: append a random suffix to the hot keys on the large side, replicate the small side across those suffixes, join, then aggregate the partial results.</li><li><strong>Isolate the hot key</strong>: a classic culprit is NULL or a default like &#39;unknown&#39;. Filter it out or process it separately.</li><li><strong>Pre-aggregate</strong> before the shuffle (combiners, <code>reduceByKey</code>-style logic).</li><li><strong>Tune partitioning</strong>: better key, or <code>spark.sql.shuffle.partitions</code>.</li></ol>
+<p>Also check for many small files and an inefficient file format (use Parquet).</p>
+<p>State the trade-offs: salting adds complexity, and broadcasting is limited by executor memory.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you spot skew in the Spark UI?</li><li>What does adaptive query execution do?</li><li>Why is a NULL key often the culprit?</li></ul>
+<p><a class="btn primary" href="../#/q/de-5">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-5%3A+A+Spark+job+is+slow+because+of+data+skew.+How+do+you+diagnose+and%E2%80%A6&amp;question-id=de-5&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Spark%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-5.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>
