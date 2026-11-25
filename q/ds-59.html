@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Design a real-time fraud detection system for online payments, covering data, models, latency, labels and the operational loop. | InterviewGearUp</title>
+<meta name="description" content="Combine rules, a low-latency supervised model on real-time and historical entity features, and anomaly or graph signals, scored within tens of…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-59.html">
+<meta property="og:title" content="Design a real-time fraud detection system for online payments, covering data, models, latency, labels and the operational loop. | InterviewGearUp">
+<meta property="og:description" content="Combine rules, a low-latency supervised model on real-time and historical entity features, and anomaly or graph signals, scored within tens of…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-59.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Design a real-time fraud detection system for online payments, covering data, models, latency, labels and the operational loop.</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 4 (Lead / Staff) · ML system design · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Combine rules, a low-latency supervised model on real-time and historical entity features, and anomaly or graph signals, scored within tens of milliseconds, with decisions to approve, step-up or decline. Handle delayed and biased labels, extreme imbalance and adversaries through feedback loops, cost-based thresholds, champion-challenger deployment, and monitoring of both fraud losses and false-decline rates.</p></div>
+<h4>Explained in depth</h4>
+<h4>Requirements</h4>
+<ul><li><strong>Latency</strong>: score within 50 to 100 ms in the payment path; <strong>availability</strong> with a safe fallback.</li><li><strong>Objective</strong>: minimise total cost = fraud losses + chargeback fees + manual review cost + lost sales from false declines + customer friction.</li><li><strong>Volume</strong>: thousands of transactions per second; fraud rate typically below 0.5 percent.</li><li>Explainability for reviewers and regulators; adaptability to new attacks.</li></ul>
+<h4>Architecture</h4>
+<ol start="1"><li><strong>Event ingestion</strong>: payment request with device, IP, card, account, merchant, amount, shipping and behavioural data.</li><li><strong>Real-time feature computation</strong>: velocity counters (number of transactions per card, device, IP in the last 1 minute, 1 hour, 24 hours), distance and geo mismatches, device fingerprint reputation, account age, ratio to the customer&#39;s typical spend, email and address risk signals. Maintained in a streaming system (Kafka and Flink) with an <strong>online feature store</strong> for key-based lookups.</li><li><strong>Decision engine</strong>: <strong>rules</strong> (hard blocks, regulatory checks, allow lists) plus <strong>ML score</strong> from gradient boosted trees (fast), sometimes ensembles with neural and <strong>graph-based features</strong> (shared devices or addresses linking rings), and anomaly detectors for novel patterns.</li><li><strong>Actions</strong>: approve, decline, <strong>step-up authentication</strong> (3-D Secure, OTP), or <strong>send to manual review</strong>; thresholds vary by segment (new customers, high amounts).</li><li><strong>Feedback</strong>: chargebacks, reviewer outcomes, customer disputes, and confirmed fraud flow into labelled data.</li></ol>
+<h4>Modelling challenges</h4>
+<ul><li><strong>Extreme imbalance</strong>: use class weights or negative downsampling (then recalibrate), PR AUC, recall at a fixed false-positive rate or review budget, expected-cost curves.</li><li><strong>Label delay</strong>: chargebacks arrive 30 to 120 days later; recent data are partially labelled. Use label maturity windows, train on matured periods plus faster proxy labels (reviewer decisions, early disputes), and survival-style handling.</li><li><strong>Selection bias</strong>: you never observe outcomes for declined transactions. Use <strong>randomised exploration</strong> (approve a small random sample of borderline cases, within risk limits), reject inference, and counterfactual evaluation.</li><li><strong>Adversarial drift</strong>: fraudsters probe and adapt; keep features hard to game, retrain frequently, add anomaly and graph signals, monitor new patterns, and run a human-in-the-loop investigation team.</li><li><strong>Leakage</strong>: features must be computed as of transaction time; test point-in-time correctness.</li><li><strong>Fairness and false declines</strong>: monitor decline rates across groups and countries; friction harms genuine customers.</li></ul>
+<pre><code># cost-based threshold: decline if expected fraud loss exceeds expected cost of declining
+import numpy as np
+def decide(p_fraud, amount, margin=0.08, friction_cost=2.0):
+    expected_loss = p_fraud * amount
+    cost_decline = (1 - p_fraud) * (margin * amount + friction_cost)
+    return &quot;decline&quot; if expected_loss &gt; cost_decline else &quot;approve&quot;</code></pre>
+<p>Real systems use several thresholds (approve, review, step-up, decline) tuned by simulation on historical data with updated costs.</p>
+<h4>Evaluation and rollout</h4>
+<p>Offline: time-based splits, PR curves, <strong>dollar-weighted</strong> recall, savings at fixed false-positive rate, performance by segment. Online: <strong>shadow mode</strong>, then champion-challenger or A/B with strict guardrails (loss limits), measure fraud rate, approval rate, review volume, false-decline estimates (customer re-attempts, surveys), and revenue.</p>
+<h4>Operations</h4>
+<p>Monitoring dashboards (volume, score distributions, feature drift, latency, approval and decline rates), alerting for attacks (spikes), model and rule versioning, kill switches, fast-patch rules, case management tools with explanations (SHAP reasons), and regular retraining with recent data.</p>
+<h4>Pitfalls</h4>
+<p>Optimising accuracy, training only on labelled declined or reviewed samples, ignoring friction costs, and relying on static rules that fraudsters learn.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you deal with delayed chargeback labels and the bias created by declining suspicious transactions?</li><li>How would you choose the decision threshold given the costs of fraud and false declines?</li><li>How do you keep the model effective when fraudsters adapt?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-59">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-59%3A+Design+a+real-time+fraud+detection+system+for+online+payments%2C%E2%80%A6&amp;question-id=ds-59&amp;context=Data+scientist%2C+Gear+4%2C+topic%3A+ML+system+design%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-59.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

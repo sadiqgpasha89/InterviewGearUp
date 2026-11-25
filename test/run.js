@@ -10,7 +10,7 @@ const root = path.join(__dirname, '..');
 const ctx = { setTimeout, clearTimeout, AbortController, URL };
 ctx.window = ctx;
 vm.createContext(ctx);
-['js/config.js', 'js/quality.js', 'js/engine.js', 'js/srs.js', 'js/migrate.js', 'js/ai.js', 'js/planner.js', 'js/mock.js', 'js/stories.js', 'js/jd.js', 'js/design.js', 'data/design.js', 'js/coding-core.js', 'data/coding.js', 'js/company.js', 'js/voice.js']
+['js/config.js', 'js/quality.js', 'js/engine.js', 'js/srs.js', 'js/migrate.js', 'js/ai.js', 'js/planner.js', 'js/mock.js', 'js/stories.js', 'js/jd.js', 'js/design.js', 'data/design.js', 'js/coding-core.js', 'data/coding.js', 'data/coding-langs.js', 'js/company.js', 'js/voice.js']
   .concat(require('../scripts/lib/data-files').dataFiles(root))
   .forEach((f) => vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f }));
 
@@ -61,7 +61,8 @@ test('classify recognises question types', () => {
 
 test('retrieve finds the right curated entry', () => {
   const top = (q, role) => (engine.retrieve(q, bank, { role, level: 3, k: 1 })[0] || {}).e;
-  assert.equal(top('Design a URL shortener like bit.ly').id, 'gen-5');
+  // the general and backend banks both answer this question in depth, so either is a correct top hit
+  assert.ok(['gen-5', 'be-100'].includes(top('Design a URL shortener like bit.ly').id));
   assert.equal(top('How do I stop double charging customers when requests are retried?').id, 'be-7');
   assert.equal(top('What are Kubernetes liveness and readiness probes?').id, 'do-3');
   assert.equal(top('Explain precision and recall').id, 'ml-2');
@@ -794,6 +795,24 @@ test('coding problems: every reference solution passes every test, and the start
   });
 });
 
+test('coding languages: every problem has a starter and a solution in every listed language, and JavaScript is the only runnable one', () => {
+  const langs = IGU.codingLanguages;
+  assert.equal(langs.filter((l) => l.runnable).map((l) => l.id).join(), 'javascript');
+  const names = { typescript: (f) => f, python: (f) => f.replace(/[A-Z]/g, (c) => '_' + c.toLowerCase()), java: (f) => f, cpp: (f) => f, go: (f) => f, csharp: (f) => f[0].toUpperCase() + f.slice(1) };
+  IGU.codingProblems.forEach((p) => {
+    const set = IGU.codingLangs[p.id];
+    assert.ok(set, p.id + ' has no other-language entries');
+    langs.filter((l) => l.id !== 'javascript').forEach((l) => {
+      const e = set[l.id];
+      assert.ok(e && e.starter && e.code, p.id + ' missing ' + l.id);
+      assert.ok(e.code.includes(names[l.id](p.fn)), p.id + ' ' + l.id + ' solution must define ' + names[l.id](p.fn));
+      assert.ok(e.starter.includes(names[l.id](p.fn)), p.id + ' ' + l.id + ' starter must define ' + names[l.id](p.fn));
+      assert.notEqual(e.starter, e.code, p.id + ' ' + l.id + ' starter must not already be the solution');
+    });
+  });
+  Object.keys(IGU.codingLangs).forEach((id) => assert.ok(IGU.codingProblems.some((p) => p.id === id), 'unknown problem ' + id));
+});
+
 test('coding problems: a plausible wrong solution is caught by the tests', () => {
   const wrong = { 'two-sum': 'function twoSum(n,t){return [0,1];}', 'valid-parentheses': 'function isValid(s){return s.length%2===0;}', 'binary-search': 'function search(n,t){return n.indexOf(t)===-1?-1:0;}',
     'longest-unique-substring': 'function lengthOfLongestSubstring(s){return new Set(s).size;}', 'valid-palindrome': 'function isPalindrome(s){return s===s.split("").reverse().join("");}' };
@@ -915,7 +934,10 @@ test('paths: export then import round-trips; bad files are rejected without thro
 test('paths: progress counts prepared and written answers; backup carries paths', () => {
   const byId = {}; bank.forEach((e) => { byId[e.id] = e; });
   const real = bank.filter((e) => !IGU.quality.isPlaceholder(e)).slice(0, 3).map((e) => e.id);
-  const ph = bank.find((e) => IGU.quality.isPlaceholder(e));
+  // The bank can now be fully answered, so build a placeholder-shaped entry instead of searching for one.
+  const ph = bank.find((e) => IGU.quality.isPlaceholder(e)) ||
+    { id: 'zz-1', short: 'Addressing x requires balancing performance, reliability, and architectural complexity.' };
+  byId[ph.id] = ph;
   const pr = PA.progress({ ids: real.concat([ph.id]) }, byId, { [real[0]]: 1 });
   assert.equal(pr.total, 4); assert.equal(pr.prepared, 1); assert.equal(pr.real, 3); assert.equal(pr.next, real[1]);
   assert.ok(p14.IGU.stats.BACKUP_KEYS.includes('paths'));

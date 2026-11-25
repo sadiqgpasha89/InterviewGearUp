@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are React portals (`createPortal`) and why are they used for modal dialogs and tooltips? | InterviewGearUp</title>
+<meta name="description" content="A portal renders children into a DOM node outside the parent component&#39;s DOM hierarchy while keeping them in the same React tree. That lets modals,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-71.html">
+<meta property="og:title" content="What are React portals (`createPortal`) and why are they used for modal dialogs and tooltips? | InterviewGearUp">
+<meta property="og:description" content="A portal renders children into a DOM node outside the parent component&#39;s DOM hierarchy while keeping them in the same React tree. That lets modals,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-71.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are React portals (`createPortal`) and why are they used for modal dialogs and tooltips?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · React · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A portal renders children into a DOM node outside the parent component&#39;s DOM hierarchy while keeping them in the same React tree. That lets modals, tooltips and dropdowns escape overflow clipping and stacking contexts, yet still receive context and bubble events to React ancestors.</p></div>
+<h4>Explained in depth</h4>
+<h4>The problem</h4>
+<p>A modal rendered inside a card with <code>overflow: hidden</code>, a <code>transform</code> or a low <code>z-index</code> stacking context gets clipped or hidden behind other content. Moving the markup to the end of <code>&lt;body&gt;</code> fixes it, but you still want it written where it logically belongs.</p>
+<h4>createPortal</h4>
+<pre><code>import { createPortal } from &#39;react-dom&#39;;
+
+function Modal({ open, onClose, children }) {
+  if (!open) return null;
+  return createPortal(
+    &lt;div className=&quot;backdrop&quot; onClick={onClose}&gt;
+      &lt;div role=&quot;dialog&quot; aria-modal=&quot;true&quot; onClick={(e) =&gt; e.stopPropagation()}&gt;{children}&lt;/div&gt;
+    &lt;/div&gt;,
+    document.body                                // target DOM node
+  );
+}</code></pre>
+<p>The DOM output lives under <code>body</code>, escaping clipping and stacking contexts of the parent.</p>
+<h4>What stays the same</h4>
+<p>The portal child is still part of the <strong>React tree</strong>: it receives context from its logical parents (theme, auth, i18n), state and props flow normally, and <strong>synthetic events bubble</strong> to React ancestors even though the DOM nodes are elsewhere. That is useful (a click in the modal reaches a parent <code>onClick</code>) but can surprise: add <code>stopPropagation</code> or check <code>e.target</code> when the parent should ignore portal events.</p>
+<h4>Accessibility checklist</h4>
+<ul><li><code>role=&quot;dialog&quot;</code>, <code>aria-modal=&quot;true&quot;</code>, labelled by a heading (<code>aria-labelledby</code>).</li><li>Move focus into the dialog on open, <strong>trap focus</strong> inside while open, close on Escape, and <strong>restore focus</strong> to the trigger on close.</li><li>Make the rest of the page inert (<code>inert</code> attribute or <code>aria-hidden</code> on the app root) and lock body scroll.</li><li>Libraries (Radix Dialog, Headless UI, react-aria) handle this; the native <code>&lt;dialog&gt;</code> element with <code>showModal()</code> provides top layer rendering, focus trapping and <code>::backdrop</code> without portals.</li></ul>
+<h4>Common uses</h4>
+<p>Modals, drawers, tooltips and popovers (positioned with Floating UI), toasts, context menus, and dropdowns inside scrollable containers.</p>
+<h4>Pitfalls</h4>
+<p>Server rendering: <code>document</code> does not exist on the server, so render portals after mount (<code>useEffect</code> flag) or use a stable container; multiple modals need ordering; CSS from the parent (inherited fonts, variables set on a container) may not apply in <code>body</code>, so put CSS custom properties on <code>:root</code> or the portal container.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do events bubble through a portal and what surprises can that cause?</li><li>How do you manage focus trapping and aria-modal for an accessible dialog?</li><li>How does the native dialog element change the need for portals?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-71">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-71%3A+What+are+React+portals+%28%60createPortal%60%29+and+why+are+they+used+for%E2%80%A6&amp;question-id=fe-71&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+React%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-71.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

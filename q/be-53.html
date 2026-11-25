@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is the difference between OS threads, processes, and lightweight green threads or goroutines? | InterviewGearUp</title>
+<meta name="description" content="A process has its own address space and is isolated from others. Threads are OS-scheduled execution units that share a process&#39;s memory, so they are…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-53.html">
+<meta property="og:title" content="What is the difference between OS threads, processes, and lightweight green threads or goroutines? | InterviewGearUp">
+<meta property="og:description" content="A process has its own address space and is isolated from others. Threads are OS-scheduled execution units that share a process&#39;s memory, so they are…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-53.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is the difference between OS threads, processes, and lightweight green threads or goroutines?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 2 (Mid-level) · Concurrency · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A process has its own address space and is isolated from others. Threads are OS-scheduled execution units that share a process&#39;s memory, so they are cheaper but need synchronisation. Green threads, coroutines and goroutines are lightweight user-space or runtime-scheduled tasks multiplexed onto a few OS threads, allowing hundreds of thousands of concurrent tasks.</p></div>
+<h4>Explained in depth</h4>
+<h4>Processes</h4>
+<p>Each process has its own virtual memory, file descriptors and security context. Communication needs IPC (pipes, sockets, shared memory). Strong isolation (a crash does not corrupt others), but creation and context switching are expensive and memory overhead is high (nginx workers, PostgreSQL connections, Chrome tabs, Python multiprocessing to bypass the GIL).</p>
+<h4>OS (kernel) threads</h4>
+<p>Scheduled by the kernel, share heap and globals within a process. Each has its own stack (about 1 MB default virtual, 8 MB on Linux main thread) and kernel structures, and context switches enter the kernel (microseconds, with cache effects). Practical limits are thousands to tens of thousands per machine. Shared mutable state needs locks, atomics and memory models, risking races and deadlocks.</p>
+<h4>Green threads, coroutines and goroutines</h4>
+<p>Scheduled by the language runtime in user space. <strong>Goroutines</strong> start with a tiny stack (about 2 KB, growable), switch cheaply (hundreds of nanoseconds), and are multiplexed M:N onto OS threads by the Go scheduler: <strong>G</strong> (goroutine), <strong>M</strong> (OS thread), <strong>P</strong> (processor, a scheduling context holding a run queue). Work stealing balances load; when a goroutine blocks on a syscall, the runtime hands the P to another thread. Channel operations and network I/O park the goroutine without blocking a thread (via the netpoller built on epoll).</p>
+<pre><code>for i := 0; i &lt; 100000; i++ {
+    go func(id int) { handle(id) }(i)       // 100k goroutines are fine
+}</code></pre>
+<p>Similar models: Erlang processes, Kotlin coroutines, Python asyncio tasks, Rust async tasks (Tokio), and <strong>Java virtual threads</strong> (Project Loom, Java 21), which let blocking-style code scale because the JVM unmounts a virtual thread from its carrier thread while it waits on I/O.</p>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th></th><th>Process</th><th>OS thread</th><th>Goroutine or green thread</th></tr></thead><tbody><tr><td>Memory</td><td>separate, heavy</td><td>shared heap, 0.5 to 8 MB stack</td><td>shared, about 2 KB stack</td></tr><tr><td>Creation</td><td>slowest</td><td>moderate</td><td>very fast</td></tr><tr><td>Switch cost</td><td>highest</td><td>kernel switch</td><td>user space, cheap</td></tr><tr><td>Isolation</td><td>strong</td><td>none for heap</td><td>none for heap</td></tr><tr><td>Scale</td><td>hundreds</td><td>thousands</td><td>hundreds of thousands to millions</td></tr><tr><td>Parallelism</td><td>yes</td><td>yes</td><td>yes if mapped to several threads (not in single-threaded event loops)</td></tr></tbody></table></div>
+<h4>Practical guidance</h4>
+<ul><li>I/O-bound servers benefit from cheap tasks or event loops; CPU-bound work needs real parallelism (threads or processes) sized to cores.</li><li>Language constraints: Python&#39;s GIL limits CPU threads (use processes or native extensions); Node.js runs JavaScript on one thread plus a worker pool.</li><li>Communicate by messages (channels, queues) where possible, and protect shared state with mutexes or immutability.</li><li>Goroutine leaks (blocked forever on channels) behave like memory leaks, so use contexts for cancellation.</li></ul>
+<h4>Pitfalls</h4>
+<p>Assuming cheap tasks remove the need for limits (bound concurrency with semaphores or worker pools), blocking calls inside a cooperative scheduler stalling all tasks, and creating a thread per request in thread-based servers.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What does a context switch cost for OS threads versus goroutines?</li><li>How does Go&#39;s M:N scheduler (G, M, P) work?</li><li>How do Java virtual threads change the thread-per-request model?</li></ul>
+<p><a class="btn primary" href="../#/q/be-53">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-53%3A+What+is+the+difference+between+OS+threads%2C+processes%2C+and%E2%80%A6&amp;question-id=be-53&amp;context=Backend+engineer%2C+Gear+2%2C+topic%3A+Concurrency%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-53.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

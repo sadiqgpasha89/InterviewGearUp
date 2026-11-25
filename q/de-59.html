@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you implement GDPR Right to Be Forgotten deletion requests in append-only Parquet data lakes? | InterviewGearUp</title>
+<meta name="description" content="In immutable Parquet lakes you cannot edit rows in place, so erasure means rewriting the files that contain the person. Use a table format (Delta,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-59.html">
+<meta property="og:title" content="How do you implement GDPR Right to Be Forgotten deletion requests in append-only Parquet data lakes? | InterviewGearUp">
+<meta property="og:description" content="In immutable Parquet lakes you cannot edit rows in place, so erasure means rewriting the files that contain the person. Use a table format (Delta,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-59.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you implement GDPR Right to Be Forgotten deletion requests in append-only Parquet data lakes?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Governance · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>In immutable Parquet lakes you cannot edit rows in place, so erasure means rewriting the files that contain the person. Use a table format (Delta, Iceberg, Hudi) with DELETE or MERGE on a person key, then compact and vacuum so old file versions are physically removed. Complement with PII minimisation, crypto-shredding, retention limits, and a tracked, auditable deletion workflow within the GDPR deadline.</p></div>
+<h4>Explained in depth</h4>
+<h4>The challenge</h4>
+<p>GDPR Article 17 (right to erasure) requires deleting personal data without undue delay (generally within one month) when requested. Data lakes complicate this: files are immutable, data is copied into many layers, history is retained by time travel, and backups and downstream extracts exist. A naive <code>DELETE</code> marks rows as removed but <strong>old files still contain them</strong> until physically purged.</p>
+<h4>Approach 1: table formats with row-level deletes</h4>
+<pre><code>-- Delta Lake
+DELETE FROM silver.customers WHERE customer_id IN (SELECT customer_id FROM erasure_requests WHERE status = &#39;pending&#39;);
+OPTIMIZE silver.customers;                      -- rewrite files, drop deleted rows
+VACUUM silver.customers RETAIN 0 HOURS;         -- (or policy-compliant retention) delete old files
+-- Iceberg
+DELETE FROM lake.customers WHERE customer_id = 123;
+CALL system.rewrite_data_files(table =&gt; &#39;lake.customers&#39;);
+CALL system.expire_snapshots(table =&gt; &#39;lake.customers&#39;, older_than =&gt; TIMESTAMP &#39;2026-11-25 00:00:00&#39;);
+CALL system.remove_orphan_files(table =&gt; &#39;lake.customers&#39;);</code></pre>
+<p>Steps: locate the subject&#39;s keys across all datasets, delete (copy-on-write rewrites affected files; merge-on-read uses deletion vectors or delete files that must be <strong>compacted</strong>), then <strong>expire snapshots and vacuum</strong> so time travel no longer exposes the data. Iceberg and Delta both support batch deletion by key; schedule erasure runs daily or weekly in batches to amortise rewrite cost.</p>
+<h4>Approach 2: crypto-shredding</h4>
+<p>Encrypt each subject&#39;s PII with a <strong>per-subject data key</strong> held in a key management service. To erase, <strong>delete the key</strong>; all copies, backups and historical versions become unreadable without rewriting any file. Requires design upfront: field-level encryption, key-per-user mapping store, and joins handled via tokens or decrypting at query time for authorised users.</p>
+<h4>Approach 3: architecture for deletability</h4>
+<ul><li><strong>Pseudonymise early</strong>: store PII in a small, protected identity table (subject id to PII) and keep other datasets keyed only by pseudonymous id, so erasure touches one place (delete the mapping, rendering other data effectively anonymous if no re-identification remains).</li><li>Partition or cluster by user bucket to reduce rewrite scope; separate PII columns from facts.</li><li>Use short retention for raw and bronze zones.</li></ul>
+<h4>Operational process</h4>
+<ol start="1"><li><strong>Intake</strong> the request, verify identity, record in an erasure ledger (request id, subject, received, due date).</li><li><strong>Discover</strong> all systems and datasets holding the subject (data catalogue, lineage, PII tags).</li><li><strong>Execute</strong> deletes in OLTP sources, lake tables, search indexes, caches, feature stores, and downstream warehouses; propagate through CDC events (tombstones).</li><li><strong>Purge</strong> physical copies (vacuum, snapshot expiry, compaction) and handle <strong>backups</strong> (let them expire within documented retention, with a mechanism to re-apply erasures after restore).</li><li><strong>Verify</strong> with queries and file scans; <strong>log evidence</strong> and notify the requester.</li><li>Consider ML artefacts: remove from training sets, retrain periodically, and document model handling.</li></ol>
+<h4>Legal nuance</h4>
+<p>Exceptions exist (legal obligations, retention for fraud or accounting); keep minimal records of the request itself. Anonymised aggregates may remain. Coordinate with legal and the DPO.</p>
+<h4>Pitfalls</h4>
+<p>Deleting from the latest version only while time travel retains the data, forgetting derived tables and exports, rewriting entire large tables per request (batch them), no proof of completion, and restoring a backup that resurrects erased users.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does crypto-shredding with per-user keys satisfy erasure without rewriting files?</li><li>Why does Delta VACUUM or Iceberg snapshot expiry matter for erasure?</li><li>How do you handle backups, derived datasets and ML models?</li></ul>
+<p><a class="btn primary" href="../#/q/de-59">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-59%3A+How+do+you+implement+GDPR+Right+to+Be+Forgotten+deletion+requests+in%E2%80%A6&amp;question-id=de-59&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Governance%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-59.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

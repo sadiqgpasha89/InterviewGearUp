@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you introduce an automated testing safety net to a legacy application with zero test coverage? | InterviewGearUp</title>
+<meta name="description" content="Start by characterising the legacy system&#39;s current behaviour instead of its intended one: add a thin layer of end-to-end and API characterization tests…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-71.html">
+<meta property="og:title" content="How do you introduce an automated testing safety net to a legacy application with zero test coverage? | InterviewGearUp">
+<meta property="og:description" content="Start by characterising the legacy system&#39;s current behaviour instead of its intended one: add a thin layer of end-to-end and API characterization tests…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-71.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you introduce an automated testing safety net to a legacy application with zero test coverage?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 3 (Senior) · Legacy · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Start by characterising the legacy system&#39;s current behaviour instead of its intended one: add a thin layer of end-to-end and API characterization tests around the most critical and most changed paths, record outputs as golden masters, then add seams for unit tests as code is touched. Prioritise by risk and change frequency, run in CI from day one, and grow coverage with each change.</p></div>
+<h4>Explained in depth</h4>
+<h4>The situation</h4>
+<p>A legacy application with no tests is risky to change: nobody knows what it does, fear blocks refactoring, and every release is a gamble. A rewrite of tests for the whole system up front is unrealistic. The goal is a <strong>safety net</strong>: enough fast, reliable checks around valuable behaviour that changes can be made and verified with confidence (Michael Feathers, *Working Effectively with Legacy Code*).</p>
+<h4>Step 1: Understand and prioritise</h4>
+<ul><li><strong>Map the system</strong>: entry points (UI routes, API endpoints, batch jobs, message consumers), data stores, integrations. Use logs, access logs, APM traces and production analytics to find the <strong>most used and most revenue-critical flows</strong>.</li><li><strong>Risk heat map</strong>: combine business impact, usage, <strong>change frequency</strong> (git history hot spots), defect history and complexity (cyclomatic complexity, <code>git log --stat</code> churn). Start where the next changes will land.</li><li>Find domain knowledge: support tickets, runbooks, long-serving staff, old specs, database constraints.</li></ul>
+<h4>Step 2: Characterization tests (golden master)</h4>
+<p>A <strong>characterization test</strong> records what the code <strong>actually does today</strong>, whether or not that is correct, so unintended changes are detected. Procedure:</p>
+<ol start="1"><li>Call the code with representative inputs (from production logs, anonymised).</li><li>Capture the output (response, database state, files, emails) as an approved snapshot.</li><li>Assert future runs match; review diffs consciously when behaviour is meant to change.</li></ol>
+<pre><code># approval-style test around a legacy pricing function
+@pytest.mark.parametrize(&quot;case&quot;, load_cases(&quot;fixtures/pricing_inputs.json&quot;))
+def test_pricing_characterization(case, approvals):
+    result = legacy.calculate_price(**case[&quot;input&quot;])
+    approvals.verify(json.dumps(result, sort_keys=True, indent=2), name=case[&quot;id&quot;])</code></pre>
+<p>Tools: ApprovalTests, Jest snapshots, Verify (.NET), golden-file comparison, <strong>record and replay</strong> of production HTTP traffic (GoReplay, VCR, WireMock) against a copy of the system, and database snapshot diffs. Normalise non-determinism (timestamps, ids, random) first.</p>
+<h4>Step 3: Black-box safety net at the top</h4>
+<ul><li>A <strong>small smoke suite of end-to-end tests</strong> (5 to 20 journeys) via UI or API against a stable seeded environment: login, core transaction, report generation. Accept that they are slow; they guard the whole.</li><li><strong>API-level tests</strong> are the best value: faster and more stable than UI. If no API exists, test the HTTP layer of the web app directly.</li><li>Create <strong>repeatable environments</strong> early: containers or scripts to build the app and database, anonymised data subsets, controlled time, stubbed external systems.</li><li>Put everything in <strong>CI immediately</strong> so tests actually run; a nightly job first, then per commit.</li></ul>
+<h4>Step 4: Create seams for unit tests</h4>
+<p>When touching code: identify a <strong>seam</strong> (a place to alter behaviour without editing the code there): extract method or class, parameterise constructor, introduce an interface for a database or HTTP call, wrap statics and singletons, inject the clock. Apply &quot;sprout method&quot; and &quot;wrap method&quot; techniques to add new behaviour with tests without rewriting old code. Use the <strong>Strangler Fig</strong> pattern for gradual replacement behind a facade.</p>
+<h4>Step 5: Grow the net by policy</h4>
+<ul><li><strong>Boy Scout rule</strong>: every bug fix starts with a failing test; every change adds tests for the area touched; no new code without tests.</li><li>Track coverage trends only as a guide (coverage ratchet: never decrease), plus mutation testing on new areas to confirm tests actually detect changes.</li><li>Add static analysis, linters and dependency scanning as inexpensive early signals.</li><li>Publish progress: percentage of critical flows covered, defects caught by the net, time to run.</li></ul>
+<h4>Pitfalls</h4>
+<p>Trying to reach 80 percent coverage as a project (low-value tests), asserting what the code *should* do and being blocked by existing bugs, brittle UI tests as the only safety net, ignoring test data and environments, and refactoring before characterization tests exist.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is a characterization test and how does it differ from a normal test?</li><li>How do you find seams and break dependencies safely in untestable code?</li><li>How do you decide where to start when there is no documentation and no owners?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-71">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-71%3A+How+do+you+introduce+an+automated+testing+safety+net+to+a+legacy%E2%80%A6&amp;question-id=qa-71&amp;context=QA+%2F+SDET%2C+Gear+3%2C+topic%3A+Legacy%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-71.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

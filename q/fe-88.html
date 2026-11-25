@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are the differences between Unit, Component (RTL), and End-to-End (Playwright) testing on the frontend? | InterviewGearUp</title>
+<meta name="description" content="Unit tests check isolated functions fast. Component tests with React Testing Library render a component in jsdom and assert behaviour as a user sees it.…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-88.html">
+<meta property="og:title" content="What are the differences between Unit, Component (RTL), and End-to-End (Playwright) testing on the frontend? | InterviewGearUp">
+<meta property="og:description" content="Unit tests check isolated functions fast. Component tests with React Testing Library render a component in jsdom and assert behaviour as a user sees it.…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-88.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are the differences between Unit, Component (RTL), and End-to-End (Playwright) testing on the frontend?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · Testing · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Unit tests check isolated functions fast. Component tests with React Testing Library render a component in jsdom and assert behaviour as a user sees it. End-to-end tests with Playwright drive a real browser against the running app and exercise full flows. Cost and fidelity both rise from unit to E2E, so balance them like a pyramid or trophy.</p></div>
+<h4>Explained in depth</h4>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th>Aspect</th><th>Unit</th><th>Component (RTL)</th><th>End-to-end (Playwright)</th></tr></thead><tbody><tr><td>Scope</td><td>one function or hook</td><td>one component or small tree with mocked network</td><td>whole app, real browser, often real backend</td></tr><tr><td>Environment</td><td>Node</td><td>jsdom or happy-dom</td><td>Chromium, Firefox, WebKit</td></tr><tr><td>Speed</td><td>milliseconds</td><td>tens of milliseconds</td><td>seconds each</td></tr><tr><td>Confidence</td><td>logic correctness</td><td>UI behaviour and accessibility</td><td>integration, routing, auth, real rendering</td></tr><tr><td>Flakiness</td><td>very low</td><td>low</td><td>highest, needs care</td></tr><tr><td>Failure diagnosis</td><td>exact</td><td>good</td><td>harder (traces, videos)</td></tr></tbody></table></div>
+<h4>Unit</h4>
+<p>Pure logic: formatters, reducers, validators, utilities.</p>
+<pre><code>test(&#39;formats cents&#39;, () =&gt; { expect(formatPrice(1999, &#39;USD&#39;)).toBe(&#39;$19.99&#39;); });</code></pre>
+<h4>Component with Testing Library</h4>
+<p>Query by role, label and text (what users perceive), not by class names or state internals. Interact with <code>userEvent</code>, assert on the DOM, and mock the network with MSW.</p>
+<pre><code>render(&lt;LoginForm onSubmit={onSubmit} /&gt;);
+await userEvent.type(screen.getByLabelText(/email/i), &#39;a@b.com&#39;);
+await userEvent.click(screen.getByRole(&#39;button&#39;, { name: /sign in/i }));
+expect(onSubmit).toHaveBeenCalledWith({ email: &#39;a@b.com&#39; });</code></pre>
+<p>Good for conditional rendering, form validation, accessibility roles, and loading and error states. Limits: no real layout, CSS, scrolling or browser APIs (jsdom stubs them).</p>
+<h4>End-to-end with Playwright</h4>
+<pre><code>test(&#39;user can check out&#39;, async ({ page }) =&gt; {
+  await page.goto(&#39;/&#39;);
+  await page.getByRole(&#39;button&#39;, { name: &#39;Add to cart&#39; }).click();
+  await page.getByRole(&#39;link&#39;, { name: &#39;Checkout&#39; }).click();
+  await expect(page).toHaveURL(/checkout/);
+});</code></pre>
+<p>Playwright has auto-waiting locators, network interception, multiple browsers, tracing, video and parallel workers. Use it for critical journeys (login, purchase, signup), cross-page behaviour, real CSS and layout, file uploads and visual regression.</p>
+<h4>Strategy</h4>
+<ul><li>Many unit tests for logic, a solid layer of component tests for UI behaviour, and a few E2E tests for the critical paths (the &quot;testing trophy&quot; puts most value in integration-level tests).</li><li>Keep E2E deterministic: seed data, isolate state per test, mock third parties, avoid fixed sleeps, use stable locators (role, test ids).</li><li>Run unit and component tests on each commit; run E2E on pull requests and nightly across browsers.</li><li>Add accessibility checks (axe) at the component and E2E levels.</li></ul>
+<h4>Pitfalls</h4>
+<p>Testing implementation details (snapshots of internals, calling private state), over-mocking so nothing real is tested, too many slow E2E tests, and chasing coverage percentages instead of behaviours that matter.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does the testing trophy favour integration-level component tests?</li><li>What can jsdom not test that a real browser can?</li><li>How do you keep E2E tests reliable and fast?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-88">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-88%3A+What+are+the+differences+between+Unit%2C+Component+%28RTL%29%2C+and%E2%80%A6&amp;question-id=fe-88&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+Testing%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-88.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

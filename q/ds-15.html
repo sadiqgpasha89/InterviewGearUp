@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you use pandas groupby, merge and pivot operations to answer a business question efficiently and correctly? | InterviewGearUp</title>
+<meta name="description" content="Frame the question and the grain of the result, then join tables on validated keys, aggregate with groupby and named aggregations, reshape with…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-15.html">
+<meta property="og:title" content="How do you use pandas groupby, merge and pivot operations to answer a business question efficiently and correctly? | InterviewGearUp">
+<meta property="og:description" content="Frame the question and the grain of the result, then join tables on validated keys, aggregate with groupby and named aggregations, reshape with…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-15.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you use pandas groupby, merge and pivot operations to answer a business question efficiently and correctly?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 1 (Junior) · Python and pandas · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Frame the question and the grain of the result, then join tables on validated keys, aggregate with groupby and named aggregations, reshape with pivot_table or unstack, and sanity-check row counts at every step. Prefer vectorised operations over loops, watch for join fan-out and duplicate keys, and keep the logic in a readable chain.</p></div>
+<h4>Explained in depth</h4>
+<h4>A worked example</h4>
+<p>Question: &quot;What was monthly revenue and repeat-purchase rate by acquisition channel in 2025?&quot; Tables: <code>orders(order_id, customer_id, order_date, amount)</code> and <code>customers(customer_id, channel, signup_date)</code>.</p>
+<pre><code>import pandas as pd
+
+orders = pd.read_parquet(&quot;orders.parquet&quot;, columns=[&quot;order_id&quot;, &quot;customer_id&quot;, &quot;order_date&quot;, &quot;amount&quot;])
+cust = pd.read_parquet(&quot;customers.parquet&quot;)
+
+# 1. validate keys before joining
+assert cust[&quot;customer_id&quot;].is_unique, &quot;customers must be one row per customer&quot;
+orders = orders.drop_duplicates(&quot;order_id&quot;)
+
+# 2. merge: many orders to one customer; validate prevents silent fan-out
+df = orders.merge(cust[[&quot;customer_id&quot;, &quot;channel&quot;]], on=&quot;customer_id&quot;, how=&quot;left&quot;, validate=&quot;m:1&quot;)
+assert len(df) == len(orders)
+print(&quot;orders without channel:&quot;, df[&quot;channel&quot;].isna().sum())
+
+# 3. derive features
+df[&quot;month&quot;] = df[&quot;order_date&quot;].dt.to_period(&quot;M&quot;)
+df[&quot;order_rank&quot;] = df.groupby(&quot;customer_id&quot;)[&quot;order_date&quot;].rank(method=&quot;first&quot;)
+
+# 4. aggregate with named aggregations
+monthly = (df[df[&quot;order_date&quot;].dt.year == 2025]
+           .groupby([&quot;channel&quot;, &quot;month&quot;], observed=True)
+           .agg(revenue=(&quot;amount&quot;, &quot;sum&quot;), orders=(&quot;order_id&quot;, &quot;nunique&quot;), customers=(&quot;customer_id&quot;, &quot;nunique&quot;))
+           .reset_index())
+
+# 5. reshape for reporting
+wide = monthly.pivot_table(index=&quot;month&quot;, columns=&quot;channel&quot;, values=&quot;revenue&quot;, aggfunc=&quot;sum&quot;, fill_value=0)</code></pre>
+<h4>Key operations</h4>
+<ul><li><strong>groupby</strong>: split-apply-combine. <code>agg</code> reduces each group to one row; <code>transform</code> returns a result aligned to the original rows (for example group mean to compute share or z-score); <code>apply</code> runs arbitrary Python (flexible but slow).</li></ul>
+<pre><code>df[&quot;share_of_channel&quot;] = df[&quot;amount&quot;] / df.groupby(&quot;channel&quot;)[&quot;amount&quot;].transform(&quot;sum&quot;)</code></pre>
+<ul><li><strong>merge</strong>: <code>how</code> in <code>inner</code>, <code>left</code>, <code>right</code>, <code>outer</code>; use <code>validate=&quot;1:1&quot;</code>, <code>&quot;m:1&quot;</code> and <code>indicator=True</code> to expose unmatched rows. Know your <strong>grain</strong> (one row per what?).</li><li><strong>pivot_table / melt / unstack / stack</strong>: pivot to wide, melt to long. <code>crosstab</code> for counts.</li><li><strong>Window-like operations</strong>: <code>rolling</code>, <code>expanding</code>, <code>shift</code>, <code>rank</code>, <code>cumsum</code>, <code>diff</code>.</li><li><strong>Time handling</strong>: parse dates, use <code>dt</code> accessors, <code>resample(&quot;M&quot;)</code>, time zones.</li></ul>
+<h4>Correctness checklist</h4>
+<ol start="1"><li>Check <strong>row counts and uniqueness</strong> before and after each join.</li><li>Be explicit about <strong>NaN</strong> handling (<code>dropna</code>, <code>fillna</code>); groupby drops NaN keys by default (<code>dropna=False</code> keeps them).</li><li>Beware <strong>fan-out</strong>: joining on non-unique keys multiplies rows and inflates sums.</li><li>Validate against a <strong>known total</strong> (finance report) or a SQL query.</li><li>Avoid chained assignment warnings: use <code>.loc</code>, or <code>assign</code> in a method chain.</li><li>Use categorical dtype and <code>observed=True</code> to avoid empty groups.</li></ol>
+<h4>Performance</h4>
+<ul><li><strong>Vectorise</strong> (column operations, <code>np.where</code>) instead of <code>iterrows</code> or row-wise <code>apply</code>.</li><li>Read only needed columns, use <strong>Parquet</strong>, downcast dtypes, convert strings to <code>category</code>.</li><li>Filter early; sort and merge on indexed keys; avoid repeated copies.</li><li>For larger-than-memory or heavy workloads, push aggregation to <strong>SQL</strong>, use <strong>Polars</strong> or DuckDB for fast single-machine processing, or <strong>Spark</strong> for distributed data.</li></ul>
+<h4>Pitfalls</h4>
+<p>Averaging averages instead of weighting, merging on non-unique keys, silently dropping NaN group keys, and writing a long unreviewable notebook cell instead of testable functions.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you detect and prevent row duplication from a many-to-many merge?</li><li>How do you speed up pandas code on a large dataset, and when do you switch to SQL, Polars or Spark?</li><li>What is the difference between transform, apply and agg in a groupby?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-15">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-15%3A+How+do+you+use+pandas+groupby%2C+merge+and+pivot+operations+to+answer%E2%80%A6&amp;question-id=ds-15&amp;context=Data+scientist%2C+Gear+1%2C+topic%3A+Python+and+pandas%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-15.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

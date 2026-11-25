@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare distributed locking mechanisms: Redis Redlock versus ZooKeeper/etcd sequential ephemeral nodes. | InterviewGearUp</title>
+<meta name="description" content="Redis Redlock acquires a lock on a majority of independent Redis nodes with a TTL and random token, relying on timing assumptions, while ZooKeeper and…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-52.html">
+<meta property="og:title" content="Compare distributed locking mechanisms: Redis Redlock versus ZooKeeper/etcd sequential ephemeral nodes. | InterviewGearUp">
+<meta property="og:description" content="Redis Redlock acquires a lock on a majority of independent Redis nodes with a TTL and random token, relying on timing assumptions, while ZooKeeper and…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-52.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare distributed locking mechanisms: Redis Redlock versus ZooKeeper/etcd sequential ephemeral nodes.</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · Distributed systems · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Redis Redlock acquires a lock on a majority of independent Redis nodes with a TTL and random token, relying on timing assumptions, while ZooKeeper and etcd build locks on consensus (Raft, ZAB) using ephemeral sequential nodes or leases with revisions, which give stronger safety and fencing tokens. Use fencing tokens whichever you choose when correctness matters.</p></div>
+<h4>Explained in depth</h4>
+<h4>What a lock must provide</h4>
+<p>Mutual exclusion, deadlock freedom (locks expire if the holder dies), and fault tolerance. The hard part: a client can pause (GC, VM stall, network delay) after acquiring a lock, the lease expires, another client acquires it, and then the first client resumes and writes anyway.</p>
+<h4>Single Redis lock</h4>
+<pre><code>SET lock:order:42 &lt;random-token&gt; NX PX 30000        # acquire if not exists, with TTL
+-- release atomically (Lua), only if token matches
+if redis.call(&#39;get&#39;, KEYS[1]) == ARGV[1] then return redis.call(&#39;del&#39;, KEYS[1]) else return 0 end</code></pre>
+<p>Fast and simple, good for efficiency locks (avoiding duplicate work), but a failover to an asynchronously replicated replica can lose the lock, so two clients may hold it.</p>
+<h4>Redlock</h4>
+<p>Acquire the same lock on N (typically 5) independent Redis masters with a short timeout, succeed if a <strong>majority</strong> (3 of 5) were acquired within a validity time smaller than the TTL (minus clock drift), and release on all nodes. It tolerates node failures but depends on bounded network delay, process pauses and clock drift. Critics (Martin Kleppmann) note it provides no fencing token and is unsafe for correctness under pauses; its author argues the assumptions are reasonable. Treat it as acceptable for best-effort mutual exclusion, not for protecting data integrity.</p>
+<h4>ZooKeeper and etcd</h4>
+<ul><li><strong>ZooKeeper recipe</strong>: each client creates an <strong>ephemeral sequential</strong> znode under <code>/locks/resource</code> (<code>lock-0000000007</code>). The client with the lowest sequence number holds the lock; others watch only their immediate predecessor (avoiding a thundering herd) and are notified when it disappears. Ephemeral nodes vanish when the session ends (client crash), releasing the lock; the znode&#39;s <code>zxid</code> or sequence number can serve as a <strong>fencing token</strong>.</li><li><strong>etcd</strong>: acquire a key tied to a <strong>lease</strong> (TTL kept alive with heartbeats) in a transaction on the key&#39;s create revision; the lowest revision wins (<code>concurrency.Mutex</code>). The revision is a monotonically increasing fencing token. Consensus (Raft) ensures linearizable operations.</li></ul>
+<h4>Fencing tokens</h4>
+<p>The lock service returns an increasing number with each grant. The protected resource (database, storage) records the highest token seen and <strong>rejects writes with a lower token</strong>, which neutralises a paused client that wakes up after its lease expired.</p>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th>Aspect</th><th>Redis (Redlock)</th><th>ZooKeeper or etcd</th></tr></thead><tbody><tr><td>Consistency model</td><td>timing-based, AP-leaning</td><td>consensus, CP</td></tr><tr><td>Performance</td><td>very high</td><td>lower, but sufficient</td></tr><tr><td>Fencing token</td><td>not provided</td><td>yes (zxid, revision)</td></tr><tr><td>Failure detection</td><td>TTL</td><td>sessions or leases with heartbeats</td></tr><tr><td>Best for</td><td>efficiency locks, rate limiting</td><td>correctness locks, leader election, coordination</td></tr></tbody></table></div>
+<h4>Alternatives</h4>
+<p>Database constraints and row locks (<code>SELECT ... FOR UPDATE</code>, PostgreSQL advisory locks), optimistic concurrency with version columns, idempotent operations, or partitioning work so one owner handles each key (leader per shard) remove the need for distributed locks.</p>
+<h4>Pitfalls</h4>
+<p>Using TTLs shorter than worst-case work time with no renewal, releasing someone else&#39;s lock (missing token check), assuming wall clocks agree, and holding a lock across remote calls without fencing.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is a fencing token and why do leases need one?</li><li>Why do GC pauses and clock drift threaten timing-based locks?</li><li>When is a database row lock or advisory lock enough?</li></ul>
+<p><a class="btn primary" href="../#/q/be-52">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-52%3A+Compare+distributed+locking+mechanisms%3A+Redis+Redlock+versus%E2%80%A6&amp;question-id=be-52&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+Distributed+systems%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-52.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain the Liskov Substitution Principle (LSP) and why a Square inheriting from Rectangle violates it. | InterviewGearUp</title>
+<meta name="description" content="The Liskov Substitution Principle says code written against a base type must keep working when handed any subtype. A Square that extends Rectangle breaks…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-65.html">
+<meta property="og:title" content="Explain the Liskov Substitution Principle (LSP) and why a Square inheriting from Rectangle violates it. | InterviewGearUp">
+<meta property="og:description" content="The Liskov Substitution Principle says code written against a base type must keep working when handed any subtype. A Square that extends Rectangle breaks…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-65.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain the Liskov Substitution Principle (LSP) and why a Square inheriting from Rectangle violates it.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 2 (Mid-level) · OOP · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>The Liskov Substitution Principle says code written against a base type must keep working when handed any subtype. A Square that extends Rectangle breaks it because setting the width also changes the height, so callers relying on independent dimensions get wrong results.</p></div>
+<h4>Explained in depth</h4>
+<h4>Statement</h4>
+<p>Barbara Liskov: if <code>S</code> is a subtype of <code>T</code>, then objects of type <code>T</code> can be replaced with objects of type <code>S</code> <strong>without altering the correctness of the program</strong>. Substitutability is about behaviour and contracts, not just matching method signatures.</p>
+<h4>The Square and Rectangle example</h4>
+<pre><code>class Rectangle {
+    protected int w, h;
+    void setWidth(int w)  { this.w = w; }
+    void setHeight(int h) { this.h = h; }
+    int area() { return w * h; }
+}
+class Square extends Rectangle {
+    @Override void setWidth(int w)  { this.w = w; this.h = w; }
+    @Override void setHeight(int h) { this.w = h; this.h = h; }
+}
+
+void resize(Rectangle r) {
+    r.setWidth(5); r.setHeight(4);
+    assert r.area() == 20;       // fails for Square: area is 16
+}</code></pre>
+<p>A mathematical square is a rectangle, but the <strong>mutable</strong> <code>Square</code> object does not honour the contract of the mutable <code>Rectangle</code>: &quot;setting width does not change height&quot;. The subtype strengthened an invariant (<code>w == h</code>), breaking the caller&#39;s reasonable expectation.</p>
+<h4>The behavioural rules</h4>
+<p>Subtypes must obey:</p>
+<ul><li><strong>Preconditions cannot be strengthened</strong> (do not require more than the parent).</li><li><strong>Postconditions cannot be weakened</strong> (promise at least as much).</li><li><strong>Invariants must be preserved.</strong></li><li><strong>History constraint</strong>: do not allow state changes the base type forbids.</li><li>Exceptions: do not throw new checked or unexpected exception types from an overridden method.</li><li>Covariant return types and contravariant parameter types are the safe variance directions.</li></ul>
+<h4>Other typical violations</h4>
+<ul><li>A <code>ReadOnlyList</code> extending <code>List</code> and throwing <code>UnsupportedOperationException</code> from <code>add</code>.</li><li>An override that returns <code>null</code> where the parent never does.</li><li>A subclass method that silently does nothing (a &quot;no-op&quot; override), forcing callers into <code>instanceof</code> checks, a classic smell.</li></ul>
+<h4>Fixes</h4>
+<ul><li>Remove the inheritance: model <code>Shape</code> with <code>area()</code>, and let <code>Rectangle</code> and <code>Square</code> be siblings (or make shapes <strong>immutable</strong> with a <code>resize</code> returning a new value).</li><li>Prefer <strong>composition</strong> or a narrower interface when only some behaviour is shared.</li><li>Use design by contract (assertions, documented contracts) and contract tests that every subtype must pass.</li></ul>
+<h4>Why it matters</h4>
+<p>LSP is what makes polymorphism safe. Without it, base type code accumulates <code>if (x instanceof Foo)</code> special cases, which also breaks the Open/Closed Principle.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do preconditions, postconditions and invariants relate to LSP?</li><li>What would you do instead of making Square inherit from Rectangle?</li><li>How do immutable types and composition avoid LSP problems?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-65">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-65%3A+Explain+the+Liskov+Substitution+Principle+%28LSP%29+and+why+a+Square%E2%80%A6&amp;question-id=gen-65&amp;context=Software+engineer+%28core%29%2C+Gear+2%2C+topic%3A+OOP%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-65.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do JavaScript Proxy and Reflect APIs enable reactive state tracking in modern frameworks? | InterviewGearUp</title>
+<meta name="description" content="A Proxy wraps an object and intercepts operations such as get, set, has and deleteProperty through traps, while Reflect provides the matching default…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-95.html">
+<meta property="og:title" content="How do JavaScript Proxy and Reflect APIs enable reactive state tracking in modern frameworks? | InterviewGearUp">
+<meta property="og:description" content="A Proxy wraps an object and intercepts operations such as get, set, has and deleteProperty through traps, while Reflect provides the matching default…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-95.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do JavaScript Proxy and Reflect APIs enable reactive state tracking in modern frameworks?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 3 (Senior) · JavaScript · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A Proxy wraps an object and intercepts operations such as get, set, has and deleteProperty through traps, while Reflect provides the matching default operations with correct receiver semantics. Frameworks like Vue 3 use them to track which properties an effect reads and to trigger re-runs when those properties change.</p></div>
+<h4>Explained in depth</h4>
+<h4>The mechanism</h4>
+<pre><code>const handler = {
+  get(target, key, receiver) {
+    track(target, key);                          // record that the running effect read this key
+    return Reflect.get(target, key, receiver);
+  },
+  set(target, key, value, receiver) {
+    const old = target[key];
+    const ok = Reflect.set(target, key, value, receiver);
+    if (old !== value) trigger(target, key);     // re-run effects that depend on this key
+    return ok;
+  },
+};
+const state = new Proxy({ count: 0 }, handler);</code></pre>
+<p>Other traps: <code>has</code> (the <code>in</code> operator), <code>deleteProperty</code>, <code>ownKeys</code> (for <code>Object.keys</code> and <code>for...in</code>), <code>getOwnPropertyDescriptor</code>, <code>defineProperty</code>, <code>apply</code> and <code>construct</code> for functions.</p>
+<h4>Why Reflect</h4>
+<p><code>Reflect</code> methods mirror the proxy traps and return booleans instead of throwing in many cases. Using <code>Reflect.get(target, key, receiver)</code> preserves the correct <code>this</code> when properties are getters or the object is inherited, which avoids subtle bugs, and <code>Reflect.set</code> returns a success flag the <code>set</code> trap must return (in strict mode a falsy return throws a <code>TypeError</code>).</p>
+<h4>A tiny reactive system</h4>
+<pre><code>const deps = new WeakMap();            // target -&gt; Map(key -&gt; Set(effects))
+let activeEffect = null;
+function track(t, k) {
+  if (!activeEffect) return;
+  let m = deps.get(t); if (!m) deps.set(t, m = new Map());
+  let s = m.get(k);   if (!s) m.set(k, s = new Set());
+  s.add(activeEffect);
+}
+function trigger(t, k) { deps.get(t)?.get(k)?.forEach((fn) =&gt; fn()); }
+function effect(fn) { activeEffect = fn; fn(); activeEffect = null; }
+
+const s = reactive({ n: 1 });
+effect(() =&gt; console.log(&#39;n is&#39;, s.n));    // runs once and subscribes to n
+s.n = 2;                                   // trap triggers the effect again</code></pre>
+<p>Real implementations add nesting (return proxies lazily for nested objects, cached in a WeakMap), cleanup of stale dependencies per run, batching and scheduling, array and collection handling (<code>length</code>, <code>push</code>), and guards against recursive triggers.</p>
+<h4>Why Proxy beat Object.defineProperty (Vue 2)</h4>
+<ul><li>Detects <strong>added and deleted properties</strong> and array index changes without <code>Vue.set</code>.</li><li>Wraps objects lazily, with no upfront deep traversal.</li><li>Supports Map and Set via method wrappers.</li></ul>
+<h4>Limitations</h4>
+<ul><li>Cannot be polyfilled fully (no IE11).</li><li>Identity: <code>proxy !== target</code>, so use raw/toRaw escape hatches and avoid mixing the two in sets and comparisons.</li><li>Internal slots (Map, Date, private <code>#fields</code>) break when the method is called with the proxy as <code>this</code>, so frameworks bind methods to the target.</li><li>Overhead on hot paths; use <code>shallowReactive</code> or frozen data for huge structures.</li><li>Other uses: validation, default values, logging, negative array indices, API clients (<code>api.users.get()</code>), and immutable updates (Immer drafts).</li></ul>
+<p>Signals-based frameworks (Solid, Preact Signals, Angular signals) avoid proxies by making reads explicit, trading some ergonomics for predictability.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why do traps usually call Reflect rather than touching the target directly?</li><li>How does Vue 3&#39;s reactivity track dependencies and avoid infinite loops?</li><li>What are the limitations and performance costs of Proxy?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-95">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-95%3A+How+do+JavaScript+Proxy+and+Reflect+APIs+enable+reactive+state%E2%80%A6&amp;question-id=fe-95&amp;context=Frontend+engineer%2C+Gear+3%2C+topic%3A+JavaScript%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-95.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

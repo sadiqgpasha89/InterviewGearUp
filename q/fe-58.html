@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do WAI-ARIA roles, states, and live regions communicate dynamic UI updates to screen readers? | InterviewGearUp</title>
+<meta name="description" content="WAI-ARIA adds roles, states and properties that expose custom widgets to the accessibility tree. Live regions (aria-live, role=status, role=alert) make…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-58.html">
+<meta property="og:title" content="How do WAI-ARIA roles, states, and live regions communicate dynamic UI updates to screen readers? | InterviewGearUp">
+<meta property="og:description" content="WAI-ARIA adds roles, states and properties that expose custom widgets to the accessibility tree. Live regions (aria-live, role=status, role=alert) make…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-58.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do WAI-ARIA roles, states, and live regions communicate dynamic UI updates to screen readers?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · Accessibility · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>WAI-ARIA adds roles, states and properties that expose custom widgets to the accessibility tree. Live regions (aria-live, role=status, role=alert) make assistive technology announce dynamic updates without moving focus. Use native HTML first and add ARIA only to fill genuine gaps.</p></div>
+<h4>Explained in depth</h4>
+<h4>What ARIA does</h4>
+<p>The browser builds an <strong>accessibility tree</strong> from the DOM, with each node having a <strong>role</strong> (what it is), <strong>name</strong> (what it is called), and <strong>state or properties</strong> (checked, expanded, disabled). Native elements fill this in automatically. ARIA lets you set or override these when you build custom components. It changes only what assistive technologies are told, <strong>not behaviour</strong>: you must still implement keyboard handling and focus management.</p>
+<h4>The five rules in short</h4>
+<ol start="1"><li>Prefer a native element (<code>&lt;button&gt;</code>, <code>&lt;dialog&gt;</code>, <code>&lt;details&gt;</code>) over ARIA.</li><li>Do not change native semantics unless necessary.</li><li>All interactive ARIA widgets must be keyboard operable.</li><li>Never hide focusable elements with <code>role=&quot;presentation&quot;</code> or <code>aria-hidden=&quot;true&quot;</code>.</li><li>All interactive elements need an accessible name.</li></ol>
+<h4>Roles, states and properties</h4>
+<pre><code>&lt;button aria-expanded=&quot;false&quot; aria-controls=&quot;menu1&quot;&gt;Options&lt;/button&gt;
+&lt;ul id=&quot;menu1&quot; role=&quot;menu&quot; hidden&gt; ... &lt;/ul&gt;
+
+&lt;div role=&quot;tablist&quot; aria-label=&quot;Settings&quot;&gt;
+  &lt;button role=&quot;tab&quot; id=&quot;t1&quot; aria-selected=&quot;true&quot; aria-controls=&quot;p1&quot;&gt;General&lt;/button&gt;
+  &lt;button role=&quot;tab&quot; id=&quot;t2&quot; aria-selected=&quot;false&quot; aria-controls=&quot;p2&quot; tabindex=&quot;-1&quot;&gt;Security&lt;/button&gt;
+&lt;/div&gt;
+&lt;div role=&quot;tabpanel&quot; id=&quot;p1&quot; aria-labelledby=&quot;t1&quot;&gt;...&lt;/div&gt;</code></pre>
+<p>Common attributes: <code>aria-label</code>/<code>aria-labelledby</code>/<code>aria-describedby</code> (names and descriptions), <code>aria-expanded</code>, <code>aria-pressed</code>, <code>aria-checked</code>, <code>aria-selected</code>, <code>aria-current</code> (current page or step), <code>aria-invalid</code>, <code>aria-required</code>, <code>aria-busy</code>, <code>aria-hidden</code>. Update them in JavaScript as state changes.</p>
+<h4>Live regions</h4>
+<p>Dynamic changes (toasts, validation errors, loading states, new chat messages) are silent to screen readers unless announced.</p>
+<pre><code>&lt;div id=&quot;status&quot; role=&quot;status&quot; aria-live=&quot;polite&quot; aria-atomic=&quot;true&quot;&gt;&lt;/div&gt;
+&lt;div role=&quot;alert&quot;&gt;Payment failed. Check your card details.&lt;/div&gt;   &lt;!-- assertive --&gt;</code></pre>
+<ul><li><code>aria-live=&quot;polite&quot;</code> waits for the user to be idle; <code>assertive</code> interrupts (reserve for errors).</li><li><code>role=&quot;status&quot;</code> implies polite, <code>role=&quot;alert&quot;</code> implies assertive and atomic.</li><li><code>aria-atomic=&quot;true&quot;</code> reads the whole region rather than only the changed part; <code>aria-relevant</code> controls additions or removals.</li><li>The live region must <strong>exist in the DOM before</strong> its text changes; inserting the container and text together is often not announced. Update text content, do not move focus.</li></ul>
+<h4>Testing</h4>
+<p>Use screen readers (NVDA with Firefox or Chrome, VoiceOver with Safari, TalkBack), the browser accessibility inspector, and axe rules. Follow the <strong>ARIA Authoring Practices Guide (APG)</strong> patterns for keyboard interaction in tabs, menus, comboboxes and dialogs.</p>
+<h4>Pitfalls</h4>
+<p><code>aria-label</code> on non-interactive <code>div</code>s (ignored), conflicting names, <code>aria-hidden</code> on focusable content, redundant roles (<code>&lt;button role=&quot;button&quot;&gt;</code>), announcing every keystroke or progress tick, and using ARIA to hide poor DOM structure.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the difference between aria-live polite and assertive, and aria-atomic?</li><li>How do aria-expanded, aria-controls and aria-selected communicate widget state?</li><li>Why can wrong ARIA make accessibility worse than no ARIA?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-58">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-58%3A+How+do+WAI-ARIA+roles%2C+states%2C+and+live+regions+communicate+dynamic%E2%80%A6&amp;question-id=fe-58&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+Accessibility%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-58.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

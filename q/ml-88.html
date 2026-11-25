@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does the Vision Transformer (ViT) apply standard Transformer encoders to non-overlapping image patches? | InterviewGearUp</title>
+<meta name="description" content="ViT splits an image into fixed non-overlapping patches, flattens and linearly projects each into a token embedding, adds position embeddings and a…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-88.html">
+<meta property="og:title" content="How does the Vision Transformer (ViT) apply standard Transformer encoders to non-overlapping image patches? | InterviewGearUp">
+<meta property="og:description" content="ViT splits an image into fixed non-overlapping patches, flattens and linearly projects each into a token embedding, adds position embeddings and a…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-88.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does the Vision Transformer (ViT) apply standard Transformer encoders to non-overlapping image patches?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · Vision · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>ViT splits an image into fixed non-overlapping patches, flattens and linearly projects each into a token embedding, adds position embeddings and a learnable class token, and feeds the sequence to a standard Transformer encoder. Self-attention then relates patches globally, and the class token output goes to a classifier head. It needs large-scale pretraining because it has weaker inductive biases than CNNs.</p></div>
+<h4>Explained in depth</h4>
+<h4>Pipeline</h4>
+<p>Given an image of size <code>H × W × C</code> (for example 224 × 224 × 3) and patch size <code>P</code> (16):</p>
+<ol start="1"><li><strong>Patchify</strong>: split into <code>N = (H/P)·(W/P)</code> non-overlapping patches (14 × 14 = 196). Each patch is <code>P × P × C = 768</code> raw values.</li><li><strong>Patch embedding</strong>: flatten each patch and apply a <strong>learned linear projection</strong> to dimension D (768 for ViT-Base). Equivalent to a convolution with kernel and stride P.</li><li><strong>Prepend a learnable [CLS] token</strong> (a vector like BERT&#39;s class token) so the sequence has N + 1 tokens.</li><li><strong>Add position embeddings</strong> (learned 1D, one per position; 2D or sinusoidal variants exist) because attention itself is permutation invariant; this tells the model where each patch came from. At new resolutions the position embeddings are <strong>interpolated</strong>.</li><li><strong>Transformer encoder</strong> of L layers (12 for Base): each layer is <strong>LayerNorm → multi-head self-attention → residual → LayerNorm → MLP (GELU) → residual</strong>. Attention lets every patch attend to every other patch from the first layer, giving a <strong>global receptive field</strong> immediately.</li><li><strong>Classification head</strong>: take the final [CLS] embedding (or mean-pool patch tokens) → MLP head → logits.</li></ol>
+<pre><code>import torch, torch.nn as nn
+class PatchEmbed(nn.Module):
+    def __init__(self, img=224, p=16, c=3, d=768):
+        super().__init__(); self.proj = nn.Conv2d(c, d, kernel_size=p, stride=p); self.n = (img // p) ** 2
+    def forward(self, x):                                   # (B, C, H, W)
+        return self.proj(x).flatten(2).transpose(1, 2)      # (B, N, D)
+class ViT(nn.Module):
+    def __init__(self, d=768, depth=12, heads=12, classes=1000):
+        super().__init__()
+        self.embed = PatchEmbed(d=d); self.cls = nn.Parameter(torch.zeros(1, 1, d))
+        self.pos = nn.Parameter(torch.zeros(1, self.embed.n + 1, d))
+        layer = nn.TransformerEncoderLayer(d, heads, 4 * d, activation=&quot;gelu&quot;, batch_first=True, norm_first=True)
+        self.encoder = nn.TransformerEncoder(layer, depth); self.norm = nn.LayerNorm(d); self.head = nn.Linear(d, classes)
+    def forward(self, x):
+        t = self.embed(x); t = torch.cat([self.cls.expand(len(t), -1, -1), t], 1) + self.pos
+        return self.head(self.norm(self.encoder(t))[:, 0])</code></pre>
+<h4>Cost and design choices</h4>
+<ul><li>Self-attention is <strong>O(N²·D)</strong> in the number of patches. Smaller patches (8 instead of 16) give a finer representation but 4x more tokens (about 16x attention cost); larger images likewise. Variants: ViT-B/16, ViT-L/16, ViT-H/14.</li><li><strong>Model sizes</strong>: Base 86M, Large 307M, Huge 632M parameters.</li></ul>
+<h4>Inductive bias and data hunger</h4>
+<p>CNNs hardcode <strong>locality and translation equivariance</strong>, which helps with small data. ViT has little image-specific bias: it must <strong>learn</strong> these from data. Consequently ViT trained only on ImageNet-1k underperforms CNNs, but pretrained on <strong>large datasets (JFT-300M, ImageNet-21k, LAION)</strong> it matches or surpasses them and scales better with compute. Solutions for smaller data:</p>
+<ul><li><strong>DeiT</strong>: strong augmentation, regularisation, and <strong>distillation token</strong> from a CNN teacher.</li><li><strong>Self-supervised pretraining</strong>: <strong>MAE</strong> (masked autoencoders: mask 75 percent of patches and reconstruct), DINO/DINOv2, BEiT, CLIP (contrastive image-text).</li><li><strong>Hierarchical and local-attention designs</strong>: <strong>Swin Transformer</strong> (shifted windows, patch merging for multi-scale features, linear complexity), PVT, MViT, ConvNeXt-style hybrids, CoAtNet; important for dense tasks like detection and segmentation.</li></ul>
+<h4>Applications</h4>
+<p>Image classification, detection (DETR, ViTDet), segmentation (SegFormer, Mask2Former, SAM), vision-language models (CLIP, LLaVA, multimodal LLMs use ViT encoders), video (ViViT, VideoMAE), medical imaging, remote sensing.</p>
+<h4>Practical notes</h4>
+<p>Fine-tune pretrained checkpoints (timm, Hugging Face) at higher resolution with interpolated position embeddings, use mixed precision and FlashAttention, layer-wise learning-rate decay, and strong augmentation (RandAugment, Mixup, CutMix).</p>
+<h4>Pitfalls</h4>
+<p>Training from scratch on small datasets, mismatched normalisation and resolution at inference, ignoring quadratic cost at high resolution, and treating the [CLS] token as the only usable feature (patch tokens carry dense information).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does ViT need more data than CNNs and how do DeiT and MAE address this?</li><li>How do patch size and image resolution change sequence length and cost?</li><li>How do Swin and hybrid models reintroduce locality?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-88">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-88%3A+How+does+the+Vision+Transformer+%28ViT%29+apply+standard+Transformer%E2%80%A6&amp;question-id=ml-88&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+Vision%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-88.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

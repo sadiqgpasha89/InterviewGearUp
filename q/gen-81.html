@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is a race condition and critical section, and how do mutexes protect shared memory? | InterviewGearUp</title>
+<meta name="description" content="A race condition occurs when correctness depends on the timing of threads accessing shared state. The code touching that state is a critical section; a…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-81.html">
+<meta property="og:title" content="What is a race condition and critical section, and how do mutexes protect shared memory? | InterviewGearUp">
+<meta property="og:description" content="A race condition occurs when correctness depends on the timing of threads accessing shared state. The code touching that state is a critical section; a…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-81.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is a race condition and critical section, and how do mutexes protect shared memory?</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 2 (Mid-level) · Systems · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A race condition occurs when correctness depends on the timing of threads accessing shared state. The code touching that state is a critical section; a mutex enforces mutual exclusion by letting one thread hold the lock at a time, so the read-modify-write sequence becomes atomic.</p></div>
+<h4>Explained in depth</h4>
+<h4>Race condition</h4>
+<p>Two threads execute <code>counter++</code>. It compiles to three steps: load, add, store. If both load the value <code>5</code> before either stores, both write <code>6</code> and one increment is lost. The result depends on <strong>scheduling luck</strong>, so bugs are intermittent and disappear under a debugger.</p>
+<pre><code>Thread A: load 5        add 1        store 6
+Thread B:        load 5        add 1        store 6     -&gt; counter = 6, expected 7</code></pre>
+<h4>Critical section</h4>
+<p>A region of code that accesses shared mutable state and must not be executed by more than one thread at a time. A correct solution provides:</p>
+<ol start="1"><li><strong>Mutual exclusion</strong>,</li><li><strong>Progress</strong> (a free section is eventually enterable),</li><li><strong>Bounded waiting</strong> (no starvation).</li></ol>
+<h4>Mutex</h4>
+<pre><code>private final ReentrantLock lock = new ReentrantLock();
+private int counter;
+
+void increment() {
+    lock.lock();
+    try { counter++; }          // critical section
+    finally { lock.unlock(); }  // always release, even on exceptions
+}</code></pre>
+<p>Only the owner can unlock. Waiting threads sleep (the OS parks them) instead of spinning, so it works well for sections that may take a while. Mutex lock and unlock also create <strong>memory barriers</strong>, so writes made inside one critical section are visible to the next thread that acquires the lock.</p>
+<h4>Other tools</h4>
+<ul><li><strong>Atomics</strong> (<code>AtomicInteger</code>, <code>std::atomic</code>): hardware compare-and-swap for single variables, no blocking.</li><li><strong>Read-write locks</strong> when reads dominate, <strong>semaphores</strong> for counting resources.</li><li><strong>Immutability, thread confinement and message passing</strong> remove sharing altogether, which is the best fix.</li></ul>
+<h4>Pitfalls</h4>
+<ul><li><strong>Deadlock</strong>: threads wait for each other&#39;s locks. Prevent with a global lock ordering, <code>tryLock</code> with timeouts, or fewer locks.</li><li><strong>Holding a lock during I/O</strong> or calling unknown code (callbacks) invites contention and deadlocks.</li><li><strong>Lock granularity</strong>: one big lock is simple but serialises everything; fine-grained locks improve throughput but add complexity.</li><li><strong>Forgetting to protect reads</strong>: all accesses to shared state, not just writes, must use the same lock.</li><li><strong>Check-then-act</strong> (<code>if (!map.containsKey(k)) map.put(k, v)</code>) is a race even on a thread-safe map; use <code>putIfAbsent</code> or <code>computeIfAbsent</code>.</li><li>Detect with tools: ThreadSanitizer, Go <code>-race</code>, Java stress tests and jcstress.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is counter++ not atomic, and how do atomics or lock-free techniques help?</li><li>What is a deadlock and how do you prevent it when taking several mutexes?</li><li>What do memory visibility and happens-before add on top of mutual exclusion?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-81">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-81%3A+What+is+a+race+condition+and+critical+section%2C+and+how+do+mutexes%E2%80%A6&amp;question-id=gen-81&amp;context=Software+engineer+%28core%29%2C+Gear+2%2C+topic%3A+Systems%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-81.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

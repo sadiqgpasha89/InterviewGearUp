@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is the Principle of Least Privilege (PoLP) and how does Just-in-Time (JIT) access enforcement work? | InterviewGearUp</title>
+<meta name="description" content="Least privilege grants identities only the permissions needed for their tasks, for the shortest time and smallest scope. Just-in-time access removes…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-38.html">
+<meta property="og:title" content="What is the Principle of Least Privilege (PoLP) and how does Just-in-Time (JIT) access enforcement work? | InterviewGearUp">
+<meta property="og:description" content="Least privilege grants identities only the permissions needed for their tasks, for the shortest time and smallest scope. Just-in-time access removes…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-38.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is the Principle of Least Privilege (PoLP) and how does Just-in-Time (JIT) access enforcement work?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 2 (Mid-level) · IAM · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Least privilege grants identities only the permissions needed for their tasks, for the shortest time and smallest scope. Just-in-time access removes standing privilege, with users requesting elevation that is approved, time-boxed and logged, then automatically revoked. Together they shrink blast radius and the window in which stolen credentials are useful.</p></div>
+<h4>Explained in depth</h4>
+<h4>Principle of Least Privilege (PoLP)</h4>
+<p>Every user, service, process and application receives the <strong>minimum rights necessary</strong> to do its job. Dimensions:</p>
+<ul><li><strong>Scope</strong>: which resources (one bucket, not all storage).</li><li><strong>Actions</strong>: read versus write versus delete versus administer.</li><li><strong>Time</strong>: permanent versus temporary.</li><li><strong>Context</strong>: from managed devices, with MFA, from allowed networks.</li></ul>
+<p>Benefits: limits <strong>blast radius</strong> of compromised credentials and insider mistakes, reduces attack surface, supports compliance (SOC 2, ISO 27001, PCI-DSS, NIST 800-53 AC-6), eases investigation, and contains malware and ransomware spread.</p>
+<h4>Applying PoLP</h4>
+<ol start="1"><li><strong>Start from deny</strong>; grant explicit permissions through roles and groups, not individuals.</li><li><strong>Separate duties and accounts</strong>: standard daily account and a separate admin account; separate roles for build, deploy and runtime.</li><li><strong>Right-size using evidence</strong>: analyse what permissions are actually used (AWS IAM Access Analyzer policy generation from CloudTrail, <code>last accessed</code> data, GCP IAM Recommender, Azure PIM and access reviews, Kubernetes <code>audit2rbac</code>), then remove unused rights; start with monitor-only and tighten iteratively.</li><li><strong>Scope with conditions and resource-level policies</strong>: tags, source IP or VPC, MFA required, session duration, permission boundaries, SCPs.</li><li><strong>Workloads and machine identities</strong>: dedicated service accounts per workload, short-lived credentials via workload identity (IRSA, GCP Workload Identity, managed identities, SPIFFE), no shared or long-lived keys, scoped tokens (OAuth scopes), network policies and egress limits.</li><li><strong>Data-level least privilege</strong>: row and column permissions, masking, read-only replicas for analytics.</li><li><strong>Lifecycle management</strong>: joiner, mover, leaver automation, <strong>access recertification</strong> (quarterly reviews), expire contractor and temporary access.</li><li><strong>Local privilege</strong>: remove admin rights from endpoints, use application allow-listing, sudo with specific commands, <code>no-new-privileges</code> and dropped capabilities for containers.</li></ol>
+<h4>Just-in-Time (JIT) access</h4>
+<p><strong>Standing privilege</strong> (permanent admin) is high risk because attackers who steal the credential get constant power. JIT grants elevated access <strong>only when needed</strong>:</p>
+<ol start="1"><li>User requests a role or resource with <strong>justification</strong> and ticket reference (incident ID, change request) and desired duration.</li><li><strong>Approval</strong>: automatic by policy for low risk, or by a manager, resource owner or peer for high risk; optional <strong>MFA step-up</strong> and device posture checks.</li><li>System <strong>provisions temporary entitlement</strong> (add to group, assume role with short-lived credentials, issue a time-bound certificate or database credential).</li><li><strong>Session recording and logging</strong> of privileged activity.</li><li><strong>Automatic revocation</strong> on expiry; alerts when access is used outside the window or not revoked.</li></ol>
+<p>Tools: <strong>Microsoft Entra Privileged Identity Management (PIM)</strong>, <strong>AWS IAM Identity Center</strong> with temporary permission sets and Systems Manager Session Manager, <strong>Teleport</strong>, <strong>CyberArk, BeyondTrust, Delinea</strong>, <strong>HashiCorp Boundary and Vault</strong> dynamic credentials, GCP <strong>PAM</strong> and IAM Conditions with expiry, Kubernetes via short-lived kubeconfig or <strong>Just-in-time RBAC bindings</strong>, ChatOps approvals (Slack workflows), Opal, ConductorOne.</p>
+<pre><code>// IAM Conditions style: grant expires automatically
+{ &quot;role&quot;: &quot;roles/compute.admin&quot;, &quot;members&quot;: [&quot;user:ada@example.com&quot;],
+  &quot;condition&quot;: { &quot;title&quot;: &quot;temp-incident-1234&quot;, &quot;expression&quot;: &quot;request.time &lt; timestamp(&#39;2026-11-26T18:00:00Z&#39;)&quot; } }</code></pre>
+<h4>Break-glass</h4>
+<p>Emergency accounts with high privilege stored securely (sealed credentials, hardware tokens), excluded from conditional access outages, <strong>monitored with immediate alerts</strong>, tested regularly, and credentials rotated after each use. They are an exception path, not a daily route.</p>
+<h4>Measuring success</h4>
+<p>Percentage of identities with standing admin, count of unused permissions, mean elevation duration, number of break-glass uses, time to revoke leavers, findings from access reviews, and policy violations detected.</p>
+<h4>Common obstacles and answers</h4>
+<p>Developer friction (provide self-service JIT with fast approval and good defaults), unclear needs (use logs to generate minimal policies), legacy systems with all-or-nothing rights (wrap with proxies, vault credentials, session brokering), and service accounts with excessive rights (replace with scoped workload identities).</p>
+<h4>Pitfalls</h4>
+<p>Granting broad roles &quot;temporarily&quot; and never revoking, approval fatigue leading to rubber-stamping, JIT without logging, shared admin accounts, and least privilege applied to people while pipelines and bots run as owner.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you right-size an over-permissioned role using access logs and policy analysis tools?</li><li>How do approval workflows and break-glass accounts fit into JIT access?</li><li>How do you enforce least privilege for workloads and service accounts, not just humans?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-38">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-38%3A+What+is+the+Principle+of+Least+Privilege+%28PoLP%29+and+how+does%E2%80%A6&amp;question-id=sec-38&amp;context=Security+engineer%2C+Gear+2%2C+topic%3A+IAM%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-38.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

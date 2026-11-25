@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do background task queues (e.g., Celery, BullMQ) handle task retries, timeouts, and state tracking? | InterviewGearUp</title>
+<meta name="description" content="Background task queues such as Celery and BullMQ store jobs in a broker (Redis, RabbitMQ), run them in worker processes, and track state (waiting,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-82.html">
+<meta property="og:title" content="How do background task queues (e.g., Celery, BullMQ) handle task retries, timeouts, and state tracking? | InterviewGearUp">
+<meta property="og:description" content="Background task queues such as Celery and BullMQ store jobs in a broker (Redis, RabbitMQ), run them in worker processes, and track state (waiting,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-82.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do background task queues (e.g., Celery, BullMQ) handle task retries, timeouts, and state tracking?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 2 (Mid-level) · Architecture · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Background task queues such as Celery and BullMQ store jobs in a broker (Redis, RabbitMQ), run them in worker processes, and track state (waiting, active, completed, failed, delayed). They provide retries with backoff, timeouts, concurrency limits, scheduling and result storage, with at-least-once semantics that require idempotent tasks.</p></div>
+<h4>Explained in depth</h4>
+<h4>Core model</h4>
+<pre><code>Producer (web app) -&gt; enqueue job -&gt; Broker (Redis / RabbitMQ / SQS) -&gt; Worker pool -&gt; result / state store</code></pre>
+<p>Offloading slow or unreliable work (emails, image processing, reports, webhooks, third-party calls) keeps requests fast and isolates failures.</p>
+<h4>Job lifecycle (BullMQ)</h4>
+<p><code>waiting</code> or <code>delayed</code> -&gt; <code>active</code> -&gt; <code>completed</code> or <code>failed</code> (then <code>waiting</code> again for retry, or stays failed). Celery: <code>PENDING</code>, <code>STARTED</code>, <code>RETRY</code>, <code>SUCCESS</code>, <code>FAILURE</code>, with a result backend (Redis, database) for state.</p>
+<h4>Retries</h4>
+<pre><code>// BullMQ
+await queue.add(&#39;send-email&#39;, payload, {
+  attempts: 5,
+  backoff: { type: &#39;exponential&#39;, delay: 2000 },   // 2s, 4s, 8s ...
+  removeOnComplete: 1000, removeOnFail: false,
+});</code></pre>
+<pre><code># Celery
+@app.task(bind=True, autoretry_for=(ConnectionError,), retry_backoff=True, retry_jitter=True,
+          retry_kwargs={&#39;max_retries&#39;: 5}, acks_late=True, time_limit=60, soft_time_limit=50)
+def send_email(self, msg_id): ...</code></pre>
+<p>Retry transient errors only, add <strong>jitter</strong>, cap attempts, and move exhausted jobs to a failed set or dead-letter queue for inspection and manual replay.</p>
+<h4>Timeouts and stuck jobs</h4>
+<ul><li><strong>Hard and soft time limits</strong> kill or interrupt long tasks (Celery <code>time_limit</code>, <code>soft_time_limit</code>; BullMQ job timeouts or worker lock duration).</li><li>BullMQ workers hold a <strong>lock</strong> that is renewed periodically; if a worker dies, the lock expires, the job is marked <strong>stalled</strong> and moved back to waiting (up to <code>maxStalledCount</code>).</li><li>Celery with <code>acks_Late=True</code> acknowledges after completion so a crashed worker&#39;s task is redelivered; the default early ack risks losing tasks on crash. Set <code>visibility_timeout</code> (Redis/SQS) longer than the longest task or tasks run twice.</li></ul>
+<h4>Semantics and idempotency</h4>
+<p>Delivery is <strong>at-least-once</strong>, so duplicates are possible after retries, stalls or visibility timeouts. Make tasks idempotent: use a natural key or job id (<code>jobId</code> option dedupes in BullMQ), check-then-act inside a transaction, upsert, and pass <strong>ids, not large payloads</strong>, reading fresh state inside the task.</p>
+<h4>Concurrency and fairness</h4>
+<p>Worker concurrency per process, global rate limits (<code>limiter</code> in BullMQ), <strong>priorities</strong>, separate queues per workload (fast, slow, bulk) with dedicated workers so long jobs do not block short ones, and routing keys in Celery. Scale workers horizontally and autoscale on queue depth and age.</p>
+<h4>Scheduling and workflows</h4>
+<p>Delayed jobs, repeatable (cron) jobs (<code>celery beat</code>, BullMQ repeat), job dependencies and flows (Celery canvas chains, groups, chords; BullMQ flows), and for long durable multi-step logic consider workflow engines such as Temporal.</p>
+<h4>Observability</h4>
+<p>Track queue length, oldest job age, processing time, failure rate and retries; tools: Flower, Bull Board, Celery events, Prometheus exporters. Correlate jobs with trace ids and keep structured logs.</p>
+<h4>Pitfalls</h4>
+<p>Using in-memory broker settings without persistence, enqueueing before the database transaction commits (the worker may not find the row; use an outbox or <code>on_commit</code>), unbounded retries, huge payloads in Redis, and relying on the result backend for critical data.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What happens to a job when a worker crashes mid-execution?</li><li>How do you design idempotent tasks and avoid duplicate side effects?</li><li>How do you monitor queue health and prioritise work?</li></ul>
+<p><a class="btn primary" href="../#/q/be-82">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-82%3A+How+do+background+task+queues+%28e.g.%2C+Celery%2C+BullMQ%29+handle+task%E2%80%A6&amp;question-id=be-82&amp;context=Backend+engineer%2C+Gear+2%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-82.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

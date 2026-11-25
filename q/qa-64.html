@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you test Progressive Web App (PWA) offline caching behavior and service worker lifecycles? | InterviewGearUp</title>
+<meta name="description" content="Test a PWA by checking the web manifest and installability, then exercising the service worker lifecycle (register, install, activate, update,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-64.html">
+<meta property="og:title" content="How do you test Progressive Web App (PWA) offline caching behavior and service worker lifecycles? | InterviewGearUp">
+<meta property="og:description" content="Test a PWA by checking the web manifest and installability, then exercising the service worker lifecycle (register, install, activate, update,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-64.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you test Progressive Web App (PWA) offline caching behavior and service worker lifecycles?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 2 (Mid-level) · PWA · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Test a PWA by checking the web manifest and installability, then exercising the service worker lifecycle (register, install, activate, update, skipWaiting and clients.claim) and caching strategies. Automate with Playwright or Puppeteer using offline mode, cache and service worker inspection, fetch interception, and Lighthouse PWA audits, covering offline pages, background sync and update prompts.</p></div>
+<h4>Explained in depth</h4>
+<h4>What to cover</h4>
+<p>A Progressive Web App relies on: the <strong>web app manifest</strong> (name, icons, <code>start_url</code>, <code>display</code>, theme), HTTPS, a <strong>service worker</strong> (a programmable network proxy), caching (Cache Storage, IndexedDB), and optional push, background sync and install prompts.</p>
+<h4>Service worker lifecycle</h4>
+<p><code>register → install (precache) → waiting → activate (clean old caches) → controlling clients → update found → install new → waiting → activate</code>. Key controls: <code>skipWaiting()</code>, <code>clients.claim()</code>, and <code>registration.update()</code>.</p>
+<p>Automated checks (Playwright):</p>
+<pre><code>test(&#39;service worker installs and controls the page&#39;, async ({ page, context }) =&gt; {
+  await page.goto(&#39;/&#39;);
+  await page.waitForFunction(() =&gt; navigator.serviceWorker.ready.then(r =&gt; !!r.active));
+  const controlled = await page.evaluate(async () =&gt; { await navigator.serviceWorker.ready; return !!navigator.serviceWorker.controller; });
+  if (!controlled) { await page.reload(); }                         // first load is not controlled until claim or reload
+  expect(await page.evaluate(() =&gt; !!navigator.serviceWorker.controller)).toBe(true);
+});
+test(&#39;app shell works offline&#39;, async ({ page, context }) =&gt; {
+  await page.goto(&#39;/&#39;); await page.evaluate(() =&gt; navigator.serviceWorker.ready);
+  await context.setOffline(true);
+  await page.reload();
+  await expect(page.locator(&#39;h1&#39;)).toHaveText(&#39;Dashboard&#39;);          // served from cache
+  await page.goto(&#39;/unknown-route&#39;);
+  await expect(page.locator(&#39;#offline-fallback&#39;)).toBeVisible();      // offline fallback page
+  await context.setOffline(false);
+});</code></pre>
+<h4>Caching tests</h4>
+<ol start="1"><li><strong>Precache contents</strong>: open Cache Storage and assert expected entries and versions.</li></ol>
+<pre><code>const keys = await page.evaluate(async () =&gt; { const names = await caches.keys(); const c = await caches.open(names[0]); return (await c.keys()).map(r =&gt; new URL(r.url).pathname); });
+expect(keys).toEqual(expect.arrayContaining([&#39;/&#39;, &#39;/app.js&#39;, &#39;/styles.css&#39;, &#39;/offline.html&#39;]));</code></pre>
+<ol start="2"><li><strong>Strategies</strong>: *cache-first* (static assets: no network request after caching, verify via request interception counts), *network-first* with cache fallback (API data: fresh online, last-known when offline), *stale-while-revalidate* (returns cached immediately, then updates cache; second load shows new data), *network-only* for sensitive endpoints (never cached).</li><li><strong>Cache hygiene</strong>: old versioned caches deleted on activate, opaque responses and error responses are not cached, size limits and expiry (Workbox <code>ExpirationPlugin</code>), no caching of authenticated personal data in shared caches, <code>Cache-Control</code> and <code>Vary</code> interplay.</li><li><strong>Updates</strong>: deploy v2, call <code>registration.update()</code>, assert a waiting worker appears, the UI shows &quot;New version available&quot;, clicking reload sends <code>SKIP_WAITING</code> and the page loads the new assets; users with long-open tabs; no mixed asset versions (precache manifest revision hashes).</li></ol>
+<h4>Offline behaviour of the application</h4>
+<p>Offline queue for writes (IndexedDB plus <strong>Background Sync</strong>) retried when back online, conflict handling, optimistic UI, user messaging (offline banner), form data preserved, correct behaviour in flaky or slow networks (throttle with CDP, <code>Network.emulateNetworkConditions</code>), and recovery when connectivity returns.</p>
+<h4>Installability and platform behaviour</h4>
+<ul><li>Manifest validity (icons maskable, sizes 192 and 512, <code>display: standalone</code>, <code>scope</code>), <code>beforeinstallprompt</code> handling, installed app launch, shortcuts, splash screen.</li><li><strong>Lighthouse</strong> installable and PWA checks in CI (<code>lighthouse-ci</code>), Chrome DevTools Application panel for manual inspection, Workbox build tests for the generated manifest.</li><li><strong>Push notifications</strong>: permission flow, subscription stored server-side, notification click routing; use mocked push services or Playwright permissions grants, and test payload handling in the service worker (<code>self.dispatchEvent(new PushEvent(...))</code> in unit tests).</li><li><strong>Cross-browser differences</strong>: Safari and iOS limitations (storage eviction after inactivity, limited background sync, push only for installed apps), Firefox behaviour; test on real devices.</li><li><strong>Storage eviction and quota</strong>: simulate low quota (<code>navigator.storage.estimate()</code>, DevTools &quot;Clear storage&quot;), persistent storage request.</li></ul>
+<h4>Unit-level testing</h4>
+<p>Test the service worker logic in Node with <strong>service-worker-mock</strong> or <code>workbox-routing</code> testing utilities by dispatching <code>fetch</code> and <code>install</code> events with fake caches, giving fast deterministic coverage before browser tests.</p>
+<h4>Pitfalls</h4>
+<p>Forgetting that the first page load is uncontrolled, stale service workers between tests (use fresh contexts or unregister in <code>afterEach</code>), testing offline only with DevTools throttling in one browser, caching API responses with personal data, and no tested update path leaving users on old code forever.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you test the update flow when a new service worker version is deployed?</li><li>How do you verify different caching strategies such as cache-first and stale-while-revalidate?</li><li>How do you test background sync, push notifications and storage eviction?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-64">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-64%3A+How+do+you+test+Progressive+Web+App+%28PWA%29+offline+caching+behavior%E2%80%A6&amp;question-id=qa-64&amp;context=QA+%2F+SDET%2C+Gear+2%2C+topic%3A+PWA%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-64.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do Kubernetes NetworkPolicies isolate traffic between namespaces and pods using CNI plugins? | InterviewGearUp</title>
+<meta name="description" content="NetworkPolicies are namespaced Kubernetes objects that select pods and define allowed ingress and egress traffic by pod, namespace and CIDR selectors.…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-38.html">
+<meta property="og:title" content="How do Kubernetes NetworkPolicies isolate traffic between namespaces and pods using CNI plugins? | InterviewGearUp">
+<meta property="og:description" content="NetworkPolicies are namespaced Kubernetes objects that select pods and define allowed ingress and egress traffic by pod, namespace and CIDR selectors.…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-38.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do Kubernetes NetworkPolicies isolate traffic between namespaces and pods using CNI plugins?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · Kubernetes · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>NetworkPolicies are namespaced Kubernetes objects that select pods and define allowed ingress and egress traffic by pod, namespace and CIDR selectors. They are enforced by the CNI plugin (Calico, Cilium, Antrea), not by Kubernetes itself. Once a pod is selected by any policy for a direction, all traffic not explicitly allowed in that direction is denied.</p></div>
+<h4>Explained in depth</h4>
+<h4>Default behaviour</h4>
+<p>By default Kubernetes networking is flat: every pod can talk to every other pod in any namespace. NetworkPolicies add segmentation (zero trust, multi-tenancy, protection of databases) at L3 and L4.</p>
+<h4>Key rules</h4>
+<ul><li>Policies are <strong>additive allow lists</strong>; there is no deny rule in the core API.</li><li>A pod becomes <strong>isolated for ingress</strong> when at least one policy selects it with <code>Ingress</code> in <code>policyTypes</code>, and likewise for egress. Isolated pods accept only what some policy allows.</li><li>If no policy selects a pod, it is unrestricted.</li><li>Matching uses labels: <code>podSelector</code> (target pods in the policy&#39;s namespace), <code>namespaceSelector</code>, <code>ipBlock</code> (CIDR with <code>except</code>), combined with ports and protocols.</li><li>Enforcement requires a <strong>CNI that implements NetworkPolicy</strong> (Calico, Cilium, Weave, Antrea, kube-router). Plain Flannel ignores them silently.</li></ul>
+<h4>Default deny plus explicit allows</h4>
+<pre><code>apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: default-deny-all, namespace: shop }
+spec:
+  podSelector: {}                 # all pods in the namespace
+  policyTypes: [Ingress, Egress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: api-allow, namespace: shop }
+spec:
+  podSelector: { matchLabels: { app: api } }
+  policyTypes: [Ingress, Egress]
+  ingress:
+  - from:
+    - namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: ingress-nginx } }
+    - podSelector: { matchLabels: { app: frontend } }
+    ports: [{ protocol: TCP, port: 8080 }]
+  egress:
+  - to: [{ podSelector: { matchLabels: { app: postgres } } }]
+    ports: [{ protocol: TCP, port: 5432 }]
+  - to:                           # DNS, required or name resolution breaks
+    - namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: kube-system } }
+      podSelector: { matchLabels: { k8s-app: kube-dns } }
+    ports: [{ protocol: UDP, port: 53 }, { protocol: TCP, port: 53 }]</code></pre>
+<p>Note: <code>from</code> entries in separate list items are <strong>OR</strong>; selectors within one item (namespaceSelector plus podSelector together) are <strong>AND</strong>. This is a frequent mistake.</p>
+<h4>How CNIs enforce them</h4>
+<p>The CNI watches policies and pods, then programs the dataplane: Calico uses iptables or eBPF with ipsets, Cilium uses eBPF programs with identities derived from labels (efficient at scale), Antrea uses Open vSwitch. Policies apply on the node where the pod runs, to both new and existing connections (stateful, replies are allowed).</p>
+<h4>Beyond the standard API</h4>
+<ul><li><strong>CiliumNetworkPolicy / CiliumClusterwideNetworkPolicy</strong>: L7 rules (HTTP method and path, gRPC, DNS names via <code>toFQDNs</code>), identity-based and cluster-wide policies.</li><li><strong>Calico GlobalNetworkPolicy</strong>: explicit deny, ordering with priorities, tiers, and host endpoints.</li><li>Newer Kubernetes work: AdminNetworkPolicy and BaselineAdminNetworkPolicy for cluster-admin guardrails.</li></ul>
+<h4>Operations and testing</h4>
+<p>Label namespaces and workloads consistently; roll out in stages (observe with Cilium Hubble or Calico flow logs, apply allow rules, then default deny); test with <code>kubectl exec</code> and <code>nc</code> or <code>curl</code>; generate policies from observed traffic; and keep policies in Git. Include rules for monitoring scrapers (Prometheus), health probes from kubelet (node traffic is generally allowed), ingress controllers and cloud metadata endpoints (block 169.254.169.254 for pods that should not use node credentials).</p>
+<h4>Pitfalls</h4>
+<p>Forgetting DNS egress, applying default deny without allowing required platform traffic, assuming policies restrict traffic from the host network or kubelet, and relying on policy without a supporting CNI.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does a NetworkPolicy have no effect on some CNIs such as Flannel?</li><li>How do you write a default deny policy and then allow DNS and specific services?</li><li>What extra capabilities do Cilium and Calico policies offer beyond the standard API?</li></ul>
+<p><a class="btn primary" href="../#/q/do-38">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-38%3A+How+do+Kubernetes+NetworkPolicies+isolate+traffic+between+namespaces%E2%80%A6&amp;question-id=do-38&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+Kubernetes%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-38.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

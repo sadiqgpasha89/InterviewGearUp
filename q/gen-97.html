@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does Tarjan&#39;s algorithm find bridges and articulation points in an undirected graph in $O(V+E)$ time? | InterviewGearUp</title>
+<meta name="description" content="Tarjan&#39;s bridge-finding DFS records each vertex&#39;s discovery time and the lowest discovery time reachable through its subtree using at most one back edge.…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-97.html">
+<meta property="og:title" content="How does Tarjan&#39;s algorithm find bridges and articulation points in an undirected graph in $O(V+E)$ time? | InterviewGearUp">
+<meta property="og:description" content="Tarjan&#39;s bridge-finding DFS records each vertex&#39;s discovery time and the lowest discovery time reachable through its subtree using at most one back edge.…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-97.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does Tarjan&#39;s algorithm find bridges and articulation points in an undirected graph in $O(V+E)$ time?</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 3 (Senior) · Graphs · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Tarjan&#39;s bridge-finding DFS records each vertex&#39;s discovery time and the lowest discovery time reachable through its subtree using at most one back edge. A tree edge (u, v) is a bridge if low[v] &gt; disc[u]; a non-root u is an articulation point if some child has low[v] &gt;= disc[u].</p></div>
+<h4>Explained in depth</h4>
+<h4>Definitions</h4>
+<p>In an undirected connected graph:</p>
+<ul><li>A <strong>bridge</strong> is an edge whose removal disconnects the graph.</li><li>An <strong>articulation point</strong> (cut vertex) is a vertex whose removal disconnects the graph.</li></ul>
+<p>A naive solution removes each edge or vertex and re-runs DFS: <code>O(V * (V + E))</code>. Tarjan does everything in one DFS in <code>O(V + E)</code>.</p>
+<h4>Key quantities</h4>
+<ul><li><code>disc[v]</code>: DFS discovery time.</li><li><code>low[v]</code>: the smallest <code>disc</code> reachable from the subtree of <code>v</code> using any number of tree edges and <strong>at most one back edge</strong>.</li></ul>
+<pre><code>low[v] = min( disc[v],
+              disc[w] for each back edge (v, w),          // w already visited, not v&#39;s parent edge
+              low[c]  for each DFS child c of v )</code></pre>
+<h4>Conditions</h4>
+<ul><li>Tree edge <code>(u, v)</code> (u parent of v) is a <strong>bridge</strong> iff <code>low[v] &gt; disc[u]</code>: no edge from v&#39;s subtree climbs back to u or above, so the subtree hangs only by this edge.</li><li>Vertex <code>u</code> is an <strong>articulation point</strong> iff:</li><li><code>u</code> is the root and has <strong>two or more DFS children</strong>, or</li><li><code>u</code> is not the root and has a child <code>v</code> with <code>low[v] &gt;= disc[u]</code> (the subtree cannot escape without passing through <code>u</code>).</li></ul>
+<p>Note the strict <code>&gt;</code> for bridges versus <code>&gt;=</code> for articulation points: a back edge to <code>u</code> itself saves the edge but not the vertex.</p>
+<h4>Code</h4>
+<pre><code>def bridges_and_cuts(n, adj):
+    disc = [-1] * n; low = [0] * n; t = 0
+    bridges, cuts = [], set()
+    def dfs(u, parent_edge):
+        nonlocal t
+        disc[u] = low[u] = t; t += 1; children = 0
+        for v, eid in adj[u]:                      # adjacency holds (neighbour, edge id)
+            if eid == parent_edge: continue        # skip the edge we came by (handles multi-edges)
+            if disc[v] != -1:                      # back edge
+                low[u] = min(low[u], disc[v])
+            else:
+                children += 1
+                dfs(v, eid)
+                low[u] = min(low[u], low[v])
+                if low[v] &gt; disc[u]: bridges.append((u, v))
+                if parent_edge != -1 and low[v] &gt;= disc[u]: cuts.add(u)
+        if parent_edge == -1 and children &gt; 1: cuts.add(u)
+    for s in range(n):
+        if disc[s] == -1: dfs(s, -1)
+    return bridges, cuts</code></pre>
+<h4>Notes</h4>
+<ul><li>Skip the parent <strong>edge id</strong>, not the parent vertex, so that parallel edges correctly make a connection a non-bridge.</li><li>Handle disconnected graphs by starting DFS from every unvisited vertex.</li><li>Recursion depth can reach <code>V</code>; use an iterative DFS or raise the limit for large graphs.</li></ul>
+<h4>Applications</h4>
+<p>Network and road resilience (critical links), 2-edge-connected components and <strong>biconnected components</strong>, building the bridge tree for LCA queries, and finding single points of failure in service dependency graphs.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you handle the root&#39;s special case for articulation points?</li><li>How do multi-edges (parallel edges) change bridge detection?</li><li>How would you use the bridge-block tree to answer connectivity queries?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-97">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-97%3A+How+does+Tarjan%27s+algorithm+find+bridges+and+articulation+points+in%E2%80%A6&amp;question-id=gen-97&amp;context=Software+engineer+%28core%29%2C+Gear+3%2C+topic%3A+Graphs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-97.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

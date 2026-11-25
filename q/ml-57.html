@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What role do Cross-Encoder Re-Ranking models play in refining candidate passages retrieved by bi-encoders? | InterviewGearUp</title>
+<meta name="description" content="A bi-encoder embeds query and document separately, so documents are indexed offline and retrieval is fast but approximate. A cross-encoder feeds the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-57.html">
+<meta property="og:title" content="What role do Cross-Encoder Re-Ranking models play in refining candidate passages retrieved by bi-encoders? | InterviewGearUp">
+<meta property="og:description" content="A bi-encoder embeds query and document separately, so documents are indexed offline and retrieval is fast but approximate. A cross-encoder feeds the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-57.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What role do Cross-Encoder Re-Ranking models play in refining candidate passages retrieved by bi-encoders?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · RAG · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A bi-encoder embeds query and document separately, so documents are indexed offline and retrieval is fast but approximate. A cross-encoder feeds the query and a passage together into one transformer, letting every query token attend to every passage token for a much more accurate relevance score, but it must run per pair, so it is applied only to the top candidates as a reranker.</p></div>
+<h4>Explained in depth</h4>
+<h4>Two-stage retrieval</h4>
+<ol start="1"><li><strong>Stage 1: candidate generation</strong> (recall-oriented): BM25 and/or bi-encoder dense retrieval returns the top 50 to 200 passages from millions or billions in milliseconds, using precomputed document vectors and ANN indexes.</li><li><strong>Stage 2: reranking</strong> (precision-oriented): a more expensive model re-scores only those candidates and reorders them; the top 3 to 10 go to the LLM.</li></ol>
+<h4>Bi-encoder limits</h4>
+<p>In a bi-encoder, <code>sim(q, d) = f(q) · g(d)</code>: the query and document are encoded <strong>independently</strong> into single vectors, so fine-grained interactions are lost (negation, exact constraints, &quot;which of these two entities does the sentence say is larger&quot;). Compressing a passage into one vector discards detail. This design is what enables caching and ANN search.</p>
+<h4>Cross-encoder</h4>
+<p>Input is the concatenation <code>[CLS] query [SEP] passage [SEP]</code>, passed through the full transformer so <strong>self-attention operates jointly across query and passage tokens</strong>. A linear head on <code>[CLS]</code> outputs a relevance score (or logit).</p>
+<pre><code>from sentence_transformers import CrossEncoder
+reranker = CrossEncoder(&quot;BAAI/bge-reranker-v2-m3&quot;, max_length=512)
+pairs = [(query, p.text) for p in candidates]
+scores = reranker.predict(pairs, batch_size=32)
+ranked = [p for _, p in sorted(zip(scores, candidates), key=lambda x: -x[0])][:5]</code></pre>
+<p>Models are trained on relevance-labelled pairs (MS MARCO) with <strong>hard negatives</strong> (passages the first-stage retriever ranked high but are wrong), using pointwise, pairwise or listwise loss. Examples: bge-reranker, Cohere Rerank, ms-marco-MiniLM cross-encoders, Jina reranker, mxbai-rerank, and fine-tuned domain rerankers.</p>
+<h4>Why not use it for everything</h4>
+<p>Cost scales as <code>O(number of documents × transformer cost)</code> per query: scoring 10 million passages would take hours. Therefore it only runs on the <strong>top-k candidates</strong> (typically 20 to 100), costing tens to hundreds of milliseconds on GPU (more on CPU).</p>
+<h4>Benefits</h4>
+<ul><li>Large gains in <strong>precision@k, nDCG and MRR</strong> (often 5 to 20 percent over bi-encoder alone), and <strong>better answers</strong> because the LLM receives fewer, more relevant passages (less noise, lower token cost, less &quot;lost in the middle&quot;).</li><li>Corrects failures of semantic retrieval (similar but wrong passages) and complements BM25 recall.</li><li>Lets you use a cheap fast retriever tuned for recall.</li></ul>
+<h4>Alternatives and variants</h4>
+<ul><li><strong>Late-interaction (ColBERT)</strong>: per-token embeddings and MaxSim scoring; near cross-encoder quality with precomputed document token vectors, but bigger index.</li><li><strong>LLM rerankers</strong> (listwise prompts, RankGPT, RankZephyr): flexible and instruction-following, slower and costlier.</li><li><strong>Learned score thresholds</strong> to drop irrelevant candidates and allow &quot;no answer&quot;.</li><li><strong>Distilled small rerankers</strong> for latency budgets, and quantised/ONNX/TensorRT serving.</li></ul>
+<h4>Operational guidance</h4>
+<p>Pick candidate count by measuring recall@k of stage 1 (rerank cannot recover documents not retrieved), batch requests on GPU, cap passage length (512 tokens), cache scores for repeated queries, monitor latency percentiles, and evaluate on a labelled set both with and without reranking. Fine-tune on in-domain click or judgement data when generic rerankers underperform.</p>
+<h4>Pitfalls</h4>
+<p>Reranking too few candidates (low ceiling), too many (latency), truncating passages so the evidence is cut, comparing scores across different queries as absolute, and ignoring licensing for commercial rerankers.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why can&#39;t you use a cross-encoder for first-stage retrieval over millions of documents?</li><li>How many candidates should you rerank and how does it affect latency and quality?</li><li>How do ColBERT late interaction and LLM rerankers compare?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-57">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-57%3A+What+role+do+Cross-Encoder+Re-Ranking+models+play+in+refining%E2%80%A6&amp;question-id=ml-57&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+RAG%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-57.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

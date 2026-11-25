@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you design an automated test suite for payment gateway flows (Stripe/PayPal) with mock webhooks? | InterviewGearUp</title>
+<meta name="description" content="Build a layered payment test suite: unit tests for pricing and state machines, contract and integration tests against the provider&#39;s sandbox or a local…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-61.html">
+<meta property="og:title" content="How do you design an automated test suite for payment gateway flows (Stripe/PayPal) with mock webhooks? | InterviewGearUp">
+<meta property="og:description" content="Build a layered payment test suite: unit tests for pricing and state machines, contract and integration tests against the provider&#39;s sandbox or a local…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-61.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you design an automated test suite for payment gateway flows (Stripe/PayPal) with mock webhooks?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 3 (Senior) · Payments · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Build a layered payment test suite: unit tests for pricing and state machines, contract and integration tests against the provider&#39;s sandbox or a local mock such as stripe-mock, and mock-webhook tests that post signed events to your endpoint. Verify signature validation, idempotency, out-of-order and duplicate events, declines, 3-D Secure, refunds and reconciliation, with a few real sandbox end-to-end checks.</p></div>
+<h4>Explained in depth</h4>
+<h4>Goals and risks</h4>
+<p>Payments combine money, asynchronous provider callbacks and strict compliance rules. The main risks are double charges, lost or unprocessed webhooks, wrong order state, mishandled declines, and insecure webhook endpoints. Tests must prove <strong>correct final state under every event ordering and failure</strong>, and must never use real card data (PCI scope).</p>
+<h4>Test pyramid for payments</h4>
+<ol start="1"><li><strong>Unit tests (many, fast)</strong>: amount calculation in minor units (integers, never floats), tax and discount rounding, currency handling, order and payment <strong>state machine</strong> transitions (<code>pending → authorised → captured → refunded</code>), idempotency key generation, mapping of provider status to internal status.</li><li><strong>Component tests against a provider mock</strong>: run <code>stripe-mock</code> (official OpenAPI-based server), WireMock, MSW or Prism to simulate API responses and errors (card_declined, insufficient_funds, expired_card, <code>429</code>, <code>5xx</code>, timeouts). Assert retries use the same <strong>idempotency key</strong> so retries never double charge.</li><li><strong>Webhook tests</strong>: post <strong>signed</strong> sample events to your webhook endpoint.</li></ol>
+<pre><code>import hmac, hashlib, time, json, requests
+def signed_event(payload: dict, secret: str):
+    body = json.dumps(payload); ts = int(time.time())
+    sig = hmac.new(secret.encode(), f&quot;{ts}.{body}&quot;.encode(), hashlib.sha256).hexdigest()
+    return body, {&quot;Stripe-Signature&quot;: f&quot;t={ts},v1={sig}&quot;, &quot;Content-Type&quot;: &quot;application/json&quot;}
+
+def test_payment_succeeded_marks_order_paid(api, db):
+    order = create_order(db, total=5000)
+    body, headers = signed_event(event(&quot;payment_intent.succeeded&quot;, order_id=order.id, amount=5000), WEBHOOK_SECRET)
+    assert requests.post(f&quot;{api}/webhooks/stripe&quot;, data=body, headers=headers).status_code == 200
+    assert db.order(order.id).status == &quot;PAID&quot;</code></pre>
+<p>   Stripe CLI (<code>stripe listen --forward-to</code>, <code>stripe trigger payment_intent.succeeded</code>) and PayPal sandbox webhook simulators generate realistic events for integration environments.</p>
+<ol start="4"><li><strong>Sandbox end-to-end tests (few, stable)</strong>: use provider test cards (<code>4242...</code> success, <code>4000000000000002</code> decline, <code>4000002500003155</code> 3-D Secure) through the real hosted fields or Elements in a staging environment; verify redirect and return flows and the final order state.</li></ol>
+<h4>Scenarios that must be automated</h4>
+<ul><li><strong>Webhook security</strong>: invalid or missing signature rejected (<code>400</code>), replayed old timestamps rejected, secret rotation, only expected event types handled, payload size limits.</li><li><strong>Idempotency and duplicates</strong>: the same event delivered twice or five times results in <strong>one</strong> state change and one fulfilment email; store processed event IDs with a unique constraint.</li><li><strong>Out-of-order delivery</strong>: <code>charge.refunded</code> before <code>charge.succeeded</code>, <code>invoice.paid</code> before <code>customer.subscription.created</code>; handlers fetch the current object from the API or use versioning to stay consistent.</li><li><strong>Missing webhook</strong>: user returns from redirect but the webhook has not arrived; the app should poll or confirm via API, and a reconciliation job repairs lost events.</li><li><strong>Failure paths</strong>: declines, insufficient funds, expired cards, 3-D Secure abandonment or failure, network timeout after the provider charged (ambiguous outcome handled with idempotent retry or lookup), partial captures, partial and multiple refunds, chargebacks and disputes, subscription renewal failures and dunning, currency conversion, zero-decimal currencies (JPY).</li><li><strong>Concurrency</strong>: two clients paying the same order, user double-clicks pay, parallel webhook deliveries (use database constraints and locks).</li><li><strong>Reconciliation</strong>: a nightly job compares internal ledger with provider balance transactions; test with seeded mismatches.</li></ul>
+<h4>Environment and data hygiene</h4>
+<p>Separate sandbox keys per environment stored as secrets; unique customer and order identifiers per test run; cleanup via provider test clocks (Stripe test clocks for subscription time travel); never log full payloads containing PII; record and replay provider responses with VCR-style tools for fast deterministic runs, refreshed periodically to catch API drift.</p>
+<h4>Pitfalls</h4>
+<p>Floating-point money, testing only the success path, skipping signature verification in tests (so production code is untested), relying on sandbox availability for all tests, and asserting on UI text instead of ledger state.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you test webhook idempotency, duplicate delivery and out-of-order events?</li><li>How do you cover 3-D Secure, declines and disputes without real cards?</li><li>How do you reconcile payment records against the provider in automation?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-61">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-61%3A+How+do+you+design+an+automated+test+suite+for+payment+gateway+flows%E2%80%A6&amp;question-id=qa-61&amp;context=QA+%2F+SDET%2C+Gear+3%2C+topic%3A+Payments%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-61.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

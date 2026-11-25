@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do atomic Redis INCR and DECR commands enable distributed counters and inventory decrement? | InterviewGearUp</title>
+<meta name="description" content="Redis INCR and DECR are atomic single-threaded operations, so concurrent clients cannot lose updates. They power distributed counters, rate limits and…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-81.html">
+<meta property="og:title" content="How do atomic Redis INCR and DECR commands enable distributed counters and inventory decrement? | InterviewGearUp">
+<meta property="og:description" content="Redis INCR and DECR are atomic single-threaded operations, so concurrent clients cannot lose updates. They power distributed counters, rate limits and…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-81.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do atomic Redis INCR and DECR commands enable distributed counters and inventory decrement?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 2 (Mid-level) · Caching · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Redis INCR and DECR are atomic single-threaded operations, so concurrent clients cannot lose updates. They power distributed counters, rate limits and inventory decrements. For stock, a Lua script or DECR-then-check with rollback prevents overselling, while a durable database remains the source of truth reconciled asynchronously.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why atomic increments</h4>
+<p>Redis executes commands one at a time on a single thread. <code>INCR key</code> reads, adds one and writes as a single indivisible step, so 1,000 clients incrementing concurrently always produce exactly +1,000. Doing <code>GET</code>, adding in the app, then <code>SET</code> loses updates under concurrency.</p>
+<pre><code>INCR page:views:home              -&gt; 1, 2, 3 ...
+INCRBY wallet:42 500
+DECR stock:sku:9
+INCRBYFLOAT temp:sensor 0.5
+EXPIRE rate:ip:1.2.3.4 60 NX      -&gt; set TTL only if absent</code></pre>
+<h4>Typical uses</h4>
+<ul><li><strong>Counters</strong>: page views, likes, API usage, unique id sequences.</li><li><strong>Rate limiting</strong>: <code>INCR rate:{user}:{window}</code> then <code>EXPIRE</code> on the first hit; reject when over the limit.</li><li><strong>Inventory reservation</strong>: flash sales, tickets, coupon redemption limits.</li><li><strong>Sequence numbers</strong> and distributed ids (with caution regarding durability).</li></ul>
+<h4>Safe inventory decrement</h4>
+<p>Naive <code>DECR</code> can go negative under races if you check first. Two patterns:</p>
+<pre><code>n = DECR stock:sku:9
+if n &lt; 0: INCR stock:sku:9; reject (&quot;sold out&quot;)      # compensate immediately</code></pre>
+<p>Or an atomic Lua script that checks and decrements in one step:</p>
+<pre><code>local s = tonumber(redis.call(&#39;GET&#39;, KEYS[1]) or &#39;0&#39;)
+if s &gt;= tonumber(ARGV[1]) then
+  redis.call(&#39;DECRBY&#39;, KEYS[1], ARGV[1]); return 1
+else return 0 end</code></pre>
+<p>Scripts run atomically, so there is no window between check and decrement. For multi-key operations in Redis Cluster, ensure keys share a hash slot.</p>
+<h4>Consistency with the source of truth</h4>
+<p>Redis is typically a <strong>fast gate</strong>, not the ledger:</p>
+<ol start="1"><li>Gate the request with Redis (reserve stock).</li><li>Create the order in the database transactionally, using an <strong>idempotency key</strong> and a unique constraint.</li><li>If the order fails or the payment expires, <strong>release</strong> the reservation (<code>INCR</code>), ideally via a reservation key with TTL so abandoned carts return stock automatically.</li><li>Reconcile periodically: compare Redis counts with the database and repair drift.</li></ol>
+<p>Persist the counter (AOF) or be able to rebuild it from the database after a crash or failover, since asynchronous replication can lose the last increments.</p>
+<h4>Scaling hot counters</h4>
+<p>A single key is one shard and one thread. For very hot counters split across shards (<code>views:{id}:0..9</code>) and sum on read, or batch increments locally and flush periodically.</p>
+<h4>Pitfalls</h4>
+<p>Using Redis as the only record for money or stock without durability planning, forgetting TTLs, non-idempotent retries that double-decrement after timeouts (track a request id in a set or with <code>SET NX</code>), integer overflow limits (64-bit signed), and non-atomic multi-step logic that should be a Lua script or transaction.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is read-modify-write in application code unsafe but INCR safe?</li><li>How do you prevent overselling when stock reaches zero?</li><li>How do you keep Redis counters consistent with the database?</li></ul>
+<p><a class="btn primary" href="../#/q/be-81">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-81%3A+How+do+atomic+Redis+INCR+and+DECR+commands+enable+distributed%E2%80%A6&amp;question-id=be-81&amp;context=Backend+engineer%2C+Gear+2%2C+topic%3A+Caching%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-81.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

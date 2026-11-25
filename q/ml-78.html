@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do Guardrails frameworks (NeMo Guardrails, Llama Guard) sanitize LLM inputs and outputs? | InterviewGearUp</title>
+<meta name="description" content="Guardrail frameworks add programmable safety layers around an LLM. Input rails screen prompts for jailbreaks, injection, PII and off-topic requests, and…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-78.html">
+<meta property="og:title" content="How do Guardrails frameworks (NeMo Guardrails, Llama Guard) sanitize LLM inputs and outputs? | InterviewGearUp">
+<meta property="og:description" content="Guardrail frameworks add programmable safety layers around an LLM. Input rails screen prompts for jailbreaks, injection, PII and off-topic requests, and…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-78.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do Guardrails frameworks (NeMo Guardrails, Llama Guard) sanitize LLM inputs and outputs?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · LLMs · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Guardrail frameworks add programmable safety layers around an LLM. Input rails screen prompts for jailbreaks, injection, PII and off-topic requests, and output rails check responses for toxicity, leakage, hallucination or policy breaks. NeMo Guardrails uses Colang flows and LLM checks, while Llama Guard is a fine-tuned safety classifier that labels content against a hazard taxonomy.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why guardrails</h4>
+<p>Models can be steered into harmful output, leak system prompts or private data, follow malicious instructions hidden in documents (prompt injection), drift off-topic, or fabricate facts. Prompting the model &quot;be safe&quot; is not a reliable control, so applications add <strong>independent checks</strong> before and after the model.</p>
+<h4>Pipeline placement</h4>
+<pre><code>user input → [input rails] → (retrieval) → [retrieval rails] → LLM → [output rails] → tool execution [tool rails] → response</code></pre>
+<ul><li><strong>Input rails</strong>: detect jailbreak attempts (DAN-style prompts), prompt injection, disallowed topics, PII, secrets, language or length limits; can <strong>reject, rewrite or mask</strong> input.</li><li><strong>Retrieval rails</strong>: sanitise retrieved chunks (strip hidden instructions, check source trust and access control) before they enter the prompt.</li><li><strong>Dialogue rails</strong>: steer conversation flows (always verify identity before account actions, refuse medical diagnoses, handle small talk).</li><li><strong>Output rails</strong>: check toxicity, hate, self-harm, PII leakage, policy compliance, factual grounding (against sources), format validity (JSON schema), brand tone; can block, redact or trigger regeneration.</li><li><strong>Execution rails</strong>: validate tool calls and arguments, enforce allow-lists and human approval for risky actions.</li></ul>
+<h4>NeMo Guardrails (NVIDIA)</h4>
+<p>Open-source toolkit with a configuration directory and a modelling language <strong>Colang</strong> to define user intents, bot responses and flows.</p>
+<pre><code>define user ask about politics
+  &quot;who should I vote for?&quot;
+  &quot;what do you think of the president?&quot;
+
+define bot refuse politics
+  &quot;I can&#39;t discuss political topics, but I can help with your account.&quot;
+
+define flow politics
+  user ask about politics
+  bot refuse politics</code></pre>
+<pre><code># config.yml
+models: [{type: main, engine: openai, model: gpt-4o}]
+rails:
+  input:  {flows: [self check input, mask sensitive data on input]}
+  output: {flows: [self check output, check hallucination]}</code></pre>
+<p>Mechanisms: <strong>canonical form</strong> matching via embeddings of example utterances, <strong>self-check</strong> prompts where an LLM judges whether input or output violates a policy, integrations with Llama Guard, Presidio PII masking, ActiveFence, fact-checking and hallucination checks against a knowledge base, retrieval rails and Python actions for custom checks.</p>
+<h4>Llama Guard (Meta)</h4>
+<p>A <strong>safety classifier LLM</strong> (fine-tuned Llama) that takes a conversation (prompt, or prompt plus response) and a <strong>taxonomy of hazard categories</strong> (violent crimes, sexual content, self-harm, privacy, defamation, specialised advice, election misinformation, code interpreter abuse and so on), and outputs <code>safe</code> or <code>unsafe</code> plus the violated category codes. It can classify both user inputs and model outputs, supports customisation of categories through the prompt, and several sizes (1B for edge, 8B), plus multimodal versions. Alternatives: OpenAI Moderation API, Azure AI Content Safety (with Prompt Shields), Google Perspective, Guardrails AI (validators and structured output), Lakera Guard, Amazon Bedrock Guardrails, Protect AI Rebuff, Prompt Guard.</p>
+<h4>Layered defence</h4>
+<ol start="1"><li><strong>Cheap deterministic checks first</strong>: regex, allow and deny lists, length limits, schema validation, rate limits.</li><li><strong>Small classifiers</strong> (toxicity, injection detectors) for low latency.</li><li><strong>LLM-based judges</strong> (Llama Guard, self-check) for nuanced policy cases.</li><li><strong>Architecture-level controls</strong>: least-privilege tool access, separate untrusted content from instructions, sandboxing, human approval, output encoding, and no secrets in prompts.</li></ol>
+<h4>Costs and limitations</h4>
+<ul><li><strong>Latency and cost</strong>: each LLM-based rail adds a model call; run checks in parallel, use small models, and stream with incremental output checking.</li><li><strong>False positives and negatives</strong>: tune thresholds, evaluate on red-team and benign datasets, and monitor.</li><li>Attackers adapt (obfuscation, multilingual, encoding tricks); guardrails are <strong>defence in depth, not a guarantee</strong>; continuous red teaming (garak, PyRIT) and incident review are needed.</li><li>Indirect prompt injection (malicious instructions in web pages, emails, PDFs) is especially hard; treat all retrieved text as untrusted data and limit what actions the model can trigger.</li></ul>
+<h4>Pitfalls</h4>
+<p>Relying on one classifier, no logging of blocked content, guardrails that leak policy text, over-blocking that harms usability, and ignoring multilingual and multimodal inputs.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do input and output rails differ and where do they sit in the request pipeline?</li><li>What are the false-positive and latency costs of LLM-based guardrails?</li><li>How do you defend against indirect prompt injection from retrieved documents?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-78">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-78%3A+How+do+Guardrails+frameworks+%28NeMo+Guardrails%2C+Llama+Guard%29+sanitize%E2%80%A6&amp;question-id=ml-78&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+LLMs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-78.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

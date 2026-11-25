@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare random forests and gradient boosting. When would you choose each for tabular data? | InterviewGearUp</title>
+<meta name="description" content="Random forests average many deep, decorrelated trees trained in parallel on bootstrap samples, which reduces variance and is robust with little tuning.…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-19.html">
+<meta property="og:title" content="Compare random forests and gradient boosting. When would you choose each for tabular data? | InterviewGearUp">
+<meta property="og:description" content="Random forests average many deep, decorrelated trees trained in parallel on bootstrap samples, which reduces variance and is robust with little tuning.…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-19.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare random forests and gradient boosting. When would you choose each for tabular data?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 2 (Mid-level) · Modeling · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Random forests average many deep, decorrelated trees trained in parallel on bootstrap samples, which reduces variance and is robust with little tuning. Gradient boosting builds shallow trees sequentially, each correcting the errors of the previous ones, which usually achieves higher accuracy but needs careful tuning and early stopping to avoid overfitting.</p></div>
+<h4>Explained in depth</h4>
+<h4>Random forest (bagging)</h4>
+<ul><li>Trains many trees <strong>independently</strong> on bootstrap samples, and at each split considers a random subset of features (<code>max_features</code>). The prediction is the average (regression) or majority vote (classification).</li><li>Trees are grown deep (low bias, high variance); <strong>averaging decorrelated trees reduces variance</strong>.</li><li>Out-of-bag (OOB) samples give a built-in validation estimate.</li><li>Strengths: strong baseline, few critical hyperparameters (<code>n_estimators</code>, <code>max_features</code>, <code>min_samples_leaf</code>), parallelisable, robust to outliers and noisy features, rarely overfits as trees increase.</li><li>Weaknesses: usually a bit less accurate than tuned boosting, large models, predictions cannot extrapolate beyond training range, slow inference with many deep trees.</li></ul>
+<h4>Gradient boosting (boosting)</h4>
+<ul><li>Trains <strong>shallow trees sequentially</strong>; each new tree fits the <strong>negative gradient (residuals)</strong> of the loss of the current ensemble, scaled by a <strong>learning rate</strong>. Formally gradient descent in function space.</li><li>Implementations: <strong>XGBoost, LightGBM, CatBoost, HistGradientBoosting</strong>. Features: regularisation of leaf weights, subsampling, column sampling, histogram-based splits, native missing-value handling, categorical support (CatBoost, LightGBM).</li><li>Strengths: often <strong>state-of-the-art accuracy on tabular data</strong>, flexible loss functions (ranking, Poisson, quantile), handles mixed feature types and missing values.</li><li>Weaknesses: more hyperparameters, <strong>sensitive to overfitting and noisy labels</strong>, sequential training, needs early stopping and tuning.</li></ul>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th></th><th>Random forest</th><th>Gradient boosting</th></tr></thead><tbody><tr><td>Main effect</td><td>reduces <strong>variance</strong></td><td>reduces <strong>bias</strong> (and with regularisation controls variance)</td></tr><tr><td>Tree depth</td><td>deep</td><td>shallow (3 to 8)</td></tr><tr><td>Training</td><td>parallel, independent</td><td>sequential, dependent</td></tr><tr><td>Tuning effort</td><td>low</td><td>higher</td></tr><tr><td>Overfitting risk</td><td>low</td><td>moderate to high without early stopping</td></tr><tr><td>Accuracy ceiling</td><td>good</td><td>typically higher</td></tr><tr><td>Noisy labels</td><td>robust</td><td>can fit noise</td></tr><tr><td>Interpretation</td><td>feature importance, partial dependence</td><td>same, plus SHAP</td></tr></tbody></table></div>
+<h4>Key boosting hyperparameters</h4>
+<p><code>learning_rate</code> (0.01 to 0.1; lower needs more trees), <code>n_estimators</code> (choose with <strong>early stopping</strong> on validation), <code>max_depth</code> or <code>num_leaves</code>, <code>min_child_weight</code> or <code>min_data_in_leaf</code>, <code>subsample</code>, <code>colsample_bytree</code>, <code>reg_lambda</code> and <code>reg_alpha</code>, <code>gamma</code>. Tune with random search or Bayesian optimisation (Optuna), using cross-validation that respects groups or time.</p>
+<pre><code>import lightgbm as lgb
+m = lgb.LGBMClassifier(n_estimators=5000, learning_rate=0.03, num_leaves=31, subsample=0.8, colsample_bytree=0.8, min_child_samples=50)
+m.fit(X_tr, y_tr, eval_set=[(X_va, y_va)], eval_metric=&quot;auc&quot;, callbacks=[lgb.early_stopping(100)])</code></pre>
+<h4>Choosing</h4>
+<ul><li>Quick, robust baseline, small team, noisy data: <strong>random forest</strong>.</li><li>Maximum predictive performance, enough data, willingness to tune: <strong>gradient boosting</strong>.</li><li>Very small data: simpler models, regularised linear models.</li><li>High-dimensional sparse text or images: linear models or neural networks.</li><li>Latency or memory constraints: smaller boosted models, distillation.</li></ul>
+<h4>Interpretation caveats</h4>
+<p>Impurity-based importance is biased towards high-cardinality features; prefer <strong>permutation importance</strong> or <strong>SHAP</strong> on held-out data. Correlated features split importance.</p>
+<h4>Pitfalls</h4>
+<p>Using too many boosting rounds without validation, target leakage through ID-like features, and comparing models without the same CV scheme.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Which hyperparameters matter most for XGBoost or LightGBM and how do you tune them?</li><li>How do you get feature importance from tree ensembles and why can impurity importance mislead?</li><li>How do ensemble models handle categorical features and missing values?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-19">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-19%3A+Compare+random+forests+and+gradient+boosting.+When+would+you+choose%E2%80%A6&amp;question-id=ds-19&amp;context=Data+scientist%2C+Gear+2%2C+topic%3A+Modeling%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-19.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

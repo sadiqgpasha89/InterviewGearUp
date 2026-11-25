@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does Hybrid Search combine dense vector embeddings and BM25 sparse scores using Reciprocal Rank Fusion (RRF)? | InterviewGearUp</title>
+<meta name="description" content="Hybrid search runs dense and sparse (BM25) retrievers and merges their rankings. Reciprocal Rank Fusion scores each document by summing 1 divided by (k…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-56.html">
+<meta property="og:title" content="How does Hybrid Search combine dense vector embeddings and BM25 sparse scores using Reciprocal Rank Fusion (RRF)? | InterviewGearUp">
+<meta property="og:description" content="Hybrid search runs dense and sparse (BM25) retrievers and merges their rankings. Reciprocal Rank Fusion scores each document by summing 1 divided by (k…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-56.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does Hybrid Search combine dense vector embeddings and BM25 sparse scores using Reciprocal Rank Fusion (RRF)?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · RAG · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Hybrid search runs dense and sparse (BM25) retrievers and merges their rankings. Reciprocal Rank Fusion scores each document by summing 1 divided by (k plus its rank) across result lists, so it uses ranks instead of incompatible raw scores, needs no score normalisation, and rewards documents that appear high in several lists. A typical k is 60.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why combine retrievers</h4>
+<p>BM25 finds exact terms and rare identifiers; dense vectors find semantically similar passages. Their strengths complement each other, so fusing improves recall and robustness across query types (keyword-heavy, natural-language, mixed). The challenge is that their <strong>scores are not comparable</strong>: BM25 scores are unbounded and corpus dependent (for example 3 to 40), cosine similarity lies between -1 and 1 and clusters in narrow bands.</p>
+<h4>Fusion approaches</h4>
+<ol start="1"><li><strong>Weighted score combination</strong>: normalise each list (min-max or z-score) and compute <code>α·dense + (1−α)·bm25</code>. Sensitive to normalisation, score distribution shifts, and outliers, and requires tuning α per dataset.</li><li><strong>Reciprocal Rank Fusion (RRF)</strong>: ignores scores and uses <strong>ranks</strong>:</li></ol>
+<p><code>RRF(d) = Σ_r  1 / (k + rank_r(d))</code> over each ranked list r in which d appears, with rank starting at 1 and <code>k</code> a smoothing constant (60 in the original paper). Example with k = 60:</p>
+<ul><li>Document A: rank 1 in dense, rank 5 in BM25 → 1/61 + 1/65 = 0.0164 + 0.0154 = 0.0318.</li><li>Document B: rank 2 in dense only → 1/62 = 0.0161.</li><li>Document C: rank 3 in dense, rank 1 in BM25 → 1/63 + 1/61 = 0.0159 + 0.0164 = 0.0323 (top).</li></ul>
+<p>Documents ranked well by <strong>both</strong> retrievers rise to the top, while appearing in only one list still counts.</p>
+<pre><code>def rrf(result_lists, k=60, top_n=10):
+    scores = {}
+    for results in result_lists:                       # each is an ordered list of doc ids
+        for rank, doc_id in enumerate(results, start=1):
+            scores[doc_id] = scores.get(doc_id, 0.0) + 1.0 / (k + rank)
+    return sorted(scores, key=scores.get, reverse=True)[:top_n]
+fused = rrf([dense_ids, bm25_ids])</code></pre>
+<p>Variants add per-retriever weights: <code>w_r / (k + rank)</code>.</p>
+<h4>Why RRF works well</h4>
+<ul><li><strong>Scale free</strong>: no calibration of incomparable scores.</li><li><strong>Robust</strong>: one retriever&#39;s score outliers cannot dominate.</li><li><strong>Simple and parameter-light</strong>: <code>k</code> controls how much top ranks dominate (small k favours the top positions strongly, large k flattens contributions).</li><li>Works with any number of retrievers (BM25, dense, sparse neural, multiple embedding models, per-field searches) and is built into Elasticsearch, OpenSearch, Weaviate, Qdrant, Azure AI Search, Vespa, and pgvector recipes.</li></ul>
+<p>Limitations: loses score magnitude information (a very confident match and a barely relevant one at the same rank look the same), and ties and truncated lists matter; if one list returns only 10 results the fusion has less information.</p>
+<h4>Pipeline</h4>
+<ol start="1"><li>Query goes to BM25 (top 50 to 100) and dense retrieval (top 50 to 100), possibly with metadata filters applied to both.</li><li><strong>Fuse</strong> with RRF to a candidate set of 50 to 100.</li><li><strong>Rerank</strong> with a cross-encoder or LLM reranker to the top 5 to 10 for the prompt.</li><li>Evaluate with recall@k, nDCG and MRR on a labelled query set; tune candidate sizes, weights and <code>k</code>.</li></ol>
+<h4>Practical notes</h4>
+<p>Use the same document ids and chunk granularity across retrievers, deduplicate near-identical chunks after fusion, consider query routing (pure keyword queries to BM25 weight), analyse failures per query type, and monitor latency (two retrievals in parallel).</p>
+<h4>Pitfalls</h4>
+<p>Fusing results from different chunking strategies, comparing raw scores, too few candidates per retriever, and forgetting that fused ranking still needs reranking for precision.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is RRF preferred over adding normalised scores?</li><li>How do you weight BM25 versus dense results or tune k?</li><li>Where do rerankers fit after fusion?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-56">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-56%3A+How+does+Hybrid+Search+combine+dense+vector+embeddings+and+BM25%E2%80%A6&amp;question-id=ml-56&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+RAG%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-56.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

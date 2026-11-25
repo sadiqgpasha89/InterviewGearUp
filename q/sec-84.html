@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is a TPM (Trusted Platform Module) and how does Secure Boot verify kernel integrity during boot? | InterviewGearUp</title>
+<meta name="description" content="A TPM is a tamper-resistant security chip or firmware module that generates and protects keys and records boot measurements in Platform Configuration…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-84.html">
+<meta property="og:title" content="What is a TPM (Trusted Platform Module) and how does Secure Boot verify kernel integrity during boot? | InterviewGearUp">
+<meta property="og:description" content="A TPM is a tamper-resistant security chip or firmware module that generates and protects keys and records boot measurements in Platform Configuration…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-84.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is a TPM (Trusted Platform Module) and how does Secure Boot verify kernel integrity during boot?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · Hardware · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A TPM is a tamper-resistant security chip or firmware module that generates and protects keys and records boot measurements in Platform Configuration Registers. Secure Boot verifies digital signatures of each boot component against trusted keys before running it, while measured boot and attestation record hashes in the TPM so the OS and remote verifiers can prove the kernel and drivers are untampered.</p></div>
+<h4>Explained in depth</h4>
+<h4>Trusted Platform Module (TPM)</h4>
+<p>A <strong>TPM</strong> (ISO/IEC 11889; TPM 2.0 is required for Windows 11) is a small secure cryptoprocessor, implemented as a discrete chip, firmware TPM in the CPU (Intel PTT, AMD fTPM), or virtual TPM in hypervisors and clouds. It provides:</p>
+<ul><li><strong>Hardware-protected key generation and storage</strong>: keys can be created <strong>inside</strong> the TPM and never leave in plaintext; used for signing, decryption, and as storage root keys. Hierarchies: endorsement (platform identity), storage, platform, with <strong>Endorsement Key (EK)</strong> unique per chip and <strong>Attestation Identity/Attestation Keys (AK)</strong> for proofs.</li><li><strong>Random number generator</strong>.</li><li><strong>Platform Configuration Registers (PCRs)</strong>: registers that can only be <strong>extended</strong>, never written directly: <code>PCR_new = Hash(PCR_old || measurement)</code>. A final PCR value therefore represents the <strong>ordered chain of everything measured</strong>, and cannot be forged to a chosen value without redoing the chain.</li><li><strong>Sealing and unsealing</strong>: data or keys encrypted by the TPM bound to a <strong>policy of PCR values</strong>; the TPM releases them only when the current PCRs match, meaning the platform booted in the expected state.</li><li><strong>Anti-hammering</strong> and lockout against PIN guessing; monotonic counters; NV storage.</li></ul>
+<p>Uses: <strong>full-disk encryption</strong> (BitLocker, <code>systemd-cryptenroll</code>, LUKS with Clevis), Windows Hello, credential protection, device identity and certificate storage, attestation for zero trust and cloud (Azure Attestation, GCP Shielded VMs, AWS Nitro TPM).</p>
+<h4>Secure Boot (UEFI)</h4>
+<p>Prevents running <strong>unauthorised or tampered</strong> boot code by verifying digital signatures along the chain:</p>
+<ol start="1"><li><strong>Hardware root of trust</strong> (CPU boot ROM, firmware flash protections, Intel Boot Guard, AMD PSP) verifies the <strong>UEFI firmware</strong>.</li><li>UEFI checks each executable it loads (boot manager, OS loader, drivers, option ROMs) against <strong>trusted keys and hashes</strong> in UEFI variables: <strong>PK</strong> (platform key, owned by the OEM or owner), <strong>KEK</strong> (key exchange keys, such as Microsoft&#39;s), <strong>db</strong> (allowed signatures and hashes, such as Microsoft UEFI CA, Windows Production PCA, distribution shim keys), and <strong>dbx</strong> (revoked signatures and hashes).</li><li>The bootloader (<strong>shim</strong> on Linux, signed by Microsoft; GRUB or systemd-boot) verifies the <strong>kernel</strong> and modules (kernel lockdown, signed modules, MOK enrolment for user keys), the kernel verifies drivers; Windows uses <strong>ELAM</strong> (early launch antimalware) and Code Integrity.</li></ol>
+<p>If verification fails, the component does not execute. This blocks <strong>bootkits and rootkits</strong> (persistent malware installed in the boot path, like TDL4, LoJax, BlackLotus) that replace the loader or kernel.</p>
+<h4>Measured Boot and attestation</h4>
+<p>Secure Boot <strong>enforces</strong>; <strong>Measured Boot records</strong>. Firmware and loaders <strong>hash</strong> each stage (firmware, boot configuration, bootloader, kernel, initramfs, secure boot policy, kernel command line) and extend PCRs (for example PCR 0 firmware, 2 option ROMs, 4 boot manager, 7 Secure Boot state, 11 unified kernel image). The <strong>TCG event log</strong> lists measurements.</p>
+<ul><li><strong>Local use</strong>: BitLocker seals the volume key to PCR 7 (and others), so the disk is unlocked automatically only if the boot chain and Secure Boot policy are unchanged; modified boot components or a booting alternative OS leave the disk locked, thwarting <strong>evil maid attacks</strong>.</li><li><strong>Remote attestation</strong>: a verifier sends a nonce; the TPM returns a <strong>quote</strong> (PCR values signed by the AK, bound to the nonce); the verifier compares to golden values and the event log. Used by <strong>health attestation services</strong>, MDM and zero trust access (grant access only to devices with a verified boot state), and confidential computing (Intel TDX, AMD SEV-SNP attestation).</li></ul>
+<h4>Attacks and limits</h4>
+<ul><li><strong>Compromised signed components</strong>: vulnerable but still-trusted bootloaders (BlackLotus exploited CVE-2022-21894 in signed Windows boot manager). Mitigation: <strong>revocation via dbx updates</strong>, SVN (security version numbers), Microsoft&#39;s revocation rollout, UEFI revocation lists, and updating to new signing keys (2011 CA expiries in 2026).</li><li><strong>Firmware vulnerabilities and implants</strong> (SPI flash writes): enable firmware write protection, BIOS passwords, <strong>Intel Boot Guard</strong>, Firmware resiliency (NIST SP 800-193), HVCI and VBS, regular firmware updates (LVFS).</li><li><strong>TPM interposer and bus sniffing</strong> on discrete TPMs (LPC and SPI bus attacks extract BitLocker keys): use TPM plus <strong>PIN</strong> (pre-boot authentication), firmware TPMs, DMA protections (<strong>IOMMU, Kernel DMA Protection</strong>), disable unused Thunderbolt DMA.</li><li><strong>Cold boot</strong> attacks, <strong>evil maid</strong> on unencrypted <code>/boot</code>, <strong>runtime compromise</strong> after boot (Secure Boot does not protect running kernel memory; use <strong>IMA/EVM</strong>, dm-verity, kernel lockdown, EDR).</li><li><strong>User-installed keys</strong> (MOK, custom PK) and disabled Secure Boot weaken guarantees; policies should require Secure Boot enabled and monitor it.</li></ul>
+<h4>Operational practices</h4>
+<p>Enable Secure Boot and TPM in firmware, deploy <strong>unified kernel images</strong> (UKI) signed and measured, enrol keys through managed processes, track PCR baselines per model and update after firmware or OS updates, integrate attestation with MDM, alert on Secure Boot disabled or dbx outdated, protect recovery keys (BitLocker keys escrowed in AD/Entra), and test update paths so legitimate updates do not lock devices.</p>
+<h4>Pitfalls</h4>
+<p>Assuming Secure Boot alone gives integrity of the running OS, binding keys to PCRs that change on every update without a re-seal plan, TPM-only BitLocker on high-risk devices without PIN, and ignoring revocation and firmware updates.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do PCR values, sealing and remote attestation let a disk key be released only to an unmodified boot chain?</li><li>What is the difference between Secure Boot and Measured Boot and what attacks does each stop?</li><li>How do bootkits, rootkits and downgrade attacks try to bypass these protections and how do revocation and dbx updates respond?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-84">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-84%3A+What+is+a+TPM+%28Trusted+Platform+Module%29+and+how+does+Secure+Boot%E2%80%A6&amp;question-id=sec-84&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+Hardware%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-84.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

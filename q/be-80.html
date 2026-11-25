@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does Redis Cluster shard data across 16,384 hash slots, and how are node failovers handled? | InterviewGearUp</title>
+<meta name="description" content="Redis Cluster partitions the keyspace into 16,384 hash slots; a key maps to a slot by CRC16(key) mod 16384, and each master owns a subset of slots.…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-80.html">
+<meta property="og:title" content="How does Redis Cluster shard data across 16,384 hash slots, and how are node failovers handled? | InterviewGearUp">
+<meta property="og:description" content="Redis Cluster partitions the keyspace into 16,384 hash slots; a key maps to a slot by CRC16(key) mod 16384, and each master owns a subset of slots.…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-80.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does Redis Cluster shard data across 16,384 hash slots, and how are node failovers handled?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · Caching · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Redis Cluster partitions the keyspace into 16,384 hash slots; a key maps to a slot by CRC16(key) mod 16384, and each master owns a subset of slots. Clients get MOVED or ASK redirects, replicas provide failover, and nodes detect failures through gossip and promote a replica by majority vote of masters.</p></div>
+<h4>Explained in depth</h4>
+<h4>Sharding with hash slots</h4>
+<pre><code>slot = CRC16(key) mod 16384</code></pre>
+<p>Three masters might own slots 0 to 5460, 5461 to 10922 and 10923 to 16383. The slot indirection (instead of consistent hashing of nodes) makes <strong>moving data</strong> a matter of moving slots, not rehashing everything. 16,384 was chosen to keep the gossip bitmap small (2 KB per heartbeat).</p>
+<h4>Client interaction</h4>
+<p>Cluster-aware clients download the slot map (<code>CLUSTER SLOTS</code>) and route commands directly to the owner. If the map is stale, the node replies <code>-MOVED 3999 10.0.0.2:6379</code>, and the client updates its map and retries. During migration, <code>-ASK</code> redirects a single request to the target node (after sending <code>ASKING</code>) without updating the map.</p>
+<h4>Multi-key operations</h4>
+<p>Commands touching several keys (<code>MGET</code>, transactions, Lua, <code>SUNION</code>) require all keys in the <strong>same slot</strong>. Use <strong>hash tags</strong>: only the part inside <code>{}</code> is hashed, so <code>{user:42}:cart</code> and <code>{user:42}:profile</code> land in one slot. Overusing tags creates hot slots.</p>
+<h4>Replication and failover</h4>
+<ul><li>Each master has one or more <strong>replicas</strong> (asynchronous replication).</li><li>Nodes exchange state via the <strong>cluster bus</strong> (port + 10000) using a gossip protocol. A node marks a peer <code>PFAIL</code> if it does not answer within <code>cluster-node-timeout</code>; when a majority of masters report it, it becomes <code>FAIL</code>.</li><li>Replicas of the failed master hold an <strong>election</strong>: the replica with the freshest replication offset (after a small delay ranked by offset) requests votes; once it gets a majority of masters it promotes itself, takes over the slots and bumps the <strong>configuration epoch</strong>, which resolves conflicts when the old master returns (it becomes a replica).</li><li>If a master with no replica fails, its slots become unavailable and, by default (<code>cluster-require-full-coverage yes</code>), the cluster stops accepting writes; setting it to <code>no</code> keeps serving remaining slots.</li></ul>
+<h4>Resharding</h4>
+<p><code>redis-cli --cluster reshard</code> or <code>rebalance</code> migrate slots live: the source marks the slot <code>MIGRATING</code>, target <code>IMPORTING</code>, and keys are moved with <code>MIGRATE</code> in batches. Reads and writes continue, with ASK redirects for keys already moved. Add nodes first, then rebalance; remove nodes after emptying their slots.</p>
+<h4>Guarantees and limits</h4>
+<ul><li><strong>No strong consistency</strong>: asynchronous replication means acknowledged writes can be lost if a master fails before replicating; <code>WAIT</code> reduces but does not eliminate this.</li><li>Network partition: a minority-side master keeps accepting writes until <code>cluster-node-timeout</code> elapses, then stops; those writes can be lost when the partition heals. Use <code>min-replicas-to-write</code> to limit exposure.</li><li>Only database 0, limited cross-slot operations, and cluster-aware client libraries are required.</li><li>Minimum production topology: 3 masters plus 3 replicas across failure domains.</li></ul>
+<h4>Operations</h4>
+<p>Monitor <code>cluster info</code>, slot coverage, replication lag and memory per node; avoid huge keys that make migration slow and unbalanced; test failover; and plan for connection fan-out from many app instances.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do hash tags let multi-key operations work across slots?</li><li>How does resharding move slots live with ASK redirection?</li><li>What are the split-brain and write-loss risks with asynchronous replication?</li></ul>
+<p><a class="btn primary" href="../#/q/be-80">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-80%3A+How+does+Redis+Cluster+shard+data+across+16%2C384+hash+slots%2C+and+how%E2%80%A6&amp;question-id=be-80&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+Caching%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-80.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

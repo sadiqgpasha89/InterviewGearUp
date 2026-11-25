@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do context window extension methods (RoPE scaling, YaRN) allow models to read 128k+ tokens? | InterviewGearUp</title>
+<meta name="description" content="Models trained on short contexts fail on long inputs because rotary embeddings meet unseen rotation angles. RoPE scaling maps long sequences into the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-79.html">
+<meta property="og:title" content="How do context window extension methods (RoPE scaling, YaRN) allow models to read 128k+ tokens? | InterviewGearUp">
+<meta property="og:description" content="Models trained on short contexts fail on long inputs because rotary embeddings meet unseen rotation angles. RoPE scaling maps long sequences into the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-79.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do context window extension methods (RoPE scaling, YaRN) allow models to read 128k+ tokens?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · LLMs · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Models trained on short contexts fail on long inputs because rotary embeddings meet unseen rotation angles. RoPE scaling maps long sequences into the trained range: linear interpolation compresses positions, NTK-aware scaling changes the frequency base, and YaRN blends both per frequency band and rescales attention temperature, followed by short fine-tuning.</p></div>
+<h4>Explained in depth</h4>
+<h4>Rotary position embedding (RoPE) refresher</h4>
+<p>RoPE encodes position by <strong>rotating</strong> pairs of query and key dimensions. For dimension pair i at position m, the rotation angle is <code>m · θ_i</code> with <code>θ_i = base^(−2i/d)</code> (base 10,000 in original, 500,000 in LLaMA 3). The dot product of a rotated query and key then depends on the <strong>relative</strong> position <code>m − n</code>. Low-index pairs rotate quickly (high frequency, local detail) and high-index pairs rotate slowly (low frequency, long-range structure).</p>
+<h4>Why long context is hard</h4>
+<ul><li>A model trained on 4k or 8k tokens has never seen rotation angles for positions beyond that. At inference with 128k tokens, high-frequency dimensions reach angles the attention layers were never tuned for, perplexity explodes and the model fails (<strong>extrapolation failure</strong>).</li><li>Also: attention cost is <strong>O(n²)</strong> in compute and the <strong>KV cache</strong> grows linearly with context (a 70B model at 128k tokens can need tens of GB of cache per sequence), and models often use middle context poorly (&quot;lost in the middle&quot;).</li></ul>
+<h4>Extension methods</h4>
+<ol start="1"><li><strong>Position Interpolation (PI, linear scaling)</strong>: divide positions by the scale factor <code>s = L_new / L_train</code> (for example 128k/8k = 16), so all positions fall inside the trained range. Simple and works with a small fine-tune (hundreds to thousands of steps), but it <strong>compresses fine-grained local distinctions</strong> because all frequencies are squeezed equally, hurting short-range precision.</li><li><strong>NTK-aware scaling</strong>: instead of scaling positions, <strong>increase the RoPE base</strong> (for example <code>base&#39; = base · s^(d/(d−2))</code>) so high frequencies are barely changed (preserving local resolution) while low frequencies are stretched (covering longer distances). Works even without fine-tuning to some extent (used in &quot;dynamic NTK&quot; and Code Llama).</li><li><strong>YaRN (Yet another RoPE extensioN)</strong>: applies <strong>different treatment per frequency band</strong> (&quot;NTK-by-parts&quot;): high-frequency dimensions (wavelength much shorter than the original context) are left unscaled; low-frequency dimensions (wavelength longer than the context) are interpolated; the middle is blended with a ramp. It also adds an <strong>attention temperature</strong> factor (scale logits by about <code>0.1·ln(s) + 1</code>) to keep attention entropy stable at long lengths. YaRN reaches 64k to 128k with about 0.1 percent of the original pretraining tokens and less fine-tuning, and works with <strong>dynamic scaling</strong> at inference.</li><li><strong>LongRoPE</strong> (searches non-uniform per-dimension rescale factors, progressive extension to 2M), <strong>ABF</strong> (adjusted base frequency used by LLaMA 3.1: continued pretraining with larger base), <strong>Self-Extend</strong>, <strong>ALiBi</strong> (a different position scheme linear biases with better extrapolation).</li></ol>
+<pre><code># Hugging Face example
+from transformers import AutoModelForCausalLM
+model = AutoModelForCausalLM.from_pretrained(&quot;meta-llama/Llama-3-8B&quot;,
+    rope_scaling={&quot;type&quot;: &quot;yarn&quot;, &quot;factor&quot;: 8.0, &quot;original_max_position_embeddings&quot;: 8192}, max_position_embeddings=65536)</code></pre>
+<h4>Beyond positional encoding</h4>
+<p>Long-context models also need: <strong>continued pretraining or fine-tuning</strong> on long documents (not only short ones, including long-range dependency tasks), <strong>efficient attention</strong> (FlashAttention, FlashAttention-2/3, sliding window, grouped-query and multi-query attention to shrink the KV cache, sparse or linear attention), <strong>KV cache management</strong> (paged attention, quantised cache, eviction such as StreamingLLM attention sinks), sequence parallelism or ring attention for training, and <strong>RAG</strong> as a cheaper alternative to stuffing everything into context.</p>
+<h4>Evaluation</h4>
+<p>Perplexity versus length, <strong>needle-in-a-haystack</strong>, RULER, LongBench, ∞Bench, multi-document QA. Effective context is often smaller than the advertised window.</p>
+<h4>Pitfalls</h4>
+<p>Scaling without fine-tuning and trusting the output, degraded short-context performance after aggressive interpolation, ignoring latency and memory, and assuming more context always helps.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does extrapolating beyond the training length break RoPE models?</li><li>What is the lost-in-the-middle problem and how is long-context quality evaluated?</li><li>What are the memory and compute costs of 128k contexts and how are they reduced?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-79">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-79%3A+How+do+context+window+extension+methods+%28RoPE+scaling%2C+YaRN%29+allow%E2%80%A6&amp;question-id=ml-79&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+LLMs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-79.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do code splitting and dynamic `import()` reduce initial JavaScript bundle size? | InterviewGearUp</title>
+<meta name="description" content="Code splitting divides the bundle into chunks loaded on demand, so the browser downloads only what the current route or interaction needs. Dynamic…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-41.html">
+<meta property="og:title" content="How do code splitting and dynamic `import()` reduce initial JavaScript bundle size? | InterviewGearUp">
+<meta property="og:description" content="Code splitting divides the bundle into chunks loaded on demand, so the browser downloads only what the current route or interaction needs. Dynamic…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-41.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do code splitting and dynamic `import()` reduce initial JavaScript bundle size?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · Performance · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Code splitting divides the bundle into chunks loaded on demand, so the browser downloads only what the current route or interaction needs. Dynamic import() returns a promise for a module and tells the bundler to emit a separate chunk, cutting initial JavaScript and improving load metrics.</p></div>
+<h4>Explained in depth</h4>
+<h4>Problem</h4>
+<p>A single large bundle must be downloaded, parsed and executed before the app becomes interactive. Parse and execute time on mid-range phones is substantial, and most code (admin pages, charts, editors, rarely used dialogs) is not needed on first view.</p>
+<h4>Dynamic import</h4>
+<p><code>import()</code> is an expression that loads a module asynchronously and resolves with its namespace. Bundlers (webpack, Rollup, Vite, esbuild) treat each dynamic import as a <strong>split point</strong> and create a separate chunk with its dependencies.</p>
+<pre><code>button.addEventListener(&#39;click&#39;, async () =&gt; {
+  const { exportToPdf } = await import(&#39;./pdf-export.js&#39;);   // chunk fetched on first click
+  exportToPdf(data);
+});</code></pre>
+<h4>In React</h4>
+<pre><code>const Settings = React.lazy(() =&gt; import(&#39;./Settings&#39;));
+&lt;Suspense fallback={&lt;Spinner /&gt;}&gt;
+  &lt;Routes&gt;&lt;Route path=&quot;/settings&quot; element={&lt;Settings /&gt;} /&gt;&lt;/Routes&gt;
+&lt;/Suspense&gt;</code></pre>
+<p>Frameworks such as Next.js, Remix and SvelteKit split <strong>per route</strong> automatically.</p>
+<h4>Where to split</h4>
+<ol start="1"><li><strong>Routes</strong>: the highest value, since users see one route at a time.</li><li><strong>Heavy components</strong> shown conditionally: rich text editors, charts, maps, modals, syntax highlighters.</li><li><strong>Heavy libraries</strong> used on interaction (PDF, Excel parsers, markdown).</li><li><strong>Vendor chunks</strong> and shared code, so common dependencies are cached across routes.</li><li><strong>Polyfills and locales</strong> loaded only for browsers or languages that need them.</li></ol>
+<h4>Avoiding downsides</h4>
+<ul><li><strong>Request waterfalls</strong>: a lazy component that itself imports another lazy chunk adds serial round trips. Prefetch likely next chunks.</li><li><strong>Resource hints</strong>: <code>&lt;link rel=&quot;modulepreload&quot;&gt;</code> for chunks needed soon, <code>prefetch</code> for likely navigation. Bundlers support magic comments such as <code>/* webpackPrefetch: true */</code>.</li><li><strong>Loading states</strong>: avoid layout shift with placeholders; use <code>startTransition</code> to keep the old UI while the chunk loads.</li><li><strong>Error handling</strong>: chunk loads can fail (offline, new deploy removed old files); use an error boundary and retry or reload.</li><li>Too many tiny chunks hurt through request overhead; HTTP/2 helps but does not remove it.</li></ul>
+<h4>Measuring</h4>
+<p>Use <code>webpack-bundle-analyzer</code>, <code>rollup-plugin-visualizer</code> or <code>vite-bundle-visualizer</code> to see what dominates. Track initial JS size, <strong>Total Blocking Time</strong>, <strong>LCP</strong> and <strong>INP</strong> in Lighthouse and RUM. Set performance budgets in CI.</p>
+<h4>Pitfalls</h4>
+<p>Splitting everything, importing a library&#39;s whole namespace (defeating tree shaking), shared modules duplicated across chunks, and forgetting the cache invalidation story (content-hashed file names plus long-lived caching).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you split by route versus by component, and how do you avoid waterfalls?</li><li>How do preload and prefetch hints interact with split chunks?</li><li>How do you verify the result with a bundle analyzer and Lighthouse?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-41">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-41%3A+How+do+code+splitting+and+dynamic+%60import%28%29%60+reduce+initial%E2%80%A6&amp;question-id=fe-41&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+Performance%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-41.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

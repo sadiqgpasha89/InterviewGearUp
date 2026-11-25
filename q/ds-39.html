@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How would you design an anomaly detection system for metrics or transactions, and how do you evaluate it without many labels? | InterviewGearUp</title>
+<meta name="description" content="Define what an anomaly means for the business, start with statistical baselines that handle seasonality such as robust z-scores on residuals, add…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-39.html">
+<meta property="og:title" content="How would you design an anomaly detection system for metrics or transactions, and how do you evaluate it without many labels? | InterviewGearUp">
+<meta property="og:description" content="Define what an anomaly means for the business, start with statistical baselines that handle seasonality such as robust z-scores on residuals, add…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-39.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How would you design an anomaly detection system for metrics or transactions, and how do you evaluate it without many labels?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 3 (Senior) · Anomaly detection · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Define what an anomaly means for the business, start with statistical baselines that handle seasonality such as robust z-scores on residuals, add unsupervised models like isolation forest or autoencoders for multivariate data, combine with rules and a supervised model when labels exist, and tune thresholds to analyst capacity using precision at k and feedback loops.</p></div>
+<h4>Explained in depth</h4>
+<h4>Clarify the problem</h4>
+<ul><li><strong>What is an anomaly?</strong> Point (one weird value), contextual (a normal value at the wrong time: 3 am traffic spike), or collective (a pattern of values). Is it a <strong>business metric monitoring</strong> problem (revenue drop), <strong>fraud or abuse</strong> (transactions, accounts), <strong>operational</strong> (latency, sensors), or <strong>data quality</strong>?</li><li>Cost of misses versus false alarms, latency requirements (real time versus daily), and analyst capacity (50 alerts a day is the budget).</li></ul>
+<h4>Methods</h4>
+<div class="md-table"><table><thead><tr><th>Scenario</th><th>Approach</th></tr></thead><tbody><tr><td><strong>Univariate metrics with seasonality</strong></td><td>forecast the expected value (STL, Prophet, seasonal ETS, gradient boosting with calendar features) and flag when the <strong>residual</strong> exceeds a threshold using a <strong>robust z-score</strong> (median and MAD) or prediction intervals</td></tr><tr><td><strong>Simple distributions</strong></td><td>percentile, IQR rule, Grubbs, CUSUM or EWMA control charts for shifts</td></tr><tr><td><strong>Multivariate tabular</strong></td><td><strong>Isolation Forest</strong> (isolates anomalies with fewer random splits), Local Outlier Factor, one-class SVM, Mahalanobis distance, Gaussian mixtures</td></tr><tr><td><strong>High-dimensional or sequential</strong></td><td><strong>autoencoders</strong> (large reconstruction error), variational autoencoders, LSTM or transformer forecasters, matrix profile for time-series discords</td></tr><tr><td><strong>Graph and entity relationships</strong></td><td>graph features, community detection (fraud rings)</td></tr><tr><td><strong>With some labels</strong></td><td>supervised classifier (gradient boosting) plus an unsupervised score as a feature; semi-supervised (train on normal only); active learning</td></tr><tr><td><strong>Business rules</strong></td><td>velocity checks, blacklists, limits; combine with models</td></tr></tbody></table></div>
+<pre><code>from sklearn.ensemble import IsolationForest
+import numpy as np
+iso = IsolationForest(n_estimators=300, contamination=&quot;auto&quot;, random_state=0).fit(X_train)
+score = -iso.score_samples(X_new)                  # higher = more anomalous
+alerts = score &gt; np.quantile(-iso.score_samples(X_train), 0.995)</code></pre>
+<p>Metric monitoring example: residual = actual - forecast; z = (residual - median) / (1.4826 x MAD); alert if |z| &gt; 4 for 2 consecutive intervals.</p>
+<h4>Handling real-world messiness</h4>
+<ul><li><strong>Seasonality and trend</strong>: model them or compare to the same hour last week; otherwise daily cycles trigger alarms.</li><li><strong>Drift</strong> (growth, new product): retrain or use adaptive baselines; distinguish a <strong>level shift</strong> (genuine change) from an anomaly.</li><li><strong>Contamination</strong>: training data contain anomalies; use robust statistics and iterative cleaning.</li><li><strong>Data pipeline failures</strong> look like anomalies; separate data-quality checks (freshness, volume, nulls) from business alerts.</li><li><strong>Many metrics and dimensions</strong> (country x device): hierarchical alerting, multiple-testing control, and root-cause drill-down (which segment explains the drop).</li></ul>
+<h4>Evaluation without many labels</h4>
+<ul><li>Build a small <strong>labelled set</strong> from past incidents, injected synthetic anomalies, and analyst reviews; report <strong>precision at k</strong>, recall of known incidents, time-to-detect, and alert volume.</li><li>Use <strong>back-testing</strong>: replay historical data and see whether known incidents would have been caught and how many false alarms there would be.</li><li>Track <strong>analyst feedback</strong> (true positive, benign, duplicate) and feed it into thresholds, suppression rules and supervised models.</li><li>ROC AUC is misleading with extreme imbalance; prefer PR metrics and operational metrics (alerts per day, % actionable).</li></ul>
+<h4>Operations</h4>
+<p>Tiered severity, alert grouping and deduplication, cool-down windows, explanations (which features or segments contributed), dashboards, runbooks, and periodic review of thresholds. For fraud, balance friction on genuine customers against losses, and expect adversaries to adapt.</p>
+<h4>Pitfalls</h4>
+<p>Using one global threshold, ignoring seasonality, evaluating with accuracy, and shipping a detector nobody has capacity to triage.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you avoid alert fatigue while still catching important incidents?</li><li>How do you evaluate an unsupervised detector when labelled anomalies are rare or unreliable?</li><li>How do you handle seasonality, trend and concept drift in metric monitoring?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-39">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-39%3A+How+would+you+design+an+anomaly+detection+system+for+metrics+or%E2%80%A6&amp;question-id=ds-39&amp;context=Data+scientist%2C+Gear+3%2C+topic%3A+Anomaly+detection%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-39.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

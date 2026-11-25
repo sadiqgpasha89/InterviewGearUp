@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you import existing untracked cloud infrastructure into Terraform state safely? | InterviewGearUp</title>
+<meta name="description" content="To bring existing cloud resources under Terraform, write the matching resource configuration, then import each resource into state with terraform import…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-77.html">
+<meta property="og:title" content="How do you import existing untracked cloud infrastructure into Terraform state safely? | InterviewGearUp">
+<meta property="og:description" content="To bring existing cloud resources under Terraform, write the matching resource configuration, then import each resource into state with terraform import…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-77.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you import existing untracked cloud infrastructure into Terraform state safely?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · IaC · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>To bring existing cloud resources under Terraform, write the matching resource configuration, then import each resource into state with terraform import or declarative import blocks, run plan until it shows no changes, and commit. Import never writes configuration for you in older versions, so verify attributes carefully and avoid destructive diffs before applying.</p></div>
+<h4>Explained in depth</h4>
+<h4>What import does</h4>
+<p><code>terraform import</code> records an existing real-world object in the <strong>state file</strong> under a resource address. It does not create configuration; if configuration is missing or different, the next plan will propose changes (including destroy and recreate). The goal is a plan with <strong>no changes</strong> after import.</p>
+<h4>Safe workflow</h4>
+<ol start="1"><li><strong>Inventory</strong> resources and decide state boundaries (which state file owns what). Back up the state (<code>terraform state pull &gt; backup.json</code>, S3 versioning) and ensure locking.</li><li><strong>Write configuration</strong> that matches the resource: the resource type and required arguments (names, CIDRs, engine versions, tags), referencing variables and other resources when they are also being imported.</li><li><strong>Import</strong>:</li></ol>
+<ul><li>Classic CLI: <code>terraform import aws_s3_bucket.logs acme-logs-prod</code>.</li><li><strong>Import blocks</strong> (Terraform 1.5+), reviewable and part of the plan:</li></ul>
+<pre><code>import {
+  to = aws_s3_bucket.logs
+  id = &quot;acme-logs-prod&quot;
+}
+resource &quot;aws_s3_bucket&quot; &quot;logs&quot; { bucket = &quot;acme-logs-prod&quot; }</code></pre>
+<p>   Run <code>terraform plan</code> to preview, then <code>apply</code> to write the state. <code>for_each</code> in import blocks supports bulk imports (1.7+).</p>
+<ul><li><strong>Generate configuration</strong>: <code>terraform plan -generate-config-out=generated.tf</code> drafts resource blocks from live attributes (experimental quality: review, remove computed and default noise, parameterise).</li></ul>
+<ol start="4"><li><strong>Run <code>terraform plan</code></strong> and iterate until it reports <code>No changes</code>. Differences show attributes where configuration differs from reality; adjust configuration (not infrastructure) unless a deliberate change is intended.</li><li><strong>Review and commit</strong>, then apply through the normal pipeline.</li></ol>
+<h4>Avoiding destructive diffs</h4>
+<ul><li>Attributes that force replacement (<code>name</code>, <code>availability_zone</code>, <code>engine</code>, subnet) must match exactly.</li><li>Use <code>lifecycle { prevent_destroy = true }</code> temporarily on databases and stateful resources during the first applies.</li><li>Use <code>ignore_changes</code> for attributes you cannot or do not want to manage yet.</li><li>Import related resources together: security group rules, IAM policy attachments, route table associations are often separate resources whose absence in state produces diffs.</li><li>Check provider documentation: each resource lists its <strong>import id format</strong> (ARN, name, composite ids like <code>cluster-name:node-group</code>).</li><li>Inspect with <code>terraform state show</code> after import to see the real attribute values and copy them.</li></ul>
+<h4>At scale</h4>
+<p>Tools help: <strong>Terraformer</strong> and <strong>Former2</strong> generate configuration and state from existing clouds, <strong>aztfexport</strong> for Azure, <code>terraform-provider-*</code> generators, and cloud-specific &quot;resource discovery&quot;. Generated code often needs refactoring into modules, variables and consistent naming. Do it incrementally by service or account, not all at once, and put each stack in its own state.</p>
+<h4>Moving between states</h4>
+<p><code>terraform state mv</code>, <code>moved</code> blocks and <code>removed</code> blocks reorganise addresses without recreating resources. <code>terraform state rm</code> stops managing without destroying.</p>
+<h4>Safety checklist</h4>
+<p>Run in a non-production copy first if possible, restrict apply rights during migration, communicate freeze windows, verify tags and drift detection afterwards, and ensure CI uses the same provider and Terraform versions as local runs.</p>
+<h4>Pitfalls</h4>
+<p>Importing into the wrong address or state, applying a plan that replaces a production database because a default differs, secrets appearing in state and generated files, and leaving imported resources partially modelled (sub-resources unmanaged).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do import blocks and -generate-config-out improve the workflow?</li><li>How do you avoid plans that want to replace imported resources?</li><li>How do you import many resources at scale?</li></ul>
+<p><a class="btn primary" href="../#/q/do-77">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-77%3A+How+do+you+import+existing+untracked+cloud+infrastructure+into%E2%80%A6&amp;question-id=do-77&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+IaC%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-77.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

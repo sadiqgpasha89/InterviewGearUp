@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you design a high-reliability on-call rotation that prevents alert fatigue and burnout? | InterviewGearUp</title>
+<meta name="description" content="A sustainable on-call rotation uses enough people, clear ownership, a primary and secondary structure, humane shift lengths and handoffs, actionable…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-62.html">
+<meta property="og:title" content="How do you design a high-reliability on-call rotation that prevents alert fatigue and burnout? | InterviewGearUp">
+<meta property="og:description" content="A sustainable on-call rotation uses enough people, clear ownership, a primary and secondary structure, humane shift lengths and handoffs, actionable…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-62.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you design a high-reliability on-call rotation that prevents alert fatigue and burnout?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · SRE · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A sustainable on-call rotation uses enough people, clear ownership, a primary and secondary structure, humane shift lengths and handoffs, actionable low-noise alerts tied to SLOs, runbooks, compensation and recovery time, and continuous measurement of page load and toil. The goal is reliability without burning out the team.</p></div>
+<h4>Explained in depth</h4>
+<h4>Principles</h4>
+<p>On-call exists to protect users and the business, but unmanaged it causes alert fatigue, sleep loss, attrition and slower response. Google SRE guidance: keep the interruption rate low (at most about two incidents per 12-hour shift), spend no more than about 25 to 50 percent of an SRE&#39;s time on operational work, and fix causes rather than normalise pages.</p>
+<h4>Rotation design</h4>
+<ul><li><strong>Team size</strong>: at least <strong>6 to 8 engineers</strong> in one rotation so each person is on call roughly one week in six to eight; two people for primary and secondary (primary responds, secondary backs up and handles escalation or overflow).</li><li><strong>Shift length</strong>: one week is common; for heavy services use shorter shifts or split day and night. <strong>Follow-the-sun</strong> across time zones avoids night pages for teams with global presence.</li><li><strong>Handoff ritual</strong>: a documented meeting or note covering ongoing incidents, risky changes, flaky alerts and tickets opened during the shift.</li><li><strong>Fairness and flexibility</strong>: swap and override support in the paging tool (PagerDuty, Opsgenie, Grafana OnCall), vacation and holiday coverage, limits on consecutive nights, and <strong>compensation or time off</strong> after night pages.</li><li><strong>Ownership</strong>: services have named owning teams; &quot;you build it, you run it&quot; aligns incentives for quality. Escalation paths (secondary, team lead, incident commander, vendor) are defined.</li><li><strong>Onboarding</strong>: shadow shifts, game days and &quot;wheel of misfortune&quot; role plays, access prepared in advance.</li></ul>
+<h4>Preventing alert fatigue</h4>
+<ul><li><strong>Page only on symptoms that need human action now</strong>: SLO burn rates, user-facing error ratio or latency, not resource noise. Use multi-window multi-burn-rate alerts (for example 2 percent of monthly budget in 1 hour) so fast burns page and slow burns create tickets.</li><li>Every page must be <strong>actionable, urgent and linked to a runbook</strong> with context, dashboards and recent changes. If an alert needs no action, delete or demote it.</li><li>Group, deduplicate and inhibit (Alertmanager), use <code>for:</code> durations, and route low-severity to chat or tickets.</li><li><strong>Weekly alert review</strong>: list top noisy alerts, pages outside working hours, time to acknowledge, false positive rate; assign owners to fix or remove. Track <strong>pages per shift</strong>, <strong>night pages</strong>, <strong>time to resolve</strong> and <strong>toil percentage</strong>.</li><li>Automate frequent fixes (self-healing, auto-scaling, restarts with limits), and reduce incident causes through reliability work.</li></ul>
+<h4>Process around incidents</h4>
+<p>Clear severity levels, incident commander role for major incidents, blameless postmortems with action items tracked to completion, and <strong>error budget policy</strong>: when the budget is burned, prioritise reliability work over features, which reduces future pages. Share incident load fairly and rotate the incident commander role.</p>
+<h4>Wellbeing</h4>
+<p>Respect rest after heavy nights, avoid on-call for people recovering from burnout, offer voluntary opt-outs when feasible, allow no-meeting mornings after incidents, and treat on-call health as a leadership metric. Survey the team regularly.</p>
+<h4>Pitfalls</h4>
+<p>Tiny rotations (3 people), heroes who absorb all pages, alerts without owners, noisy test environments paging production teams, and measuring only uptime while ignoring human cost.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What size and shape should the rotation be and when do you need follow-the-sun?</li><li>What metrics show alert fatigue and how do you reduce it?</li><li>How do postmortems and error budgets feed back into on-call load?</li></ul>
+<p><a class="btn primary" href="../#/q/do-62">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-62%3A+How+do+you+design+a+high-reliability+on-call+rotation+that+prevents%E2%80%A6&amp;question-id=do-62&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+SRE%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-62.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

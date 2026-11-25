@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do Snowflake micro-partitions and clustering keys prune scanned data during queries? | InterviewGearUp</title>
+<meta name="description" content="Snowflake stores tables as micro-partitions with per-column min and max values and other metadata. At query time the optimiser compares filters with that…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-35.html">
+<meta property="og:title" content="How do Snowflake micro-partitions and clustering keys prune scanned data during queries? | InterviewGearUp">
+<meta property="og:description" content="Snowflake stores tables as micro-partitions with per-column min and max values and other metadata. At query time the optimiser compares filters with that…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-35.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do Snowflake micro-partitions and clustering keys prune scanned data during queries?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Warehouses · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Snowflake stores tables as micro-partitions with per-column min and max values and other metadata. At query time the optimiser compares filters with that metadata and skips partitions that cannot match (pruning). Clustering keys organise data so related values are co-located, narrowing the min and max ranges per partition and improving pruning on large tables.</p></div>
+<h4>Explained in depth</h4>
+<h4>Micro-partitions</h4>
+<p>Snowflake automatically splits data into immutable files of about 50 to 500 MB uncompressed (16 MB compressed target), stored column by column. For each micro-partition and column the services layer keeps <strong>metadata</strong>: minimum and maximum values, number of distinct values, null count. These are stored separately from data, so the optimiser can use them without reading files.</p>
+<h4>Pruning</h4>
+<pre><code>SELECT SUM(amount) FROM orders WHERE order_date BETWEEN &#39;2026-11-01&#39; AND &#39;2026-11-07&#39; AND region = &#39;EU&#39;;</code></pre>
+<p>The optimiser checks each partition&#39;s <code>order_date</code> min/max; if a partition&#39;s range lies outside the filter it is <strong>skipped entirely</strong>. The query profile shows <code>Partitions scanned</code> versus <code>Partitions total</code>. Good pruning (for example 40 of 40,000) makes queries seconds instead of minutes and reduces compute cost. Pruning works for equality, range, <code>IN</code>, and some functions, but not on predicates that wrap the column in non-monotonic expressions.</p>
+<h4>Natural clustering</h4>
+<p>Data loaded in time order (event logs, daily batches) is naturally well clustered by date because each micro-partition covers a narrow date range. Problems arise from <strong>random or multi-key access patterns</strong>, updates and merges that scatter values, backfills, and tables filtered by columns unrelated to the load order (customer_id), where each partition covers nearly the whole value range, so nothing can be skipped.</p>
+<h4>Clustering keys</h4>
+<pre><code>ALTER TABLE orders CLUSTER BY (order_date, region);
+SELECT SYSTEM$CLUSTERING_INFORMATION(&#39;orders&#39;, &#39;(order_date, region)&#39;);</code></pre>
+<p>A clustering key tells Snowflake to <strong>reorganise</strong> micro-partitions so rows with similar key values sit together, minimising overlap between partitions&#39; ranges. <strong>Automatic Clustering</strong> (serverless background service) maintains this as data changes, billed in credits. Metrics: <code>average_depth</code> (smaller is better; 1 means no overlap), <code>average_overlaps</code>, and the partition depth histogram. High depth means poor clustering.</p>
+<h4>Choosing keys</h4>
+<ul><li>Use columns commonly in <code>WHERE</code>, <code>JOIN</code> and <code>GROUP BY</code> filters, with <strong>moderate cardinality</strong>: too low (boolean) gives little pruning; too high (a unique id) makes maintenance expensive and ranges meaningless. Use expressions to reduce cardinality: <code>CLUSTER BY (TO_DATE(event_ts), LEFT(customer_id, 3))</code>.</li><li>Put lower-cardinality columns first (<code>region</code>, then <code>date</code>) unless queries always filter dates.</li><li>Limit to <strong>3 or 4 columns</strong>.</li><li>Apply to <strong>large tables</strong> (multi-TB, thousands of micro-partitions) that are queried often and updated infrequently; small tables gain nothing, and heavily mutated tables incur continuous reclustering costs.</li></ul>
+<h4>Cost trade-offs</h4>
+<p>Reclustering rewrites data (compute credits plus extra storage for Time Travel and Fail-safe on the replaced partitions). Evaluate benefit through query profile scanned ratios and credits saved versus clustering credits (<code>AUTOMATIC_CLUSTERING_HISTORY</code>). Alternatives: <strong>search optimization service</strong> for point lookups, materialised views, ordering data on load (<code>INSERT ... ORDER BY</code>), or restructuring tables (partition by date into separate tables).</p>
+<h4>Pitfalls</h4>
+<p>Clustering on a high-cardinality timestamp, expecting pruning from filters that use functions on the clustered column, forgetting that clustering is best effort rather than a strict sort, and enabling it on volatile tables.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you measure clustering quality with SYSTEM$CLUSTERING_INFORMATION?</li><li>When is automatic clustering worth its credit cost?</li><li>How does natural load order act as implicit clustering?</li></ul>
+<p><a class="btn primary" href="../#/q/de-35">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-35%3A+How+do+Snowflake+micro-partitions+and+clustering+keys+prune+scanned%E2%80%A6&amp;question-id=de-35&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Warehouses%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-35.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

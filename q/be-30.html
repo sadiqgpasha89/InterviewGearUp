@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is a cache avalanche and why should cache expiration TTLs include random jitter? | InterviewGearUp</title>
+<meta name="description" content="A cache avalanche happens when many keys expire at the same moment or the cache layer fails, and the flood of misses hits the database at once. Adding…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-30.html">
+<meta property="og:title" content="What is a cache avalanche and why should cache expiration TTLs include random jitter? | InterviewGearUp">
+<meta property="og:description" content="A cache avalanche happens when many keys expire at the same moment or the cache layer fails, and the flood of misses hits the database at once. Adding…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-30.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is a cache avalanche and why should cache expiration TTLs include random jitter?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 2 (Mid-level) · Caching · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A cache avalanche happens when many keys expire at the same moment or the cache layer fails, and the flood of misses hits the database at once. Adding random jitter to TTLs spreads expirations over time, avoiding synchronized misses. Combine it with warming, locking, stale serving and redundancy.</p></div>
+<h4>Explained in depth</h4>
+<h4>How it happens</h4>
+<p>A batch job loads 1 million keys with <code>TTL = 3600</code>. One hour later they all expire together; thousands of requests per second miss, query the database simultaneously, and may saturate it, causing timeouts and cascading failures. A cache node restart or cluster outage has a similar effect, because every key is suddenly absent.</p>
+<h4>Jitter</h4>
+<p>Randomise the expiry so that keys loaded together expire at different times.</p>
+<pre><code>import random
+def ttl_with_jitter(base=3600, spread=0.2):
+    return int(base * (1 + random.uniform(-spread, spread)))   # 2880 to 4320 seconds
+
+redis.set(key, value, ex=ttl_with_jitter())</code></pre>
+<p>Typical jitter is 10 to 20 percent of the base TTL, which flattens the expiry curve into a gradual trickle of refreshes.</p>
+<h4>Complementary techniques</h4>
+<ul><li><strong>Staggered warming</strong>: preload critical keys before they expire (refresh-ahead) in the background with a scheduler.</li><li><strong>Single flight or mutex per key</strong>: only one request recomputes a missing value while others wait or receive a slightly stale copy (also fixes the hot-key stampede).</li><li><strong>Logical expiry and stale-while-revalidate</strong>: store <code>{value, expiresAt}</code> with a long physical TTL, serve the stale value past the logical expiry and refresh asynchronously.</li><li><strong>Tiered caching</strong>: local in-process cache (short TTL) in front of Redis, so Redis misses are absorbed gradually.</li><li><strong>High availability</strong>: Redis Sentinel or Cluster with replicas, multiple availability zones, and client timeouts and circuit breakers so a cache failure degrades gracefully.</li><li><strong>Database protection</strong>: rate limiting, load shedding, bulkheads, request queues, connection pool limits, and read replicas.</li><li><strong>Fallback behaviour</strong>: return default or degraded content for non-critical data when the cache and database are overloaded.</li><li>Use different TTLs per data class, and avoid setting a fixed absolute expiry time (such as midnight) for large sets of keys.</li></ul>
+<h4>Monitoring</h4>
+<p>Track hit ratio, miss rate, eviction counts, database QPS and latency, and alert on sudden miss spikes. Load test cold-start scenarios.</p>
+<h4>Pitfalls</h4>
+<p>Jitter that is too small to matter, caching with no TTL at all (memory growth), using the same retry timing for all clients (retry storm), and assuming the database can handle full cold-cache traffic.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does an avalanche differ from a cache stampede on a single hot key?</li><li>How does stale-while-revalidate reduce database load?</li><li>What protects the database when the whole cache cluster is down?</li></ul>
+<p><a class="btn primary" href="../#/q/be-30">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-30%3A+What+is+a+cache+avalanche+and+why+should+cache+expiration+TTLs%E2%80%A6&amp;question-id=be-30&amp;context=Backend+engineer%2C+Gear+2%2C+topic%3A+Caching%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-30.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

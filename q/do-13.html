@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are file descriptors, how do you inspect open sockets with `lsof`, and how do you adjust `ulimit`? | InterviewGearUp</title>
+<meta name="description" content="A file descriptor is a small integer a process uses to refer to an open file, socket, pipe or device. Each process has a per-process limit (ulimit -n)…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-13.html">
+<meta property="og:title" content="What are file descriptors, how do you inspect open sockets with `lsof`, and how do you adjust `ulimit`? | InterviewGearUp">
+<meta property="og:description" content="A file descriptor is a small integer a process uses to refer to an open file, socket, pipe or device. Each process has a per-process limit (ulimit -n)…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-13.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are file descriptors, how do you inspect open sockets with `lsof`, and how do you adjust `ulimit`?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 2 (Mid-level) · Linux · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A file descriptor is a small integer a process uses to refer to an open file, socket, pipe or device. Each process has a per-process limit (ulimit -n) and the system has a global cap. Use lsof, ss and /proc/PID/fd to see open handles, and raise limits in systemd units or limits.conf for servers with many connections.</p></div>
+<h4>Explained in depth</h4>
+<h4>What a file descriptor is</h4>
+<p>In Unix, &quot;everything is a file&quot;. When a process opens a file, accepts a socket or creates a pipe, the kernel returns an integer index into the process&#39;s <strong>file descriptor table</strong>. Descriptors 0, 1 and 2 are stdin, stdout and stderr. Every network connection a server holds consumes one descriptor, which is why busy servers hit the limit (&quot;Too many open files&quot;, <code>EMFILE</code>).</p>
+<h4>Inspecting</h4>
+<pre><code>ls -l /proc/&lt;pid&gt;/fd | wc -l            # count open descriptors for one process
+ls -l /proc/&lt;pid&gt;/fd                     # shows targets: socket:[12345], /var/log/app.log, pipe:[...]
+lsof -p &lt;pid&gt;                            # all open files for the process
+lsof -i :443                             # processes using port 443
+lsof -iTCP -sTCP:LISTEN -P -n            # all listening TCP sockets
+lsof +L1                                 # deleted files still held open (disk space not freed)
+ss -tanp state established | head        # sockets with owning process
+cat /proc/sys/fs/file-nr                 # allocated, unused, system max</code></pre>
+<p><code>lsof +L1</code> is a classic: a log file deleted while a process still holds it keeps consuming disk space until the process closes it or restarts.</p>
+<h4>Limits</h4>
+<p>Two layers: <strong>per-process</strong> limits (soft and hard) and <strong>system-wide</strong> <code>fs.file-max</code>.</p>
+<pre><code>ulimit -Sn     # soft limit (the effective limit, can be raised up to hard)
+ulimit -Hn     # hard limit (ceiling, only root can raise)
+ulimit -n 65535                       # for the current shell and its children
+cat /proc/&lt;pid&gt;/limits | grep &quot;open files&quot;   # the real limit of a running process</code></pre>
+<p>Persistent configuration:</p>
+<ul><li><strong>/etc/security/limits.conf</strong> or <code>/etc/security/limits.d/*.conf</code>: <code>appuser soft nofile 65535</code> and <code>appuser hard nofile 65535</code> (applies to PAM login sessions only).</li><li><strong>systemd services ignore limits.conf</strong>: set <code>LimitNOFILE=65535</code> in the unit or an override (<code>systemctl edit myapp</code>), then <code>systemctl daemon-reload</code> and restart.</li><li><strong>Containers</strong>: <code>docker run --ulimit nofile=65535:65535</code>, Kubernetes inherits from the container runtime (containerd <code>LimitNOFILE</code>), so check the node default.</li><li>System-wide: <code>sysctl -w fs.file-max=2097152</code> and persist in <code>/etc/sysctl.d/</code>. Also <code>fs.nr_open</code> caps what a single process may set.</li></ul>
+<h4>Diagnosing a leak</h4>
+<ol start="1"><li>Watch the count over time: <code>watch -n5 &#39;ls /proc/&lt;pid&gt;/fd | wc -l&#39;</code>.</li><li>Group by type: <code>ls -l /proc/&lt;pid&gt;/fd | awk &#39;{print $NF}&#39; | sed &#39;s/[0-9]*//g&#39; | sort | uniq -c | sort -rn</code>. Thousands of <code>socket:[...]</code> suggests connections not closed (missing <code>close()</code>, no keep-alive timeouts, connection pool leaks, CLOSE_WAIT sockets).</li><li>Use <code>ss -tan | awk &#39;{print $1}&#39; | sort | uniq -c</code> to see TCP states; many <code>CLOSE_WAIT</code> means the application did not close after the peer did.</li><li>Use <code>strace -e trace=openat,close -p &lt;pid&gt;</code> or language profilers to find the code path.</li></ol>
+<h4>Best practices</h4>
+<p>Set the limit to a realistic high value (65535 or more) for servers, close resources in <code>finally</code> or <code>defer</code>, bound connection pools, set idle and keep-alive timeouts, and alert when usage exceeds 80 percent of the limit.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you find which process leaks file descriptors?</li><li>What is the difference between soft and hard limits?</li><li>How do systemd services get their limits, since ulimit in a shell does not apply?</li></ul>
+<p><a class="btn primary" href="../#/q/do-13">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-13%3A+What+are+file+descriptors%2C+how+do+you+inspect+open+sockets+with%E2%80%A6&amp;question-id=do-13&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+2%2C+topic%3A+Linux%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-13.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

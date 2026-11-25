@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you configure Grafana dashboard alert rules and multi-channel notifications? | InterviewGearUp</title>
+<meta name="description" content="In Grafana alerting, an alert rule runs queries on a schedule, applies reduce and threshold expressions, and moves through Normal, Pending and Firing…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-97.html">
+<meta property="og:title" content="How do you configure Grafana dashboard alert rules and multi-channel notifications? | InterviewGearUp">
+<meta property="og:description" content="In Grafana alerting, an alert rule runs queries on a schedule, applies reduce and threshold expressions, and moves through Normal, Pending and Firing…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-97.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you configure Grafana dashboard alert rules and multi-channel notifications?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 2 (Mid-level) · Observability · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>In Grafana alerting, an alert rule runs queries on a schedule, applies reduce and threshold expressions, and moves through Normal, Pending and Firing states. Labels on rules route alerts through notification policies to contact points (Slack, email, PagerDuty, webhooks), with grouping, mute timings and silences. Manage rules and contacts as code through provisioning.</p></div>
+<h4>Explained in depth</h4>
+<h4>Alert rule anatomy (Grafana unified alerting)</h4>
+<p>An alert rule has:</p>
+<ol start="1"><li><strong>Queries</strong> against data sources (Prometheus, Loki, CloudWatch, SQL).</li><li><strong>Expressions</strong>: reduce (time series to a single value: last, mean, max), math, threshold, resample.</li><li><strong>Condition</strong>: the expression whose result decides firing (for example <code>A &gt; 0.05</code>).</li><li><strong>Evaluation</strong>: folder, <strong>evaluation group</strong> (rules in a group run together at an interval, for example every 1 minute) and the <strong>pending period</strong> (<code>for</code>, for example 5 minutes), which delays firing until the condition holds, to avoid flapping.</li><li><strong>Labels</strong> (<code>severity=critical</code>, <code>team=payments</code>, <code>service=checkout</code>) and <strong>annotations</strong> (summary, description, runbook_url, dashboard link).</li><li><strong>No data and error handling</strong>: choose whether <code>NoData</code> or <code>Error</code> produce Alerting, NoData, OK or keep last state.</li></ol>
+<p>States: <strong>Normal</strong>, <strong>Pending</strong>, <strong>Firing</strong> (Alerting), plus <code>NoData</code> and <code>Error</code>. Each unique label set creates a separate alert instance (multi-dimensional alerts, for example one per pod or per service).</p>
+<h4>Example (Prometheus data source)</h4>
+<pre><code>A: sum by (service) (rate(http_requests_total{status=~&quot;5..&quot;}[5m])) / sum by (service) (rate(http_requests_total[5m]))
+B: reduce(A, last)
+C: threshold(B &gt; 0.05)         # error ratio above 5 percent
+for: 5m      labels: { severity: critical, team: payments }
+annotations: { summary: &quot;{{ $labels.service }} error rate {{ printf \&quot;%.1f\&quot; (mul $values.B.Value 100) }}%&quot;, runbook_url: https://wiki/runbooks/errors }</code></pre>
+<h4>Routing and notifications</h4>
+<ul><li><strong>Contact points</strong> define destinations and message templates: Slack channel, email, PagerDuty (routing key), Opsgenie, Microsoft Teams, Telegram, generic <strong>webhook</strong>; one contact point can include several integrations (multi-channel).</li><li><strong>Notification policies</strong> form a tree matching alert <strong>labels</strong> to a contact point, with <code>group_by</code>, <code>group_wait</code>, <code>group_interval</code>, <code>repeat_interval</code>, <code>continue matching</code>, and nested policies (default → team → severity):</li></ul>
+<pre><code>root: contact=default-slack, group_by=[alertname, service]
+  ├─ severity=critical -&gt; pagerduty (repeat 1h)
+  └─ team=payments    -&gt; payments-slack</code></pre>
+<ul><li><strong>Mute timings</strong> (maintenance windows, office hours) and <strong>silences</strong> (temporary, label matchers) suppress notifications without stopping evaluation.</li><li><strong>Templates</strong> customise the message with labels, values and links.</li></ul>
+<h4>Provisioning as code</h4>
+<p>Store alert rules, contact points, policies and mute timings in Git and provision through files (<code>/etc/grafana/provisioning/alerting/*.yaml</code>), the HTTP provisioning API, <strong>Terraform&#39;s Grafana provider</strong>, or Grafana Operator / Helm on Kubernetes. Version control gives review, rollback and consistency across environments. Alternatively, keep Prometheus rules in Prometheus and use Grafana Alertmanager (or external Alertmanager) for routing.</p>
+<h4>Good practices</h4>
+<ul><li>Alert on symptoms (error rate, latency SLO burn, saturation approaching limits), with actionable annotations: what is wrong, impact, dashboard and runbook.</li><li>Choose evaluation intervals and <code>for</code> durations to balance speed and noise; use multi-window burn rate alerts for SLOs.</li><li>Use consistent label taxonomies (<code>team</code>, <code>severity</code>, <code>service</code>, <code>env</code>) so policies route reliably.</li><li>Test contact points (&quot;Test&quot; button), simulate alerts, and monitor Grafana&#39;s own alerting health (rule evaluation failures, notification errors).</li><li>Send resolved notifications, and limit duplicated alerting between Prometheus and Grafana.</li><li>Review alert history and noisy rules regularly; delete unactionable alerts.</li></ul>
+<h4>Pitfalls</h4>
+<p>Missing <code>for</code> leading to flapping, NoData treated as OK hiding broken pipelines, notification policies without a catch-all default, and alert rules without owners or runbooks.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do notification policies and labels route alerts to different teams?</li><li>What do no-data and error handling states do?</li><li>How do you provision alert rules and contact points as code?</li></ul>
+<p><a class="btn primary" href="../#/q/do-97">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-97%3A+How+do+you+configure+Grafana+dashboard+alert+rules+and+multi-channel%E2%80%A6&amp;question-id=do-97&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+2%2C+topic%3A+Observability%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-97.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

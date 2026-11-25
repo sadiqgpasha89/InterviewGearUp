@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare RabbitMQ exchange types: Direct, Fanout, Topic, and Headers. | InterviewGearUp</title>
+<meta name="description" content="RabbitMQ routes messages through exchanges to queues using bindings. A direct exchange routes by exact routing key, fanout broadcasts to all bound…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-35.html">
+<meta property="og:title" content="Compare RabbitMQ exchange types: Direct, Fanout, Topic, and Headers. | InterviewGearUp">
+<meta property="og:description" content="RabbitMQ routes messages through exchanges to queues using bindings. A direct exchange routes by exact routing key, fanout broadcasts to all bound…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-35.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare RabbitMQ exchange types: Direct, Fanout, Topic, and Headers.</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 2 (Mid-level) · Messaging · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>RabbitMQ routes messages through exchanges to queues using bindings. A direct exchange routes by exact routing key, fanout broadcasts to all bound queues, topic matches wildcard patterns on dotted keys, and headers exchange matches on message header attributes instead of the routing key.</p></div>
+<h4>Explained in depth</h4>
+<h4>Model</h4>
+<p>Producers publish to an <strong>exchange</strong>, not directly to a queue. The exchange applies routing rules (<strong>bindings</strong>) and delivers copies to matching <strong>queues</strong>, from which consumers read. This decouples producers from consumers.</p>
+<div class="md-table"><table><thead><tr><th>Exchange</th><th>Routing rule</th><th>Typical use</th></tr></thead><tbody><tr><td>Direct</td><td>routing key equals binding key exactly</td><td>task routing (<code>email</code>, <code>sms</code>), log severity (<code>error</code>)</td></tr><tr><td>Fanout</td><td>ignores the key and copies to every bound queue</td><td>broadcast: cache invalidation, notifications to many services, live scores</td></tr><tr><td>Topic</td><td>key is dot-separated words; binding patterns use <code>*</code> (one word) and <code>#</code> (zero or more)</td><td><code>orders.eu.created</code>, <code>logs.#</code>, selective subscriptions</td></tr><tr><td>Headers</td><td>matches message headers using <code>x-match: all</code> or <code>any</code></td><td>multi-attribute routing where a key is awkward</td></tr></tbody></table></div>
+<h4>Examples</h4>
+<pre><code>Direct:  binding key &quot;error&quot; -&gt; queue errors; publish key &quot;error&quot; -&gt; only that queue.
+Fanout:  every bound queue gets each message, regardless of key.
+Topic:   binding &quot;orders.*.created&quot; matches &quot;orders.eu.created&quot; but not &quot;orders.created&quot;;
+         binding &quot;orders.#&quot; matches every key starting with &quot;orders&quot;.
+Headers: binding {format: pdf, type: report, x-match: all} requires both headers.</code></pre>
+<pre><code>// amqplib
+await ch.assertExchange(&#39;events&#39;, &#39;topic&#39;, { durable: true });
+await ch.assertQueue(&#39;billing&#39;, { durable: true });
+await ch.bindQueue(&#39;billing&#39;, &#39;events&#39;, &#39;orders.*.paid&#39;);
+ch.publish(&#39;events&#39;, &#39;orders.eu.paid&#39;, Buffer.from(JSON.stringify(evt)), { persistent: true });</code></pre>
+<h4>Also useful</h4>
+<ul><li>The <strong>default exchange</strong> is a nameless direct exchange where each queue is bound automatically with its own name as the key, so publishing with the queue name sends straight to it.</li><li><strong>Dead-letter exchanges</strong> capture rejected, expired or overflowed messages.</li><li><strong>Alternate exchanges</strong> catch unroutable messages; the <code>mandatory</code> flag and publisher confirms tell the producer about failures.</li><li>Newer RabbitMQ features: <strong>quorum queues</strong> (replicated, safe), <strong>streams</strong> (log-like, replayable), consistent hash exchange for sharding.</li></ul>
+<h4>Choosing</h4>
+<p>Use direct for simple categories, topic for flexible hierarchical filtering (most common), fanout for broadcast, and headers when routing depends on several unrelated attributes. Topic is generally clearer and faster than headers.</p>
+<h4>Pitfalls</h4>
+<p>Messages published to an exchange with no matching binding are silently dropped, queues must be declared consistently (same arguments), non-durable queues and non-persistent messages lose data on restart, and overly broad topic patterns create fan-out surprises.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does the default exchange behave and why is it special?</li><li>When would a headers exchange be better than a topic exchange?</li><li>How do queues, bindings and consumers interact with acknowledgements?</li></ul>
+<p><a class="btn primary" href="../#/q/be-35">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-35%3A+Compare+RabbitMQ+exchange+types%3A+Direct%2C+Fanout%2C+Topic%2C+and+Headers.&amp;question-id=be-35&amp;context=Backend+engineer%2C+Gear+2%2C+topic%3A+Messaging%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-35.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

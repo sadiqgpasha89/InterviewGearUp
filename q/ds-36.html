@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you interpret a black-box model with SHAP, permutation importance and partial dependence, and what are the pitfalls? | InterviewGearUp</title>
+<meta name="description" content="SHAP attributes each prediction to features using Shapley values, giving consistent local explanations that aggregate to global importance. Permutation…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-36.html">
+<meta property="og:title" content="How do you interpret a black-box model with SHAP, permutation importance and partial dependence, and what are the pitfalls? | InterviewGearUp">
+<meta property="og:description" content="SHAP attributes each prediction to features using Shapley values, giving consistent local explanations that aggregate to global importance. Permutation…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-36.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you interpret a black-box model with SHAP, permutation importance and partial dependence, and what are the pitfalls?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 3 (Senior) · Model interpretability · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>SHAP attributes each prediction to features using Shapley values, giving consistent local explanations that aggregate to global importance. Permutation importance measures the drop in score when a feature is shuffled and partial dependence or ICE plots show average effects. All describe the model, not causality, and correlated features, extrapolation and leakage can mislead.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why interpret</h4>
+<p>Debugging (find leakage and bugs), trust and adoption by stakeholders, regulatory requirements (credit decisions, adverse-action reasons), fairness audits, feature selection, and learning about the domain. Distinguish <strong>global</strong> (what drives the model overall) from <strong>local</strong> (why this prediction).</p>
+<h4>Tools</h4>
+<div class="md-table"><table><thead><tr><th>Tool</th><th>What it answers</th><th>Notes</th></tr></thead><tbody><tr><td><strong>Coefficients (linear/logistic)</strong></td><td>effect per unit change, holding others fixed</td><td>interpretable if features are scaled and not collinear</td></tr><tr><td><strong>Tree gain importance</strong></td><td>how much a feature reduced impurity</td><td>biased towards high-cardinality and continuous features; computed on training data</td></tr><tr><td><strong>Permutation importance</strong></td><td>drop in a validation metric when a feature&#39;s values are shuffled</td><td>model-agnostic, uses held-out data; understated for correlated features</td></tr><tr><td><strong>Partial dependence (PDP)</strong></td><td>average prediction as a feature varies</td><td>hides heterogeneity; unreliable with correlated features</td></tr><tr><td><strong>ICE plots</strong></td><td>the curve for each individual instance</td><td>reveals interactions and heterogeneity</td></tr><tr><td><strong>ALE plots</strong></td><td>accumulated local effects</td><td>handle correlated features better than PDP</td></tr><tr><td><strong>LIME</strong></td><td>local linear surrogate around one prediction</td><td>unstable; sensitive to sampling</td></tr><tr><td><strong>SHAP</strong></td><td>additive attribution values per feature per prediction</td><td>consistent, based on game theory</td></tr><tr><td><strong>Counterfactual explanations</strong></td><td>smallest change that flips the decision</td><td>actionable (recourse)</td></tr><tr><td><strong>Surrogate models</strong></td><td>simple model approximating the complex one</td><td>fidelity must be checked</td></tr></tbody></table></div>
+<h4>SHAP in more detail</h4>
+<p>Shapley values distribute the difference between a prediction and the <strong>baseline (average) prediction</strong> among features according to their average marginal contribution over all feature orderings. Properties: <strong>local accuracy</strong> (contributions sum to the prediction), consistency, missingness. <strong>TreeSHAP</strong> computes exact values for tree ensembles efficiently; KernelSHAP and DeepSHAP handle other models.</p>
+<pre><code>import shap
+expl = shap.TreeExplainer(model)
+sv = expl(X_valid)                       # Explanation object
+shap.plots.beeswarm(sv)                  # global: importance and direction by feature
+shap.plots.waterfall(sv[0])              # local: why this row got its score
+shap.plots.scatter(sv[:, &quot;tenure&quot;])      # dependence and interactions</code></pre>
+<p>Mean absolute SHAP gives a global ranking; the beeswarm shows the direction and spread of effects. For classification, SHAP values are usually in <strong>log-odds</strong> space.</p>
+<h4>Pitfalls</h4>
+<ul><li><strong>Explanations describe the model, not the world</strong>: a feature with large SHAP value is important to the model&#39;s prediction, not necessarily a cause. Do not give recommendations (&quot;raise income to lower risk&quot;) from them.</li><li><strong>Correlated features</strong> share credit arbitrarily (SHAP) or hide importance (permutation); group correlated features or use clustering and grouped importance.</li><li><strong>Extrapolation</strong>: permuting a feature creates unrealistic combinations; conditional variants help.</li><li><strong>Leakage</strong> shows up as a suspiciously dominant feature; explanations are a great audit.</li><li><strong>Instability</strong>: explanations vary with background data, sampling and model retraining; test their stability.</li><li>Explanations on training data show overfitting patterns; use held-out data.</li><li>Misinterpreting additive attributions for interactions; use SHAP interaction values.</li><li>Sharing explanations with users can enable gaming or leak information.</li></ul>
+<h4>Choosing between interpretable models and black box plus explanations</h4>
+<p>For high-stakes domains (lending, healthcare), consider <strong>inherently interpretable models</strong> (sparse logistic regression, generalised additive models, EBMs, scorecards, small trees) when accuracy loss is small; they offer exact, faithful explanations. Otherwise use a complex model with documented, validated explanations and monitoring.</p>
+<h4>Pitfalls</h4>
+<p>Quoting default importance from a tree library as truth, treating SHAP as causal, and presenting explanations without checking their stability.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is built-in gain-based tree feature importance misleading for high-cardinality features?</li><li>How do correlated features affect SHAP values and permutation importance?</li><li>When would you choose an inherently interpretable model over a black box plus explanations?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-36">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-36%3A+How+do+you+interpret+a+black-box+model+with+SHAP%2C+permutation%E2%80%A6&amp;question-id=ds-36&amp;context=Data+scientist%2C+Gear+3%2C+topic%3A+Model+interpretability%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-36.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

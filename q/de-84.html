@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare Tumbling Windows, Sliding Windows, and Session Windows in real-time stream aggregation. | InterviewGearUp</title>
+<meta name="description" content="Tumbling windows split the stream into fixed, non-overlapping intervals, so each event belongs to one window. Sliding (hopping) windows have a fixed size…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-84.html">
+<meta property="og:title" content="Compare Tumbling Windows, Sliding Windows, and Session Windows in real-time stream aggregation. | InterviewGearUp">
+<meta property="og:description" content="Tumbling windows split the stream into fixed, non-overlapping intervals, so each event belongs to one window. Sliding (hopping) windows have a fixed size…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-84.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare Tumbling Windows, Sliding Windows, and Session Windows in real-time stream aggregation.</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 2 (Mid-level) · Streaming · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Tumbling windows split the stream into fixed, non-overlapping intervals, so each event belongs to one window. Sliding (hopping) windows have a fixed size and a smaller slide interval, so they overlap and an event belongs to several windows, giving smoothed rolling metrics. Session windows group events by activity, closing after a gap of inactivity, so their length varies per key.</p></div>
+<h4>Explained in depth</h4>
+<h4>Windows in stream processing</h4>
+<p>Streams are unbounded, so aggregations (count, sum, average) need a way to cut them into finite chunks. A <strong>window assigner</strong> maps each event (by event or processing time) to one or more windows, and a trigger decides when to emit results, usually when the <strong>watermark</strong> passes the window end.</p>
+<h4>Tumbling windows</h4>
+<ul><li><strong>Fixed size, no overlap, aligned to a boundary</strong> (for example every 5 minutes: 12:00 to 12:05, 12:05 to 12:10).</li><li>Each event falls into exactly one window.</li><li>Use for <strong>periodic reports</strong>: orders per minute, hourly revenue, billing intervals, metrics per 5-minute bucket.</li></ul>
+<pre><code>SELECT window_start, window_end, COUNT(*) AS orders, SUM(amount) AS revenue
+FROM TABLE(TUMBLE(TABLE orders, DESCRIPTOR(order_time), INTERVAL &#39;5&#39; MINUTES))
+GROUP BY window_start, window_end;</code></pre>
+<p>Cheap: one accumulator per window per key.</p>
+<h4>Sliding (hopping) windows</h4>
+<ul><li><strong>Fixed size and a slide</strong>: <code>size = 10 minutes, slide = 1 minute</code> produces windows 12:00 to 12:10, 12:01 to 12:11, and so on.</li><li>Windows <strong>overlap</strong>; an event belongs to <code>size / slide</code> windows (ten in this example).</li><li>Use for <strong>moving averages, rolling counts and trend detection</strong>: errors in the last 5 minutes, refreshed every 30 seconds; fraud rules like &quot;more than 5 transactions in 10 minutes&quot;.</li></ul>
+<pre><code>SELECT window_start, COUNT(*) FROM TABLE(HOP(TABLE logins, DESCRIPTOR(ts), INTERVAL &#39;1&#39; MINUTES, INTERVAL &#39;10&#39; MINUTES)) GROUP BY window_start, window_end;</code></pre>
+<p>Cost: state and compute scale with the overlap factor. Reduce by increasing the slide, pre-aggregating into small tumbling panes and combining panes (Flink does pane-based optimisation for some aggregates), or using incremental aggregation functions.</p>
+<h4>Session windows</h4>
+<ul><li><strong>Defined by a gap</strong>: a session closes when no event arrives for a configured inactivity gap (for example 30 minutes); a new event starts a new session. Sizes differ per key; windows per key do not align.</li><li>Implemented by creating a window per event (event time to event time plus gap) and <strong>merging overlapping windows</strong>; a late event can connect two sessions into one.</li><li>Use for <strong>user sessions, device activity bursts, and customer support interactions</strong>: pages per session, session duration, conversion within a visit.</li></ul>
+<pre><code>events.keyBy(Event::getUserId).window(EventTimeSessionWindows.withGap(Time.minutes(30))).aggregate(new SessionAgg());</code></pre>
+<p>Dynamic gaps can be derived from the event. Sessions are more complex and need merging state; very active keys may never close (set maximum duration with custom triggers).</p>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th></th><th>Tumbling</th><th>Sliding</th><th>Session</th></tr></thead><tbody><tr><td>Size</td><td>fixed</td><td>fixed</td><td>variable</td></tr><tr><td>Overlap</td><td>none</td><td>yes</td><td>none per key, data-driven</td></tr><tr><td>Boundary</td><td>clock-aligned</td><td>clock-aligned</td><td>activity-aligned</td></tr><tr><td>Event membership</td><td>1 window</td><td>size/slide windows</td><td>1 session (merges)</td></tr><tr><td>State cost</td><td>lowest</td><td>highest</td><td>medium, merging</td></tr><tr><td>Typical use</td><td>periodic reports</td><td>rolling metrics</td><td>user behaviour</td></tr></tbody></table></div>
+<p>Spark Structured Streaming offers <code>window()</code> for tumbling and sliding, and <code>session_window</code> (3.2+); Kafka Streams offers tumbling, hopping, session and sliding windows; Beam has Fixed, Sliding and Sessions.</p>
+<h4>Late data and time semantics</h4>
+<p>Use event time with watermarks so each window aggregates by when events happened; configure allowed lateness and side outputs for stragglers; window results may be updated (retraction or upsert sinks) if late data is allowed.</p>
+<h4>Pitfalls</h4>
+<p>Choosing a too-small slide for large windows, using processing time for business metrics, not bounding session lengths, and forgetting that the window start alignment depends on time zone and offset.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do watermarks and allowed lateness decide when each window fires?</li><li>Why can sliding windows be expensive and how can you reduce cost?</li><li>How are session windows merged when late events bridge two sessions?</li></ul>
+<p><a class="btn primary" href="../#/q/de-84">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-84%3A+Compare+Tumbling+Windows%2C+Sliding+Windows%2C+and+Session+Windows+in%E2%80%A6&amp;question-id=de-84&amp;context=Data+engineer%2C+Gear+2%2C+topic%3A+Streaming%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-84.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

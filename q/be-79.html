@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare Redis RDB point-in-time snapshots with Append-Only File (AOF) persistence modes. | InterviewGearUp</title>
+<meta name="description" content="RDB takes compact point-in-time snapshots at intervals, giving fast restarts and small files but losing writes since the last snapshot. AOF logs every…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-79.html">
+<meta property="og:title" content="Compare Redis RDB point-in-time snapshots with Append-Only File (AOF) persistence modes. | InterviewGearUp">
+<meta property="og:description" content="RDB takes compact point-in-time snapshots at intervals, giving fast restarts and small files but losing writes since the last snapshot. AOF logs every…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-79.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare Redis RDB point-in-time snapshots with Append-Only File (AOF) persistence modes.</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 2 (Mid-level) · Caching · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>RDB takes compact point-in-time snapshots at intervals, giving fast restarts and small files but losing writes since the last snapshot. AOF logs every write command with a configurable fsync policy (always, every second, never), giving better durability at the cost of larger files and slower recovery, kept bounded by rewrites. Many deployments enable both.</p></div>
+<h4>Explained in depth</h4>
+<h4>RDB (snapshotting)</h4>
+<p>Redis forks a child process that writes the dataset to a compact binary <code>dump.rdb</code>; the parent keeps serving using <strong>copy-on-write</strong> memory pages.</p>
+<pre><code>save 900 1        # snapshot if at least 1 change in 900 s
+save 300 10
+save 60 10000
+BGSAVE            # manual background snapshot</code></pre>
+<p>Pros: very compact single file, good for backups and shipping to another region, fast restart for large datasets, minimal impact on throughput. Cons: data written after the last snapshot is lost on a crash (minutes), fork can cause latency spikes on large datasets (page-table copying) and extra memory under heavy writes (up to 2x worst case).</p>
+<h4>AOF (append-only file)</h4>
+<p>Every write command is appended to a log, replayed at startup.</p>
+<pre><code>appendonly yes
+appendfsync everysec        # always | everysec | no</code></pre>
+<ul><li><code>always</code>: fsync after each command, safest but slowest.</li><li><code>everysec</code> (default recommendation): at most about 1 second of data lost on a crash; good balance.</li><li><code>no</code>: OS decides, fastest, least safe.</li></ul>
+<p>The log grows, so Redis performs <strong>AOF rewrite</strong> (background, fork-based) to compact it into the minimal command set; Redis 7 uses a multi-part AOF with a base file and incremental files. Pros: much better durability, human-readable, repairable with <code>redis-check-aof</code> (truncated tail). Cons: larger than RDB, slower restart (replay), slightly lower throughput.</p>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th></th><th>RDB</th><th>AOF</th></tr></thead><tbody><tr><td>Durability</td><td>minutes of potential loss</td><td>about 1 s (everysec) or none (always)</td></tr><tr><td>File size</td><td>small</td><td>larger (rewrite reduces)</td></tr><tr><td>Restart time</td><td>fast</td><td>slower</td></tr><tr><td>Write overhead</td><td>low</td><td>moderate</td></tr><tr><td>Backups</td><td>easy, single file</td><td>multiple files, still copyable</td></tr></tbody></table></div>
+<h4>Recommended setups</h4>
+<ul><li><strong>Pure cache</strong>: disable persistence (or RDB occasionally) because data is rebuildable.</li><li><strong>Durable store</strong>: enable <strong>AOF everysec plus RDB</strong>. Redis can write an RDB preamble in the AOF (<code>aof-use-rdb-preamble yes</code>) for faster loading. When both exist at startup Redis loads the AOF as it is more complete.</li><li>Replicas and persistence work together: replicas provide availability, persistence provides recovery from full-cluster loss; consider turning off persistence on the primary and persisting on a replica to reduce latency impact.</li><li>Back up RDB files off-host regularly, test restores, and monitor <code>rdb_last_bgsave_status</code>, <code>aof_last_write_status</code>, fork time (<code>latest_fork_usec</code>) and disk usage.</li></ul>
+<h4>Operational notes</h4>
+<p>Provision memory headroom for copy-on-write, avoid transparent huge pages (they inflate fork cost), place persistence files on fast disks, and remember Redis is not a primary database unless you accept its durability model. Disk-full or slow fsync can stall writes in <code>always</code> mode.</p>
+<h4>Pitfalls</h4>
+<p>Assuming replication equals backup (a bad write replicates instantly), never testing restore, and running RDB on very large datasets without checking fork latency.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What does the appendfsync setting trade off?</li><li>How does Redis perform snapshots without blocking, and what is copy-on-write memory overhead?</li><li>What is the multi-part AOF and RDB preamble format?</li></ul>
+<p><a class="btn primary" href="../#/q/be-79">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-79%3A+Compare+Redis+RDB+point-in-time+snapshots+with+Append-Only+File%E2%80%A6&amp;question-id=be-79&amp;context=Backend+engineer%2C+Gear+2%2C+topic%3A+Caching%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-79.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

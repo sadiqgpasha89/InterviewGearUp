@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you execute atomic rate limiting scripts in Redis using Lua to prevent race conditions? | InterviewGearUp</title>
+<meta name="description" content="A Redis Lua script runs atomically on the single-threaded server, so reading counters, deciding and updating state happen with no interleaving from other…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-91.html">
+<meta property="og:title" content="How do you execute atomic rate limiting scripts in Redis using Lua to prevent race conditions? | InterviewGearUp">
+<meta property="og:description" content="A Redis Lua script runs atomically on the single-threaded server, so reading counters, deciding and updating state happen with no interleaving from other…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-91.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you execute atomic rate limiting scripts in Redis using Lua to prevent race conditions?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · APIs · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A Redis Lua script runs atomically on the single-threaded server, so reading counters, deciding and updating state happen with no interleaving from other clients. Implement token bucket, fixed or sliding windows inside one EVAL, using Redis server time, to eliminate check-then-set races across many application instances.</p></div>
+<h4>Explained in depth</h4>
+<h4>The race</h4>
+<pre><code>app1: GET count -&gt; 99          app2: GET count -&gt; 99
+app1: SET count 100  (allowed)  app2: SET count 100 (allowed)   -&gt; 101 requests admitted against a limit of 100</code></pre>
+<p>Multi-step logic from clients interleaves. <code>MULTI/EXEC</code> batches commands but cannot make decisions based on values read inside it. <strong>Lua scripts</strong> execute as one atomic command: no other command runs until the script finishes.</p>
+<h4>Fixed window (simple)</h4>
+<pre><code>-- KEYS[1] = rate:{user}:{window}; ARGV[1] = limit; ARGV[2] = window seconds
+local current = redis.call(&#39;INCR&#39;, KEYS[1])
+if current == 1 then redis.call(&#39;EXPIRE&#39;, KEYS[1], ARGV[2]) end
+if current &gt; tonumber(ARGV[1]) then return {0, redis.call(&#39;TTL&#39;, KEYS[1])} end
+return {1, tonumber(ARGV[1]) - current}</code></pre>
+<p><code>INCR</code> plus <code>EXPIRE</code> in one script avoids a key that never expires if the client crashes between the two commands.</p>
+<h4>Token bucket (smooth, allows bursts)</h4>
+<pre><code>-- KEYS[1]=bucket; ARGV: capacity, refill_per_sec, cost
+local t = redis.call(&#39;TIME&#39;); local now = t[1] * 1000 + math.floor(t[2] / 1000)      -- server clock, ms
+local cap, rate, cost = tonumber(ARGV[1]), tonumber(ARGV[2]), tonumber(ARGV[3])
+local b = redis.call(&#39;HMGET&#39;, KEYS[1], &#39;tokens&#39;, &#39;ts&#39;)
+local tokens, ts = tonumber(b[1]) or cap, tonumber(b[2]) or now
+tokens = math.min(cap, tokens + (now - ts) / 1000 * rate)
+local allowed = 0
+if tokens &gt;= cost then tokens = tokens - cost; allowed = 1 end
+redis.call(&#39;HSET&#39;, KEYS[1], &#39;tokens&#39;, tokens, &#39;ts&#39;, now)
+redis.call(&#39;PEXPIRE&#39;, KEYS[1], math.ceil(cap / rate * 1000) * 2)
+return { allowed, math.floor(tokens) }</code></pre>
+<p>Calling from a client:</p>
+<pre><code>const sha = await redis.scriptLoad(luaSource);
+const [ok, remaining] = await redis.evalSha(sha, { keys: [`rl:${userId}`], arguments: [&#39;20&#39;, &#39;5&#39;, &#39;1&#39;] });
+if (!ok) res.status(429).set(&#39;Retry-After&#39;, &#39;1&#39;).end();</code></pre>
+<h4>Best practices</h4>
+<ul><li>Use <strong><code>EVALSHA</code></strong> with the script loaded once (fallback to <code>EVAL</code> on <code>NOSCRIPT</code>) to save bandwidth.</li><li>Pass keys in <code>KEYS</code> and values in <code>ARGV</code> so Redis Cluster can route correctly. In Cluster, all keys of a script must live in the same slot (use hash tags).</li><li>Use Redis <code>TIME</code> (not client clocks) to avoid skew, and note that in replicated setups scripts replicate their effects; with Redis 5+ time commands inside scripts are fine.</li><li>Keep scripts <strong>short and O(1)</strong>: a long script blocks every other client.</li><li>Always set TTLs so abandoned keys expire; choose failure behaviour if Redis is unreachable (fail open for availability or closed for protection) and add timeouts and circuit breakers.</li><li>Return the remaining quota and reset time to build <code>RateLimit-*</code> and <code>Retry-After</code> headers.</li><li>Test concurrency with load tests that hammer one key from many clients.</li></ul>
+<h4>Alternatives</h4>
+<p>Redis functions (Redis 7) as a managed script library, the <code>redis-cell</code> module (GCRA algorithm), or API gateway built-in limiters. For multi-region limits consider approximate local counters synchronised periodically.</p>
+<h4>Pitfalls</h4>
+<p>Scripts that scan keys, non-deterministic assumptions in old versions, clock-dependent logic using client time, and forgetting that a failover can lose recent counter updates (acceptable for most limits).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does a GET then SET approach fail under concurrency?</li><li>How do EVALSHA and script caching reduce overhead?</li><li>How do you make Lua rate limiter scripts safe in Redis Cluster?</li></ul>
+<p><a class="btn primary" href="../#/q/be-91">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-91%3A+How+do+you+execute+atomic+rate+limiting+scripts+in+Redis+using+Lua%E2%80%A6&amp;question-id=be-91&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+APIs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-91.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

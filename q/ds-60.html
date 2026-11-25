@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>When do deep neural networks outperform gradient boosted trees on tabular data, and how do you decide which to use? | InterviewGearUp</title>
+<meta name="description" content="Gradient boosted trees remain the default for medium-sized tabular data thanks to accuracy, speed and robustness to messy features. Neural networks win…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-60.html">
+<meta property="og:title" content="When do deep neural networks outperform gradient boosted trees on tabular data, and how do you decide which to use? | InterviewGearUp">
+<meta property="og:description" content="Gradient boosted trees remain the default for medium-sized tabular data thanks to accuracy, speed and robustness to messy features. Neural networks win…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-60.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>When do deep neural networks outperform gradient boosted trees on tabular data, and how do you decide which to use?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 4 (Lead / Staff) · Machine learning algorithms · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Gradient boosted trees remain the default for medium-sized tabular data thanks to accuracy, speed and robustness to messy features. Neural networks win with very large datasets, high-cardinality categorical embeddings, multimodal inputs like text and images, sequences, multi-task learning or the need for end-to-end differentiable components. Benchmark both with the same validation and consider ensembles.</p></div>
+<h4>Explained in depth</h4>
+<h4>Empirical picture</h4>
+<p>Benchmarks (for example Grinsztajn et al. 2022 and later studies) repeatedly find that <strong>tree ensembles (XGBoost, LightGBM, CatBoost, random forests) match or beat deep learning on typical tabular datasets</strong> with up to tens or hundreds of thousands of rows, with less tuning. Newer tabular deep models (TabNet, FT-Transformer, TabPFN, ResNet-style MLPs, NODE) narrow the gap or win in some settings, especially with large data or pretraining.</p>
+<h4>Why trees do well on tabular data</h4>
+<ul><li>Tabular features are <strong>heterogeneous</strong> (counts, categories, ratios) with different scales and meanings; trees handle them without normalisation.</li><li>Many features are <strong>irrelevant or uninformative</strong>; trees ignore them naturally, while MLPs can be hurt.</li><li>Target functions are often <strong>irregular, with sharp thresholds</strong> (rule-like), where trees are better than smooth neural functions.</li><li>Robust to <strong>outliers, missing values and monotone transformations</strong>; fewer hyperparameters; train quickly on CPUs; strong out-of-the-box performance; easy feature importance and SHAP.</li></ul>
+<h4>When neural networks make sense</h4>
+<div class="md-table"><table><thead><tr><th>Situation</th><th>Reason</th></tr></thead><tbody><tr><td><strong>Very large data</strong> (millions to billions of rows)</td><td>networks keep improving with scale and can be trained online</td></tr><tr><td><strong>High-cardinality categorical features</strong> (user IDs, item IDs)</td><td>learned <strong>embeddings</strong> share information and generalise; recommender and CTR models (DeepFM, DLRM, two-tower)</td></tr><tr><td><strong>Multimodal inputs</strong> (text, images, audio plus tabular)</td><td>end-to-end training with pretrained encoders</td></tr><tr><td><strong>Sequences and time-series with rich dynamics</strong></td><td>RNNs, transformers, temporal convolutions</td></tr><tr><td><strong>Multi-task learning / shared representations</strong></td><td>one network predicts several outcomes</td></tr><tr><td><strong>Need for differentiable pipelines</strong></td><td>embedding retrieval, learning-to-rank losses, reinforcement learning, custom losses with constraints</td></tr><tr><td><strong>Transfer or pretraining</strong> (self-supervised on unlabelled tabular rows, foundation models like TabPFN for small data)</td><td>leverages prior knowledge</td></tr><tr><td><strong>Streaming / continual learning</strong></td><td>online gradient updates</td></tr></tbody></table></div>
+<p>Small data (a few hundred rows) often favours regularised linear models or Bayesian methods; <strong>TabPFN-style</strong> models can also be strong.</p>
+<h4>How to decide (practical process)</h4>
+<ol start="1"><li>Establish <strong>simple baselines</strong>: logistic or linear regression, then LightGBM or CatBoost with sensible defaults and early stopping.</li><li>Invest in features and validation first; model class changes yield smaller gains than good data.</li><li>If there is a reason to expect benefits from neural nets (above), try an <strong>MLP with embeddings, batch norm or layer norm, dropout, weight decay, a learning-rate schedule</strong>, quantile or rank transformation of numerics, and early stopping; tune with the same CV.</li><li>Compare with <strong>identical splits and metrics</strong>, include latency, memory, training cost, maintenance, and monitoring needs.</li><li>Consider <strong>ensembling or stacking</strong> (GBDT plus NN predictions often gives a small boost because errors differ) when the gain justifies complexity; or use a neural embedding as features for the GBDT.</li></ol>
+<pre><code>import torch.nn as nn
+class TabNet(nn.Module):
+    def __init__(self, cat_cards, n_num, emb=16, hidden=256):
+        super().__init__()
+        self.embs = nn.ModuleList([nn.Embedding(c, min(emb, (c + 1) // 2)) for c in cat_cards])
+        d = sum(e.embedding_dim for e in self.embs) + n_num
+        self.mlp = nn.Sequential(nn.Linear(d, hidden), nn.ReLU(), nn.Dropout(0.2), nn.Linear(hidden, hidden), nn.ReLU(), nn.Linear(hidden, 1))
+    def forward(self, xcat, xnum):
+        z = torch.cat([e(xcat[:, i]) for i, e in enumerate(self.embs)] + [xnum], dim=1)
+        return self.mlp(z).squeeze(-1)</code></pre>
+<h4>Operational factors</h4>
+<p>Trees: simple deployment, fast inference, easier debugging, native handling of missing values, monotonic constraints. Networks: GPU or optimised serving, sensitivity to preprocessing, more hyperparameters, higher variance across seeds (average seeds), need for careful calibration.</p>
+<h4>Pitfalls</h4>
+<p>Assuming deep learning is automatically better, comparing tuned networks with untuned trees (or the reverse), skipping feature engineering, and ignoring serving cost and interpretability.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why do tree-based models often beat neural networks on tabular data of moderate size?</li><li>How would you use embeddings for high-cardinality categorical features in a neural network?</li><li>When is an ensemble of a GBDT and a neural network worth the added complexity?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-60">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-60%3A+When+do+deep+neural+networks+outperform+gradient+boosted+trees+on%E2%80%A6&amp;question-id=ds-60&amp;context=Data+scientist%2C+Gear+4%2C+topic%3A+Machine+learning+algorithms%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-60.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

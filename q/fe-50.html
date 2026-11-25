@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is Clickjacking and how do `X-Frame-Options` and CSP `frame-ancestors` defend against it? | InterviewGearUp</title>
+<meta name="description" content="Clickjacking embeds your page in an invisible or disguised iframe on an attacker&#39;s site so a victim unknowingly clicks your real buttons. Defend by…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-50.html">
+<meta property="og:title" content="What is Clickjacking and how do `X-Frame-Options` and CSP `frame-ancestors` defend against it? | InterviewGearUp">
+<meta property="og:description" content="Clickjacking embeds your page in an invisible or disguised iframe on an attacker&#39;s site so a victim unknowingly clicks your real buttons. Defend by…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-50.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is Clickjacking and how do `X-Frame-Options` and CSP `frame-ancestors` defend against it?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · Security · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Clickjacking embeds your page in an invisible or disguised iframe on an attacker&#39;s site so a victim unknowingly clicks your real buttons. Defend by forbidding framing with the CSP frame-ancestors directive (and the legacy X-Frame-Options header), and by protecting sensitive actions with confirmation.</p></div>
+<h4>Explained in depth</h4>
+<h4>The attack</h4>
+<p>The attacker loads <code>https://bank.example/transfer</code> in a transparent <code>&lt;iframe&gt;</code> over an enticing button (&quot;Win a prize&quot;). The victim, already logged in, clicks and actually presses &quot;Confirm transfer&quot;. Variants include dragging data, likejacking and cursorjacking. The browser sends the victim&#39;s cookies to the framed page, so authentication does not help.</p>
+<pre><code>&lt;style&gt;iframe { opacity: 0.0001; position: absolute; top: 0; left: 0; width: 100%; height: 100%; }&lt;/style&gt;
+&lt;button&gt;Click for a free gift&lt;/button&gt;
+&lt;iframe src=&quot;https://bank.example/transfer?to=attacker&quot;&gt;&lt;/iframe&gt;</code></pre>
+<h4>Defences</h4>
+<ol start="1"><li><strong>CSP <code>frame-ancestors</code></strong> (modern, preferred):</li></ol>
+<pre><code>Content-Security-Policy: frame-ancestors &#39;none&#39;;                 # never framed
+Content-Security-Policy: frame-ancestors &#39;self&#39;;                 # only same origin
+Content-Security-Policy: frame-ancestors https://partner.example # specific origins</code></pre>
+<p>It supports multiple origins and wildcards and is enforced by the browser.</p>
+<ol start="2"><li><strong><code>X-Frame-Options</code></strong> (legacy but widely supported):</li></ol>
+<pre><code>X-Frame-Options: DENY
+X-Frame-Options: SAMEORIGIN</code></pre>
+<p>Only <code>DENY</code> and <code>SAMEORIGIN</code> are reliable (<code>ALLOW-FROM</code> is obsolete). Send both headers for compatibility; when both exist, <code>frame-ancestors</code> takes precedence in CSP-aware browsers.</p>
+<ol start="3"><li><strong>Cookies</strong>: <code>SameSite=Lax</code> or <code>Strict</code> prevents the framed page from using the session cookie in cross-site frames, which defuses many attacks.</li></ol>
+<ol start="4"><li><strong>Defence in depth</strong> for critical actions: require re-authentication, CAPTCHA or a confirmation step with unpredictable UI, and use <code>Sec-Fetch-Dest: iframe</code> checks on the server.</li></ol>
+<h4>Why not frame-busting scripts</h4>
+<p><code>if (top !== self) top.location = self.location</code> can be defeated with the iframe <code>sandbox</code> attribute (disallowing top navigation), <code>onbeforeunload</code> tricks or double framing. Headers are enforced by the browser before the page renders.</p>
+<h4>Design notes</h4>
+<ul><li>Set the headers on <strong>all HTML responses</strong>, not only login pages. Apply them at the CDN or reverse proxy.</li><li>Widgets meant to be embedded (video players, payment frames) need an explicit allow list in <code>frame-ancestors</code> and should avoid sensitive actions without extra confirmation.</li><li>The <code>sandbox</code> attribute and <code>Permissions-Policy</code> control what your own embedded third-party frames can do, which is the reverse direction.</li></ul>
+<h4>Pitfalls</h4>
+<p>Setting only <code>X-Frame-Options: SAMEORIGIN</code> on a site that must be embedded by partners (then it breaks), forgetting error pages and static HTML, and trusting the <code>Referer</code> header.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do frame-ancestors and X-Frame-Options differ in capability?</li><li>How would you allow framing only by a specific partner origin?</li><li>Why is a JavaScript frame-busting snippet not a reliable defence?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-50">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-50%3A+What+is+Clickjacking+and+how+do+%60X-Frame-Options%60+and+CSP%E2%80%A6&amp;question-id=fe-50&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+Security%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-50.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

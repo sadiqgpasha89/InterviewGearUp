@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do partition keys and sort keys dictate data distribution and query performance in Amazon DynamoDB? | InterviewGearUp</title>
+<meta name="description" content="In DynamoDB the partition key is hashed to choose a physical partition, spreading data and throughput, while the optional sort key orders items within a…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-78.html">
+<meta property="og:title" content="How do partition keys and sort keys dictate data distribution and query performance in Amazon DynamoDB? | InterviewGearUp">
+<meta property="og:description" content="In DynamoDB the partition key is hashed to choose a physical partition, spreading data and throughput, while the optional sort key orders items within a…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-78.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do partition keys and sort keys dictate data distribution and query performance in Amazon DynamoDB?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · Databases · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>In DynamoDB the partition key is hashed to choose a physical partition, spreading data and throughput, while the optional sort key orders items within a partition and enables range queries. Efficient access patterns use Query with a specific partition key; a poor key causes hot partitions and throttling, and scans are expensive.</p></div>
+<h4>Explained in depth</h4>
+<h4>Key schema</h4>
+<ul><li><strong>Partition key (PK)</strong>: hashed to determine the storage partition. Every item with the same PK lives together (an <strong>item collection</strong>).</li><li><strong>Sort key (SK)</strong> (optional): items within a PK are stored sorted by SK, supporting <code>begins_with</code>, <code>between</code>, <code>&lt;</code>, <code>&gt;</code> and ordered, paginated queries.</li><li>A primary key is PK alone or PK+SK combined, and must be unique.</li></ul>
+<h4>Performance and distribution</h4>
+<p>Throughput and storage are split across partitions; each partition supports roughly 3,000 read units and 1,000 write units per second (adaptive capacity helps shift capacity to hot keys, but cannot exceed a single partition&#39;s limits). Therefore:</p>
+<ul><li>Choose a PK with <strong>high cardinality and evenly distributed access</strong> (user id, order id, device id), not low-cardinality values (status, date, country).</li><li>A <strong>hot partition</strong> (one celebrity user, a &quot;today&quot; date key, a single counter item) throttles even when the table&#39;s total capacity is unused.</li></ul>
+<h4>Query versus scan</h4>
+<p><code>Query</code> reads only one partition (PK required, SK conditions optional) and costs by items read. <code>Scan</code> reads everything (expensive). Design access patterns first, then keys:</p>
+<pre><code>PK = USER#123          SK = PROFILE
+PK = USER#123          SK = ORDER#2026-11-25#9001     -&gt; Query PK=USER#123 and SK begins_with ORDER# (all orders, sorted by date)</code></pre>
+<p>Putting time in the SK gives chronological ordering and range queries per entity.</p>
+<h4>Fixing hot keys</h4>
+<ul><li><strong>Write sharding</strong>: append a random or calculated suffix (<code>PK = COUNTER#7</code>, with shards 0 to 9) and aggregate on read.</li><li>Composite keys (<code>tenant#date</code>) to spread load, caching (DAX, CloudFront), batching writes, or moving counters to streams plus aggregation.</li></ul>
+<h4>Secondary indexes</h4>
+<ul><li><strong>GSI</strong> (global secondary index): different PK and SK, any time, eventually consistent, own throughput; use for alternate access patterns (find orders by status or email).</li><li><strong>LSI</strong> (local secondary index): same PK, different SK, created only at table creation, strongly consistent reads possible, shares the 10 GB item collection limit.</li><li>Index projection controls stored attributes (KEYS_ONLY, INCLUDE, ALL) to balance cost and read efficiency. Sparse indexes (items lacking the attribute are not indexed) are a powerful filter.</li></ul>
+<h4>Single-table design</h4>
+<p>Store multiple entity types in one table with generic <code>PK</code> and <code>SK</code> attributes and overloaded GSIs so related items are fetched in one query. It minimises round trips and cost, but needs upfront knowledge of access patterns, is harder to evolve and understand, and tools like NoSQL Workbench help. Multi-table design remains reasonable for simpler needs.</p>
+<h4>Other considerations</h4>
+<p>Item size limit 400 KB, transactions (<code>TransactWriteItems</code>), conditional writes for optimistic locking, TTL for expiry, streams for CDC, on-demand versus provisioned capacity, and partition key design for even distribution at scale.</p>
+<h4>Pitfalls</h4>
+<p>Using a low-cardinality key, relying on scans and filters (filters apply after reading, so cost remains), unbounded item collections, and assuming ad-hoc queries are cheap as in SQL.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you avoid hot partitions and what is write sharding?</li><li>When do you use a GSI versus an LSI?</li><li>How does single-table design work and what are its trade-offs?</li></ul>
+<p><a class="btn primary" href="../#/q/be-78">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-78%3A+How+do+partition+keys+and+sort+keys+dictate+data+distribution+and%E2%80%A6&amp;question-id=be-78&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+Databases%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-78.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do security teams respond to zero-day vulnerabilities using virtual patching at the WAF layer? | InterviewGearUp</title>
+<meta name="description" content="Virtual patching blocks exploitation of a newly disclosed vulnerability at the WAF or edge by deploying a targeted rule that matches the exploit pattern,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-96.html">
+<meta property="og:title" content="How do security teams respond to zero-day vulnerabilities using virtual patching at the WAF layer? | InterviewGearUp">
+<meta property="og:description" content="Virtual patching blocks exploitation of a newly disclosed vulnerability at the WAF or edge by deploying a targeted rule that matches the exploit pattern,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-96.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do security teams respond to zero-day vulnerabilities using virtual patching at the WAF layer?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · AppSec · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Virtual patching blocks exploitation of a newly disclosed vulnerability at the WAF or edge by deploying a targeted rule that matches the exploit pattern, buying time until the real code or dependency fix ships. Roll out in monitor mode, scope the rule to the vulnerable path and parameters, verify with the proof of concept, then enforce and track until the vendor patch is deployed.</p></div>
+<h4>Explained in depth</h4>
+<h4>What virtual patching is</h4>
+<p>When a <strong>zero-day or newly disclosed CVE</strong> affects software you cannot fix immediately (vendor patch not yet released, legacy or third-party system, change freeze, long regression cycle), a <strong>virtual patch</strong> is a compensating control that <strong>inspects traffic and blocks exploit attempts</strong> before they reach the vulnerable code. It sits in a <strong>WAF, API gateway, reverse proxy, RASP agent, IPS or service mesh</strong> and does not change the application. Examples: Log4Shell (<code>${jndi:ldap://...}</code>), Spring4Shell, Confluence OGNL injection, MOVEit and Citrix gateway bugs.</p>
+<h4>Response workflow</h4>
+<ol start="1"><li><strong>Triage</strong>: confirm exposure (asset inventory and SBOM: which apps use the affected version?), check exploit status (CISA KEV, EPSS, active scanning in logs), assess internet reachability and data sensitivity.</li><li><strong>Understand the exploit</strong>: read the advisory and proof of concept, find the <strong>vulnerable endpoint, parameter, header, content type and payload shape</strong>. A good rule targets <strong>the vulnerability mechanism</strong> (for example the specific malicious expression pattern in a particular parameter) rather than one sample payload.</li><li><strong>Write the rule</strong>, scoped as narrowly as possible: URI path and method, parameter name, content type, and the dangerous pattern, using <strong>anchored regular expressions</strong> and normalisation (URL-decode, case, Unicode, comments, nested encodings), because attackers will obfuscate.</li></ol>
+<pre><code># ModSecurity (CRS-style) virtual patch example for a hypothetical OGNL injection on /admin/export
+SecRule REQUEST_URI &quot;@beginsWith /admin/export&quot; \
+  &quot;id:9100101,phase:2,t:none,t:urlDecodeUni,t:lowercase,deny,status:403,log,\
+   msg:&#39;Virtual patch CVE-2026-XXXX OGNL injection&#39;,\
+   chain&quot;
+  SecRule ARGS:template|REQUEST_HEADERS:X-Template &quot;@rx (\$\{|%\{|@java\.lang|#_memberAccess|runtime\.exec)&quot; &quot;t:none&quot;</code></pre>
+<pre><code>// AWS WAF rule sketch: block requests with the exploit string in the query or body of a specific path
+{ &quot;Name&quot;: &quot;vp-cve-2026-xxxx&quot;, &quot;Priority&quot;: 5, &quot;Action&quot;: { &quot;Block&quot;: {} },
+  &quot;Statement&quot;: { &quot;AndStatement&quot;: { &quot;Statements&quot;: [
+    { &quot;ByteMatchStatement&quot;: { &quot;SearchString&quot;: &quot;/admin/export&quot;, &quot;FieldToMatch&quot;: {&quot;UriPath&quot;: {}}, &quot;PositionalConstraint&quot;: &quot;STARTS_WITH&quot;, &quot;TextTransformations&quot;: [{&quot;Priority&quot;:0,&quot;Type&quot;:&quot;NONE&quot;}] } },
+    { &quot;RegexMatchStatement&quot;: { &quot;RegexString&quot;: &quot;(?i)\\$\\{(jndi|env|lower)&quot;, &quot;FieldToMatch&quot;: {&quot;Body&quot;: {&quot;OversizeHandling&quot;:&quot;MATCH&quot;}}, &quot;TextTransformations&quot;: [{&quot;Priority&quot;:0,&quot;Type&quot;:&quot;URL_DECODE&quot;}] } } ] } } }</code></pre>
+<p>Managed rule vendors (Cloudflare, AWS Managed Rules, Akamai, Imperva, F5, Fastly, Azure Front Door) often publish <strong>emergency rules within hours</strong>; enable them and add your own custom rules for specifics.</p>
+<ol start="4"><li><strong>Test</strong>: replay the PoC in a staging environment to prove it is blocked; run regression and functional tests and replay recent production traffic in <strong>count/monitor mode</strong> to measure false positives.</li><li><strong>Deploy in stages</strong>: <strong>log-only (count)</strong> for a short period, then <strong>block</strong>; use canary rollout, rate-limit versions, and keep a documented rollback. Make <strong>emergency changes through IaC and change management</strong> with fast-track approval.</li><li><strong>Monitor and hunt</strong>: watch WAF logs for hits, blocked sources, and bypass attempts (new encodings); <strong>search historical logs</strong> for exploitation attempts <strong>before</strong> the rule existed and investigate possible compromise (virtual patching does not undo earlier exploitation); hunt for indicators such as webshells, unexpected outbound connections, new accounts.</li><li><strong>Layer additional mitigations</strong>: restrict access to affected endpoints (IP allow-list, VPN, authentication), disable the vulnerable feature or module, apply vendor workarounds and configuration flags, egress filtering to block callbacks (LDAP and DNS exfiltration), network segmentation, and runtime protection (RASP, EDR).</li><li><strong>Permanent fix and retirement</strong>: schedule the <strong>real patch or upgrade</strong>, verify with authenticated vulnerability scans and the PoC, then <strong>remove the temporary rule</strong> (or keep it as defence in depth), record the decision and update the SBOM and asset inventory.</li></ol>
+<h4>Strengths and limits</h4>
+<ul><li>Strengths: fast (minutes to hours), no code changes, protects many apps at once, centrally managed, reversible.</li><li>Limits: rules are <strong>signature-based and bypassable</strong> (encoding tricks, HTTP parameter pollution, chunked bodies, alternate content types, different paths to the same code), cannot see <strong>encrypted or non-HTTP</strong> vectors or attacks from inside the network, may cause <strong>false positives</strong> for legitimate traffic, depend on <strong>accurate understanding</strong> of the bug, and do not fix the root cause. Business logic and authorisation flaws are hard to virtually patch.</li><li>Rules must have <strong>owners and expiry dates</strong> to avoid permanent, forgotten exceptions.</li></ul>
+<h4>Pitfalls</h4>
+<p>Blocking only the published PoC string, broad regexes causing outages, skipping retrospective log hunting, forgetting internal and non-WAF paths to the vulnerable service, and never removing or re-reviewing the rule after the real fix.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you write a narrow WAF rule for a deserialization or injection zero-day without blocking legitimate traffic?</li><li>What are the limits of virtual patching and why is it not a substitute for fixing the code?</li><li>How do you roll out and monitor an emergency WAF rule and then retire it after patching?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-96">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-96%3A+How+do+security+teams+respond+to+zero-day+vulnerabilities+using%E2%80%A6&amp;question-id=sec-96&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+AppSec%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-96.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

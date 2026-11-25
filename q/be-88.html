@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are the architectural trade-offs of soft delete flags (`is_deleted`) versus hard deletes with audit tables? | InterviewGearUp</title>
+<meta name="description" content="Soft deletes mark rows with is_deleted or deleted_at and keep them in place, enabling quick undo and preserving references, but they complicate every…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-88.html">
+<meta property="og:title" content="What are the architectural trade-offs of soft delete flags (`is_deleted`) versus hard deletes with audit tables? | InterviewGearUp">
+<meta property="og:description" content="Soft deletes mark rows with is_deleted or deleted_at and keep them in place, enabling quick undo and preserving references, but they complicate every…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-88.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are the architectural trade-offs of soft delete flags (`is_deleted`) versus hard deletes with audit tables?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 2 (Mid-level) · Databases · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Soft deletes mark rows with is_deleted or deleted_at and keep them in place, enabling quick undo and preserving references, but they complicate every query, uniqueness and indexes, and conflict with privacy erasure. Hard deletes remove rows and copy the old data to an audit or archive table, keeping live tables lean and compliant while retaining history.</p></div>
+<h4>Explained in depth</h4>
+<h4>Soft delete</h4>
+<pre><code>ALTER TABLE users ADD COLUMN deleted_at timestamptz;
+UPDATE users SET deleted_at = now() WHERE id = 7;
+SELECT * FROM users WHERE deleted_at IS NULL;</code></pre>
+<p>Pros:</p>
+<ul><li>Easy <strong>undo</strong> and support workflows (&quot;restore my account&quot;).</li><li>Foreign keys and history remain valid; reports can reference deleted entities.</li><li>Fast &quot;delete&quot; (an update) and simple audit of when.</li></ul>
+<p>Cons:</p>
+<ul><li>Every query must remember the filter. A forgotten <code>WHERE deleted_at IS NULL</code> leaks deleted data. Mitigate with views, ORM default scopes, PostgreSQL <strong>row-level security</strong> policies, or partial indexes.</li><li><strong>Unique constraints</strong> break: a deleted user&#39;s email blocks reuse. Use partial unique indexes: <code>CREATE UNIQUE INDEX ON users (email) WHERE deleted_at IS NULL</code>.</li><li>Table and index <strong>bloat</strong>, slower scans and larger backups; needs archival jobs.</li><li>Cascades and referential rules become ambiguous (are children deleted too?).</li><li><strong>Privacy and compliance</strong>: personal data persists, conflicting with GDPR right to erasure unless anonymised or purged on schedule.</li><li>Semantics muddy: statuses such as <code>archived</code>, <code>cancelled</code>, <code>deleted</code> may be confused.</li></ul>
+<h4>Hard delete with audit or archive</h4>
+<pre><code>BEGIN;
+INSERT INTO users_archive SELECT *, now() AS deleted_at, &#39;admin:12&#39; AS deleted_by FROM users WHERE id = 7;
+DELETE FROM users WHERE id = 7;
+COMMIT;
+-- or an AFTER DELETE trigger writing OLD.* into an audit table</code></pre>
+<p>Pros: live tables contain only live rows (simpler queries, smaller indexes, natural unique constraints), foreign keys keep real meaning, easy erasure by purging the archive on retention schedule, better performance. Cons: undo requires copying data back (and restoring relationships), cascading rules must be handled, triggers or code must reliably capture history, and archive schemas must evolve with the live schema.</p>
+<h4>Choosing</h4>
+<div class="md-table"><table><thead><tr><th>Requirement</th><th>Prefer</th></tr></thead><tbody><tr><td>Frequent restore by users, short window</td><td>soft delete (with TTL purge job)</td></tr><tr><td>Legal retention or full change history</td><td>audit table, temporal tables or event log</td></tr><tr><td>Privacy erasure, high-volume tables</td><td>hard delete plus archive with retention</td></tr><tr><td>Strong referential integrity</td><td>hard delete with RESTRICT or cascade</td></tr></tbody></table></div>
+<h4>Hybrid practice</h4>
+<p>Soft delete for a <strong>grace period</strong> (30 days) to allow recovery, then a background job moves rows to an archive or physically deletes them, anonymising personal data. Combine with database-level mechanisms: PostgreSQL row-level security or views to hide deleted rows, system-versioned temporal tables (SQL Server, MariaDB) or <code>pgaudit</code>/Debezium CDC to capture history without custom triggers.</p>
+<h4>Pitfalls</h4>
+<p>Leaking deleted rows through joins and reports, unique key collisions, soft deletes on huge tables never purged, cascading soft deletes implemented inconsistently, and treating soft deletion as backup (it is not).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do unique constraints work with soft-deleted rows?</li><li>How do you satisfy GDPR erasure with each approach?</li><li>What are alternatives such as temporal tables or event sourcing?</li></ul>
+<p><a class="btn primary" href="../#/q/be-88">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-88%3A+What+are+the+architectural+trade-offs+of+soft+delete+flags%E2%80%A6&amp;question-id=be-88&amp;context=Backend+engineer%2C+Gear+2%2C+topic%3A+Databases%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-88.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

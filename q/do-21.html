@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare Layer 4 (TCP/UDP) and Layer 7 (HTTP) load balancing algorithms and use cases. | InterviewGearUp</title>
+<meta name="description" content="Layer 4 load balancers forward TCP or UDP connections based on IP and port without inspecting content, so they are very fast and protocol-agnostic. Layer…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-21.html">
+<meta property="og:title" content="Compare Layer 4 (TCP/UDP) and Layer 7 (HTTP) load balancing algorithms and use cases. | InterviewGearUp">
+<meta property="og:description" content="Layer 4 load balancers forward TCP or UDP connections based on IP and port without inspecting content, so they are very fast and protocol-agnostic. Layer…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-21.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare Layer 4 (TCP/UDP) and Layer 7 (HTTP) load balancing algorithms and use cases.</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 2 (Mid-level) · Networking · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Layer 4 load balancers forward TCP or UDP connections based on IP and port without inspecting content, so they are very fast and protocol-agnostic. Layer 7 load balancers terminate HTTP, read headers, paths and cookies, and make routing decisions, enabling content-based routing, TLS offload, caching, header rewriting and per-request balancing, at higher CPU cost.</p></div>
+<h4>Explained in depth</h4>
+<h4>Layer 4 (transport)</h4>
+<p>Operates on TCP and UDP using IP addresses and ports. Implementations: AWS NLB, GCP network LB, HAProxy in TCP mode, IPVS or kube-proxy, LVS, Envoy TCP proxy, Maglev-style ECMP and eBPF (Cilium, Katran).</p>
+<ul><li>Either <strong>NAT or direct server return (DSR)</strong> forwarding, or a full TCP proxy.</li><li>Does not parse application data, so it handles any protocol (databases, MQTT, SMTP, gRPC as raw TCP, TLS passthrough).</li><li>Very high throughput and low latency; preserves source IP in some modes.</li><li>Cannot route by URL, header or cookie; health checks are TCP connect or simple probes.</li></ul>
+<h4>Layer 7 (application)</h4>
+<p>Terminates the client connection, parses HTTP/gRPC, then opens separate connections to backends. Implementations: AWS ALB, NGINX, HAProxy HTTP mode, Envoy, Traefik, Istio ingress, Cloudflare.</p>
+<ul><li><strong>Content routing</strong>: by host, path, header, query, method; canary and A/B routing; URL rewrite and redirects.</li><li>TLS termination and re-encryption, WAF, compression, caching, rate limiting, authentication, retries and circuit breaking, observability by route and status code.</li><li>Per-request balancing even over multiplexed HTTP/2 connections.</li><li>More CPU and memory; the balancer must understand the protocol.</li></ul>
+<h4>Algorithms</h4>
+<div class="md-table"><table><thead><tr><th>Algorithm</th><th>Description</th><th>Best for</th></tr></thead><tbody><tr><td>Round robin</td><td>rotate through backends</td><td>homogeneous stateless backends</td></tr><tr><td>Weighted round robin</td><td>proportion by capacity</td><td>mixed instance sizes, canaries</td></tr><tr><td>Least connections</td><td>pick fewest active connections</td><td>long-lived or uneven request durations</td></tr><tr><td>Least response time</td><td>combines latency and connections</td><td>heterogeneous latency</td></tr><tr><td>Power of two choices</td><td>sample two, pick the less loaded</td><td>large fleets, avoids herd effects</td></tr><tr><td>IP hash or source hash</td><td>same client maps to the same backend</td><td>simple stickiness at L4</td></tr><tr><td>Consistent hashing (ring, Maglev)</td><td>minimal remapping when backends change</td><td>caches, sharded services, stateful affinity</td></tr><tr><td>Random</td><td>uniform random</td><td>large pools, simplicity</td></tr></tbody></table></div>
+<p><strong>Session affinity</strong> at L7 uses cookies (<code>stickiness</code>) or header hashing; at L4 it uses source IP (inaccurate behind NAT). Prefer stateless services plus shared session stores over stickiness.</p>
+<h4>Health checks</h4>
+<p>L4: TCP connect or UDP probe (only proves the port accepts). L7: HTTP request to <code>/healthz</code> expecting a status and body, with thresholds and intervals; can detect application-level failure. Use slow-start and connection draining for graceful rotation.</p>
+<h4>Practical guidance</h4>
+<ul><li>Use L4 for databases, message brokers, raw TCP and very high connection rates, or as the first tier (NLB in front of L7 proxies) to preserve client IPs and absorb volume.</li><li>Use L7 for web and API traffic needing routing, security and observability. Common architecture: global DNS or anycast, L4 edge, L7 ingress, service mesh inside.</li><li>For gRPC and HTTP/2, an L4 balancer balances per connection (one long connection can pin a backend), so use L7 or client-side balancing to spread requests.</li><li>Preserve client IP via <code>X-Forwarded-For</code> or PROXY protocol, and size connection and idle timeouts consistently across tiers.</li></ul>
+<h4>Pitfalls</h4>
+<p>Idle timeout mismatches (resets), uneven load with long-lived connections on round robin, health checks that pass while the app is broken, and a single load balancer without redundancy.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Which algorithms suit long-lived connections versus short requests?</li><li>How does sticky session or consistent hashing work?</li><li>How do health checks differ between L4 and L7?</li></ul>
+<p><a class="btn primary" href="../#/q/do-21">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-21%3A+Compare+Layer+4+%28TCP%2FUDP%29+and+Layer+7+%28HTTP%29+load+balancing%E2%80%A6&amp;question-id=do-21&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+2%2C+topic%3A+Networking%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-21.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

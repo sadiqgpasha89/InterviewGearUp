@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are Kubernetes Admission Webhooks (Mutating and Validating) and how does OPA Gatekeeper use them? | InterviewGearUp</title>
+<meta name="description" content="Admission webhooks are HTTPS callbacks the API server invokes during admission, after authentication and authorization and before persistence. Mutating…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-70.html">
+<meta property="og:title" content="What are Kubernetes Admission Webhooks (Mutating and Validating) and how does OPA Gatekeeper use them? | InterviewGearUp">
+<meta property="og:description" content="Admission webhooks are HTTPS callbacks the API server invokes during admission, after authentication and authorization and before persistence. Mutating…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-70.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are Kubernetes Admission Webhooks (Mutating and Validating) and how does OPA Gatekeeper use them?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · Kubernetes · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Admission webhooks are HTTPS callbacks the API server invokes during admission, after authentication and authorization and before persistence. Mutating webhooks can modify objects (inject sidecars, defaults), validating webhooks accept or reject them. OPA Gatekeeper is a validating webhook controller that evaluates ConstraintTemplates written in Rego against requests to enforce cluster policy.</p></div>
+<h4>Explained in depth</h4>
+<h4>Request path</h4>
+<pre><code>kubectl / client -&gt; API server: authentication -&gt; authorization (RBAC) -&gt; MUTATING admission (webhooks, built-ins) -&gt; schema validation -&gt; VALIDATING admission (webhooks, built-ins) -&gt; persist to etcd</code></pre>
+<p>Mutating webhooks run first (and may be re-invoked), then validating webhooks see the final object. Built-in admission plugins include LimitRanger, ResourceQuota, PodSecurity and ServiceAccount.</p>
+<h4>Registering a webhook</h4>
+<pre><code>apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata: { name: policy-check }
+webhooks:
+- name: pods.policy.example.com
+  admissionReviewVersions: [&quot;v1&quot;]
+  sideEffects: None
+  failurePolicy: Fail            # Fail closed (reject if webhook is down) or Ignore (fail open)
+  timeoutSeconds: 5
+  matchPolicy: Equivalent
+  rules:
+  - { apiGroups: [&quot;&quot;], apiVersions: [&quot;v1&quot;], operations: [&quot;CREATE&quot;,&quot;UPDATE&quot;], resources: [&quot;pods&quot;] }
+  namespaceSelector: { matchExpressions: [{ key: policy, operator: NotIn, values: [&quot;skip&quot;] }] }
+  clientConfig: { service: { name: webhook, namespace: policy, path: /validate }, caBundle: &lt;base64-CA&gt; }</code></pre>
+<p>The API server sends an <code>AdmissionReview</code> JSON (object, old object, user, operation) and expects <code>allowed: true/false</code> (with a message), plus a JSON patch for mutating webhooks.</p>
+<h4>Use cases</h4>
+<p><strong>Mutating</strong>: inject Istio or Linkerd sidecars, add default labels, resource requests, imagePullSecrets, node selectors, Vault agent annotations. <strong>Validating</strong>: require labels and owners, block <code>latest</code> tags, enforce signed images, deny privileged containers and hostPath, restrict registries, enforce resource limits, policy-as-code compliance.</p>
+<h4>OPA Gatekeeper</h4>
+<p>Gatekeeper packages OPA as a Kubernetes-native controller. You define <strong>ConstraintTemplates</strong> (Rego policy plus a CRD schema) and <strong>Constraints</strong> (instances with parameters and match scope):</p>
+<pre><code>apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata: { name: k8srequiredlabels }
+spec:
+  crd: { spec: { names: { kind: K8sRequiredLabels }, validation: { openAPIV3Schema: { properties: { labels: { type: array, items: { type: string } } } } } } }
+  targets:
+  - target: admission.k8s.gatekeeper.sh
+    rego: |
+      package k8srequiredlabels
+      violation[{&quot;msg&quot;: msg}] {
+        missing := {l | l := input.parameters.labels[_]} - {k | input.review.object.metadata.labels[k]}
+        count(missing) &gt; 0
+        msg := sprintf(&quot;missing labels: %v&quot;, [missing])
+      }
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sRequiredLabels
+metadata: { name: require-team-label }
+spec:
+  enforcementAction: deny          # or warn, dryrun
+  match: { kinds: [{ apiGroups: [&quot;&quot;], kinds: [&quot;Namespace&quot;] }] }
+  parameters: { labels: [&quot;team&quot;] }</code></pre>
+<p>Features: <strong>audit</strong> controller periodically scans existing resources and reports violations in constraint status, <code>dryrun</code> and <code>warn</code> modes for staged rollout, external data providers, mutation (Assign, AssignMetadata), and a policy library.</p>
+<h4>Reliability and security</h4>
+<ul><li>A failing webhook with <code>failurePolicy: Fail</code> can block deployments or even system pods; exclude <code>kube-system</code> and the webhook&#39;s own namespace, run multiple replicas with PodDisruptionBudgets, set short timeouts, and monitor latency.</li><li>Secure with TLS and rotated certificates (cert-manager), and restrict who can edit webhook configurations (they are powerful).</li><li>Webhooks must be idempotent, fast and side-effect free (<code>sideEffects: None</code>).</li></ul>
+<h4>Alternatives</h4>
+<p><strong>ValidatingAdmissionPolicy</strong> (built-in, CEL expressions, no webhook, GA in 1.30) and MutatingAdmissionPolicy, <strong>Kyverno</strong> (YAML-based policies, generation and verification of images), and PodSecurity admission for baseline standards.</p>
+<h4>Pitfalls</h4>
+<p>Webhook outages locking clusters, loops between mutating webhooks, policies applied without dry run causing outages, and treating admission control as a substitute for runtime security.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What happens if a webhook is unavailable and how do failurePolicy and timeouts affect cluster stability?</li><li>How do ValidatingAdmissionPolicy (CEL) and Kyverno compare to Gatekeeper?</li><li>How does audit mode find existing violations?</li></ul>
+<p><a class="btn primary" href="../#/q/do-70">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-70%3A+What+are+Kubernetes+Admission+Webhooks+%28Mutating+and+Validating%29+and%E2%80%A6&amp;question-id=do-70&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+Kubernetes%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-70.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

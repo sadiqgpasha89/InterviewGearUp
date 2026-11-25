@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How would you build a text classification system, comparing TF-IDF with linear models, pretrained embeddings and fine-tuned transformers? | InterviewGearUp</title>
+<meta name="description" content="Start with a TF-IDF plus logistic regression baseline, then try frozen sentence embeddings with a simple classifier, and fine-tune a transformer when…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-45.html">
+<meta property="og:title" content="How would you build a text classification system, comparing TF-IDF with linear models, pretrained embeddings and fine-tuned transformers? | InterviewGearUp">
+<meta property="og:description" content="Start with a TF-IDF plus logistic regression baseline, then try frozen sentence embeddings with a simple classifier, and fine-tune a transformer when…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-45.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How would you build a text classification system, comparing TF-IDF with linear models, pretrained embeddings and fine-tuned transformers?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 3 (Senior) · Natural language processing · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Start with a TF-IDF plus logistic regression baseline, then try frozen sentence embeddings with a simple classifier, and fine-tune a transformer when accuracy justifies the cost. Invest in labelling quality, stratified time-aware evaluation, error analysis, and consider zero-shot or few-shot LLMs when labels are scarce, weighing latency, cost and privacy.</p></div>
+<h4>Explained in depth</h4>
+<h4>Frame the problem</h4>
+<p>Define classes (single or multi-label), business cost of errors, latency and volume, languages, data privacy, and how labels will be obtained. Example: routing support tickets into 12 categories with a 200 ms budget.</p>
+<h4>Data and labels</h4>
+<ul><li>Collect representative text; deduplicate; split by <strong>time or by group</strong> (customer, thread) to avoid leakage (near-duplicate messages in train and test inflate scores).</li><li>Label quality dominates model choice: write clear guidelines, double-label a sample and measure <strong>inter-annotator agreement (Cohen&#39;s kappa)</strong>, resolve disagreements, and review label noise with tools such as cleanlab.</li><li>Use <strong>active learning</strong> to label the most informative examples, weak supervision (rules, distant labels), and LLMs for pre-labelling with human review.</li><li>Handle class imbalance with class weights, stratified sampling, and per-class metrics.</li></ul>
+<h4>Modelling ladder</h4>
+<div class="md-table"><table><thead><tr><th>Stage</th><th>Approach</th><th>When</th></tr></thead><tbody><tr><td>1</td><td><strong>TF-IDF (word and character n-grams) + logistic regression or linear SVM</strong></td><td>fast, strong baseline, interpretable, cheap</td></tr><tr><td>2</td><td><strong>Pretrained sentence embeddings (SBERT, E5, OpenAI-type embeddings) + logistic regression or gradient boosting</strong></td><td>little labelled data, semantic similarity, easy</td></tr><tr><td>3</td><td><strong>Fine-tune a transformer</strong> (BERT, RoBERTa, DeBERTa, domain models)</td><td>best accuracy with a few thousand labels, nuanced language</td></tr><tr><td>4</td><td><strong>Zero-shot or few-shot LLM prompts</strong> (structured output)</td><td>no labels, changing taxonomy, prototype; check cost and consistency</td></tr><tr><td>5</td><td><strong>Distil</strong> an LLM or large model into a small student for production</td><td>LLM-quality at low latency and cost</td></tr></tbody></table></div>
+<p>Also consider rules or keyword features for rare high-precision classes, and a <strong>hybrid</strong> where cheap models handle easy cases and uncertain ones escalate to a larger model or human.</p>
+<pre><code>from sklearn.pipeline import make_pipeline
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+clf = make_pipeline(TfidfVectorizer(ngram_range=(1, 2), min_df=3, sublinear_tf=True),
+                    LogisticRegression(C=4, max_iter=2000, class_weight=&quot;balanced&quot;))
+clf.fit(train_text, train_y)</code></pre>
+<h4>Preprocessing</h4>
+<p>Light cleaning (lowercasing may hurt for transformers; keep cased models if casing matters), handling URLs, emojis, numbers, multilingual text, truncation of long documents (chunk, then aggregate), and privacy scrubbing (PII).</p>
+<h4>Evaluation and error analysis</h4>
+<p>Use macro and per-class precision, recall and F1, a <strong>confusion matrix</strong>, calibration for confidence thresholds, and <strong>slice metrics</strong> (language, channel, length). Read misclassified examples: many errors reveal ambiguous labels, missing classes or taxonomy overlap rather than model weakness. For LLM classifiers, build a fixed test set, measure consistency across prompt versions and temperature, and watch for prompt sensitivity.</p>
+<h4>Deployment</h4>
+<p>Latency and cost (batching, quantisation, ONNX, distillation, caching), confidence thresholds with human fallback, drift monitoring (new topics and slang), periodic relabelling and retraining, versioned taxonomy, and feedback capture from agents. For LLMs: guardrails against prompt injection, output schema validation, and logging.</p>
+<h4>Pitfalls</h4>
+<p>Jumping to a large model before a baseline, random splits with near-duplicates, ignoring label noise, and reporting accuracy on imbalanced classes.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>When does TF-IDF with logistic regression beat or match a fine-tuned transformer?</li><li>How do you get labels efficiently, and how do you check label quality?</li><li>How do you evaluate and monitor an LLM-based classifier used in production?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-45">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-45%3A+How+would+you+build+a+text+classification+system%2C+comparing+TF-IDF%E2%80%A6&amp;question-id=ds-45&amp;context=Data+scientist%2C+Gear+3%2C+topic%3A+Natural+language+processing%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-45.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

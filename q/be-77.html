@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>When should you model one-to-many relationships as embedded documents versus referenced IDs in MongoDB? | InterviewGearUp</title>
+<meta name="description" content="Embed related data in the parent document when it is owned by the parent, read together, bounded in size and rarely updated independently. Reference by…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-77.html">
+<meta property="og:title" content="When should you model one-to-many relationships as embedded documents versus referenced IDs in MongoDB? | InterviewGearUp">
+<meta property="og:description" content="Embed related data in the parent document when it is owned by the parent, read together, bounded in size and rarely updated independently. Reference by…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-77.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>When should you model one-to-many relationships as embedded documents versus referenced IDs in MongoDB?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 2 (Mid-level) · Databases · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Embed related data in the parent document when it is owned by the parent, read together, bounded in size and rarely updated independently. Reference by ID when children are large or unbounded, shared across many parents, queried on their own or updated frequently. Hybrid designs copy a few fields and reference the rest.</p></div>
+<h4>Explained in depth</h4>
+<h4>Principle</h4>
+<p>MongoDB models for <strong>how the application reads and writes</strong>, not for normalisation. Data accessed together should be stored together to avoid joins and give single-document atomicity.</p>
+<h4>Embedding</h4>
+<pre><code>{ &quot;_id&quot;: 1, &quot;title&quot;: &quot;Order 1001&quot;, &quot;customer&quot;: { &quot;id&quot;: 7, &quot;name&quot;: &quot;Ada&quot; },
+  &quot;items&quot;: [ { &quot;sku&quot;: &quot;A1&quot;, &quot;qty&quot;: 2, &quot;price&quot;: 9.99 }, { &quot;sku&quot;: &quot;B2&quot;, &quot;qty&quot;: 1, &quot;price&quot;: 5.00 } ] }</code></pre>
+<p>Choose when:</p>
+<ul><li>Relationship is <strong>one-to-few</strong> and bounded (order lines, addresses, phone numbers).</li><li>Children <strong>belong to</strong> the parent and are read with it (a blog post and its tags).</li><li>Child data rarely changes independently, or a <strong>snapshot</strong> is desired (price at purchase time).</li><li>You need atomic updates across parent and children (single-document operations are atomic).</li></ul>
+<p>Benefits: one read, locality, no joins, simple code. Risks: documents grow, updates rewrite larger documents, duplication when data is repeated in many parents.</p>
+<h4>Referencing</h4>
+<pre><code>{ &quot;_id&quot;: &quot;post1&quot;, &quot;title&quot;: &quot;...&quot;, &quot;author_id&quot;: 7 }
+{ &quot;_id&quot;: &quot;comment9&quot;, &quot;post_id&quot;: &quot;post1&quot;, &quot;text&quot;: &quot;...&quot;, &quot;created&quot;: &quot;...&quot; }</code></pre>
+<p>Choose when:</p>
+<ul><li>The relationship is <strong>one-to-many with a large or unbounded</strong> number of children (comments, events, log entries) or <strong>many-to-many</strong>.</li><li>Children are <strong>queried independently</strong>, paginated, or updated frequently.</li><li>Child data is shared across many parents and must stay consistent in one place (a product referenced by thousands of orders).</li><li>Embedding would approach the <strong>16 MB document limit</strong> or make working-set memory inefficient.</li></ul>
+<p>Costs: extra queries or <code>$lookup</code> aggregation joins (which are slower and, in sharded clusters, restricted), and no cross-document atomicity unless you use multi-document transactions (more overhead).</p>
+<h4>Hybrid patterns</h4>
+<ul><li><strong>Extended reference</strong>: embed a few frequently needed fields (author name, avatar) and keep the full record elsewhere by id.</li><li><strong>Subset pattern</strong>: embed only the latest 10 comments or reviews in the parent and store the rest in a separate collection.</li><li><strong>Bucket pattern</strong> for time series: group many measurements per document.</li><li><strong>Computed pattern</strong>: store precomputed counts or totals updated on write.</li><li>Keep duplicated fields in sync via update logic, change streams or background jobs, and accept some staleness where appropriate.</li></ul>
+<h4>Decision checklist</h4>
+<ol start="1"><li>How many children per parent and does it have a bound?</li><li>Are they fetched together with the parent most of the time?</li><li>Do they change independently or have their own lifecycle?</li><li>Is atomicity across them required?</li><li>Is data shared among many parents?</li></ol>
+<h4>Pitfalls</h4>
+<p>Unbounded arrays that cause document growth and slow updates, embedding highly volatile data, referencing everything like a relational schema and then joining constantly, and forgetting indexes on the reference fields (<code>post_id</code>).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the 16 MB document limit and the unbounded array antipattern?</li><li>How do $lookup joins perform compared to embedding?</li><li>How do you keep duplicated embedded data consistent?</li></ul>
+<p><a class="btn primary" href="../#/q/be-77">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-77%3A+When+should+you+model+one-to-many+relationships+as+embedded%E2%80%A6&amp;question-id=be-77&amp;context=Backend+engineer%2C+Gear+2%2C+topic%3A+Databases%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-77.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

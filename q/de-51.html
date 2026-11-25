@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain Apache Flink time semantics: Event Time versus Processing Time versus Ingestion Time. | InterviewGearUp</title>
+<meta name="description" content="Event time is when the event happened at the source, processing time is the wall clock of the operator processing it, and ingestion time is when Flink…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-51.html">
+<meta property="og:title" content="Explain Apache Flink time semantics: Event Time versus Processing Time versus Ingestion Time. | InterviewGearUp">
+<meta property="og:description" content="Event time is when the event happened at the source, processing time is the wall clock of the operator processing it, and ingestion time is when Flink…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-51.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain Apache Flink time semantics: Event Time versus Processing Time versus Ingestion Time.</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Streaming · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Event time is when the event happened at the source, processing time is the wall clock of the operator processing it, and ingestion time is when Flink first receives the record. Event time gives correct, reproducible results despite delays and disorder, using watermarks to track progress. Processing time is simplest and lowest latency but nondeterministic.</p></div>
+<h4>Explained in depth</h4>
+<h4>The three notions of time</h4>
+<ul><li><strong>Event time</strong>: a timestamp embedded in the record (click timestamp, sensor reading time), assigned by the producer or device.</li><li><strong>Processing time</strong>: the system clock of the machine running the operator when it processes the record.</li><li><strong>Ingestion time</strong>: the time the record enters Flink at the source operator (between the other two). Since Flink 1.12 it is rarely used and event time with watermarks is the default.</li></ul>
+<h4>Why event time matters</h4>
+<p>Networks delay and reorder events. A mobile app may buffer clicks offline and upload an hour later. If you count clicks per minute in <strong>processing time</strong>, delayed events land in the wrong window, and results change with load, backlogs and restarts (reprocessing a replayed Kafka topic gives different numbers). With <strong>event time</strong>, an event is assigned to the window it logically belongs to, so results are <strong>deterministic and reproducible</strong>, including for backfills.</p>
+<h4>Watermarks</h4>
+<p>In event time the system needs to know when it has seen &quot;enough&quot; data for a window. A <strong>watermark(t)</strong> is a signal that no more events with timestamp ≤ t are expected. When a watermark passes the end of a window, the window fires.</p>
+<pre><code>WatermarkStrategy&lt;ClickEvent&gt; strategy = WatermarkStrategy
+    .&lt;ClickEvent&gt;forBoundedOutOfOrderness(Duration.ofSeconds(10))      // tolerate 10 s of disorder
+    .withTimestampAssigner((e, ts) -&gt; e.getEventTimeMillis())
+    .withIdleness(Duration.ofMinutes(1));                                 // ignore idle partitions
+DataStream&lt;ClickEvent&gt; clicks = env.fromSource(kafkaSource, strategy, &quot;clicks&quot;);
+clicks.keyBy(ClickEvent::getUserId)
+      .window(TumblingEventTimeWindows.of(Time.minutes(1)))
+      .allowedLateness(Time.minutes(5))
+      .sideOutputLateData(lateTag)
+      .aggregate(new CountAgg());</code></pre>
+<p>Watermarks are generated per source partition and the operator uses the <strong>minimum</strong> across inputs. An idle partition would hold the watermark back, so use <code>withIdleness</code>.</p>
+<h4>Late data</h4>
+<p>Options: tolerate it with bounded out-of-orderness (bigger delay = higher latency), set <strong>allowed lateness</strong> (window re-fires with updates), route to a <strong>side output</strong> for separate handling or reconciliation, or drop. In SQL: <code>WATERMARK FOR event_time AS event_time - INTERVAL &#39;10&#39; SECOND</code>.</p>
+<h4>Processing time</h4>
+<p>Windows and timers fire based on wall-clock. Pros: simple, no watermarks, lowest latency, no state waiting for stragglers. Cons: results depend on arrival timing, throughput, backpressure, and replays; not reproducible. Suitable for approximate monitoring, rate limiting and heartbeats where exact event semantics do not matter.</p>
+<h4>Choosing</h4>
+<div class="md-table"><table><thead><tr><th>Use case</th><th>Time</th></tr></thead><tbody><tr><td>Billing, financial aggregates, user sessions, analytics matching batch results</td><td>event time</td></tr><tr><td>Real-time dashboards where freshness beats exactness, timeouts</td><td>processing time</td></tr><tr><td>Quick prototypes</td><td>ingestion time (legacy)</td></tr></tbody></table></div>
+<h4>Pitfalls</h4>
+<p>Watermark delay too small (many late drops) or too large (high latency and state growth), forgetting idleness settings so windows never close, using event timestamps in the future, and clock skew across producers.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do watermarks and allowed lateness handle late events?</li><li>How does Flink handle idle partitions that hold back watermarks?</li><li>Which time semantic would you choose for billing and for live monitoring?</li></ul>
+<p><a class="btn primary" href="../#/q/de-51">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-51%3A+Explain+Apache+Flink+time+semantics%3A+Event+Time+versus+Processing%E2%80%A6&amp;question-id=de-51&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Streaming%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-51.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

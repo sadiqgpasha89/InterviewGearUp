@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does non-blocking asynchronous I/O (epoll/kqueue) enable high concurrency in event-driven runtimes? | InterviewGearUp</title>
+<meta name="description" content="Event-driven runtimes use OS readiness APIs (epoll on Linux, kqueue on BSD and macOS, IOCP on Windows) so a single thread can watch thousands of sockets…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-55.html">
+<meta property="og:title" content="How does non-blocking asynchronous I/O (epoll/kqueue) enable high concurrency in event-driven runtimes? | InterviewGearUp">
+<meta property="og:description" content="Event-driven runtimes use OS readiness APIs (epoll on Linux, kqueue on BSD and macOS, IOCP on Windows) so a single thread can watch thousands of sockets…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-55.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does non-blocking asynchronous I/O (epoll/kqueue) enable high concurrency in event-driven runtimes?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · Concurrency · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Event-driven runtimes use OS readiness APIs (epoll on Linux, kqueue on BSD and macOS, IOCP on Windows) so a single thread can watch thousands of sockets and be notified only when one is ready to read or write. Non-blocking sockets plus an event loop remove the need for a thread per connection, solving the C10K problem.</p></div>
+<h4>Explained in depth</h4>
+<h4>Thread-per-connection limits</h4>
+<p>Blocking I/O parks a thread on each socket read. At 10,000 connections that means 10,000 stacks and context switches, mostly idle. The cost is memory and scheduling, not bandwidth.</p>
+<h4>Readiness notification</h4>
+<p>Old interfaces <code>select</code> and <code>poll</code> pass the whole list of file descriptors on every call and scan it (O(n)). <strong>epoll</strong> keeps the interest set in the kernel:</p>
+<pre><code>int ep = epoll_create1(0);
+epoll_ctl(ep, EPOLL_CTL_ADD, listen_fd, &amp;(struct epoll_event){ .events = EPOLLIN, .data.fd = listen_fd });
+for (;;) {
+    int n = epoll_wait(ep, events, MAX, -1);          // sleeps until something is ready, returns only ready fds
+    for (int i = 0; i &lt; n; i++) handle(events[i]);    // accept, read until EAGAIN, write
+}</code></pre>
+<p>Cost scales with the number of <strong>ready</strong> descriptors, not the number watched (O(1) per event). <strong>kqueue</strong> (BSD, macOS) offers similar semantics with a more general event filter model; <strong>IOCP</strong> (Windows) is completion-based: the OS performs the I/O and signals completion.</p>
+<h4>Event loop pattern</h4>
+<ol start="1"><li>Set sockets to <strong>non-blocking</strong> mode; operations return <code>EAGAIN</code> instead of waiting.</li><li>Register interest in readability or writability.</li><li>Wait for events, then run the handler (callback, promise continuation or coroutine resume).</li><li>The handler does a small amount of work and returns to the loop.</li></ol>
+<p>This is the heart of <strong>Node.js</strong> (libuv), <strong>Nginx</strong>, <strong>Redis</strong>, <strong>Netty</strong>, <strong>Python asyncio</strong>, <strong>Tokio</strong> and the Go netpoller (which parks goroutines and resumes them when epoll reports readiness, giving a synchronous programming model on top).</p>
+<h4>Level versus edge triggering</h4>
+<ul><li><strong>Level-triggered</strong> (default): <code>epoll_wait</code> keeps reporting a descriptor as ready while data remains. Simple and safe.</li><li><strong>Edge-triggered</strong> (<code>EPOLLET</code>): notifies only on state changes, so the application must read until <code>EAGAIN</code>; lower syscall overhead, easier to lose wakeups if mishandled. <code>EPOLLONESHOT</code> and <code>EPOLLEXCLUSIVE</code> help with multi-threaded loops and the thundering herd.</li></ul>
+<h4>Strengths and limits</h4>
+<ul><li>Excellent for many mostly idle connections (chat, websockets, proxies, API gateways) with low memory usage.</li><li><strong>CPU-bound work blocks the loop</strong>: one slow handler delays every other connection. Offload to worker threads or processes, and keep handlers short.</li><li><strong>Regular files</strong> are always &quot;ready&quot; in epoll, so file I/O needs thread pools (libuv) or <strong>io_uring</strong>, which uses shared submission and completion rings to batch asynchronous operations for files and sockets with fewer syscalls.</li><li>Scale across cores by running one loop per core (SO_REUSEPORT, cluster mode, per-core reactors) instead of one global loop.</li></ul>
+<h4>Pitfalls</h4>
+<p>Blocking calls (synchronous DNS, crypto, JSON of huge bodies) in handlers, unbounded buffering of slow clients (apply backpressure), forgetting to drain edge-triggered sockets, and thinking async I/O makes computation faster.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do level-triggered and edge-triggered epoll differ?</li><li>Why does a CPU-heavy callback block a Node.js event loop?</li><li>How does io_uring change the model compared with epoll?</li></ul>
+<p><a class="btn primary" href="../#/q/be-55">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-55%3A+How+does+non-blocking+asynchronous+I%2FO+%28epoll%2Fkqueue%29+enable+high%E2%80%A6&amp;question-id=be-55&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+Concurrency%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-55.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you secure outgoing and incoming webhooks using HMAC signatures and timestamp replay checks? | InterviewGearUp</title>
+<meta name="description" content="Secure webhooks with a shared secret and an HMAC-SHA256 signature computed over the raw body plus a timestamp. The receiver recomputes the signature,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-70.html">
+<meta property="og:title" content="How do you secure outgoing and incoming webhooks using HMAC signatures and timestamp replay checks? | InterviewGearUp">
+<meta property="og:description" content="Secure webhooks with a shared secret and an HMAC-SHA256 signature computed over the raw body plus a timestamp. The receiver recomputes the signature,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-70.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you secure outgoing and incoming webhooks using HMAC signatures and timestamp replay checks?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 2 (Mid-level) · APIs · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Secure webhooks with a shared secret and an HMAC-SHA256 signature computed over the raw body plus a timestamp. The receiver recomputes the signature, compares it in constant time, rejects requests outside a short time window, deduplicates by event ID to stop replays, uses HTTPS, and responds quickly. Senders must also defend against SSRF when calling customer-provided URLs.</p></div>
+<h4>Explained in depth</h4>
+<h4>Threats</h4>
+<p>A webhook endpoint is a <strong>public URL that accepts state-changing requests</strong> from the internet. Without authentication, anyone can forge &quot;payment succeeded&quot; events, trigger actions, or flood the endpoint. Attackers can also <strong>replay</strong> captured valid requests, tamper with payloads in transit, or abuse a sender&#39;s webhook delivery system to reach internal networks (SSRF).</p>
+<h4>Incoming webhooks (you are the receiver)</h4>
+<ol start="1"><li><strong>Transport security</strong>: accept HTTPS only (TLS 1.2+), no HTTP.</li><li><strong>Authenticate with HMAC signatures</strong>: the provider (Stripe, GitHub, Shopify, Slack) computes <code>HMAC_SHA256(secret, signed_payload)</code> and sends it in a header.</li></ol>
+<pre><code>import hmac, hashlib, time
+def verify(raw_body: bytes, signature_header: str, secret: bytes, tolerance=300):
+    ts, sig = parse(signature_header)                         # e.g. &quot;t=1700000000,v1=abcd...&quot;
+    if abs(time.time() - int(ts)) &gt; tolerance: raise Reject(&quot;stale timestamp&quot;)        # replay window
+    expected = hmac.new(secret, f&quot;{ts}.&quot;.encode() + raw_body, hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(expected, sig): raise Reject(&quot;bad signature&quot;)           # constant time</code></pre>
+<ul><li>Compute over the <strong>raw request bytes</strong> exactly as received (do not parse and re-serialise JSON, which changes the bytes). In frameworks, capture the raw body before JSON parsing middleware.</li><li>Use <strong>constant-time comparison</strong> (<code>hmac.compare_digest</code>, <code>crypto.timingSafeEqual</code>) to avoid timing attacks.</li><li>Verify <strong>before</strong> doing any work or parsing deeply.</li></ul>
+<ol start="3"><li><strong>Replay protection</strong>: include a <strong>timestamp in the signed content</strong> and reject events older than a tolerance (typically 5 minutes), because a signature over the body alone lets an attacker resend an old valid request forever. Also <strong>deduplicate by event ID</strong> (store processed IDs with TTL, unique database constraint) since providers deliver at least once and attackers may replay within the window. Optionally include a <strong>nonce</strong>.</li><li><strong>Idempotent processing</strong>: handlers should be safe if repeated; acknowledge with <code>2xx</code> fast (enqueue work, respond within a few seconds) to avoid retries and timeouts.</li><li><strong>Validate payload schema</strong> and treat all fields as untrusted; <strong>re-fetch</strong> critical objects from the provider&#39;s API by ID instead of trusting the payload (for payments, confirm status via API).</li><li><strong>Secret handling</strong>: per-endpoint secrets in a secret manager, never in code or logs; <strong>rotation</strong> by supporting two active secrets (verify against both) during the overlap, then retire the old one.</li><li><strong>Additional layers</strong>: IP allow-listing of provider ranges (helpful but not sufficient; ranges change), mutual TLS where supported, unguessable endpoint paths, rate limiting, request size limits, WAF, logging with correlation IDs, alerts on signature failures.</li><li>Return generic errors (<code>400/401</code>) without leaking details; do not reflect payloads.</li></ol>
+<h4>Outgoing webhooks (you are the sender)</h4>
+<ol start="1"><li><strong>Sign every delivery</strong>: header <code>X-Signature: t=&lt;unix&gt;,v1=&lt;hex&gt;</code>, per-subscription secret generated randomly (at least 32 bytes), shown once; support versioned schemes (<code>v1</code>) and multiple signatures during rotation; document verification code samples in several languages.</li><li><strong>Reliable delivery</strong>: at-least-once with <strong>exponential backoff and jitter</strong> retries, maximum attempts, <strong>dead-letter</strong> and replay tooling, stable <strong>event IDs</strong>, delivery logs and manual resend, timeouts (5 to 10 seconds), disable failing endpoints after repeated errors with notification.</li><li><strong>SSRF protection</strong> (customer-supplied URLs can target internal services): enforce <code>https</code>, resolve DNS and <strong>block private, loopback, link-local and metadata addresses</strong> (<code>10.0.0.0/8</code>, <code>172.16.0.0/12</code>, <code>192.168.0.0/16</code>, <code>127.0.0.0/8</code>, <code>169.254.169.254</code>, <code>::1</code>, <code>fc00::/7</code>) <strong>after resolution and again on redirects</strong>, defend against <strong>DNS rebinding</strong> by connecting to the validated IP, disable or limit redirects, restrict ports, use an egress proxy or isolated network for webhook workers, set response size limits and do not return response bodies to the user (or sanitise).</li><li><strong>Endpoint ownership verification</strong>: send a challenge (echo a token) before enabling.</li><li><strong>Least data</strong>: send minimal payloads or IDs (&quot;thin events&quot;) and let receivers fetch details with authenticated API calls, reducing leakage.</li></ol>
+<h4>Testing</h4>
+<p>Unit tests for signature verification with valid, tampered, stale and missing headers; replay tests (same event twice); fuzz malformed bodies; test secret rotation overlap; SSRF tests against localhost and metadata URLs including DNS rebinding and redirects; load tests for bursts; chaos tests for retry behaviour.</p>
+<h4>Pitfalls</h4>
+<p>Verifying a re-serialised body, non-constant-time comparison, missing timestamp tolerance, trusting source IP only, long-lived shared secrets reused across customers, synchronous heavy processing before responding, and no deduplication.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why must the signature cover the timestamp and not just the body?</li><li>How do you rotate webhook signing secrets without dropping events?</li><li>What SSRF protections should a sender implement before delivering webhooks to customer URLs?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-70">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-70%3A+How+do+you+secure+outgoing+and+incoming+webhooks+using+HMAC%E2%80%A6&amp;question-id=sec-70&amp;context=Security+engineer%2C+Gear+2%2C+topic%3A+APIs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-70.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain the Decorator pattern and how it dynamically attaches responsibilities without subclassing. | InterviewGearUp</title>
+<meta name="description" content="The Decorator pattern wraps an object in another object that implements the same interface and adds behaviour before or after delegating. Decorators can…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-72.html">
+<meta property="og:title" content="Explain the Decorator pattern and how it dynamically attaches responsibilities without subclassing. | InterviewGearUp">
+<meta property="og:description" content="The Decorator pattern wraps an object in another object that implements the same interface and adds behaviour before or after delegating. Decorators can…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-72.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain the Decorator pattern and how it dynamically attaches responsibilities without subclassing.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 2 (Mid-level) · Design patterns · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>The Decorator pattern wraps an object in another object that implements the same interface and adds behaviour before or after delegating. Decorators can be stacked at runtime in any combination, avoiding a subclass explosion and keeping each responsibility separate.</p></div>
+<h4>Explained in depth</h4>
+<h4>Problem with inheritance</h4>
+<p>Suppose <code>DataSource</code> can be plain, compressed, encrypted, or both. With subclasses you need <code>CompressedDataSource</code>, <code>EncryptedDataSource</code>, <code>CompressedEncryptedDataSource</code>, ... a <strong>combinatorial explosion</strong>. Inheritance is also fixed at compile time.</p>
+<h4>Structure</h4>
+<pre><code>interface DataSource { void write(byte[] data); byte[] read(); }
+
+class FileDataSource implements DataSource { /* writes to disk */ }
+
+abstract class DataSourceDecorator implements DataSource {
+    protected final DataSource inner;
+    DataSourceDecorator(DataSource inner) { this.inner = inner; }
+}
+class EncryptionDecorator extends DataSourceDecorator {
+    EncryptionDecorator(DataSource in) { super(in); }
+    public void write(byte[] d) { inner.write(encrypt(d)); }
+    public byte[] read()        { return decrypt(inner.read()); }
+}
+class CompressionDecorator extends DataSourceDecorator {
+    CompressionDecorator(DataSource in) { super(in); }
+    public void write(byte[] d) { inner.write(compress(d)); }
+    public byte[] read()        { return decompress(inner.read()); }
+}
+
+DataSource ds = new EncryptionDecorator(new CompressionDecorator(new FileDataSource(&quot;a.dat&quot;)));</code></pre>
+<p>Each decorator <strong>is a</strong> <code>DataSource</code> and <strong>has a</strong> <code>DataSource</code>. Calls flow through the chain, and any combination is built by composition.</p>
+<h4>Where you already see it</h4>
+<ul><li>Java I/O: <code>new BufferedReader(new InputStreamReader(new FileInputStream(f)))</code>.</li><li>Python and TypeScript <strong>function decorators</strong> (<code>@cache</code>, <code>@retry</code>, <code>@app.route</code>) wrap functions with added behaviour.</li><li>Web middleware chains (Express, ASP.NET) and HTTP client interceptors (logging, auth, retry, metrics).</li><li><code>Collections.unmodifiableList</code> and <code>synchronizedList</code> wrappers.</li></ul>
+<h4>Decorator versus related patterns</h4>
+<ul><li><strong>Proxy</strong> has the same shape but controls <strong>access</strong> (lazy loading, security, remote call) and usually creates or owns the real subject. Decorator adds responsibilities and is composed by the client.</li><li><strong>Adapter</strong> changes the interface; Decorator keeps it.</li><li><strong>Strategy</strong> swaps the algorithm inside an object; Decorator wraps an object from outside.</li></ul>
+<h4>Pitfalls</h4>
+<ul><li>Order matters: encrypt then compress behaves very differently from compress then encrypt (encrypted data does not compress).</li><li>Many small wrapper objects make debugging stack traces harder.</li><li>Identity checks (<code>==</code>, type checks) break because the decorated object is not the original.</li><li>Decorators must faithfully forward every method of a wide interface, so keep interfaces narrow.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How does Decorator differ from Proxy and from simple inheritance?</li><li>Where do you see the Decorator in Java I/O streams or Python function decorators?</li><li>What problems arise when decorators depend on their order?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-72">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-72%3A+Explain+the+Decorator+pattern+and+how+it+dynamically+attaches%E2%80%A6&amp;question-id=gen-72&amp;context=Software+engineer+%28core%29%2C+Gear+2%2C+topic%3A+Design+patterns%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-72.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

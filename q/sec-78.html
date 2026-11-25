@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you harden SSH access: Disabling password authentication, enforcing Ed25519 keys, and using bastions? | InterviewGearUp</title>
+<meta name="description" content="Harden SSH by disabling password and root login, requiring Ed25519 keys or short-lived certificates from an SSH CA with MFA, restricting users and source…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-78.html">
+<meta property="og:title" content="How do you harden SSH access: Disabling password authentication, enforcing Ed25519 keys, and using bastions? | InterviewGearUp">
+<meta property="og:description" content="Harden SSH by disabling password and root login, requiring Ed25519 keys or short-lived certificates from an SSH CA with MFA, restricting users and source…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-78.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you harden SSH access: Disabling password authentication, enforcing Ed25519 keys, and using bastions?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 2 (Mid-level) · Systems · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Harden SSH by disabling password and root login, requiring Ed25519 keys or short-lived certificates from an SSH CA with MFA, restricting users and source addresses, using ProxyJump through a hardened bastion or session-manager service instead of exposing hosts, applying modern ciphers, rate limiting and fail2ban, logging and alerting, and rotating or revoking keys when people leave.</p></div>
+<h4>Explained in depth</h4>
+<h4>Baseline <code>sshd_config</code> hardening</h4>
+<pre><code># /etc/ssh/sshd_config.d/10-hardening.conf
+Protocol 2
+PermitRootLogin no
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+PubkeyAuthentication yes
+AuthenticationMethods publickey                 # or &quot;publickey,keyboard-interactive&quot; for key + MFA (PAM/Duo/TOTP)
+PermitEmptyPasswords no
+AllowGroups ssh-users                           # or AllowUsers deploy@10.0.0.0/8
+MaxAuthTries 3
+LoginGraceTime 20
+MaxStartups 10:30:60
+ClientAliveInterval 300
+ClientAliveCountMax 2
+X11Forwarding no
+AllowAgentForwarding no
+AllowTcpForwarding no                           # enable per user when needed
+PermitTunnel no
+UsePAM yes
+LogLevel VERBOSE                                # logs key fingerprints used to authenticate
+HostKeyAlgorithms ssh-ed25519,rsa-sha2-512
+KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org
+Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com
+MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com
+Banner /etc/issue.net</code></pre>
+<p>Validate with <code>sshd -t</code>, keep an existing session open while testing changes, and scan with <code>ssh-audit</code>.</p>
+<h4>Key-based authentication with Ed25519</h4>
+<ul><li>Generate strong keys: <code>ssh-keygen -t ed25519 -a 100 -C &quot;ada@laptop-2026&quot;</code> (the <code>-a</code> raises key derivation rounds for the passphrase). Always use a <strong>passphrase</strong>; store keys in <code>ssh-agent</code> or the OS keychain; avoid RSA below 3072 bits, DSA and ECDSA unless required by compliance.</li><li><strong>Hardware-backed keys</strong>: FIDO2 <code>ssh-keygen -t ed25519-sk</code> (OpenSSH 8.2+) keeps the private key on a YubiKey or similar; use <code>-O verify-required</code> to demand PIN or biometrics, and <code>-O resident</code> for portable keys. Stolen laptops cannot export the key.</li><li>Restrict keys in <code>authorized_keys</code> with options: <code>from=&quot;10.0.0.0/8&quot;,command=&quot;/usr/bin/backup&quot;,no-port-forwarding,no-agent-forwarding,no-pty ssh-ed25519 AAAA...</code>.</li><li>File permissions: <code>~/.ssh</code> 700, <code>authorized_keys</code> 600; disable user-writable home paths via <code>StrictModes yes</code>.</li></ul>
+<h4>Scale with SSH certificates (preferred in organisations)</h4>
+<p>An <strong>SSH certificate authority (CA)</strong> signs user public keys with identity, allowed principals, and short validity:</p>
+<pre><code>ssh-keygen -s ca_key -I ada@example.com -n deploy,ops -V +8h user_key.pub        # 8-hour certificate
+# server: TrustedUserCAKeys /etc/ssh/ca.pub ; AuthorizedPrincipalsFile /etc/ssh/principals/%u</code></pre>
+<p>Benefits: <strong>no per-host key distribution</strong>, automatic expiry (no long-lived keys to revoke), centralised access control, MFA at certificate issuance (SSO login, then cert), audit per identity. Implementations: HashiCorp Vault SSH secrets engine, Teleport, Smallstep, Netflix BLESS, Gravitational, AWS EC2 Instance Connect, Google OS Login, Azure AD SSH. Use <strong>host certificates</strong> (<code>HostCertificate</code>, <code>@cert-authority</code> in <code>known_hosts</code>) to prevent TOFU warnings and MITM.</p>
+<h4>Reduce exposure</h4>
+<ol start="1"><li><strong>Do not expose SSH to the internet</strong>: security groups and firewalls allow SSH only from a <strong>bastion</strong> or VPN, using <code>ssh -J bastion.example.com app-01</code> (ProxyJump), or use <strong>AWS SSM Session Manager</strong>, GCP IAP TCP forwarding, Teleport or Boundary (no inbound port at all, IAM authorisation, session logging).</li><li>Change nothing but expect noise: moving the port is only obfuscation (can reduce log spam); use <strong>fail2ban</strong> or <code>sshguard</code>, CrowdSec, or nftables rate limits (<code>limit rate</code>), <code>MaxStartups</code>, geo restrictions, and <strong>port knocking</strong> or SPA (single packet authorisation) if appropriate.</li><li><strong>Bastion hardening</strong>: minimal packages, MFA required, no agent forwarding to untrusted hosts, session recording (<code>auditd</code>, <code>tlog</code>), immutable image, automatic patching, separate from application networks.</li><li><strong>Least privilege</strong>: personal accounts (no shared logins), <code>sudo</code> with logging and specific commands, no direct root, service accounts with <code>nologin</code> shell, <code>ForceCommand</code> and <code>chroot</code> or restricted shells for file transfer (<code>internal-sftp</code>, <code>ChrootDirectory</code>).</li><li><strong>Patch</strong> OpenSSH quickly (regreSSHion CVE-2024-6387, Terrapin attack) and update crypto settings regularly.</li></ol>
+<h4>Lifecycle and monitoring</h4>
+<ul><li><strong>Joiner-mover-leaver</strong>: tie access to identity provider groups; remove keys on departure; short-lived certificates make this automatic. Inventory and rotate legacy <code>authorized_keys</code> using tools (<code>ssh-keygen -l</code>, Teleport, config management with Ansible), and eliminate <strong>shared or orphaned keys</strong>.</li><li><strong>Logging</strong>: <code>LogLevel VERBOSE</code> records key fingerprints; ship <code>auth.log</code> and <code>journald</code> to SIEM; alert on root login attempts, many failures, new keys added, logins from unusual geographies or at odd hours, successful logins following brute force, use of keys not in inventory.</li><li><strong>File integrity monitoring</strong> on <code>authorized_keys</code>, <code>sshd_config</code> and <code>/etc/ssh</code>; compliance scanning (CIS Benchmarks, OpenSCAP, Lynis).</li><li><strong>Agent forwarding risk</strong>: a compromised intermediate host can use your forwarded agent socket; prefer ProxyJump and <code>ssh-add -c</code> (confirm each use) or FIDO keys that require touch.</li><li><strong>Known hosts</strong>: use <code>StrictHostKeyChecking yes</code>, pre-populate <code>known_hosts</code> or host CA; never blindly accept changed host key warnings.</li></ul>
+<h4>Pitfalls</h4>
+<p>Leaving password authentication on for &quot;emergencies&quot;, copying private keys between machines, never rotating keys, shared accounts, exposing port 22 to the world with permissive security groups, and enabling agent forwarding everywhere.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why are SSH certificates better than distributing authorized_keys files to every server?</li><li>How do you protect private keys on laptops with hardware tokens such as FIDO2 sk-ed25519 keys?</li><li>How do you audit SSH access and detect brute force or key misuse?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-78">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-78%3A+How+do+you+harden+SSH+access%3A+Disabling+password+authentication%2C%E2%80%A6&amp;question-id=sec-78&amp;context=Security+engineer%2C+Gear+2%2C+topic%3A+Systems%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-78.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

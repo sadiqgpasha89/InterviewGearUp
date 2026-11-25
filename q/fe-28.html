@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare CSS Modules, CSS-in-JS (Styled Components), and Tailwind utility-first CSS. | InterviewGearUp</title>
+<meta name="description" content="CSS Modules scope class names at build time with zero runtime cost, styled-components style via JavaScript at runtime with dynamic props, and Tailwind…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-28.html">
+<meta property="og:title" content="Compare CSS Modules, CSS-in-JS (Styled Components), and Tailwind utility-first CSS. | InterviewGearUp">
+<meta property="og:description" content="CSS Modules scope class names at build time with zero runtime cost, styled-components style via JavaScript at runtime with dynamic props, and Tailwind…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-28.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare CSS Modules, CSS-in-JS (Styled Components), and Tailwind utility-first CSS.</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · CSS · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>CSS Modules scope class names at build time with zero runtime cost, styled-components style via JavaScript at runtime with dynamic props, and Tailwind composes small utility classes in markup with a generated, purged stylesheet. The choice trades separation, runtime cost, dynamism and team conventions.</p></div>
+<h4>Explained in depth</h4>
+<h4>CSS Modules</h4>
+<p>Plain CSS files where every class is locally scoped at build time (<code>.title</code> becomes <code>Card_title__x7a9</code>).</p>
+<pre><code>/* Card.module.css */
+.card { padding: 16px; border-radius: 8px; }
+.title { font-weight: 600; }</code></pre>
+<pre><code>import s from &#39;./Card.module.css&#39;;
+&lt;div className={s.card}&gt;&lt;h3 className={s.title}&gt;Hi&lt;/h3&gt;&lt;/div&gt;</code></pre>
+<ul><li><strong>Pros</strong>: standard CSS, no runtime cost, cacheable static files, works everywhere, easy to adopt, scoping solves collisions.</li><li><strong>Cons</strong>: dynamic values need CSS variables or conditional class names; composition across files is manual; unused class detection is weaker; typing requires generated definitions.</li></ul>
+<h4>CSS-in-JS (styled-components, Emotion)</h4>
+<pre><code>const Button = styled.button`
+  background: ${p =&gt; (p.$primary ? &#39;#0a5&#39; : &#39;#eee&#39;)};
+  padding: 8px 12px;
+`;</code></pre>
+<ul><li><strong>Pros</strong>: styles co-located with components, props-driven dynamic styling, automatic scoping, theming via context, dead code eliminated with the component.</li><li><strong>Cons</strong>: <strong>runtime overhead</strong> (serialising styles, injecting <code>&lt;style&gt;</code> tags during render), larger JS bundle, hydration and SSR complexity, awkward with React Server Components and concurrent rendering. Newer zero-runtime options (vanilla-extract, Linaria, Panda CSS, StyleX) extract CSS at build time.</li></ul>
+<h4>Tailwind (utility-first)</h4>
+<pre><code>&lt;button className=&quot;rounded bg-emerald-600 px-3 py-2 text-white hover:bg-emerald-700 disabled:opacity-50&quot;&gt;Save&lt;/button&gt;</code></pre>
+<ul><li><strong>Pros</strong>: no naming, fast iteration, a constrained design scale (spacing, colours) that keeps UIs consistent, tiny production CSS (only used utilities are generated), no runtime, strong editor tooling.</li><li><strong>Cons</strong>: verbose markup, a learning curve, repetition (mitigated by component extraction, <code>@apply</code> in moderation, and variant helpers like <code>cva</code>/<code>tailwind-variants</code>), harder to read complex states.</li></ul>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th>Criterion</th><th>CSS Modules</th><th>CSS-in-JS (runtime)</th><th>Tailwind</th></tr></thead><tbody><tr><td>Runtime cost</td><td>none</td><td>yes</td><td>none</td></tr><tr><td>Dynamic styles</td><td>CSS vars/classes</td><td>easy via props</td><td>variants, arbitrary values, CSS vars</td></tr><tr><td>Scoping</td><td>build-time hashing</td><td>automatic</td><td>global utilities, no collisions</td></tr><tr><td>SSR / RSC fit</td><td>excellent</td><td>needs setup, limited in RSC</td><td>excellent</td></tr><tr><td>Theming</td><td>CSS variables</td><td>theme provider</td><td>config tokens, CSS vars, <code>dark:</code> variant</td></tr><tr><td>Learning curve</td><td>low</td><td>medium</td><td>medium</td></tr></tbody></table></div>
+<h4>Choosing</h4>
+<ul><li>Large design system with strict separation, SSR/RSC apps: <strong>CSS Modules</strong> or build-time CSS-in-JS.</li><li>Highly dynamic, theme-heavy component libraries with existing investment: styled-components/Emotion, ideally migrating toward zero-runtime.</li><li>Product teams that want speed and consistency: <strong>Tailwind</strong>, with component abstractions.</li></ul>
+<h4>Pitfalls</h4>
+<p>Mixing all three without a convention, leaking global styles, specificity battles between systems, and ignoring performance of runtime styling in large lists.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why do runtime CSS-in-JS libraries struggle with React Server Components and streaming?</li><li>How do you keep Tailwind markup maintainable when class lists get long?</li><li>How would you implement theming (dark mode and design tokens) in each approach?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-28">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-28%3A+Compare+CSS+Modules%2C+CSS-in-JS+%28Styled+Components%29%2C+and+Tailwind%E2%80%A6&amp;question-id=fe-28&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+CSS%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-28.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

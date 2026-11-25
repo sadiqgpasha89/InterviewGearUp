@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is Terraform drift detection, and how do you reconcile infrastructure modified outside Terraform? | InterviewGearUp</title>
+<meta name="description" content="Drift is the difference between the real infrastructure and what Terraform&#39;s state and configuration describe, usually caused by manual console changes,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-43.html">
+<meta property="og:title" content="What is Terraform drift detection, and how do you reconcile infrastructure modified outside Terraform? | InterviewGearUp">
+<meta property="og:description" content="Drift is the difference between the real infrastructure and what Terraform&#39;s state and configuration describe, usually caused by manual console changes,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-43.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is Terraform drift detection, and how do you reconcile infrastructure modified outside Terraform?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · IaC · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Drift is the difference between the real infrastructure and what Terraform&#39;s state and configuration describe, usually caused by manual console changes, other tools or automatic cloud behaviours. Detect it with scheduled terraform plan (or refresh-only) runs, then reconcile either by applying to revert to code, updating code to match reality, or importing and ignoring specific attributes.</p></div>
+<h4>Explained in depth</h4>
+<h4>What causes drift</h4>
+<ul><li>Engineers change resources in the console or CLI during incidents.</li><li>Other automation (autoscaling, Kubernetes controllers, cloud-managed tags, security tooling) modifies attributes.</li><li>Resources deleted or created out of band.</li><li>Provider default changes or attributes that the API normalises.</li></ul>
+<h4>Detecting</h4>
+<p><code>terraform plan</code> first <strong>refreshes</strong> state by reading real resources, then compares them with configuration. A diff on an untouched configuration means drift (or provider noise).</p>
+<pre><code>terraform plan -detailed-exitcode        # exit 0 = no changes, 2 = changes pending, 1 = error
+terraform plan -refresh-only             # show only differences between state and reality, no config changes
+terraform apply -refresh-only            # accept the real values into state (does not change infrastructure)</code></pre>
+<p>Automate: a scheduled pipeline (nightly or hourly) running <code>plan -detailed-exitcode</code> per workspace, posting alerts to Slack or opening tickets; Terraform Cloud drift detection (health assessments); tools such as <code>driftctl</code> (now part of Snyk), <code>terraformer</code>, cloud-native config rules (AWS Config, Azure Policy) and CloudTrail alerts for manual changes.</p>
+<h4>Reconciling: decide the source of truth</h4>
+<ol start="1"><li><strong>Revert reality to code</strong> (the default): run <code>terraform apply</code>; Terraform changes the resource back. Use when the manual change was unauthorised or temporary.</li><li><strong>Update code to match reality</strong>: if the change is desired (an emergency fix that should stay), edit the configuration so the plan shows no diff, review in a pull request, then apply. Use <code>apply -refresh-only</code> to sync state first if needed.</li><li><strong>Ignore specific attributes</strong> that other systems legitimately manage:</li></ol>
+<pre><code>resource &quot;aws_autoscaling_group&quot; &quot;web&quot; {
+  lifecycle { ignore_changes = [desired_capacity] }
+}</code></pre>
+<ol start="4"><li><strong>Resource deleted outside Terraform</strong>: plan shows it will be recreated; apply to recreate, or <code>terraform state rm</code> if it should no longer be managed.</li><li><strong>Resources created outside Terraform</strong>: bring them under management with <code>import</code> (see import workflow) or leave them alone if they belong to another system.</li></ol>
+<p>Always read the plan carefully; reverting drift can cause destructive changes (replacement of a database).</p>
+<h4>Prevention</h4>
+<ul><li>Restrict console write access (read-only for humans, changes via CI roles), use SCPs and IAM boundaries, require pull requests for infrastructure changes, and break-glass procedures with logging.</li><li>Tag managed resources and alert on untagged or out-of-band changes.</li><li>Keep one tool owning each resource (avoid two Terraform states managing the same thing).</li><li>Continuous reconciliation tools (Crossplane, Flux Terraform controller, Atlantis auto-plan) repeat convergence.</li><li>Pin provider versions to reduce noise and run drift checks after provider upgrades.</li></ul>
+<h4>Pitfalls</h4>
+<p>Applying blindly after finding drift, noisy diffs from computed attributes, state locks held by long scheduled plans, and secrets exposure in plan output stored as CI artifacts.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the difference between plan -refresh-only and a normal plan?</li><li>When should you accept the manual change and update code instead?</li><li>How do you prevent drift in the first place?</li></ul>
+<p><a class="btn primary" href="../#/q/do-43">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-43%3A+What+is+Terraform+drift+detection%2C+and+how+do+you+reconcile%E2%80%A6&amp;question-id=do-43&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+IaC%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-43.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

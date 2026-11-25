@@ -31,6 +31,7 @@
       { id: 'devops', name: 'DevOps / SRE / Cloud' },
       { id: 'data', name: 'Data engineer' },
       { id: 'ml', name: 'ML / AI engineer' },
+      { id: 'datascience', name: 'Data scientist' },
       { id: 'qa', name: 'QA / SDET' },
       { id: 'security', name: 'Security engineer' },
       { id: 'leadership', name: 'Tech lead / Engineering manager' }

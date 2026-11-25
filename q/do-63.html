@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does `strace` attach to running processes to diagnose system call bottlenecks and file locks? | InterviewGearUp</title>
+<meta name="description" content="strace traces system calls and signals of a process, showing which syscalls it makes, their arguments, return values and time spent. Attach to a running…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-63.html">
+<meta property="og:title" content="How does `strace` attach to running processes to diagnose system call bottlenecks and file locks? | InterviewGearUp">
+<meta property="og:description" content="strace traces system calls and signals of a process, showing which syscalls it makes, their arguments, return values and time spent. Attach to a running…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-63.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does `strace` attach to running processes to diagnose system call bottlenecks and file locks?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · Linux · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>strace traces system calls and signals of a process, showing which syscalls it makes, their arguments, return values and time spent. Attach to a running process with strace -p, filter with -e, and use -f to follow threads and -T or -c for timing and summaries. It reveals blocked reads, slow I/O, missing files, DNS delays and lock waits (futex), at a noticeable performance cost.</p></div>
+<h4>Explained in depth</h4>
+<h4>How it works</h4>
+<p>strace uses the <strong>ptrace</strong> system call to stop the target at every syscall entry and exit, then prints the call. Because each syscall triggers context switches into the tracer, a traced process can run <strong>10 to 100 times slower</strong>, so be careful on production hot paths.</p>
+<h4>Attaching and basic use</h4>
+<pre><code>strace -p &lt;pid&gt;                       # attach to a running process
+strace -f -p &lt;pid&gt;                    # also follow threads and forked children
+strace -tt -T -p &lt;pid&gt;                # wall-clock timestamps (-tt) and time spent in each call (-T)
+strace -o /tmp/trace.txt -ff -p &lt;pid&gt; # write per-thread files
+strace -e trace=network -p &lt;pid&gt;      # only socket calls (connect, sendto, recvfrom)
+strace -e trace=file -p &lt;pid&gt;         # open, stat, access, unlink ...
+strace -e trace=openat,read,write -s 200 -p &lt;pid&gt;    # longer string display
+strace -c -p &lt;pid&gt;                    # summary table: counts, errors, time per syscall (Ctrl-C to print)
+strace -yy ...                        # decode file descriptors to paths, addresses
+strace -k ...                         # print stack trace for each call (if supported)
+strace ls /nonexistent                # run a command under strace from the start</code></pre>
+<p>Attaching needs permission (same user or root; <code>kernel.yama.ptrace_scope</code> may restrict it, and containers require <code>SYS_PTRACE</code>).</p>
+<h4>Reading output</h4>
+<pre><code>openat(AT_FDCWD, &quot;/etc/app/config.yml&quot;, O_RDONLY) = -1 ENOENT (No such file or directory)
+connect(5, {sa_family=AF_INET, sin_port=htons(5432), sin_addr=inet_addr(&quot;10.0.3.7&quot;)}, 16) = -1 EINPROGRESS
+read(7, &quot;...&quot;, 8192) = 0 &lt;12.034512&gt;
+futex(0x7f2c, FUTEX_WAIT_PRIVATE, 2, NULL) = 0 &lt;3.201&gt;</code></pre>
+<p>Diagnostic patterns:</p>
+<ul><li><strong>Failed lookups</strong>: repeated <code>ENOENT</code> on file paths show where the program searches for configuration, libraries or certificates.</li><li><strong>Slow I/O</strong>: large times in <code>read</code>, <code>write</code>, <code>fsync</code>, <code>pread64</code> (<code>-T</code> values) show disk or NFS latency.</li><li><strong>Network stalls</strong>: <code>connect</code> timing out, <code>poll</code> or <code>epoll_wait</code> waiting on a socket that never becomes ready, DNS lookups to <code>/etc/resolv.conf</code> and UDP port 53 with long waits.</li><li><strong>Lock contention</strong>: many <code>futex(FUTEX_WAIT)</code> calls with long durations, threads blocked on mutexes; combine with <code>-f</code> to see which threads wait.</li><li><strong>File locks</strong>: <code>flock</code>, <code>fcntl(F_SETLK)</code> blocking, plus <code>lsof</code> and <code>/proc/locks</code> to identify holders.</li><li><strong>Busy loops</strong>: tight sequences of <code>sched_yield</code>, <code>nanosleep</code> or repeated <code>getpid</code>, <code>clock_gettime</code>.</li><li><strong>Hangs</strong>: a process stuck in a single call (<code>wait4</code>, <code>read(0, ...)</code> on stdin, <code>accept</code>) shows what it awaits.</li></ul>
+<h4>Alternatives with less overhead</h4>
+<p><code>perf trace</code> (eBPF/tracepoints based), <code>bpftrace</code> and <code>bcc</code> tools (<code>opensnoop</code>, <code>execsnoop</code>, <code>tcpconnect</code>, <code>biolatency</code>), <code>ltrace</code> (library calls), <code>sysdig</code>, <code>ftrace</code>, and for Go or Java their native profilers. Use strace for quick diagnosis in test or one-off production cases and eBPF for continuous or high-traffic investigation.</p>
+<h4>Tips</h4>
+<p>Redirect output to a file, restrict with <code>-e</code> to cut noise, use <code>-s</code> to avoid truncation, detach with Ctrl-C (the process continues), and use <code>strace -c</code> first to find the dominant syscalls before reading the full trace.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the overhead of strace and what are lower-impact alternatives?</li><li>How do you read futex and epoll_wait calls to identify lock contention or idle waiting?</li><li>How do you use strace to find which config file a program reads?</li></ul>
+<p><a class="btn primary" href="../#/q/do-63">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-63%3A+How+does+%60strace%60+attach+to+running+processes+to+diagnose+system%E2%80%A6&amp;question-id=do-63&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+Linux%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-63.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

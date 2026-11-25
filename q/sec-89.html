@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is Prototype Pollution in JavaScript and how do attackers pollute the Object prototype to hijack logic? | InterviewGearUp</title>
+<meta name="description" content="Prototype pollution lets an attacker modify Object.prototype or another shared prototype by abusing unsafe recursive merges, clones or property…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-89.html">
+<meta property="og:title" content="What is Prototype Pollution in JavaScript and how do attackers pollute the Object prototype to hijack logic? | InterviewGearUp">
+<meta property="og:description" content="Prototype pollution lets an attacker modify Object.prototype or another shared prototype by abusing unsafe recursive merges, clones or property…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-89.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is Prototype Pollution in JavaScript and how do attackers pollute the Object prototype to hijack logic?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · AppSec · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Prototype pollution lets an attacker modify Object.prototype or another shared prototype by abusing unsafe recursive merges, clones or property assignments with keys like __proto__ or constructor.prototype. Every object then inherits attacker-controlled properties, which can flip logic such as isAdmin checks, alter templates and gadgets, and escalate to XSS or remote code execution on Node.js.</p></div>
+<h4>Explained in depth</h4>
+<h4>JavaScript prototype basics</h4>
+<p>Every JavaScript object has an internal link to a <strong>prototype</strong> (<code>obj.__proto__</code> or <code>Object.getPrototypeOf(obj)</code>). Property lookups that fail on the object walk up the <strong>prototype chain</strong> to <code>Object.prototype</code>. Properties defined on <code>Object.prototype</code> appear on <strong>all objects</strong> unless shadowed. <code>constructor.prototype</code> points to the same shared object (<code>({}).constructor.prototype === Object.prototype</code>).</p>
+<h4>The vulnerability</h4>
+<p>If an attacker can set properties along the path <code>__proto__.someKey</code> (or <code>constructor.prototype.someKey</code>) on a normal object, they write to <code>Object.prototype</code> itself:</p>
+<pre><code>function merge(target, source) {            // vulnerable recursive merge
+  for (const key in source) {
+    if (typeof source[key] === &#39;object&#39; &amp;&amp; source[key] !== null) {
+      target[key] = merge(target[key] || {}, source[key]);
+    } else target[key] = source[key];
+  }
+  return target;
+}
+const payload = JSON.parse(&#39;{&quot;__proto__&quot;: {&quot;isAdmin&quot;: true}}&#39;);   // JSON.parse creates an OWN property named &quot;__proto__&quot;
+merge({}, payload);
+console.log(({}).isAdmin);                  // true  -&gt; every object now has isAdmin</code></pre>
+<p>Typical sources: JSON bodies merged into config or user objects, query strings parsed into nested objects (<code>?__proto__[admin]=1</code>, <code>qs</code> libraries), <code>lodash.merge/defaultsDeep/set</code>, <code>jQuery.extend(true, ...)</code>, <code>Object.assign</code> loops, <code>hoek</code>, <code>minimist</code>, and deep clone, path assignment (<code>set(obj, userPath, value)</code>), and client-side URL hash or <code>postMessage</code> parsing. Many npm CVEs (lodash CVE-2019-10744, minimist, hoek, <code>merge</code>, <code>immer</code>, Kibana, Parse Server).</p>
+<h4>Impact</h4>
+<ol start="1"><li><strong>Logic and authorisation bypass</strong>: code checking <code>if (user.isAdmin)</code> or options like <code>if (opts.debug)</code> reads the polluted inherited value when the property is not set on the object (property absence becomes presence).</li><li><strong>Denial of service</strong>: polluting <code>toString</code>, <code>hasOwnProperty</code>, <code>valueOf</code> breaks application and library behaviour (crashes, infinite loops).</li><li><strong>Client-side XSS through gadgets</strong>: libraries read inherited config (template or sanitiser options, <code>innerHTML</code> sinks, script URLs <code>transport_url</code>, analytics config) and pollution injects attacker values (PortSwigger and &quot;Prototype pollution gadgets&quot; research, <code>BlackFan/client-side-prototype-pollution</code>).</li><li><strong>Server-side RCE on Node.js</strong>: pollute properties consumed by built-ins: <code>child_process.spawn/fork/execSync</code> options (<code>shell</code>, <code>env</code>, <code>NODE_OPTIONS</code>, <code>argv0</code>), template engines (EJS <code>outputFunctionName</code>, Pug, Handlebars <code>compile</code> options), <code>require</code> internals, and frameworks, achieving command execution (research by Kuhn and Snyk, &quot;Silent Spring&quot;).</li><li><strong>Property injection into databases, SQL queries or access controls</strong> by polluting default fields in ORMs and query builders.</li></ol>
+<h4>Prevention</h4>
+<ol start="1"><li><strong>Avoid unsafe merge, clone and set functions</strong>; use patched versions and keep dependencies updated (lodash &gt;= 4.17.21), and review libraries that accept user-controlled paths.</li><li><strong>Block dangerous keys</strong> in any code walking untrusted keys: reject or skip <code>__proto__</code>, <code>constructor</code> and <code>prototype</code>; use <code>Object.hasOwn(source, key)</code> / <code>hasOwnProperty</code> checks and iterate with <code>Object.keys</code>.</li></ol>
+<pre><code>const FORBIDDEN = new Set([&#39;__proto__&#39;, &#39;constructor&#39;, &#39;prototype&#39;]);
+function safeMerge(t, s) { for (const k of Object.keys(s)) { if (FORBIDDEN.has(k)) continue; /* recurse */ } return t; }</code></pre>
+<ol start="3"><li><strong>Use prototype-less objects or Maps</strong> for dictionaries built from user input: <code>Object.create(null)</code> has no prototype; <code>new Map()</code> stores keys separately; <strong><code>Object.fromEntries</code></strong> and <code>structuredClone</code> avoid prototype mutation.</li><li><strong>Validate input with schemas</strong> (Ajv with <code>additionalProperties: false</code>, Joi, Zod strict), allow-listing expected fields before merging; never parse arbitrary nested structures from query strings (<code>qs</code> <code>allowPrototypes: false</code>, which is the default, plus depth limits).</li><li><strong>Harden the runtime</strong>: <code>Object.freeze(Object.prototype)</code> (can break libraries; test), <strong><code>node --disable-proto=delete</code></strong> (removes <code>__proto__</code> accessor) or <code>=throw</code>, <code>--frozen-intrinsics</code> (experimental), Deno and secure-by-default runtimes, avoid <code>__proto__</code> setter use.</li><li><strong>Reduce gadgets</strong>: set explicit options when calling <code>child_process</code>, template engines and library constructors (do not rely on inherited defaults), use <code>Object.create(null)</code> option bags, pass <code>env</code> explicitly, and pin allow-listed options.</li><li><strong>Testing and tooling</strong>: SAST (CodeQL queries for prototype pollution, Semgrep), dependency scanning (<code>npm audit</code>, Snyk, GitHub Dependabot), dynamic testing (Burp <strong>DOM Invader</strong> prototype pollution detection, ppmap, PPScan), fuzz JSON bodies and query strings for <code>__proto__[x]</code>, <code>constructor[prototype][x]</code>, and unit tests asserting <code>({}).polluted === undefined</code> after processing hostile input.</li><li><strong>Defence in depth</strong>: CSP to mitigate resulting XSS, least privilege for Node processes (containers, no shell), WAF rules for <code>__proto__</code> patterns (weak but useful), monitoring unusual process spawns.</li></ol>
+<h4>Pitfalls</h4>
+<p>Fixing only <code>__proto__</code> and missing <code>constructor.prototype</code>, trusting <code>JSON.parse</code> output as safe, patching one library while another vulnerable merge exists, freezing the prototype in production without tests, and treating client-side pollution as harmless.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Which code patterns such as recursive merge, deep clone and path-based set functions are vulnerable?</li><li>How can prototype pollution lead to remote code execution in Node.js through gadgets in child_process or template engines?</li><li>What defences work: Object.create(null), Map, schema validation, freezing prototypes and the --disable-proto flag?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-89">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-89%3A+What+is+Prototype+Pollution+in+JavaScript+and+how+do+attackers%E2%80%A6&amp;question-id=sec-89&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+AppSec%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-89.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

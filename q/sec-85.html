@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain memory safety vulnerabilities (buffer overflow, use-after-free) and the role of memory-safe languages. | InterviewGearUp</title>
+<meta name="description" content="Memory safety bugs let code read or write memory it should not. Buffer overflows write past an allocation, use-after-free reuses freed memory, and double…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-85.html">
+<meta property="og:title" content="Explain memory safety vulnerabilities (buffer overflow, use-after-free) and the role of memory-safe languages. | InterviewGearUp">
+<meta property="og:description" content="Memory safety bugs let code read or write memory it should not. Buffer overflows write past an allocation, use-after-free reuses freed memory, and double…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-85.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain memory safety vulnerabilities (buffer overflow, use-after-free) and the role of memory-safe languages.</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · Systems · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Memory safety bugs let code read or write memory it should not. Buffer overflows write past an allocation, use-after-free reuses freed memory, and double frees or type confusion corrupt state, enabling code execution. Memory-safe languages such as Rust, Go, Java and C# enforce bounds, lifetime and type checks. Mitigations like ASLR, canaries and CFI raise exploitation cost in legacy C and C++.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why it matters</h4>
+<p>Roughly <strong>70 percent of severe vulnerabilities</strong> in large C and C++ codebases (Microsoft, Chromium, Android) are memory safety issues. Agencies (CISA, NSA, ONCD) urge adopting <strong>memory-safe languages</strong> and roadmaps. These bugs give attackers <strong>arbitrary code execution, privilege escalation and data leaks</strong> (Heartbleed was a buffer over-read).</p>
+<h4>Common classes</h4>
+<ol start="1"><li><strong>Buffer overflow (stack or heap)</strong>: writing beyond a buffer&#39;s bounds.</li></ol>
+<pre><code>void greet(const char *name) {
+    char buf[16];
+    strcpy(buf, name);             // no length check: name longer than 15 bytes overwrites adjacent stack memory
+}</code></pre>
+<p>   On the <strong>stack</strong>, the overflow can overwrite saved registers and the <strong>return address</strong>, redirecting execution to attacker-supplied code or ROP gadgets. On the <strong>heap</strong>, it corrupts neighbouring objects, function pointers or allocator metadata.</p>
+<ol start="2"><li><strong>Out-of-bounds read</strong> (Heartbleed, information leaks defeating ASLR).</li><li><strong>Use-after-free (UAF)</strong>: memory is freed but a dangling pointer is used later; if the allocator reuses the memory for another object, the attacker controls what the stale pointer interprets (vtable pointers, function pointers). Browser engines and kernels are frequent victims.</li></ol>
+<pre><code>char *p = malloc(32); free(p);
+char *q = malloc(32);              // may reuse the same chunk
+strcpy(q, attacker_data);
+p[0] = &#39;x&#39;;                         // writes into q&#39;s object through a dangling pointer</code></pre>
+<ol start="4"><li><strong>Double free</strong>, invalid free, <strong>uninitialised memory use</strong>, <strong>integer overflow</strong> leading to undersized allocations (<code>malloc(n * size)</code> wraps), <strong>format string</strong> bugs (<code>printf(user_input)</code>), <strong>type confusion</strong>, <strong>data races</strong> causing memory corruption, <strong>null pointer dereference</strong> (DoS or exploit with mapped zero page), stack <strong>use-after-return</strong>.</li></ol>
+<h4>Exploit techniques and mitigations (defence in depth)</h4>
+<ul><li><strong>Stack canaries</strong> (<code>-fstack-protector-strong</code>): random value before the return address verified on function exit; detects linear overwrites.</li><li><strong>NX / DEP (W^X)</strong>: data pages are non-executable, preventing classic shellcode injection; attackers move to <strong>return-oriented programming (ROP)</strong> reusing existing code.</li><li><strong>ASLR</strong> randomises stack, heap and library addresses (PIE executables, <code>-fPIE -pie</code>), making gadget addresses unpredictable unless leaked.</li><li><strong>Control-Flow Integrity (CFI)</strong>, <strong>shadow stacks</strong> (Intel CET), <strong>pointer authentication</strong> (ARM PAC), <strong>memory tagging</strong> (ARM MTE) detect hijacked control flow or invalid pointer use.</li><li><strong>Fortify and compile flags</strong>: <code>-D_FORTIFY_SOURCE=2</code>, <code>-Wl,-z,relro,-z,now</code>, bounds-checked APIs (<code>strncpy_s</code>, <code>snprintf</code>, <code>std::span</code>, <code>std::string</code>), avoid unsafe functions (<code>gets</code>, <code>strcpy</code>, <code>sprintf</code>).</li><li><strong>Hardened allocators</strong> (scudo, hardened_malloc, <code>MALLOC_CHECK_</code>, GWP-ASan sampling UAF detector, MTE-assisted), <strong>quarantine freed memory</strong>, guard pages, zero-on-free.</li><li><strong>Sanitizers in testing</strong>: AddressSanitizer (heap and stack overflows, UAF), MemorySanitizer, UBSan, ThreadSanitizer; <strong>Valgrind</strong>; <strong>fuzzing</strong> (libFuzzer, AFL++, OSS-Fuzz) with sanitizers; static analysis (CodeQL, Coverity, Clang analyzer).</li><li><strong>Sandboxing and privilege separation</strong> (seccomp, site isolation, process-per-tab) to limit impact.</li></ul>
+<p>These <strong>raise cost but do not eliminate</strong> exploitation; bypass chains (info leak plus ROP) exist.</p>
+<h4>Memory-safe languages</h4>
+<ul><li><strong>Garbage-collected, bounds-checked languages</strong>: Java, C#, Go, Python, JavaScript, Swift, Kotlin eliminate buffer overflows and UAF in safe code (runtime checks, GC), though the runtime and native extensions may still be unsafe, and <strong>data races in Go</strong> can still break memory safety in rare cases.</li><li><strong>Rust</strong> provides memory safety <strong>without GC</strong> through <strong>ownership, borrowing and lifetimes</strong> enforced at compile time: each value has one owner; references are either many shared (<code>&amp;T</code>) or one exclusive (<code>&amp;mut T</code>), never both; the borrow checker rejects dangling references and data races; arrays are bounds-checked at runtime; no null (use <code>Option</code>). <code>unsafe</code> blocks permit raw pointers and FFI, so audit and minimise them (tools: Miri, cargo-geiger, Kani).</li></ul>
+<pre><code>let s = String::from(&quot;hi&quot;);
+let r = &amp;s;
+drop(s);             // compile error: cannot move out of `s` because it is borrowed
+println!(&quot;{}&quot;, r);</code></pre>
+<ul><li><strong>Safe C++ evolution</strong>: smart pointers (<code>unique_ptr</code>), <code>std::span</code>, hardened standard library modes, lifetime profiles, Carbon, and <strong>Circle/Safe C++ proposals</strong>; also <strong>Checked C</strong> and <code>-fbounds-safety</code> (Clang).</li><li><strong>Migration strategy</strong>: write <strong>new code in memory-safe languages</strong>, rewrite or wrap the highest-risk attack surface first (parsers, network-facing protocol handlers, media codecs, kernel drivers), incremental interop (Rust in Android and Linux kernel, <code>cxx</code> and <code>bindgen</code>), keep unsafe C/C++ in sandboxed processes, use <strong>fuzzing and CI sanitizers</strong> for legacy, track metrics (percentage of new code memory-safe, memory safety CVE rate).</li></ul>
+<h4>Pitfalls</h4>
+<p>Relying on ASLR and canaries alone, disabling mitigations for performance, ignoring <code>unsafe</code> blocks or native dependencies, believing GC languages remove all memory bugs in their native libraries, and not fuzzing parsers.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does a stack buffer overflow overwrite a return address and how do stack canaries and ASLR stop reliable exploitation?</li><li>Why is use-after-free so hard to detect and how do sanitizers, fuzzing and allocator hardening help?</li><li>How does Rust&#39;s ownership and borrowing model prevent these bugs at compile time and what remains unsafe?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-85">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-85%3A+Explain+memory+safety+vulnerabilities+%28buffer+overflow%2C%E2%80%A6&amp;question-id=sec-85&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+Systems%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-85.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

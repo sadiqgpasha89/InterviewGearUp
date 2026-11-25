@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you identify the critical path in a complex engineering project and de-risk dependencies? | InterviewGearUp</title>
+<meta name="description" content="Find the critical path by listing tasks with durations and dependencies, building a dependency graph, and identifying the longest chain of dependent work…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/lead-28.html">
+<meta property="og:title" content="How do you identify the critical path in a complex engineering project and de-risk dependencies? | InterviewGearUp">
+<meta property="og:description" content="Find the critical path by listing tasks with durations and dependencies, building a dependency graph, and identifying the longest chain of dependent work…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/lead-28.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you identify the critical path in a complex engineering project and de-risk dependencies?</h1>
+<p class="muted small-text meta-line">Tech lead / Engineering manager · Gear 3 (Senior) · Delivery · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Find the critical path by listing tasks with durations and dependencies, building a dependency graph, and identifying the longest chain of dependent work that sets the minimum project duration; any slip there delays delivery. De-risk it by starting long-lead items early, breaking tasks into smaller pieces, adding spikes and prototypes, parallelising, assigning owners and tracking float and buffers.</p></div>
+<h4>Explained in depth</h4>
+<h4>What the critical path is</h4>
+<p>The <strong>critical path</strong> is the <strong>longest sequence of dependent tasks</strong> from start to finish; its length equals the <strong>minimum time to complete the project</strong>. Tasks on it have <strong>zero float (slack)</strong>: any delay moves the delivery date. Tasks off the path have float and can slip by that amount without affecting the end date. The path can shift as work progresses, so it must be recomputed regularly.</p>
+<h4>How to find it</h4>
+<ol start="1"><li><strong>Decompose the work</strong> into tasks or milestones (work breakdown structure) at a granularity that can be estimated (days to a couple of weeks).</li><li><strong>Identify dependencies</strong>: finish-to-start (B starts after A), start-to-start, finish-to-finish, plus external ones (other teams, vendors, legal, hardware, approvals, environments, data access). Ask: &quot;what must be true before this can start?&quot; and &quot;what is blocked waiting on us?&quot;.</li><li><strong>Estimate durations</strong> using ranges (optimistic, likely, pessimistic; PERT: (O + 4M + P) / 6) and reference-class data from past projects.</li><li><strong>Build the network</strong> (graph or Gantt) and compute: <strong>forward pass</strong> for earliest start and finish, <strong>backward pass</strong> for latest start and finish, <strong>float = latest start minus earliest start</strong>. Tasks with zero float form the critical path. Tools: Jira with Advanced Roadmaps, Linear, Microsoft Project, Smartsheet, OmniPlan, or simple scripts.</li></ol>
+<pre><code>A(3d) -&gt; B(5d) -&gt; E(4d) -&gt; G(2d)     critical path = 14 days
+A(3d) -&gt; C(2d) -&gt; F(3d) -&gt; G         length 10 days, float 4
+A(3d) -&gt; D(4d) -&gt; F                  </code></pre>
+<ol start="5"><li><strong>Include non-engineering work</strong>: security review, legal approval, procurement, data migration, training, launch communications, and environment provisioning, which often hide on the real critical path.</li></ol>
+<h4>De-risking the critical path</h4>
+<ul><li><strong>Start long-lead and uncertain items first</strong>: external approvals, vendor onboarding, infrastructure procurement, security and compliance reviews, data access, integration contracts.</li><li><strong>Reduce uncertainty early</strong> with <strong>spikes, prototypes and proofs of concept</strong> on the riskiest technical assumptions (performance, integration feasibility), and &quot;walking skeleton&quot; end-to-end slices to expose integration problems.</li><li><strong>Shorten or split</strong> critical tasks: slice into smaller deliverables, allow overlapping work using agreed interfaces and <strong>contracts or mocks</strong> (API specs, consumer-driven contract tests) so dependent teams can work in parallel.</li><li><strong>Add resources carefully</strong>: crashing the critical path by adding people helps only if the work is parallelisable (Brooks&#39;s Law); otherwise reduce scope, simplify the design or remove steps.</li><li><strong>Remove or decouple dependencies</strong>: feature flags to merge incomplete work, stub services, temporary manual processes, choosing a simpler vendor or an in-house fallback.</li><li><strong>Own every dependency</strong>: name a <strong>directly responsible individual</strong> on both sides, agree dates in writing, hold short syncs, and escalate early with a clear ask. Track dependencies in a visible <strong>dependency board</strong>.</li><li><strong>Buffers and contingency</strong>: add schedule buffer at the end of the path (critical chain method aggregates buffers and tracks <strong>buffer consumption</strong> instead of padding every task), and plan fallback options with decision dates (&quot;if the vendor API is not ready by March 1, we ship with the manual workaround&quot;).</li><li><strong>Monitor and re-plan</strong>: weekly review of the critical path, <strong>float erosion</strong> and burn-up; use leading indicators (blocked time, unfinished spikes, review queue length). Update the plan as estimates change and communicate impact on dates early.</li><li><strong>Risk register</strong>: list risks with probability, impact, owner and mitigation; run a <strong>pre-mortem</strong> (&quot;assume we launched late; why?&quot;).</li></ul>
+<h4>Communicating</h4>
+<p>Share the critical path and risks with stakeholders using a simple view (milestones, status, confidence, top three risks). Present trade-offs: date, scope or resources.</p>
+<h4>Pitfalls</h4>
+<p>Treating estimates as precise, ignoring external dependencies, optimising off-path tasks, letting integration happen at the end, hiding bad news, and failing to recompute the path as things change.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you build a dependency graph and compute float for a software project with uncertain estimates?</li><li>How do you de-risk an external dependency such as a vendor API or another team&#39;s deliverable?</li><li>How does critical chain or buffer management differ from simple critical path scheduling?</li></ul>
+<p><a class="btn primary" href="../#/q/lead-28">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+lead-28%3A+How+do+you+identify+the+critical+path+in+a+complex+engineering%E2%80%A6&amp;question-id=lead-28&amp;context=Tech+lead+%2F+Engineering+manager%2C+Gear+3%2C+topic%3A+Delivery%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Flead-28.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

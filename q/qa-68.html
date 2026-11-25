@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is service virtualization and how does it allow testing against simulated external partners? | InterviewGearUp</title>
+<meta name="description" content="Service virtualization replaces real dependencies such as partner APIs, mainframes or payment providers with controllable simulators that mimic their…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-68.html">
+<meta property="og:title" content="What is service virtualization and how does it allow testing against simulated external partners? | InterviewGearUp">
+<meta property="og:description" content="Service virtualization replaces real dependencies such as partner APIs, mainframes or payment providers with controllable simulators that mimic their…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-68.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is service virtualization and how does it allow testing against simulated external partners?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 3 (Senior) · Microservices · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Service virtualization replaces real dependencies such as partner APIs, mainframes or payment providers with controllable simulators that mimic their protocol, data and behaviour including latency, errors and rate limits. It lets teams test early, reliably and repeatedly without cost or availability risk, using tools like WireMock, Mountebank, Hoverfly or Microcks, driven by contracts or recorded traffic.</p></div>
+<h4>Explained in depth</h4>
+<h4>The problem</h4>
+<p>Modern systems depend on services you do not control: partners with limited sandboxes, third-party APIs with quotas and costs, legacy systems that are slow or unavailable, and teams whose services are not built yet. Testing against them is slow, flaky, costly, and cannot easily reproduce failures (timeouts, outages, bad data).</p>
+<h4>What it is</h4>
+<p><strong>Service virtualization</strong> creates a <strong>stand-in</strong> that behaves like the dependency at the protocol level (HTTP, gRPC, SOAP, JMS, MQ, TCP, databases) and runs in your environment. Unlike a simple in-code mock, it is an actual network service that the system under test calls, so the real client code, serialisation, TLS and timeouts are exercised.</p>
+<ul><li><strong>Stub</strong>: returns canned responses.</li><li><strong>Mock</strong>: verifies interactions (expected calls) inside a unit test.</li><li><strong>Fake</strong>: lightweight working implementation (in-memory database).</li><li><strong>Virtual service (simulator)</strong>: network-accessible, stateful, data-driven, with latency and failure behaviour, shared across teams.</li></ul>
+<h4>Ways to create virtual services</h4>
+<ol start="1"><li><strong>From specifications</strong>: OpenAPI, AsyncAPI, WSDL, protobuf, GraphQL schema (Microcks, Prism, Stoplight, WireMock with generated stubs); good for contract-first work and parallel development.</li><li><strong>Record and replay</strong>: proxy real traffic once (WireMock recording, Hoverfly capture mode, Mountebank proxy), store responses, replay; fast but must be sanitised (no secrets or PII) and refreshed.</li><li><strong>Hand-written rules</strong>: request matching on method, path, headers and body with templated responses.</li></ol>
+<pre><code>{ &quot;request&quot;: { &quot;method&quot;: &quot;POST&quot;, &quot;urlPath&quot;: &quot;/v1/shipments&quot;, &quot;bodyPatterns&quot;: [{ &quot;matchesJsonPath&quot;: &quot;$.weightKg&quot; }] },
+  &quot;response&quot;: { &quot;status&quot;: 201, &quot;headers&quot;: { &quot;Content-Type&quot;: &quot;application/json&quot; },
+    &quot;jsonBody&quot;: { &quot;trackingId&quot;: &quot;TRK-{{randomValue length=8 type=&#39;ALPHANUMERIC&#39;}}&quot;, &quot;status&quot;: &quot;CREATED&quot; },
+    &quot;fixedDelayMilliseconds&quot;: 250 } }</code></pre>
+<ol start="4"><li><strong>Stateful scenarios</strong>: WireMock scenarios or Mountebank behaviours model sequences (order <code>PENDING → SHIPPED → DELIVERED</code>, token expiry, first call fails then succeeds).</li></ol>
+<h4>Fault and edge-case simulation</h4>
+<p>This is the main value: HTTP <code>429</code> with <code>Retry-After</code>, <code>500</code>, <code>503</code>, slow responses beyond the client timeout, connection reset, truncated or malformed JSON, schema-invalid fields, duplicate callbacks, out-of-order webhooks, large payloads, certificate errors, partner downtime windows, and unusual data (unicode, nulls). Validate the system&#39;s retries, circuit breakers, fallbacks, idempotency and error messages.</p>
+<h4>Keeping simulators trustworthy</h4>
+<ul><li><strong>Contract testing</strong> (Pact provider verification, or scheduled &quot;smoke against real sandbox&quot; that compares simulator and real responses for drift).</li><li>Generate virtual services from the <strong>partner&#39;s published spec</strong> and fail CI on spec changes.</li><li>Version virtual services alongside tests, review recorded data, and track a <strong>fidelity gap</strong> list (behaviours the simulator does not model).</li><li>Keep a small number of tests against the <strong>real sandbox</strong> in a separate pipeline stage to confirm assumptions.</li></ul>
+<h4>Where it fits</h4>
+<p>Local development and CI (Testcontainers starting WireMock), shared test environments, performance testing (simulate partners with realistic latency instead of load testing someone else&#39;s system), demos, training, and parallel development before a dependency exists. Tools: <strong>WireMock</strong>, <strong>Mountebank</strong>, <strong>Hoverfly</strong>, <strong>Microcks</strong>, <strong>MockServer</strong>, <strong>Prism</strong>, commercial suites (Parasoft Virtualize, Broadcom DevTest, Tricentis).</p>
+<h4>Pitfalls</h4>
+<p>Simulators that drift from reality, over-reliance so integration bugs surface only in production, recording real data containing PII, shared simulators changed by one team breaking another, and treating happy-path stubs as sufficient.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the difference between a mock, a stub and a virtual service?</li><li>How do you keep a simulator faithful to the real partner as the real API changes?</li><li>How do you simulate faults like timeouts, malformed responses and rate limits?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-68">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-68%3A+What+is+service+virtualization+and+how+does+it+allow+testing+against%E2%80%A6&amp;question-id=qa-68&amp;context=QA+%2F+SDET%2C+Gear+3%2C+topic%3A+Microservices%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-68.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

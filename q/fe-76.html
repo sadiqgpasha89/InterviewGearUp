@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do Subresource Integrity (SRI) hashes protect third-party CDN scripts from tampering? | InterviewGearUp</title>
+<meta name="description" content="Subresource Integrity adds an integrity attribute with a cryptographic hash of the expected file to script and link tags. The browser downloads the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-76.html">
+<meta property="og:title" content="How do Subresource Integrity (SRI) hashes protect third-party CDN scripts from tampering? | InterviewGearUp">
+<meta property="og:description" content="Subresource Integrity adds an integrity attribute with a cryptographic hash of the expected file to script and link tags. The browser downloads the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-76.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do Subresource Integrity (SRI) hashes protect third-party CDN scripts from tampering?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · Security · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Subresource Integrity adds an integrity attribute with a cryptographic hash of the expected file to script and link tags. The browser downloads the resource, hashes it and refuses to run it if the hash differs, so a compromised or tampered CDN cannot inject code into your page.</p></div>
+<h4>Explained in depth</h4>
+<h4>The risk</h4>
+<p>Loading <code>https://cdn.example.com/lib.js</code> means that anyone who controls or compromises that host can run arbitrary code in your origin: steal tokens, skim payment forms, redirect users. Incidents (the 2018 Magecart attacks, polyfill.io in 2024) show that third-party scripts are an attack vector.</p>
+<h4>How SRI works</h4>
+<pre><code>&lt;script src=&quot;https://cdn.example.com/lib@3.2.1/lib.min.js&quot;
+        integrity=&quot;sha384-oqVuAfXRKap7fdgcCY5uykM6+R9GqQ8K/uxy9rx7HNQlGYl1kPzQho1wx4JwY8wC&quot;
+        crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
+&lt;link rel=&quot;stylesheet&quot; href=&quot;https://cdn.example.com/ui.css&quot; integrity=&quot;sha384-...&quot; crossorigin=&quot;anonymous&quot;&gt;</code></pre>
+<p>The value is <code>algorithm-base64(hash)</code> with <code>sha256</code>, <code>sha384</code> or <code>sha512</code> (use 384 or 512). Several hashes can be listed (the browser accepts any match, which allows rolling upgrades). Generate with: <code>openssl dgst -sha384 -binary lib.min.js | openssl base64 -A</code>, or <code>https://www.srihash.org</code>, or the bundler plugin (<code>webpack-subresource-integrity</code>).</p>
+<p>If the downloaded bytes do not match, the browser <strong>blocks</strong> the resource and fires an error. Pair it with a fallback (local copy) when availability matters.</p>
+<h4>Requirements and caveats</h4>
+<ul><li>Cross-origin resources need <code>crossorigin=&quot;anonymous&quot;</code> and the server must send CORS headers (<code>Access-Control-Allow-Origin</code>); otherwise the browser cannot read the bytes to hash them and fails.</li><li>The URL must be <strong>immutable</strong>: pin an exact version (<code>lib@3.2.1</code>), never <code>latest</code> or a URL where the vendor may change content (analytics snippets, tag managers, ad scripts that update continuously). SRI cannot protect dynamic third-party scripts.</li><li>Compression and minification differences between edge nodes (different <code>Accept-Encoding</code> or transforms such as auto-minify) can change bytes; disable CDN transforms for integrity-checked files.</li><li>Works for <code>&lt;script&gt;</code> and <code>&lt;link rel=&quot;stylesheet|preload|modulepreload&quot;&gt;</code>; inline scripts use CSP hashes or nonces instead.</li></ul>
+<h4>Defence in depth</h4>
+<ul><li><strong>CSP</strong> <code>require-sri-for</code> was removed; use <code>script-src</code> allow lists with hashes or nonces and <code>strict-dynamic</code>.</li><li><strong>Self-host</strong> critical libraries and deploy them with your build (best option).</li><li>Lock npm dependencies (<code>package-lock</code>, <code>npm ci</code>), audit, use provenance and signed packages, and monitor third-party scripts with reporting (CSP <code>report-to</code>).</li><li>Sandbox widgets in iframes with the <code>sandbox</code> attribute and minimal permissions.</li></ul>
+<h4>Pitfalls</h4>
+<p>Missing <code>crossorigin</code> causing blocked loads, hashes not updated on upgrade (script silently blocked), assuming SRI protects against a malicious <strong>first-party</strong> build, and relying on it for mutable vendor tags.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does SRI require CORS for cross-origin resources?</li><li>What breaks when a CDN serves a different build for the same URL, and how do you avoid it?</li><li>How does SRI relate to CSP and to supply chain attacks on npm?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-76">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-76%3A+How+do+Subresource+Integrity+%28SRI%29+hashes+protect+third-party+CDN%E2%80%A6&amp;question-id=fe-76&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+Security%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-76.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

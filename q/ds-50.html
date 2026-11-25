@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you assess and mitigate unfairness in a machine learning model used for decisions such as credit or hiring? | InterviewGearUp</title>
+<meta name="description" content="Define the harm and the relevant fairness criterion with stakeholders, such as demographic parity, equalised odds or calibration across groups, measure…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-50.html">
+<meta property="og:title" content="How do you assess and mitigate unfairness in a machine learning model used for decisions such as credit or hiring? | InterviewGearUp">
+<meta property="og:description" content="Define the harm and the relevant fairness criterion with stakeholders, such as demographic parity, equalised odds or calibration across groups, measure…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-50.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you assess and mitigate unfairness in a machine learning model used for decisions such as credit or hiring?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 4 (Lead / Staff) · Fairness and responsible AI · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Define the harm and the relevant fairness criterion with stakeholders, such as demographic parity, equalised odds or calibration across groups, measure metrics by subgroup with uncertainty, trace sources of bias in data and labels, and mitigate through data, in-training constraints or post-processing thresholds. Fairness criteria conflict, so document trade-offs, legal constraints and monitoring.</p></div>
+<h4>Explained in depth</h4>
+<h4>Sources of unfairness</h4>
+<ul><li><strong>Historical bias</strong>: data reflect past discrimination (hiring records favouring one group).</li><li><strong>Representation and measurement bias</strong>: some groups under-sampled, features measured differently (arrest records as a proxy for crime; healthcare spending as a proxy for health need).</li><li><strong>Label bias</strong>: labels come from biased human decisions.</li><li><strong>Proxy variables</strong>: postcode, school or purchasing patterns that correlate with protected attributes.</li><li><strong>Aggregation and evaluation bias</strong>: one model for heterogeneous groups; test sets that do not represent all groups.</li><li><strong>Feedback loops</strong>: decisions change who appears in future data (policing, lending).</li></ul>
+<p>Removing the sensitive attribute (&quot;fairness through unawareness&quot;) does <strong>not</strong> work because proxies leak it; you often need the attribute to <strong>measure</strong> disparities.</p>
+<h4>Fairness criteria</h4>
+<div class="md-table"><table><thead><tr><th>Criterion</th><th>Requirement</th><th>Typical use</th></tr></thead><tbody><tr><td><strong>Demographic (statistical) parity</strong></td><td>equal selection rates across groups</td><td>outreach, allocation; legal &quot;four-fifths rule&quot; for adverse impact</td></tr><tr><td><strong>Equal opportunity</strong></td><td>equal true positive rates</td><td>qualified candidates get selected equally</td></tr><tr><td><strong>Equalised odds</strong></td><td>equal TPR and FPR</td><td>error parity</td></tr><tr><td><strong>Predictive parity / calibration within groups</strong></td><td>same precision or same meaning of a score across groups</td><td>risk scores</td></tr><tr><td><strong>Individual fairness</strong></td><td>similar individuals receive similar outcomes</td><td>needs a similarity metric</td></tr><tr><td><strong>Counterfactual fairness</strong></td><td>outcome unchanged in a counterfactual world with a different protected attribute</td><td>requires a causal model</td></tr></tbody></table></div>
+<p>When base rates differ between groups, <strong>these criteria cannot all hold simultaneously</strong> (impossibility results by Kleinberg et al. and Chouldechova). So the choice is a <strong>value and legal judgement</strong> made with legal, policy and domain stakeholders, tied to the specific harm (wrongful denial versus wrongful approval).</p>
+<h4>Assessment workflow</h4>
+<ol start="1"><li>Define the decision, affected groups, harms, and applicable law (equal credit and employment laws, GDPR, EU AI Act).</li><li>Compute <strong>metrics by subgroup</strong>: selection rate, TPR, FPR, precision, calibration curves, with confidence intervals and intersectional groups (small groups need care).</li><li>Investigate causes: data coverage, label process, features and proxies, threshold effects.</li><li>Compare model alternatives and thresholds; examine performance-fairness trade-off curves.</li></ol>
+<pre><code>from fairlearn.metrics import MetricFrame, selection_rate, true_positive_rate, false_positive_rate
+mf = MetricFrame(metrics={&quot;sel&quot;: selection_rate, &quot;tpr&quot;: true_positive_rate, &quot;fpr&quot;: false_positive_rate},
+                 y_true=y, y_pred=pred, sensitive_features=group)
+print(mf.by_group, mf.difference())</code></pre>
+<h4>Mitigation</h4>
+<div class="md-table"><table><thead><tr><th>Stage</th><th>Techniques</th></tr></thead><tbody><tr><td><strong>Pre-processing</strong></td><td>collect better data, reweighing, resampling, relabelling, remove or transform proxies, fair representations</td></tr><tr><td><strong>In-processing</strong></td><td>constrained optimisation (Fairlearn reductions), adversarial debiasing, fairness regularisers</td></tr><tr><td><strong>Post-processing</strong></td><td>group-specific thresholds to equalise odds or parity, reject-option classification (may raise legal issues where explicit use of protected attributes is restricted)</td></tr><tr><td><strong>Process</strong></td><td>human review for borderline cases, appeal mechanisms, explanations and recourse, documentation (model cards, datasheets), monitoring</td></tr></tbody></table></div>
+<h4>Governance</h4>
+<p>Document intended use and limitations, involve affected communities, version audits, run periodic reviews, monitor subgroup metrics in production, and maintain privacy: when protected attributes are not collected, use legally permitted inference methods (BISG) carefully or conduct audits with voluntary self-reported data.</p>
+<h4>Pitfalls</h4>
+<p>Optimising a single metric blindly, ignoring intersectional groups, assuming a fair model today stays fair after drift, and treating fairness as purely technical.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why can&#39;t you satisfy demographic parity, equalised odds and calibration at the same time when base rates differ?</li><li>Does removing the protected attribute from the features make a model fair?</li><li>How would you audit a deployed model when you do not collect protected attributes?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-50">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-50%3A+How+do+you+assess+and+mitigate+unfairness+in+a+machine+learning%E2%80%A6&amp;question-id=ds-50&amp;context=Data+scientist%2C+Gear+4%2C+topic%3A+Fairness+and+responsible+AI%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-50.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

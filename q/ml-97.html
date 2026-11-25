@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are the trade-offs of deploying LLMs on dedicated GPUs versus serverless inference endpoints? | InterviewGearUp</title>
+<meta name="description" content="Dedicated GPUs give predictable low latency, full control over the engine and batching, high utilisation at steady load, and lower cost per token at…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-97.html">
+<meta property="og:title" content="What are the trade-offs of deploying LLMs on dedicated GPUs versus serverless inference endpoints? | InterviewGearUp">
+<meta property="og:description" content="Dedicated GPUs give predictable low latency, full control over the engine and batching, high utilisation at steady load, and lower cost per token at…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-97.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are the trade-offs of deploying LLMs on dedicated GPUs versus serverless inference endpoints?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · Deployment · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Dedicated GPUs give predictable low latency, full control over the engine and batching, high utilisation at steady load, and lower cost per token at scale, but you pay for idle capacity and run operations yourself. Serverless endpoints scale to zero and charge per request or token, ideal for spiky or low traffic, but have cold starts, limits, less control and a higher unit price at high volume.</p></div>
+<h4>Explained in depth</h4>
+<h4>The two models</h4>
+<ul><li><strong>Dedicated GPU deployment</strong>: you reserve GPU instances (A100, H100, L40S) or managed dedicated endpoints (SageMaker real-time endpoints, Vertex AI dedicated endpoints, Azure ML managed endpoints, provisioned throughput on Bedrock and Azure OpenAI, Kubernetes with vLLM or TensorRT-LLM). Capacity runs continuously (or with autoscaling) and you pay per GPU-hour.</li><li><strong>Serverless inference</strong>: a platform runs the model on shared or on-demand infrastructure and bills <strong>per token or per request</strong> (OpenAI, Anthropic, Bedrock on-demand, Together, Fireworks, Groq, Vertex AI model garden), or per GPU-second with scale-to-zero (Modal, RunPod serverless, Cloud Run GPU, Replicate, SageMaker Serverless Inference for small models, Lambda for CPU-only).</li></ul>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th>Dimension</th><th>Dedicated GPUs</th><th>Serverless</th></tr></thead><tbody><tr><td>Cost at low or spiky traffic</td><td>poor (idle GPUs)</td><td>excellent (pay per use, scale to zero)</td></tr><tr><td>Cost at high steady traffic</td><td>best (high utilisation, lower per-token cost)</td><td>higher unit price</td></tr><tr><td>Latency</td><td>predictable, no cold starts, tunable</td><td>variable; cold starts of seconds to minutes for large weights; queueing in shared pools</td></tr><tr><td>Throughput control</td><td>full: batching, quantisation, speculative decoding, caching</td><td>limited to provider options and rate limits</td></tr><tr><td>Model choice</td><td>any open model, fine-tunes, LoRA adapters, custom code</td><td>provider catalogue (custom model support varies)</td></tr><tr><td>Scalability</td><td>you manage autoscaling and GPU quota</td><td>elastic, provider manages capacity</td></tr><tr><td>Operations</td><td>heavy (drivers, images, monitoring, upgrades, failover)</td><td>minimal</td></tr><tr><td>Data governance</td><td>VPC isolation, residency, no third-party retention possible</td><td>depends on provider terms, regions, zero-retention options</td></tr><tr><td>Reliability</td><td>your SLOs and failover design</td><td>provider SLA, shared outages, rate limits (429)</td></tr><tr><td>Time to market</td><td>slower</td><td>immediate</td></tr></tbody></table></div>
+<h4>Cost reasoning</h4>
+<ul><li><strong>Dedicated cost</strong> ≈ <code>GPU hourly price × number of GPUs × hours</code>. A single H100 at about $3 to $5 per hour serving a quantised 70B model might deliver, say, 1,500 to 3,000 output tokens per second with continuous batching under load, so cost per million tokens drops sharply when utilisation is high (60 to 80 percent).</li><li><strong>Serverless cost</strong> = <code>tokens × price per token</code>. Break-even: <code>monthly token volume</code> at which the per-token bill exceeds the reserved GPU cost at realistic utilisation. If your traffic uses the GPU 10 percent of the time, serverless is usually cheaper; at sustained high utilisation, dedicated wins. Include engineering and on-call cost, redundancy (at least 2 replicas for HA), and peak provisioning (diurnal traffic leaves GPUs idle at night unless autoscaled or shared with batch workloads).</li><li>Mitigate idle cost with <strong>autoscaling</strong>, spot or preemptible instances (for batch), scheduling offline jobs in valleys, <strong>multi-tenant model sharing</strong> and multi-LoRA serving.</li></ul>
+<h4>Technical differences</h4>
+<ul><li><strong>Cold start</strong>: loading tens to hundreds of GB of weights from object storage to GPU takes tens of seconds to minutes; mitigations: keep minimum warm replicas, snapshot or fast-loading formats (safetensors, tensorizer, GPU memory snapshots), local NVMe caches, smaller or quantised models, provisioned concurrency.</li><li><strong>Performance engineering</strong> on dedicated: choose quantisation (FP8, AWQ), tensor parallelism across GPUs, <strong>continuous batching and paged attention</strong>, prefix caching, speculative decoding, request routing by length, separate prefill and decode (disaggregation), reserve KV cache headroom; monitor time to first token, tokens per second, queue time, GPU memory.</li><li><strong>Serverless limits</strong>: rate limits (tokens per minute), context limits, concurrency caps, timeouts, request size, and provider model deprecations.</li><li><strong>Compliance</strong>: dedicated in your VPC supports strict data residency, private networking, customer-managed keys and no data sharing; serverless needs vendor agreements (DPA, zero data retention, regional endpoints, SOC 2, HIPAA BAA).</li></ul>
+<h4>Choosing</h4>
+<ul><li><strong>Start serverless</strong> for prototypes, unpredictable demand, and when quality of frontier models matters most.</li><li><strong>Move to dedicated</strong> when volume is high and stable, latency SLOs are strict, you need custom or fine-tuned open models, or data cannot leave your boundary.</li><li><strong>Hybrid</strong>: dedicated for baseline traffic, serverless for overflow bursts, with a gateway (LiteLLM, Portkey, Envoy AI gateway) for routing, fallbacks and cost tracking; route easy requests to small models and hard ones to larger models.</li></ul>
+<h4>Pitfalls</h4>
+<p>Comparing list prices without utilisation, forgetting redundancy and engineering cost, ignoring cold starts on SLO-bound paths, and locking into a provider-specific API without an abstraction layer.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you compute the break-even utilisation between dedicated and per-token pricing?</li><li>How do cold starts of large model weights affect serverless latency and what mitigations exist?</li><li>What changes for data residency, fine-tuned models and multi-tenant isolation?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-97">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-97%3A+What+are+the+trade-offs+of+deploying+LLMs+on+dedicated+GPUs+versus%E2%80%A6&amp;question-id=ml-97&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+Deployment%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-97.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

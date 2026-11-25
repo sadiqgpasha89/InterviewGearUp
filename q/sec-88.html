@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain OAuth 2.0 Token Revocation (RFC 7009) and Token Introspection (RFC 7662) architectures. | InterviewGearUp</title>
+<meta name="description" content="RFC 7009 revocation lets a client call the authorization server to invalidate an access or refresh token. RFC 7662 introspection lets a resource server…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-88.html">
+<meta property="og:title" content="Explain OAuth 2.0 Token Revocation (RFC 7009) and Token Introspection (RFC 7662) architectures. | InterviewGearUp">
+<meta property="og:description" content="RFC 7009 revocation lets a client call the authorization server to invalidate an access or refresh token. RFC 7662 introspection lets a resource server…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-88.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain OAuth 2.0 Token Revocation (RFC 7009) and Token Introspection (RFC 7662) architectures.</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · IAM · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>RFC 7009 revocation lets a client call the authorization server to invalidate an access or refresh token. RFC 7662 introspection lets a resource server ask whether an opaque token is active and fetch its metadata. Together they give central, near-real-time control over opaque tokens, unlike self-contained JWTs that stay valid until expiry unless extra checks are added.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why these endpoints exist</h4>
+<p>OAuth 2.0 issues <strong>access tokens</strong> (short-lived credentials presented to APIs) and <strong>refresh tokens</strong> (long-lived, used to obtain new access tokens). Real-world needs: <strong>user logs out</strong>, a <strong>device is lost</strong>, a <strong>credential is compromised</strong>, <strong>consent is withdrawn</strong>, an <strong>employee leaves</strong>, or an <strong>app is uninstalled</strong>. Tokens must stop working quickly, and APIs must be able to verify that a token is still valid.</p>
+<h4>Token revocation (RFC 7009)</h4>
+<p>The client (or user via the app) sends a request to the authorization server&#39;s <strong>revocation endpoint</strong> (<code>/oauth/revoke</code>):</p>
+<pre><code>POST /oauth/revoke HTTP/1.1
+Host: auth.example.com
+Authorization: Basic czZCaGRSa3F0MzpnWDFmQmF0M2JW        # client authentication (confidential clients)
+Content-Type: application/x-www-form-urlencoded
+
+token=45ghiukldjahdnhzdauz&amp;token_type_hint=refresh_token</code></pre>
+<ul><li><code>token_type_hint</code> (<code>access_token</code> or <code>refresh_token</code>) is optional; the server searches both if the hint is wrong.</li><li>Response: <strong><code>200 OK</code> even if the token was already invalid or unknown</strong> (prevents token fishing); <code>400 unsupported_token_type</code> or <code>503</code> if unavailable. The client must not treat failure as a security guarantee and should delete local copies.</li><li>Semantics: revoking a <strong>refresh token</strong> should also invalidate <strong>access tokens issued from it</strong> (or the whole <strong>grant/authorisation</strong>, and best practice with <strong>refresh token rotation</strong> is to revoke the <strong>entire token family</strong> if a previously used refresh token is replayed, indicating theft). Revoking an access token alone may leave the refresh token active unless the server decides otherwise.</li><li>The server must authenticate the client and verify the token was issued to that client (a client cannot revoke another client&#39;s tokens), and may support <strong>user-initiated revocation</strong> from account security pages and <strong>admin revocation</strong> on offboarding.</li></ul>
+<h4>Token introspection (RFC 7662)</h4>
+<p>A <strong>resource server (API)</strong> that receives an opaque bearer token calls the <strong>introspection endpoint</strong> (<code>/oauth/introspect</code>) with its own credentials:</p>
+<pre><code>POST /oauth/introspect HTTP/1.1
+Authorization: Bearer &lt;resource-server-credential&gt;     # or client_secret_basic / mTLS
+Content-Type: application/x-www-form-urlencoded
+
+token=2YotnFZFEjr1zCsicMWpAA&amp;token_type_hint=access_token</code></pre>
+<p>Response:</p>
+<pre><code>{ &quot;active&quot;: true, &quot;scope&quot;: &quot;orders:read profile&quot;, &quot;client_id&quot;: &quot;mobile-app&quot;, &quot;username&quot;: &quot;ada&quot;,
+  &quot;token_type&quot;: &quot;Bearer&quot;, &quot;exp&quot;: 1767225600, &quot;iat&quot;: 1767222000, &quot;sub&quot;: &quot;user-123&quot;, &quot;aud&quot;: &quot;https://api.example.com&quot;, &quot;iss&quot;: &quot;https://auth.example.com&quot; }</code></pre>
+<p>or simply <code>{ &quot;active&quot;: false }</code> for expired, revoked, malformed or unknown tokens (no extra detail). The API then enforces scopes, audience and subject. RFC 9068 and RFC 9701 define a JWT profile for access tokens and introspection responses as signed JWTs.</p>
+<h4>Architecture trade-offs</h4>
+<div class="md-table"><table><thead><tr><th>Approach</th><th>Pros</th><th>Cons</th></tr></thead><tbody><tr><td><strong>Opaque tokens + introspection</strong></td><td>instant revocation, hide claims from clients, central policy and consent changes, small tokens</td><td>network call per request (latency, availability, load), authorisation server is a critical dependency</td></tr><tr><td><strong>Self-contained JWT access tokens (validated locally)</strong></td><td>stateless, fast, scalable, offline verification via JWKS</td><td>cannot be revoked until expiry unless extra mechanisms, larger, claims visible, stale permissions</td></tr><tr><td><strong>Hybrid</strong></td><td>JWT with short TTL (5 to 15 minutes) plus introspection or denylist for high-risk calls</td><td>complexity</td></tr></tbody></table></div>
+<p>Mitigations for JWT revocation: very <strong>short lifetimes</strong>, refresh token revocation, <strong>revocation lists / denylist</strong> keyed by <code>jti</code> or <code>sid</code> distributed via cache, <strong>continuous access evaluation (CAEP)</strong> and <strong>OpenID Shared Signals</strong> events (session revoked, credential changed), back-channel logout, token binding (<strong>DPoP, mTLS-bound tokens</strong>) so stolen tokens are unusable.</p>
+<h4>Operating the endpoints</h4>
+<ol start="1"><li><strong>Authentication</strong>: require client authentication or bearer credentials for introspection; only registered resource servers may call it; <strong>do not expose it publicly</strong>; rate-limit; log usage.</li><li><strong>Performance and caching</strong>: cache positive introspection results for a <strong>very short time</strong> (seconds to a minute, never beyond <code>exp</code>) with request coalescing; use local caches or sidecars (Envoy <code>ext_authz</code>, API gateways such as Kong, Apigee, NGINX), circuit breakers, high availability and regional deployment; consider fallback modes (fail closed for sensitive APIs).</li><li><strong>Consistency</strong>: revocation must propagate to all authorisation server nodes and caches; use shared stores (Redis, database) or event streams, and document the <strong>maximum staleness window</strong>.</li><li><strong>Privacy</strong>: introspection reveals user and scope data; restrict fields per resource server audience.</li><li><strong>Revocation triggers</strong>: logout, password change, MFA reset, suspicious activity (risk engine), consent withdrawal, device deregistration, refresh token reuse detection, admin action, client deletion; also revoke <strong>session cookies and sibling tokens</strong> by session ID (<code>sid</code>).</li><li><strong>Client behaviour</strong>: call revocation on logout (for native apps, revoke refresh token), then clear storage; handle <code>invalid_grant</code> on refresh.</li><li><strong>Testing</strong>: verify revoked tokens fail at introspection and at APIs within the allowed window, test refresh rotation theft detection, and test authorisation server outage behaviour.</li></ol>
+<h4>Pitfalls</h4>
+<p>Assuming revoking an access token invalidates everything, leaving introspection unauthenticated, caching introspection results for too long, JWT access tokens valid for hours with no revocation path, and forgetting to revoke refresh tokens at logout.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>When should resource servers use introspection versus validating self-contained JWTs locally and what are the trade-offs?</li><li>How does revoking a refresh token affect related access tokens and what does &#39;token family&#39; revocation mean?</li><li>How do you secure and scale the introspection endpoint with caching and client authentication?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-88">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-88%3A+Explain+OAuth+2.0+Token+Revocation+%28RFC+7009%29+and+Token%E2%80%A6&amp;question-id=sec-88&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+IAM%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-88.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

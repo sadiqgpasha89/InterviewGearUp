@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare Blue-Green deployments with Canary deployments for zero-downtime microservice upgrades. | InterviewGearUp</title>
+<meta name="description" content="Blue-green runs two full production environments and switches all traffic at once from the old (blue) to the new (green), with instant rollback by…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-72.html">
+<meta property="og:title" content="Compare Blue-Green deployments with Canary deployments for zero-downtime microservice upgrades. | InterviewGearUp">
+<meta property="og:description" content="Blue-green runs two full production environments and switches all traffic at once from the old (blue) to the new (green), with instant rollback by…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-72.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare Blue-Green deployments with Canary deployments for zero-downtime microservice upgrades.</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · Architecture · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Blue-green runs two full production environments and switches all traffic at once from the old (blue) to the new (green), with instant rollback by switching back. Canary releases the new version to a small percentage of traffic, watches metrics, and gradually increases, limiting blast radius at lower infrastructure cost but with more routing complexity.</p></div>
+<h4>Explained in depth</h4>
+<h4>Blue-green</h4>
+<ul><li>Keep <strong>blue</strong> (current) live; deploy <strong>green</strong> (new) alongside and test it with smoke and integration tests using the same production infrastructure.</li><li>Flip the router (load balancer target group, DNS weight, Kubernetes Service selector or Ingress) to green.</li><li><strong>Rollback</strong>: switch back to blue immediately; keep blue running for a while.</li></ul>
+<p>Pros: simple mental model, fast atomic cutover and rollback, full pre-production verification of the exact artifact. Cons: doubles capacity during the switch (cost), all users get the new version at once (big blast radius if a bug appears only under real traffic), long-lived connections and sessions need draining, and stateful components (databases) are shared, so schema changes must be compatible with both versions.</p>
+<h4>Canary</h4>
+<ul><li>Deploy the new version to a small subset (for example 1 to 5 percent of traffic or a few pods) while the rest stays on the old version.</li><li>Compare health metrics between canary and baseline; if healthy, increase in steps (5, 25, 50, 100 percent) with automated analysis, otherwise abort and roll back automatically.</li><li>Routing: weighted load balancers, service mesh (Istio, Linkerd), Argo Rollouts, Flagger, AWS CodeDeploy, Spinnaker; targeting by user cohort, region, header or internal users first.</li></ul>
+<p>Pros: limits exposure, real production feedback, small extra capacity, supports gradual rollout and A/B observation. Cons: two versions run simultaneously for longer (API and data compatibility needed), more complex routing and observability, slow full rollout, and sticky sessions may skew results.</p>
+<pre><code># Argo Rollouts
+strategy:
+  canary:
+    steps:
+    - setWeight: 5
+    - pause: { duration: 10m }
+    - analysis: { templates: [{ templateName: error-rate-and-latency }] }
+    - setWeight: 25
+    - pause: { duration: 15m }
+    - setWeight: 100</code></pre>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th></th><th>Blue-green</th><th>Canary</th></tr></thead><tbody><tr><td>Traffic shift</td><td>all at once</td><td>gradual</td></tr><tr><td>Rollback speed</td><td>instant</td><td>instant (set weight to 0)</td></tr><tr><td>Extra infra</td><td>double</td><td>small</td></tr><tr><td>Risk exposure</td><td>everyone after switch</td><td>small percentage first</td></tr><tr><td>Complexity</td><td>lower</td><td>higher (metrics, routing)</td></tr><tr><td>Good for</td><td>big risky changes needing pre-verified environment, legacy apps</td><td>continuous delivery, large user bases, performance-sensitive changes</td></tr></tbody></table></div>
+<h4>Shared requirements</h4>
+<ul><li><strong>Backward-compatible database and API changes</strong> (expand-contract), because old and new versions share data stores and clients.</li><li>Health checks and readiness probes, connection draining, and graceful shutdown.</li><li>Observability: error rate, latency percentiles, saturation, business metrics (conversion, checkout success), logs per version label.</li><li><strong>Feature flags</strong> decouple deploy from release: ship dark code, enable per cohort, and kill instantly without redeploying.</li><li>Automated rollback criteria, defined before the rollout.</li></ul>
+<h4>Choosing</h4>
+<p>Use blue-green when you need a clean switch and cost is acceptable; use canary for incremental risk reduction at scale. Many teams combine them: blue-green infrastructure with a canary traffic shift and flags.</p>
+<h4>Pitfalls</h4>
+<p>Incompatible schema changes breaking the old version, canary traffic too small to show regressions, metrics averaged across versions hiding differences, and forgetting caches or sessions tied to a version.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do database migrations affect both strategies?</li><li>How do feature flags complement canary releases?</li><li>What metrics decide whether to promote or roll back a canary?</li></ul>
+<p><a class="btn primary" href="../#/q/be-72">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-72%3A+Compare+Blue-Green+deployments+with+Canary+deployments+for%E2%80%A6&amp;question-id=be-72&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-72.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

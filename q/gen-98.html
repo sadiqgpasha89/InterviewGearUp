@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does Kosaraju&#39;s two-pass DFS algorithm identify Strongly Connected Components (SCC) in directed graphs? | InterviewGearUp</title>
+<meta name="description" content="Kosaraju&#39;s algorithm runs a DFS on the graph to record finish order, then a second DFS on the transposed graph in decreasing finish time. Each tree of…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-98.html">
+<meta property="og:title" content="How does Kosaraju&#39;s two-pass DFS algorithm identify Strongly Connected Components (SCC) in directed graphs? | InterviewGearUp">
+<meta property="og:description" content="Kosaraju&#39;s algorithm runs a DFS on the graph to record finish order, then a second DFS on the transposed graph in decreasing finish time. Each tree of…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-98.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does Kosaraju&#39;s two-pass DFS algorithm identify Strongly Connected Components (SCC) in directed graphs?</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 3 (Senior) · Graphs · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Kosaraju&#39;s algorithm runs a DFS on the graph to record finish order, then a second DFS on the transposed graph in decreasing finish time. Each tree of the second pass is exactly one strongly connected component, in O(V + E) time.</p></div>
+<h4>Explained in depth</h4>
+<h4>Definition</h4>
+<p>In a directed graph, two vertices are in the same <strong>strongly connected component (SCC)</strong> if each can reach the other. SCCs partition the vertices. Contracting each SCC to a single node yields the <strong>condensation graph</strong>, which is always a <strong>DAG</strong>.</p>
+<h4>Algorithm</h4>
+<ol start="1"><li>Run DFS over all vertices of <code>G</code>. Push each vertex on a stack (or list) when it <strong>finishes</strong>.</li><li>Build the transpose graph <code>G^T</code> (reverse all edges).</li><li>Pop vertices from the stack (latest finish first). For each unvisited vertex <code>v</code>, run DFS in <code>G^T</code>; all vertices reached form one SCC.</li></ol>
+<pre><code>def kosaraju(n, adj):
+    seen, order = [False] * n, []
+    def dfs1(u):
+        seen[u] = True
+        for v in adj[u]:
+            if not seen[v]: dfs1(v)
+        order.append(u)                      # finish time order
+    for u in range(n):
+        if not seen[u]: dfs1(u)
+    radj = [[] for _ in range(n)]
+    for u in range(n):
+        for v in adj[u]: radj[v].append(u)
+    comp, c = [-1] * n, 0
+    def dfs2(u):
+        comp[u] = c
+        for v in radj[u]:
+            if comp[v] == -1: dfs2(v)
+    for u in reversed(order):
+        if comp[u] == -1: dfs2(u); c += 1
+    return comp, c                          # component id per vertex, count</code></pre>
+<h4>Why it works</h4>
+<p>Let <code>C</code> and <code>C&#39;</code> be SCCs with an edge <code>C -&gt; C&#39;</code> in <code>G</code>. The vertex with the <strong>latest finish time</strong> overall belongs to a <strong>source component</strong> of the condensation (nothing points into it). In <code>G^T</code> edges between components are reversed, so starting at that vertex the DFS can only reach vertices of its own component: the edges that would leave it point backwards in <code>G^T</code>. Removing that component and repeating gives the next one. A formal proof shows <code>max finish(C) &gt; max finish(C&#39;)</code> whenever there is an edge <code>C -&gt; C&#39;</code>.</p>
+<h4>Complexity</h4>
+<p>Two DFS passes plus building the transpose: <code>O(V + E)</code> time and <code>O(V + E)</code> space.</p>
+<h4>Comparison with Tarjan</h4>
+<p>Tarjan finds SCCs in a <strong>single DFS</strong> with a stack and <code>low-link</code> values; it avoids building the transpose and is usually faster, but Kosaraju is easier to explain and implement correctly. Gabow&#39;s path-based algorithm is another one-pass variant.</p>
+<h4>Applications</h4>
+<ul><li><strong>2-SAT</strong>: build an implication graph; the formula is satisfiable iff no variable and its negation share an SCC.</li><li>Detecting cyclic dependencies and topologically ordering the condensation (build systems, package managers, deadlock detection).</li><li>Compiler optimisations (call graph, dataflow), web graph analysis, and model checking.</li></ul>
+<h4>Pitfalls</h4>
+<p>Recursion depth on large graphs (use iterative DFS), forgetting to reset visited state between passes, and mixing up the finish order direction in the second pass.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does Tarjan&#39;s SCC algorithm achieve the same result in one pass?</li><li>What is the condensation DAG and what can you do with it?</li><li>Why does processing vertices by decreasing finish time in the reversed graph isolate each component?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-98">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-98%3A+How+does+Kosaraju%27s+two-pass+DFS+algorithm+identify+Strongly%E2%80%A6&amp;question-id=gen-98&amp;context=Software+engineer+%28core%29%2C+Gear+3%2C+topic%3A+Graphs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-98.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

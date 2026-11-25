@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does ArgoCD detect and automatically sync application state between Git repositories and Kubernetes? | InterviewGearUp</title>
+<meta name="description" content="ArgoCD is a GitOps controller that continuously compares the desired state in Git (manifests, Helm, Kustomize) with the live cluster state, reports…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-47.html">
+<meta property="og:title" content="How does ArgoCD detect and automatically sync application state between Git repositories and Kubernetes? | InterviewGearUp">
+<meta property="og:description" content="ArgoCD is a GitOps controller that continuously compares the desired state in Git (manifests, Helm, Kustomize) with the live cluster state, reports…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-47.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does ArgoCD detect and automatically sync application state between Git repositories and Kubernetes?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · GitOps · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>ArgoCD is a GitOps controller that continuously compares the desired state in Git (manifests, Helm, Kustomize) with the live cluster state, reports differences as OutOfSync, and, with automated sync enabled, applies changes and self-heals manual drift. It polls repositories or reacts to webhooks, renders manifests, diffs them against live objects and syncs in ordered waves.</p></div>
+<h4>Explained in depth</h4>
+<h4>Architecture</h4>
+<p>Components: <strong>API server</strong> (UI, CLI, RBAC), <strong>repo server</strong> (clones Git and renders manifests with Helm, Kustomize, plain YAML or plugins), <strong>application controller</strong> (watches live cluster resources and Application objects, performs diff and sync), <strong>Redis</strong> cache, <strong>Dex</strong> SSO, and optional ApplicationSet controller.</p>
+<h4>Declaring an application</h4>
+<pre><code>apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata: { name: orders, namespace: argocd }
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/acme/deploy.git
+    targetRevision: main
+    path: apps/orders/overlays/prod
+  destination: { server: https://kubernetes.default.svc, namespace: orders }
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions: [CreateNamespace=true, ServerSideApply=true]
+    retry: { limit: 5, backoff: { duration: 5s, factor: 2, maxDuration: 3m } }</code></pre>
+<h4>Detection and sync loop</h4>
+<ol start="1"><li>The repo server fetches the repository on a <strong>polling interval (default 3 minutes)</strong> or immediately when a Git <strong>webhook</strong> notifies Argo CD.</li><li>It renders manifests for the target revision (helm template, kustomize build).</li><li>The application controller reads the <strong>live state</strong> from the cluster (watch-based cache) and computes a <strong>diff</strong>, normalising defaults and ignoring fields such as status and managed fields.</li><li>If different, the app status is <strong>OutOfSync</strong>; <strong>Health</strong> is evaluated separately (Healthy, Progressing, Degraded, Missing) using built-in and custom Lua health checks.</li><li>With <strong>automated sync</strong>, the controller applies the changes (<code>kubectl apply</code> or server-side apply) in order; <strong>prune</strong> deletes resources removed from Git; <strong>self-heal</strong> reverts manual changes made in the cluster back to the Git state. Manual sync is done by a user or CI trigger (<code>argocd app sync</code>).</li></ol>
+<h4>Ordering and hooks</h4>
+<p><strong>Sync waves</strong> (<code>argocd.argoproj.io/sync-wave: &quot;-1&quot;</code>) order resources (CRDs and namespaces before workloads), <strong>resource hooks</strong> (<code>PreSync</code>, <code>Sync</code>, <code>PostSync</code>, <code>SyncFail</code>) run jobs such as migrations and smoke tests.</p>
+<h4>Handling expected differences</h4>
+<p>Fields mutated by controllers (HPA replicas, injected sidecars, webhook defaults) cause false OutOfSync; configure <code>ignoreDifferences</code> (jsonPointers, jqPathExpressions) and <code>RespectIgnoreDifferences=true</code>.</p>
+<h4>Scale and multi-cluster</h4>
+<p>Register external clusters (<code>argocd cluster add</code>), use <strong>ApplicationSets</strong> to generate Applications from lists, Git directories or cluster generators, <strong>projects</strong> for RBAC and allowed sources and destinations, app-of-apps patterns for bootstrapping, and sharding of controllers for large installations.</p>
+<h4>Operational tips</h4>
+<p>Pin chart and image versions, separate the app config repository from source code, use image updaters or CI commits to bump tags, enable notifications (Slack, email), protect production branches with reviews, store secrets with External Secrets or Sealed Secrets rather than plaintext, and monitor Argo CD metrics.</p>
+<h4>Pitfalls</h4>
+<p>Auto-sync with prune on shared namespaces deleting resources unexpectedly, webhook not configured (slow detection), huge repos slowing rendering, and manual edits repeatedly reverted by self-heal confusing operators.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does the diff engine ignore server-generated fields and what are ignoreDifferences?</li><li>What do sync waves and hooks do?</li><li>What is the difference between prune, self-heal and selective sync options?</li></ul>
+<p><a class="btn primary" href="../#/q/do-47">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-47%3A+How+does+ArgoCD+detect+and+automatically+sync+application+state%E2%80%A6&amp;question-id=do-47&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+GitOps%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-47.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

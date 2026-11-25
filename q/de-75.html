@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do cloud storage lifecycle rules automatically transition older data from Standard to Coldline/Archive? | InterviewGearUp</title>
+<meta name="description" content="Lifecycle rules are policies on a bucket that automatically move objects to cheaper storage classes or delete them based on age, prefix, tags or size.…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-75.html">
+<meta property="og:title" content="How do cloud storage lifecycle rules automatically transition older data from Standard to Coldline/Archive? | InterviewGearUp">
+<meta property="og:description" content="Lifecycle rules are policies on a bucket that automatically move objects to cheaper storage classes or delete them based on age, prefix, tags or size.…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-75.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do cloud storage lifecycle rules automatically transition older data from Standard to Coldline/Archive?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 2 (Mid-level) · Storage · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Lifecycle rules are policies on a bucket that automatically move objects to cheaper storage classes or delete them based on age, prefix, tags or size. For example, Standard to Nearline or IA after 30 days, to Coldline or Glacier after 90, to Archive after a year, and expire after retention ends. The storage service runs them asynchronously, so no pipeline code is needed.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why</h4>
+<p>Data access decays: raw logs, old partitions and backups are read rarely after a few weeks. Keeping everything in the hot class wastes money. Cheaper classes cost less to store but more to read, and have minimum retention periods.</p>
+<h4>Storage classes (examples)</h4>
+<div class="md-table"><table><thead><tr><th>Cloud</th><th>Hot</th><th>Infrequent</th><th>Cold</th><th>Archive</th></tr></thead><tbody><tr><td>AWS S3</td><td>Standard</td><td>Standard-IA, One Zone-IA</td><td>Glacier Instant Retrieval</td><td>Glacier Flexible, Deep Archive</td></tr><tr><td>Google Cloud Storage</td><td>Standard</td><td>Nearline (30 d min)</td><td>Coldline (90 d min)</td><td>Archive (365 d min)</td></tr><tr><td>Azure Blob</td><td>Hot</td><td>Cool (30 d)</td><td>Cold (90 d)</td><td>Archive (180 d, offline)</td></tr></tbody></table></div>
+<p>Trade-offs: per-GB price falls sharply (Archive can be 10x to 20x cheaper than Standard), while <strong>retrieval fees, early deletion charges, per-request costs</strong> rise, and archive tiers may take hours to restore (S3 Glacier Flexible and Deep Archive, Azure Archive) or offer millisecond access at higher cost (GCS Archive, Glacier Instant).</p>
+<h4>Lifecycle rules</h4>
+<p>Defined per bucket in JSON or Terraform, with filters (prefix, tags, object size, age, current versus noncurrent versions) and actions (transition, delete, abort incomplete multipart uploads).</p>
+<pre><code>{ &quot;Rules&quot;: [{
+  &quot;ID&quot;: &quot;events-tiering&quot;, &quot;Status&quot;: &quot;Enabled&quot;, &quot;Filter&quot;: {&quot;Prefix&quot;: &quot;raw/events/&quot;},
+  &quot;Transitions&quot;: [
+    {&quot;Days&quot;: 30, &quot;StorageClass&quot;: &quot;STANDARD_IA&quot;},
+    {&quot;Days&quot;: 90, &quot;StorageClass&quot;: &quot;GLACIER_IR&quot;},
+    {&quot;Days&quot;: 365, &quot;StorageClass&quot;: &quot;DEEP_ARCHIVE&quot;}],
+  &quot;Expiration&quot;: {&quot;Days&quot;: 2555},
+  &quot;NoncurrentVersionExpiration&quot;: {&quot;NoncurrentDays&quot;: 30},
+  &quot;AbortIncompleteMultipartUpload&quot;: {&quot;DaysAfterInitiation&quot;: 7} }]}</code></pre>
+<pre><code># GCS equivalent (Terraform)
+lifecycle_rule { condition { age = 30 } action { type = &quot;SetStorageClass&quot;, storage_class = &quot;NEARLINE&quot; } }
+lifecycle_rule { condition { age = 90 } action { type = &quot;SetStorageClass&quot;, storage_class = &quot;COLDLINE&quot; } }
+lifecycle_rule { condition { age = 365 } action { type = &quot;SetStorageClass&quot;, storage_class = &quot;ARCHIVE&quot; } }</code></pre>
+<p>The service evaluates rules once a day, so transitions occur within about a day of eligibility, not at exact times. Age is measured from object creation (or last modification, or for some, custom time).</p>
+<h4>Data engineering considerations</h4>
+<ul><li><strong>Query patterns</strong>: lifecycle by age may move partitions still queried (a yearly report). Archived objects can <strong>break queries</strong> or incur large restore bills. Align rules with real access patterns using storage analytics and access logs, and keep data that engines scan regularly out of archive tiers.</li><li><strong>Table formats</strong>: Delta, Iceberg and Hudi files are referenced by metadata. Do not expire or transition files <strong>in-place</strong> that still belong to live snapshots (deletion by lifecycle corrupts tables). Use the format&#39;s own maintenance (<code>VACUUM</code>, <code>expire_snapshots</code>) for deletion and apply transitions only to cold, unreferenced zones such as raw landing data and old backups.</li><li><strong>Small objects</strong>: minimum object size charges (128 KB in IA) and per-object transition fees make tiering tiny files uneconomical; compact first.</li><li><strong>Versioning</strong>: manage noncurrent versions separately; combine with object lock or legal hold for compliance.</li><li><strong>Intelligent-Tiering</strong> (S3) and <strong>Autoclass</strong> (GCS) move objects automatically based on access, good for unpredictable patterns, with a small monitoring fee.</li><li>Add tags (<code>retention=7y</code>) to drive rules, and keep rules in infrastructure as code.</li></ul>
+<h4>Pitfalls</h4>
+<p>Transitioning objects deleted within the minimum duration (early deletion charges), restoring large archives without budgeting, applying rules to table directories, and forgetting to clean incomplete multipart uploads.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What are the retrieval fees, minimum storage durations and latency trade-offs of the colder classes?</li><li>How do lifecycle rules interact with versioning and table formats like Delta or Iceberg?</li><li>When is Intelligent-Tiering better than fixed rules?</li></ul>
+<p><a class="btn primary" href="../#/q/de-75">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-75%3A+How+do+cloud+storage+lifecycle+rules+automatically+transition+older%E2%80%A6&amp;question-id=de-75&amp;context=Data+engineer%2C+Gear+2%2C+topic%3A+Storage%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-75.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

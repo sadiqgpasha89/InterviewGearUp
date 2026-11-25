@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do relational databases detect and resolve deadlocks, and how can applications prevent them? | InterviewGearUp</title>
+<meta name="description" content="A deadlock happens when transactions wait on each other&#39;s locks in a cycle. Databases detect it by finding a cycle in the wait-for graph (or by lock…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-19.html">
+<meta property="og:title" content="How do relational databases detect and resolve deadlocks, and how can applications prevent them? | InterviewGearUp">
+<meta property="og:description" content="A deadlock happens when transactions wait on each other&#39;s locks in a cycle. Databases detect it by finding a cycle in the wait-for graph (or by lock…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-19.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do relational databases detect and resolve deadlocks, and how can applications prevent them?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · Databases · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A deadlock happens when transactions wait on each other&#39;s locks in a cycle. Databases detect it by finding a cycle in the wait-for graph (or by lock timeout) and abort one victim, which the application must retry. Prevent deadlocks with consistent lock ordering, short transactions, proper indexes and lower isolation levels.</p></div>
+<h4>Explained in depth</h4>
+<h4>Example</h4>
+<p>Transaction A updates row 1 then wants row 2; transaction B updates row 2 then wants row 1. Each holds a lock the other needs, so neither can continue.</p>
+<pre><code>-- Session A
+BEGIN; UPDATE accounts SET balance = balance - 10 WHERE id = 1;
+-- Session B
+BEGIN; UPDATE accounts SET balance = balance - 10 WHERE id = 2;
+-- Session A
+UPDATE accounts SET balance = balance + 10 WHERE id = 2;   -- waits for B
+-- Session B
+UPDATE accounts SET balance = balance + 10 WHERE id = 1;   -- cycle: deadlock</code></pre>
+<h4>Detection and resolution</h4>
+<ul><li><strong>Wait-for graph</strong>: nodes are transactions, edges mean &quot;waits for&quot;. The engine checks for cycles periodically or when a lock wait exceeds a short threshold (PostgreSQL <code>deadlock_timeout</code>, default 1 s; InnoDB checks immediately on each wait).</li><li><strong>Victim selection</strong>: the engine aborts one transaction, usually the cheapest to roll back (fewest rows changed). PostgreSQL raises SQLSTATE <code>40P01</code>; MySQL error 1213 &quot;Deadlock found when trying to get lock&quot;.</li><li>Other systems (some distributed ones) use lock timeouts only, or wound-wait and wait-die schemes based on transaction age.</li><li>The survivor continues once the victim releases locks.</li></ul>
+<h4>Prevention</h4>
+<ol start="1"><li><strong>Lock in a consistent order</strong>: always touch accounts by ascending id (<code>SELECT ... WHERE id IN (...) ORDER BY id FOR UPDATE</code>).</li><li><strong>Keep transactions short</strong>: no network calls, user waits or large batch loops inside a transaction.</li><li><strong>Acquire needed locks up front</strong> (<code>SELECT ... FOR UPDATE</code>) instead of upgrading shared to exclusive locks later.</li><li><strong>Use proper indexes</strong> so updates lock only the target rows, not many rows or ranges scanned (InnoDB next-key and gap locks widen when scanning without an index).</li><li><strong>Lower isolation</strong> (READ COMMITTED reduces gap locking in InnoDB), batch updates in small chunks, and use <code>NOWAIT</code> or <code>SKIP LOCKED</code> for queue-like access.</li><li>Use optimistic concurrency (version column) for low-contention updates.</li></ol>
+<h4>Application handling</h4>
+<p>Treat deadlocks and serialization failures as <strong>retryable</strong>: catch the specific error, roll back, wait with jittered exponential backoff, retry the whole transaction a limited number of times (the operation must be idempotent), and log it.</p>
+<h4>Diagnosis</h4>
+<p>PostgreSQL logs the involved queries when <code>log_lock_waits = on</code>; query <code>pg_locks</code> joined with <code>pg_stat_activity</code>. InnoDB: <code>SHOW ENGINE INNODB STATUS</code> has the latest deadlock section, and <code>innodb_print_all_deadlocks</code> records all of them. Look for the same table pair, hot rows and missing indexes.</p>
+<h4>Pitfalls</h4>
+<p>Assuming a deadlock means a bug in the database (it is a normal outcome of concurrency), retrying without backoff and creating retry storms, and catching the error but continuing the aborted transaction.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you read a deadlock report in PostgreSQL or MySQL InnoDB?</li><li>Why do missing indexes increase deadlock frequency?</li><li>How should application code retry after a deadlock safely?</li></ul>
+<p><a class="btn primary" href="../#/q/be-19">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-19%3A+How+do+relational+databases+detect+and+resolve+deadlocks%2C+and+how%E2%80%A6&amp;question-id=be-19&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+Databases%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-19.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

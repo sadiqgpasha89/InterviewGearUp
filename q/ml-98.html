@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is cross-attention in Encoder-Decoder models and how does the decoder attend to encoder representations? | InterviewGearUp</title>
+<meta name="description" content="Cross-attention lets the decoder query the encoder output. Queries come from the decoder&#39;s current hidden states while keys and values come from the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-98.html">
+<meta property="og:title" content="What is cross-attention in Encoder-Decoder models and how does the decoder attend to encoder representations? | InterviewGearUp">
+<meta property="og:description" content="Cross-attention lets the decoder query the encoder output. Queries come from the decoder&#39;s current hidden states while keys and values come from the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-98.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is cross-attention in Encoder-Decoder models and how does the decoder attend to encoder representations?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · Transformers · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Cross-attention lets the decoder query the encoder output. Queries come from the decoder&#39;s current hidden states while keys and values come from the encoder&#39;s final representations, so each decoding step computes attention weights over source positions and takes a weighted sum of encoder information. This is how translation, summarisation and speech models align generated tokens with the input.</p></div>
+<h4>Explained in depth</h4>
+<h4>Encoder-decoder Transformer</h4>
+<p>The original Transformer (Vaswani et al., 2017) has two stacks:</p>
+<ul><li><strong>Encoder</strong>: N layers of self-attention plus feed-forward networks that turn the source sequence (for example a French sentence) into contextual representations <code>H_enc</code> (length S × d).</li><li><strong>Decoder</strong>: N layers, each with three sublayers:</li></ul>
+<ol start="1"><li><strong>Masked (causal) self-attention</strong> over the target tokens generated so far, so position t cannot see future tokens.</li><li><strong>Cross-attention (encoder-decoder attention)</strong> over the encoder output.</li><li>Position-wise feed-forward network.</li></ol>
+<p>  Each sublayer has residual connections and layer normalisation.</p>
+<h4>Cross-attention mechanics</h4>
+<p>In scaled dot-product attention <code>Attention(Q, K, V) = softmax(QKᵀ / √d_k) V</code>, the sources of Q, K, V differ:</p>
+<ul><li><strong>Queries Q</strong> = <code>X_dec W_Q</code> computed from the <strong>decoder&#39;s current hidden states</strong> (the output of its masked self-attention sublayer): &quot;what information do I need now?&quot;</li><li><strong>Keys K</strong> = <code>H_enc W_K</code> and <strong>Values V</strong> = <code>H_enc W_V</code> computed from the <strong>encoder output</strong>: &quot;what information is available at each source position?&quot;.</li></ul>
+<p>The result for each decoder position is a <strong>weighted combination of source representations</strong>, with weights showing which source tokens are relevant for generating the current target token (soft alignment, interpretable as attention maps in translation: &quot;chat&quot; attends to &quot;cat&quot;). There is <strong>no causal mask</strong> because the entire source is available; only padding masks are applied.</p>
+<pre><code>import torch, torch.nn.functional as F
+def cross_attention(dec, enc, Wq, Wk, Wv, heads, src_pad_mask=None):
+    B, T, d = dec.shape; S = enc.shape[1]; dh = d // heads
+    q = (dec @ Wq).view(B, T, heads, dh).transpose(1, 2)        # from decoder
+    k = (enc @ Wk).view(B, S, heads, dh).transpose(1, 2)        # from encoder
+    v = (enc @ Wv).view(B, S, heads, dh).transpose(1, 2)
+    scores = q @ k.transpose(-2, -1) / dh ** 0.5                # (B, heads, T, S)
+    if src_pad_mask is not None: scores = scores.masked_fill(src_pad_mask[:, None, None, :], float(&quot;-inf&quot;))
+    return (F.softmax(scores, -1) @ v).transpose(1, 2).reshape(B, T, d)</code></pre>
+<p>Multi-head cross-attention runs several such heads in parallel to capture different alignment relations, followed by an output projection.</p>
+<h4>Inference efficiency</h4>
+<p>During autoregressive generation, <code>H_enc</code> does not change, so <strong>K and V for cross-attention are computed once per layer and cached</strong>, while self-attention KV cache grows each step. Cross-attention cost per step is O(S·d) per layer.</p>
+<h4>How it differs from self-attention</h4>
+<div class="md-table"><table><thead><tr><th></th><th>Decoder self-attention</th><th>Cross-attention</th></tr></thead><tbody><tr><td>Q from</td><td>decoder states</td><td>decoder states</td></tr><tr><td>K, V from</td><td>decoder states (previous tokens)</td><td>encoder outputs</td></tr><tr><td>Mask</td><td>causal</td><td>padding only</td></tr><tr><td>Purpose</td><td>model target-side context</td><td>condition on the source</td></tr></tbody></table></div>
+<h4>Applications</h4>
+<ul><li><strong>Machine translation, summarisation, T5/BART/mT5</strong>, text-to-text tasks.</li><li><strong>Speech recognition and translation</strong> (Whisper: audio encoder, text decoder with cross-attention).</li><li><strong>Image captioning</strong> (image encoder, text decoder), visual question answering, <strong>Flamingo</strong> (gated cross-attention layers inserted into a frozen LLM to attend to visual features), BLIP-2 Q-Former.</li><li><strong>Diffusion models</strong>: Stable Diffusion&#39;s U-Net uses cross-attention where image latents (queries) attend to text-encoder embeddings (keys and values), conditioning generation on the prompt; attention maps enable prompt-to-prompt editing.</li><li><strong>Perceiver and DETR</strong> (object queries attend to image features), retrieval-augmented decoders (RETRO attends to retrieved chunks), multimodal fusion.</li><li>Decoder-only LLMs omit cross-attention and instead concatenate source and target in one sequence with self-attention (prefix), which is simpler but spends decoder capacity on the source.</li></ul>
+<h4>Pitfalls</h4>
+<p>Applying a causal mask to cross-attention, forgetting encoder padding masks, recomputing encoder K and V every step, and confusing which side supplies queries versus keys and values.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does cross-attention differ from masked self-attention in the decoder?</li><li>How are encoder keys and values cached during generation?</li><li>Where is cross-attention used beyond text, such as Whisper and Stable Diffusion?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-98">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-98%3A+What+is+cross-attention+in+Encoder-Decoder+models+and+how+does+the%E2%80%A6&amp;question-id=ml-98&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+Transformers%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-98.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

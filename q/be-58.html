@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you profile a CPU-bound backend microservice and interpret flame graphs to locate hotspots? | InterviewGearUp</title>
+<meta name="description" content="Profile a CPU-bound service with a sampling profiler (perf, async-profiler, pprof, py-spy) under realistic load, render the stacks as a flame graph where…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-58.html">
+<meta property="og:title" content="How do you profile a CPU-bound backend microservice and interpret flame graphs to locate hotspots? | InterviewGearUp">
+<meta property="og:description" content="Profile a CPU-bound service with a sampling profiler (perf, async-profiler, pprof, py-spy) under realistic load, render the stacks as a flame graph where…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-58.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you profile a CPU-bound backend microservice and interpret flame graphs to locate hotspots?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · Performance · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Profile a CPU-bound service with a sampling profiler (perf, async-profiler, pprof, py-spy) under realistic load, render the stacks as a flame graph where width is time spent, find wide plateaus at the top of stacks, fix the hotspot (algorithm, allocation, locking, serialization), then re-measure to confirm improvement.</p></div>
+<h4>Explained in depth</h4>
+<h4>Start with the question</h4>
+<p>Confirm the service is CPU-bound: high CPU utilisation, run queue length, low I/O wait. If threads mostly wait (locks, I/O), use off-CPU analysis or tracing instead. Reproduce with a load test or production traffic mirror, with a warmed-up runtime (JIT).</p>
+<h4>Collect a profile</h4>
+<p>Sampling profilers capture stack traces at a fixed rate (for example 100 Hz) with low overhead.</p>
+<pre><code># Go
+go tool pprof -http=:8080 http://svc:6060/debug/pprof/profile?seconds=30
+# Java
+./asprof -d 30 -f flame.html &lt;pid&gt;                 # async-profiler (cpu, alloc, lock)
+# Linux, any native process
+perf record -F 99 -g -p &lt;pid&gt; -- sleep 30 &amp;&amp; perf script | stackcollapse-perf.pl | flamegraph.pl &gt; flame.svg
+# Python
+py-spy record -o profile.svg --pid &lt;pid&gt;
+# Node.js
+node --prof app.js  /  clinic flame</code></pre>
+<h4>Reading a flame graph</h4>
+<ul><li><strong>X axis</strong>: share of samples (width), not time order; stacks are sorted alphabetically.</li><li><strong>Y axis</strong>: call depth, from entry points at the bottom to leaf functions at the top.</li><li>A wide frame means a function (and its children) consumed many samples. The key target is <strong>wide plateaus at the top</strong>: functions that burn CPU themselves (&quot;self time&quot;).</li><li>Compare before and after with <strong>differential flame graphs</strong>; use inverted (icicle) views and merge by function to see total cost across callers.</li><li>Search for known names (<code>json</code>, <code>regex</code>, <code>gc</code>, <code>lock</code>) to quantify them.</li></ul>
+<h4>Typical findings</h4>
+<ul><li>JSON serialisation and deserialisation, reflection, or logging formatting on hot paths.</li><li>Regular expression backtracking, string concatenation and copying.</li><li>Excess allocation and garbage collection (check allocation profiles and GC time).</li><li>Inefficient algorithms (O(n²) loops, repeated sorting), N+1 queries.</li><li>Lock contention and false sharing, inefficient data structures.</li><li>TLS or compression costs, unneeded middleware, per-request construction of expensive objects.</li></ul>
+<h4>Optimise and validate</h4>
+<p>Make one change at a time, rerun the same benchmark, compare throughput and latency percentiles, and watch for regressions elsewhere (memory, tail latency). Keep microbenchmarks (JMH, <code>go test -bench</code>, <code>pytest-benchmark</code>) for the hot function, and set performance budgets in CI.</p>
+<h4>Production practice</h4>
+<p><strong>Continuous profiling</strong> (Pyroscope, Parca, Google Cloud Profiler, Datadog) samples at low rates all the time, so regressions are visible by deploy version. Ensure symbols and frame pointers are available (build with <code>-fno-omit-frame-pointer</code>, include debug info, JIT symbol maps).</p>
+<h4>Pitfalls</h4>
+<p>Profiling in debug mode or on a laptop with unrepresentative data, short samples missing periodic work, optimising small slices (Amdahl&#39;s law: a 2 percent frame cannot give a 50 percent gain), and ignoring the I/O or dependency time that actually dominates.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the difference between on-CPU and off-CPU flame graphs?</li><li>How do you profile continuously in production with low overhead?</li><li>What are common hotspots found in backend services?</li></ul>
+<p><a class="btn primary" href="../#/q/be-58">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-58%3A+How+do+you+profile+a+CPU-bound+backend+microservice+and+interpret%E2%80%A6&amp;question-id=be-58&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+Performance%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-58.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

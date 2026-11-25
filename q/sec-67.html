@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is SSL/TLS Certificate Pinning in mobile applications, and what operational risks does it introduce? | InterviewGearUp</title>
+<meta name="description" content="Certificate pinning makes a mobile app accept only specific certificates or public keys for its backend, so a rogue or compromised certificate authority…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-67.html">
+<meta property="og:title" content="What is SSL/TLS Certificate Pinning in mobile applications, and what operational risks does it introduce? | InterviewGearUp">
+<meta property="og:description" content="Certificate pinning makes a mobile app accept only specific certificates or public keys for its backend, so a rogue or compromised certificate authority…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-67.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is SSL/TLS Certificate Pinning in mobile applications, and what operational risks does it introduce?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · Mobile · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Certificate pinning makes a mobile app accept only specific certificates or public keys for its backend, so a rogue or compromised certificate authority and user-installed proxies cannot intercept traffic. The risk is availability: certificate rotation, pin mismatches or lost backup pins can lock users out until an app update, so pinning needs backup pins, rotation plans and kill switches.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why pinning exists</h4>
+<p>Standard TLS trusts <strong>any certificate chained to any of the hundreds of root CAs</strong> in the device trust store. A malicious or compromised CA (DigiNotar 2011), a <strong>user- or MDM-installed root certificate</strong>, malware, or a corporate TLS inspection proxy can mint a valid certificate for your domain and silently perform man-in-the-middle attacks. <strong>Certificate (or public key) pinning</strong> narrows trust: the app only accepts connections whose server certificate chain contains a <strong>known, pre-configured certificate or public key</strong>, regardless of what the system trust store says.</p>
+<h4>What to pin</h4>
+<div class="md-table"><table><thead><tr><th>Option</th><th>Pros</th><th>Cons</th></tr></thead><tbody><tr><td><strong>Leaf certificate</strong></td><td>strongest, exact</td><td>changes at every renewal (every 90 days with Let&#39;s Encrypt), high outage risk</td></tr><tr><td><strong>Public key (SPKI hash) of the leaf</strong></td><td>survives renewal if the key pair is reused</td><td>requires key reuse discipline, key compromise handling</td></tr><tr><td><strong>Intermediate CA public key</strong></td><td>stable for years, flexible leaf renewal</td><td>trusts everything the intermediate issues (broader)</td></tr><tr><td><strong>Root CA</strong></td><td>most stable</td><td>weak protection (the whole CA hierarchy)</td></tr></tbody></table></div>
+<p>Best practice: pin <strong>SPKI hashes (SHA-256 of Subject Public Key Info)</strong>, include <strong>at least one backup pin</strong> (a key pair generated and stored offline, not yet deployed, or a different intermediate), and pin at the intermediate or leaf-key level matching your rotation capability.</p>
+<h4>Implementation examples</h4>
+<pre><code>// Android: Network Security Config (res/xml/network_security_config.xml) with expiration to avoid permanent lockout
+&lt;network-security-config&gt;
+  &lt;domain-config&gt;
+    &lt;domain includeSubdomains=&quot;true&quot;&gt;api.example.com&lt;/domain&gt;
+    &lt;pin-set expiration=&quot;2027-06-30&quot;&gt;
+      &lt;pin digest=&quot;SHA-256&quot;&gt;k2v657xBsOVe1PQRwOsHsw3bsGT2VzIqz5K+59sNQws=&lt;/pin&gt;   &lt;!-- current --&gt;
+      &lt;pin digest=&quot;SHA-256&quot;&gt;f0KW/FtqTjs108NpYj42SrGvOB2PpxIVM8nWxjPqJGE=&lt;/pin&gt;   &lt;!-- backup --&gt;
+    &lt;/pin-set&gt;
+  &lt;/domain-config&gt;
+&lt;/network-security-config&gt;
+// OkHttp: CertificatePinner.Builder().add(&quot;api.example.com&quot;, &quot;sha256/k2v6...=&quot;, &quot;sha256/f0KW...=&quot;).build()</code></pre>
+<pre><code>// iOS: App Transport Security pinned keys (NSPinnedDomains in Info.plist, iOS 14+), or URLSession delegate validating SPKI
+// Libraries: TrustKit, Alamofire ServerTrustManager with PinnedCertificatesTrustEvaluator / PublicKeysTrustEvaluator</code></pre>
+<p>Cross-platform: React Native (<code>react-native-ssl-pinning</code>), Flutter (certificate bytes via <code>SecurityContext</code>), but verify actual enforcement.</p>
+<h4>Operational risks</h4>
+<ol start="1"><li><strong>Certificate rotation outage</strong>: if the server&#39;s key changes and no pinned key matches, <strong>all clients fail</strong> until a new app version ships and users update (days to weeks, some never). This is the primary danger.</li><li><strong>Lost or compromised backup pin</strong>, wrong pins in release builds, and mismatches between environments (staging vs production).</li><li><strong>Provider changes</strong> (CDN, load balancer, WAF, CA migration) silently change certificates; third-party SDK endpoints may break if over-pinned.</li><li><strong>Corporate proxies and legitimate inspection</strong> fail (privacy and compatibility issues; some enterprises complain).</li><li><strong>Debuggability</strong>: QA and developers cannot proxy traffic without debug builds that disable pinning (use build-flavour configs, never ship them).</li><li><strong>Legal/regulatory</strong> and public cloud load balancers with rotating keys (AWS ELB certificates managed by ACM rotate keys on renewal, so pinning the leaf key is unsafe; pin an intermediate or use your own key).</li></ol>
+<p>Mitigations:</p>
+<ul><li><strong>Backup pins</strong> and overlapping rotation windows (ship a new pin set in an app release <strong>before</strong> switching the server key; wait for adoption).</li><li><strong>Pin expiry dates</strong> (Android <code>expiration</code>) so old apps degrade to normal validation rather than permanently failing.</li><li><strong>Dynamic pin updates</strong> (TrustKit reporting, remote config signed with a hardcoded key, <strong>Certificate Transparency</strong> enforcement as a softer alternative); beware that remote updates must themselves be protected.</li><li><strong>Kill switch and fail-open/fail-closed policy</strong> decided per risk (banking apps fail closed; low-risk apps may fail open with telemetry).</li><li><strong>Telemetry</strong> for pin failures (reports to a separate endpoint), alerting on spikes, and staged rollouts.</li><li>Monitor certificate expiry, document the rotation runbook, test rotation in staging with real app builds.</li></ul>
+<h4>Attacker perspective and bypass</h4>
+<p>Pinning is a <strong>client-side control</strong> that a determined attacker with a rooted or jailbroken device can bypass using <strong>Frida, objection, Xposed/LSPosed, SSL Kill Switch 2</strong>, or by patching the app. It raises effort and stops casual interception, but is not a security boundary against a motivated reverse engineer. Complement with: root and jailbreak detection and RASP, app attestation (<strong>Play Integrity API, Apple App Attest</strong>), code obfuscation, anti-tampering, mutual TLS with device-bound keys, server-side anomaly detection, and never trusting the client for authorisation decisions.</p>
+<h4>Alternatives and complements</h4>
+<p>Certificate Transparency monitoring and Expect-CT successors, <strong>Android Network Security Config</strong> to restrict user-added CAs (default since Android 7 for apps targeting API 24+), HSTS for web, DANE, short-lived certificates with automation, and strong server-side controls.</p>
+<h4>Pitfalls</h4>
+<p>Pinning the leaf with 90-day certificates without automation, no backup pin, pinning to a CDN&#39;s changing intermediates, forgetting update-path testing, and treating pinning as a substitute for secure API design.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Should you pin the leaf certificate, intermediate CA or the public key, and what are the trade-offs?</li><li>How do attackers bypass pinning with Frida or objection and what runtime protections help?</li><li>How do you design a pinning rotation and emergency recovery process without bricking the app?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-67">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-67%3A+What+is+SSL%2FTLS+Certificate+Pinning+in+mobile+applications%2C+and+what%E2%80%A6&amp;question-id=sec-67&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+Mobile%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-67.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

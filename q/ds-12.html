@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is feature scaling, which algorithms need it, and what is the difference between standardisation and normalisation? | InterviewGearUp</title>
+<meta name="description" content="Feature scaling puts numeric features on comparable ranges. Standardisation rescales to mean 0 and standard deviation 1, while min-max normalisation maps…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-12.html">
+<meta property="og:title" content="What is feature scaling, which algorithms need it, and what is the difference between standardisation and normalisation? | InterviewGearUp">
+<meta property="og:description" content="Feature scaling puts numeric features on comparable ranges. Standardisation rescales to mean 0 and standard deviation 1, while min-max normalisation maps…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-12.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is feature scaling, which algorithms need it, and what is the difference between standardisation and normalisation?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 1 (Junior) · Data preparation · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Feature scaling puts numeric features on comparable ranges. Standardisation rescales to mean 0 and standard deviation 1, while min-max normalisation maps to a fixed range such as 0 to 1. Distance-based and gradient-based models like KNN, SVM, k-means, PCA, regularised regression and neural networks need it; tree-based models mostly do not.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why scale</h4>
+<p>Features measured in different units dominate each other when an algorithm uses <strong>distances, dot products, gradients or penalties</strong>: income (tens of thousands) overwhelms age (tens) in Euclidean distance. Scaling also speeds up and stabilises gradient descent and makes regularisation penalise coefficients fairly.</p>
+<h4>Common methods</h4>
+<div class="md-table"><table><thead><tr><th>Method</th><th>Formula</th><th>Notes</th></tr></thead><tbody><tr><td><strong>Standardisation (z-score)</strong></td><td>(x - mean) / std</td><td>zero mean, unit variance; not bounded; good default for linear models, SVM, PCA, neural nets; works fine with roughly symmetric data</td></tr><tr><td><strong>Min-max normalisation</strong></td><td>(x - min) / (max - min)</td><td>bounded 0 to 1; sensitive to outliers (one extreme value squashes the rest); used for image pixels and when bounds matter</td></tr><tr><td><strong>Robust scaling</strong></td><td>(x - median) / IQR</td><td>resists outliers</td></tr><tr><td><strong>Max-abs scaling</strong></td><td>x / max(abs(x))</td><td>preserves sparsity, good for sparse features</td></tr><tr><td><strong>Log or power transform</strong> (Box-Cox, Yeo-Johnson)</td><td>log(1 + x)</td><td>tames right skew (counts, money) before scaling</td></tr><tr><td><strong>L2 normalisation of rows</strong></td><td>x divided by its L2 norm</td><td>scales each sample, used for text vectors and cosine similarity</td></tr></tbody></table></div>
+<p>Terminology: &quot;normalisation&quot; is used loosely for min-max or row normalisation; say exactly what you did.</p>
+<h4>Which models need it</h4>
+<ul><li><strong>Need it</strong>: k-nearest neighbours, k-means and other distance-based clustering, SVM (RBF), PCA, LDA, linear and logistic regression with regularisation (L1, L2), neural networks, gradient descent methods, t-SNE and UMAP.</li><li><strong>Mostly invariant</strong>: decision trees, random forests, gradient boosting (XGBoost, LightGBM), because splits depend on feature order, not scale. Scaling does no harm but is unnecessary.</li><li><strong>Plain OLS</strong> without regularisation is invariant for predictions but coefficients become comparable only after scaling.</li><li>Naive Bayes and some probabilistic models depend on distributions, not scale.</li></ul>
+<h4>Doing it correctly</h4>
+<p><strong>Fit the scaler on training data only</strong> and apply the learned mean and standard deviation to validation, test and production data. Fitting on all data leaks information. Use a pipeline.</p>
+<pre><code>from sklearn.preprocessing import StandardScaler, RobustScaler, PowerTransformer
+from sklearn.pipeline import make_pipeline
+from sklearn.linear_model import Ridge
+model = make_pipeline(PowerTransformer(), StandardScaler(), Ridge(alpha=1.0))
+model.fit(X_train, y_train)          # scaler statistics come from X_train only
+model.predict(X_test)</code></pre>
+<p>Persist the fitted scaler with the model so inference uses identical parameters. For streaming data, update statistics carefully and monitor drift.</p>
+<h4>Special cases</h4>
+<ul><li><strong>One-hot encoded or binary</strong> columns usually need no scaling.</li><li><strong>Target scaling</strong> (for regression with neural nets) must be inverted when predicting.</li><li>Scaling affects <strong>interpretation</strong>: coefficients refer to standard deviation changes.</li><li>Sparse matrices: avoid centring (it makes them dense); use MaxAbsScaler or <code>with_mean=False</code>.</li></ul>
+<h4>Pitfalls</h4>
+<p>Scaling before the train and test split, scaling categorical codes, assuming trees need scaling, and min-max scaling data with extreme outliers.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why can scaling be harmful or unnecessary for decision trees and gradient boosting?</li><li>When would you choose robust scaling or a log transform instead of standardisation?</li><li>How do you avoid leaking test statistics when scaling?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-12">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-12%3A+What+is+feature+scaling%2C+which+algorithms+need+it%2C+and+what+is+the%E2%80%A6&amp;question-id=ds-12&amp;context=Data+scientist%2C+Gear+1%2C+topic%3A+Data+preparation%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-12.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

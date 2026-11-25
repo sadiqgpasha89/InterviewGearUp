@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does the Rabin-Karp string search algorithm use rolling polynomial hashes to find substrings? | InterviewGearUp</title>
+<meta name="description" content="Rabin-Karp compares a rolling polynomial hash of each text window with the pattern hash, updating the hash in O(1) as the window slides. Only hash…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-60.html">
+<meta property="og:title" content="How does the Rabin-Karp string search algorithm use rolling polynomial hashes to find substrings? | InterviewGearUp">
+<meta property="og:description" content="Rabin-Karp compares a rolling polynomial hash of each text window with the pattern hash, updating the hash in O(1) as the window slides. Only hash…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-60.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does the Rabin-Karp string search algorithm use rolling polynomial hashes to find substrings?</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 3 (Senior) · Algorithms · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Rabin-Karp compares a rolling polynomial hash of each text window with the pattern hash, updating the hash in O(1) as the window slides. Only hash matches are verified character by character, giving O(n + m) expected time and an easy extension to multi-pattern search.</p></div>
+<h4>Explained in depth</h4>
+<h4>Idea</h4>
+<p>Treat a string of length <code>m</code> as a number in base <code>B</code>, reduced modulo a prime <code>M</code>:</p>
+<p><code>h(s) = (s[0]*B^(m-1) + s[1]*B^(m-2) + ... + s[m-1]) mod M</code></p>
+<p>Computing this for every window from scratch costs <code>O(nm)</code>. The trick is to <strong>roll</strong> the hash: when the window moves one position, remove the leading character and add the new trailing one in <code>O(1)</code>.</p>
+<p><code>h(next) = ((h(cur) - s[i]*B^(m-1)) * B + s[i+m]) mod M</code></p>
+<h4>Implementation</h4>
+<pre><code>def rabin_karp(text, pat, B=256, M=1_000_000_007):
+    n, m = len(text), len(pat)
+    if m &gt; n: return []
+    high = pow(B, m - 1, M)
+    hp = ht = 0
+    for i in range(m):
+        hp = (hp * B + ord(pat[i])) % M
+        ht = (ht * B + ord(text[i])) % M
+    hits = []
+    for i in range(n - m + 1):
+        if hp == ht and text[i:i + m] == pat:     # verify to rule out collisions
+            hits.append(i)
+        if i &lt; n - m:
+            ht = ((ht - ord(text[i]) * high) * B + ord(text[i + m])) % M
+    return hits</code></pre>
+<h4>Complexity</h4>
+<ul><li>Expected <code>O(n + m)</code> with a good hash: collisions are rare, so few verifications.</li><li>Worst case <code>O(nm)</code> if many windows collide (adversarial input against a fixed modulus, or a pattern like <code>aaaa</code> in text <code>aaaa...</code> where every window genuinely matches).</li></ul>
+<h4>Choosing parameters</h4>
+<ul><li>Pick a large prime modulus (around <code>1e9+7</code>, or a 61 bit Mersenne prime with 128 bit multiplication) so the collision probability per window is about <code>1/M</code>.</li><li>Use a <strong>randomized base</strong> per run to defeat adversarial anti-hash inputs.</li><li>Double hashing (two moduli) reduces false positives further.</li><li>Be careful with negative values after subtraction: add <code>M</code> before taking the modulus in languages where <code>%</code> can return negatives.</li></ul>
+<h4>Where it shines</h4>
+<ul><li><strong>Multiple patterns of equal length</strong>: store pattern hashes in a set and check each window once (plagiarism detection, DNA motif search).</li><li><strong>2D pattern matching</strong> and finding repeated substrings (with binary search on length).</li><li>Content-defined chunking in deduplicating storage and rsync uses the same rolling hash idea.</li></ul>
+<h4>Compared to alternatives</h4>
+<p>KMP and Z-algorithm give deterministic <code>O(n + m)</code> for a single pattern. Boyer-Moore is often fastest in practice. Rabin-Karp wins on simplicity and on multi-pattern or approximate matching variants.</p>
+<h4>Pitfalls</h4>
+<p>Overflow when using fixed width integers without a modulus, forgetting to verify on a hash hit, and using a small modulus or a fixed base that tests can attack.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you choose the base and modulus to keep collisions rare?</li><li>How would you use Rabin-Karp to search for many patterns of the same length?</li><li>Why can a hash match still be a false positive, and what does that do to the worst case?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-60">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-60%3A+How+does+the+Rabin-Karp+string+search+algorithm+use+rolling%E2%80%A6&amp;question-id=gen-60&amp;context=Software+engineer+%28core%29%2C+Gear+3%2C+topic%3A+Algorithms%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-60.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

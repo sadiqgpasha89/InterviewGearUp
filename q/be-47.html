@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is Command Query Responsibility Segregation (CQRS) and what trade-offs does it introduce? | InterviewGearUp</title>
+<meta name="description" content="CQRS separates the write model (commands that change state and enforce invariants) from the read model (queries optimised for views), often with separate…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-47.html">
+<meta property="og:title" content="What is Command Query Responsibility Segregation (CQRS) and what trade-offs does it introduce? | InterviewGearUp">
+<meta property="og:description" content="CQRS separates the write model (commands that change state and enforce invariants) from the read model (queries optimised for views), often with separate…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-47.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is Command Query Responsibility Segregation (CQRS) and what trade-offs does it introduce?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · Architecture · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>CQRS separates the write model (commands that change state and enforce invariants) from the read model (queries optimised for views), often with separate data stores kept in sync by events. It enables independent scaling and tailored schemas, but adds eventual consistency, operational complexity and duplicated models.</p></div>
+<h4>Explained in depth</h4>
+<h4>The idea</h4>
+<p>Traditional CRUD uses one model for reads and writes. CQRS splits them:</p>
+<ul><li><strong>Commands</strong> express intent (<code>PlaceOrder</code>, <code>CancelSubscription</code>), validated against the domain model and invariants, and return success or failure (not data).</li><li><strong>Queries</strong> return data and never change state, using denormalised read models shaped exactly for screens or APIs.</li></ul>
+<pre><code>Client --command--&gt; Command handler --&gt; Write model / aggregate --&gt; write DB
+                                              |  publishes events
+                                              v
+                                     Projector / consumers --&gt; Read DB (SQL view, Elasticsearch, Redis)
+Client --query----&gt; Query handler ------------------------------&gt; Read DB</code></pre>
+<h4>Levels</h4>
+<ol start="1"><li><strong>Same database, separate code paths</strong> (separate command and query services, read DTOs, SQL views): low cost, big clarity gain.</li><li><strong>Separate read store</strong>: updated synchronously in the transaction or asynchronously via events or change data capture (outbox pattern).</li><li><strong>CQRS with event sourcing</strong>: the write side stores events as the source of truth; read models are projections rebuilt by replay. CQRS does not require event sourcing, and event sourcing almost always uses CQRS.</li></ol>
+<h4>Benefits</h4>
+<ul><li>Scale reads and writes independently (many read replicas, cache, search index).</li><li>Optimise each model: normalised, invariant-rich aggregates for writes; wide denormalised documents for reads.</li><li>Multiple read models for different consumers (dashboards, search, mobile).</li><li>Simpler domain logic on the write side, clearer security boundaries (different permissions).</li><li>Natural fit with event-driven systems and auditing.</li></ul>
+<h4>Trade-offs</h4>
+<ul><li><strong>Eventual consistency</strong>: the read model lags, so users may not see their change immediately. Mitigate with optimistic UI updates, returning the new state from the command, versions or tokens that make queries wait for a projection position, or reading from the write store for the acting user.</li><li><strong>Complexity and cost</strong>: two models, projections, event schemas, replay tooling, monitoring of lag and failures.</li><li><strong>Duplication and drift</strong>: projections can be wrong or stale; they must be rebuildable and idempotent.</li><li><strong>Operational burden</strong>: versioning events, handling out-of-order and duplicate delivery, schema evolution.</li><li>Testing and onboarding are harder.</li></ul>
+<h4>Reliability techniques</h4>
+<p>Use the <strong>transactional outbox</strong> to publish events atomically with the state change, idempotent projectors keyed by event id or version, dead-letter handling, and the ability to rebuild a projection from scratch.</p>
+<h4>When to use</h4>
+<p>Complex domains, very different read and write loads, collaborative or audit-heavy systems, or when reporting views are expensive to compute. Do not use it for simple CRUD applications; a well-indexed single model is cheaper and easier. Apply it per bounded context, not globally.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does CQRS relate to and differ from event sourcing?</li><li>How do you handle read-after-write expectations with eventual consistency?</li><li>When is CQRS over-engineering?</li></ul>
+<p><a class="btn primary" href="../#/q/be-47">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-47%3A+What+is+Command+Query+Responsibility+Segregation+%28CQRS%29+and+what%E2%80%A6&amp;question-id=be-47&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-47.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

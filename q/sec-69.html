@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you prevent Mass Assignment and Broken Function-Level Authorization in RESTful APIs? | InterviewGearUp</title>
+<meta name="description" content="Prevent mass assignment by never binding request bodies directly to domain models: use explicit DTOs or allow-lists of writable fields, and mark…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-69.html">
+<meta property="og:title" content="How do you prevent Mass Assignment and Broken Function-Level Authorization in RESTful APIs? | InterviewGearUp">
+<meta property="og:description" content="Prevent mass assignment by never binding request bodies directly to domain models: use explicit DTOs or allow-lists of writable fields, and mark…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-69.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you prevent Mass Assignment and Broken Function-Level Authorization in RESTful APIs?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · APIs · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Prevent mass assignment by never binding request bodies directly to domain models: use explicit DTOs or allow-lists of writable fields, and mark sensitive fields read-only. Prevent broken function-level authorization by enforcing role and permission checks centrally on every route and method, denying by default, separating admin endpoints, and testing each role against each function.</p></div>
+<h4>Explained in depth</h4>
+<h4>Mass assignment (OWASP API3: Broken Object Property Level Authorization)</h4>
+<p><strong>What it is</strong>: frameworks automatically map request parameters to object properties (Rails <code>update_attributes</code>, Spring <code>@ModelAttribute</code>, Express <code>Object.assign(user, req.body)</code>, Mongoose <code>User.create(req.body)</code>, Django <code>ModelForm</code>/serializers with <code>fields=&#39;__all__&#39;</code>). If the client supplies extra fields, they overwrite <strong>properties the developer never intended to be user-controlled</strong>.</p>
+<pre><code>PATCH /api/users/me
+{ &quot;displayName&quot;: &quot;Ada&quot;, &quot;role&quot;: &quot;admin&quot;, &quot;isVerified&quot;: true, &quot;balance&quot;: 1000000, &quot;tenantId&quot;: &quot;other-org&quot; }</code></pre>
+<p>Without filtering, the user becomes admin, bypasses verification, changes balance or moves across tenants (GitHub&#39;s 2012 Rails mass assignment incident).</p>
+<p><strong>Prevention</strong></p>
+<ol start="1"><li><strong>Use DTOs / input schemas</strong>, never bind the persistence model: a <code>UpdateProfileRequest</code> contains only <code>displayName</code> and <code>avatarUrl</code>; map explicitly to the entity.</li><li><strong>Allow-list writable fields</strong> (<code>params.require(:user).permit(:name, :avatar)</code> in Rails, Django REST <code>fields = (&#39;name&#39;, &#39;avatar&#39;)</code> with <code>read_only_fields</code>, Jackson <code>@JsonIgnoreProperties</code>, <code>@JsonProperty(access = READ_ONLY)</code>, Pydantic models with <code>extra = &quot;forbid&quot;</code>, JSON Schema <code>additionalProperties: false</code>, class-validator <code>whitelist: true, forbidNonWhitelisted: true</code> in NestJS).</li><li><strong>Reject unknown properties</strong> with <code>400</code> rather than silently ignoring (detects probing).</li><li>Treat <strong>server-controlled fields</strong> (<code>id</code>, <code>role</code>, <code>permissions</code>, <code>ownerId</code>, <code>tenantId</code>, <code>balance</code>, <code>status</code>, timestamps, <code>isAdmin</code>, <code>emailVerified</code>) as read-only; set them in code from authenticated context, not from input.</li><li><strong>Separate read and write models</strong>: responses must not leak sensitive properties either (excessive data exposure): use response DTOs and field-level authorisation.</li><li>Apply <strong>per-role property permissions</strong> (admin may set <code>role</code> via a different endpoint with separate checks).</li><li>Tests: send extra fields in every create and update endpoint and assert they are ignored or rejected; fuzz parameter names (<code>isAdmin</code>, <code>__proto__</code>, <code>role</code>, <code>owner</code>), include nested objects and arrays, and GraphQL input types.</li></ol>
+<h4>Broken Function Level Authorization (BFLA, OWASP API5)</h4>
+<p><strong>What it is</strong>: the API fails to verify that the caller may use a <strong>function (endpoint plus method)</strong>, so normal users call administrative or privileged operations (<code>DELETE /api/users/42</code>, <code>POST /api/admin/refund</code>, <code>PUT /api/orders/1/status</code>, <code>/internal/*</code>, GraphQL admin mutations, changing HTTP verb from GET to PUT). Distinct from <strong>BOLA</strong> (object-level: can the caller access *this object*), BFLA is about *which actions* the role may perform.</p>
+<p><strong>Causes</strong>: authorisation only in the UI (hidden buttons), checks scattered and forgotten on new endpoints, trusting client-supplied role, predictable admin URLs, inconsistent verbs, undocumented or legacy endpoints, microservices assuming the gateway already checked.</p>
+<p><strong>Prevention</strong></p>
+<ol start="1"><li><strong>Deny by default</strong>; every route requires an explicit policy. Use <strong>centralised authorisation</strong> (middleware, decorators, policy engine like OPA, Cedar, Casbin, framework security such as Spring Security <code>@PreAuthorize</code>, ASP.NET policies, NestJS Guards) instead of ad hoc <code>if (user.isAdmin)</code> checks in handlers.</li></ol>
+<pre><code>// NestJS: global guard denies unless a @Roles decorator permits
+@Roles(&#39;admin&#39;) @Delete(&#39;users/:id&#39;) removeUser(...)
+// Express: policy table enforced by middleware
+const policy = { &#39;DELETE /users/:id&#39;: [&#39;admin&#39;], &#39;GET /orders&#39;: [&#39;customer&#39;, &#39;support&#39;, &#39;admin&#39;] };
+app.use((req, res, next) =&gt; policy[`${req.method} ${req.route.path}`]?.some(r =&gt; req.user.roles.includes(r)) ? next() : res.sendStatus(403));</code></pre>
+<ol start="2"><li><strong>Separate admin APIs</strong> by path, host or network, additional authentication (MFA, step-up), and ingress restrictions; do not rely on obscurity.</li><li>Enforce authorisation <strong>at the service layer</strong> as well as the gateway (defence in depth), and propagate identity between services (signed tokens, mTLS) rather than trusting internal calls.</li><li>Use scopes and claims in tokens (OAuth scopes mapped to functions); validate audience and scope on every request.</li><li>Handle <strong>all HTTP methods</strong> explicitly, disable unused ones (<code>TRACE</code>, unexpected <code>PUT/DELETE</code>), and ignore method override headers (<code>X-HTTP-Method-Override</code>).</li><li><strong>Inventory endpoints</strong> from OpenAPI, gateway and code; fail CI when a route lacks an authorisation annotation (route listing scripts, contract tests).</li></ol>
+<h4>Testing approach</h4>
+<ul><li>Build an <strong>authorisation matrix</strong>: roles (anonymous, user, support, admin, other-tenant admin) × functions (endpoint, method, GraphQL operation) with expected allow or deny; automate in CI (Postman or Newman, pytest, REST Assured, Autorize or AuthMatrix in Burp, ZAP access control scripts).</li><li>Try <strong>horizontal and vertical escalation</strong>: low-privilege token on admin endpoints, user tokens on other users&#39; IDs (BOLA), forged or modified JWT claims, removing the token, changing verbs, adding <code>/admin</code> prefixes, path normalisation tricks (<code>//</code>, <code>%2e</code>, trailing slash, case), hidden parameters (<code>?admin=true</code>).</li><li>Verify <code>401</code> (unauthenticated) vs <code>403</code> (forbidden) consistently and that responses do not leak data in errors.</li><li>Add logging and alerts for repeated 403s and mass enumeration.</li></ul>
+<h4>Pitfalls</h4>
+<p>Using the ORM entity as the API contract, trusting the front end to hide functions, authorisation only in the gateway, forgetting that new endpoints inherit no default policy, and allowing clients to set ownership or tenant fields.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does binding a JSON body straight into an ORM entity enable privilege escalation through fields like isAdmin?</li><li>What is the difference between BOLA and BFLA and how do you test for each?</li><li>How do you structure authorization so new endpoints are protected by default?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-69">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-69%3A+How+do+you+prevent+Mass+Assignment+and+Broken+Function-Level%E2%80%A6&amp;question-id=sec-69&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+APIs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-69.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do font loading strategies (`font-display: swap/optional`) eliminate Flash of Invisible Text (FOIT)? | InterviewGearUp</title>
+<meta name="description" content="FOIT is invisible text while a web font loads. The font-display descriptor controls it: swap shows a fallback immediately and swaps when the font…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-65.html">
+<meta property="og:title" content="How do font loading strategies (`font-display: swap/optional`) eliminate Flash of Invisible Text (FOIT)? | InterviewGearUp">
+<meta property="og:description" content="FOIT is invisible text while a web font loads. The font-display descriptor controls it: swap shows a fallback immediately and swaps when the font…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-65.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do font loading strategies (`font-display: swap/optional`) eliminate Flash of Invisible Text (FOIT)?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · CSS · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>FOIT is invisible text while a web font loads. The font-display descriptor controls it: swap shows a fallback immediately and swaps when the font arrives, optional uses the font only if it loads almost instantly, fallback and block sit in between. Pair it with preload and size-adjusted fallbacks to avoid layout shift.</p></div>
+<h4>Explained in depth</h4>
+<h4>Default behaviour</h4>
+<p>Browsers hide text that uses a custom font until it loads (up to about 3 s in Chromium), then show it: <strong>Flash of Invisible Text (FOIT)</strong>. That delays content paint, hurting First Contentful Paint and LCP when the text is the largest element. The opposite, <strong>FOUT</strong> (flash of unstyled text), shows a fallback first and then swaps.</p>
+<h4>The font-display values</h4>
+<pre><code>@font-face {
+  font-family: &quot;Inter&quot;;
+  src: url(&quot;/fonts/inter-var.woff2&quot;) format(&quot;woff2&quot;);
+  font-weight: 100 900;
+  font-display: swap;
+}</code></pre>
+<div class="md-table"><table><thead><tr><th>Value</th><th>Block period</th><th>Swap period</th><th>Behaviour</th></tr></thead><tbody><tr><td><code>auto</code></td><td>browser default</td><td></td><td>usually like block</td></tr><tr><td><code>block</code></td><td>about 3 s</td><td>infinite</td><td>invisible text, then swap (use for icon fonts)</td></tr><tr><td><code>swap</code></td><td>about 0</td><td>infinite</td><td>fallback immediately, swap whenever loaded (small shift)</td></tr><tr><td><code>fallback</code></td><td>about 100 ms</td><td>about 3 s</td><td>brief invisibility, swap only if loaded quickly, otherwise keep fallback</td></tr><tr><td><code>optional</code></td><td>about 100 ms</td><td>none</td><td>use the web font only if it is available almost immediately (cache); no swap, so no shift</td></tr></tbody></table></div>
+<p><code>swap</code> suits brand fonts where text must appear fast. <code>optional</code> yields the best stability (zero shift) and works well with preload and a warm cache.</p>
+<h4>Reducing the shift when swapping</h4>
+<p>Fallback and web font have different metrics, so the swap moves lines around (CLS). Match metrics with descriptors:</p>
+<pre><code>@font-face {
+  font-family: &quot;Inter Fallback&quot;;
+  src: local(&quot;Arial&quot;);
+  size-adjust: 107%;
+  ascent-override: 90%;
+  descent-override: 22%;
+  line-gap-override: 0%;
+}
+body { font-family: &quot;Inter&quot;, &quot;Inter Fallback&quot;, sans-serif; }</code></pre>
+<p>Tools such as Next.js <code>next/font</code>, Fontaine and Capsize generate these values.</p>
+<h4>Loading faster</h4>
+<ul><li><code>&lt;link rel=&quot;preload&quot; href=&quot;/fonts/inter-var.woff2&quot; as=&quot;font&quot; type=&quot;font/woff2&quot; crossorigin&gt;</code> (the <code>crossorigin</code> attribute is required even for same origin).</li><li>Self-host, use <strong>WOFF2</strong>, <strong>subset</strong> to needed glyphs (<code>unicode-range</code>), and prefer variable fonts to cut file count.</li><li>Limit weights and styles; use <code>system-ui</code> stacks for UI where acceptable.</li><li>Cache aggressively (<code>Cache-Control: immutable</code>).</li><li><code>font-display</code> plus <code>preconnect</code> for third-party font hosts (Google Fonts supports <code>&amp;display=swap</code>).</li></ul>
+<h4>Pitfalls</h4>
+<p>Preloading fonts that are not used on the page (wasted bandwidth), omitting <code>crossorigin</code> (the font is fetched twice), icon fonts with <code>swap</code> (shows wrong glyph letters), and many weights loaded eagerly.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do size-adjust and ascent-override reduce layout shift when fonts swap?</li><li>When is optional better than swap?</li><li>How do you preload fonts and subset them for performance?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-65">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-65%3A+How+do+font+loading+strategies+%28%60font-display%3A+swap%2Foptional%60%29%E2%80%A6&amp;question-id=fe-65&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+CSS%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-65.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

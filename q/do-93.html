@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you test Terraform modules using automated testing frameworks like Terratest? | InterviewGearUp</title>
+<meta name="description" content="Terratest is a Go library that deploys real infrastructure from Terraform modules into a test account, runs assertions against it (HTTP checks, API…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-93.html">
+<meta property="og:title" content="How do you test Terraform modules using automated testing frameworks like Terratest? | InterviewGearUp">
+<meta property="og:description" content="Terratest is a Go library that deploys real infrastructure from Terraform modules into a test account, runs assertions against it (HTTP checks, API…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-93.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you test Terraform modules using automated testing frameworks like Terratest?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · IaC · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Terratest is a Go library that deploys real infrastructure from Terraform modules into a test account, runs assertions against it (HTTP checks, API calls, SSH), and destroys it. Combine it with static checks (validate, tflint, policy tests) and Terraform&#39;s native terraform test framework in a layered strategy, balancing speed, cost and confidence.</p></div>
+<h4>Explained in depth</h4>
+<h4>Test pyramid for infrastructure code</h4>
+<ol start="1"><li><strong>Static analysis (seconds)</strong>: <code>terraform fmt -check</code>, <code>terraform validate</code>, <code>tflint</code> (provider-specific rules), security scanners (<code>trivy config</code>, <code>checkov</code>, <code>tfsec</code>), policy-as-code (OPA Conftest or Sentinel against <code>terraform show -json plan</code>).</li><li><strong>Plan-level tests</strong>: <code>terraform plan</code> output assertions, and native <strong><code>terraform test</code></strong> (<code>.tftest.hcl</code>, Terraform 1.6+) which can run <code>command = plan</code> with mocked providers (1.7+) or real <code>apply</code> and assert on outputs and resource attributes.</li><li><strong>Integration tests with Terratest (minutes)</strong>: real deployment, real assertions, then destroy.</li><li><strong>End-to-end or smoke tests</strong> of the composed environment in staging.</li></ol>
+<h4>Terratest example</h4>
+<pre><code>package test
+
+import (
+  &quot;testing&quot;
+  &quot;github.com/gruntwork-io/terratest/modules/terraform&quot;
+  http_helper &quot;github.com/gruntwork-io/terratest/modules/http-helper&quot;
+  &quot;github.com/stretchr/testify/assert&quot;
+)
+
+func TestWebModule(t *testing.T) {
+  t.Parallel()
+  opts := terraform.WithDefaultRetryableErrors(t, &amp;terraform.Options{
+    TerraformDir: &quot;../examples/web&quot;,
+    Vars: map[string]interface{}{&quot;name&quot;: &quot;tt-&quot; + random.UniqueId()},   // unique names avoid collisions
+  })
+  defer terraform.Destroy(t, opts)         // always clean up, even on failure
+  terraform.InitAndApply(t, opts)
+
+  url := terraform.Output(t, opts, &quot;url&quot;)
+  http_helper.HttpGetWithRetry(t, url, nil, 200, &quot;Hello&quot;, 30, 10*time.Second)
+  assert.Equal(t, &quot;3&quot;, terraform.Output(t, opts, &quot;instance_count&quot;))
+}</code></pre>
+<p>Typical flow: init and apply an <strong>example</strong> configuration (<code>examples/</code> folder), validate behaviour (HTTP responses, <code>aws</code> SDK checks, Kubernetes client calls, SSH commands), optionally test an upgrade (apply old version, then new), run <code>terraform plan</code> again to assert <strong>idempotency</strong> (no changes), and destroy. Terratest also provides helpers for Docker, Packer, Helm, Kubernetes, AWS, GCP, Azure.</p>
+<h4>Native <code>terraform test</code></h4>
+<pre><code># tests/vpc.tftest.hcl
+run &quot;creates_vpc&quot; {
+  command = plan
+  variables { cidr_block = &quot;10.0.0.0/16&quot; }
+  assert { condition = aws_vpc.this.cidr_block == &quot;10.0.0.0/16&quot; error_message = &quot;wrong CIDR&quot; }
+}</code></pre>
+<p>Good for fast logic checks, variable validation and outputs, with mock providers avoiding cloud calls.</p>
+<h4>Keeping tests safe and cheap</h4>
+<ul><li>Use a <strong>dedicated sandbox account or project</strong> per team or per run (AWS Organizations, cloud-nuke), with budgets, SCP guardrails and limited IAM.</li><li><strong>Unique resource names</strong> (random suffix), run tests <strong>in parallel</strong>, and ensure cleanup with <code>defer</code> plus a scheduled janitor (<code>cloud-nuke</code>, <code>aws-nuke</code>) for leaked resources; tag everything with owner and TTL.</li><li>Keep examples small, use cheap instance types and regions, avoid long-lived resources (NAT gateways, databases) where a lighter proxy resource suffices, and skip expensive stages with test stages (<code>SKIP_deploy=true</code> via Terratest&#39;s <code>test_structure</code>).</li><li>Run <strong>unit and static tests on every PR</strong>, <strong>integration tests on module changes</strong> or nightly, and gate releases (module version tags) on passing tests.</li><li>Pin provider and Terraform versions, cache providers, handle eventual consistency with retries, and record logs.</li></ul>
+<h4>Complementary tools</h4>
+<p><strong>Kitchen-Terraform</strong> (InSpec), <strong>Checkov and OPA</strong> policy tests, <strong>Infracost</strong> for cost diffs in PRs, <code>terraform-compliance</code>, <code>localstack</code> for emulated AWS (limited fidelity), and Pulumi or CDK testing frameworks if using them.</p>
+<h4>Pitfalls</h4>
+<p>Tests that leave resources behind and generate bills, shared state or names causing flakiness, long test times that people skip, and testing only that apply succeeds rather than the behaviour.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you keep integration tests isolated, cheap and clean up reliably?</li><li>What can terraform test do without deploying cloud resources?</li><li>How do you test modules in CI safely?</li></ul>
+<p><a class="btn primary" href="../#/q/do-93">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-93%3A+How+do+you+test+Terraform+modules+using+automated+testing+frameworks%E2%80%A6&amp;question-id=do-93&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+IaC%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-93.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

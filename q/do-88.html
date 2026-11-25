@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is the Vertical Pod Autoscaler (VPA) and how does it dynamically resize pod CPU and memory requests? | InterviewGearUp</title>
+<meta name="description" content="The Vertical Pod Autoscaler observes actual CPU and memory usage and adjusts pod resource requests (and optionally limits) to fit, via a recommender,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-88.html">
+<meta property="og:title" content="What is the Vertical Pod Autoscaler (VPA) and how does it dynamically resize pod CPU and memory requests? | InterviewGearUp">
+<meta property="og:description" content="The Vertical Pod Autoscaler observes actual CPU and memory usage and adjusts pod resource requests (and optionally limits) to fit, via a recommender,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-88.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is the Vertical Pod Autoscaler (VPA) and how does it dynamically resize pod CPU and memory requests?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · Kubernetes · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>The Vertical Pod Autoscaler observes actual CPU and memory usage and adjusts pod resource requests (and optionally limits) to fit, via a recommender, updater and admission controller. In Off mode it only recommends; in Auto or Recreate modes it evicts and recreates pods with new values, and newer versions can resize in place. It should not be combined with HPA on the same metric.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why right-sizing matters</h4>
+<p>Developers guess <code>requests</code> and <code>limits</code>. Over-requesting wastes money and reduces bin-packing density; under-requesting causes CPU throttling, OOM kills and noisy-neighbour issues. The scheduler places pods using <strong>requests</strong>, so accuracy drives cost and stability.</p>
+<h4>Components</h4>
+<ul><li><strong>Recommender</strong>: reads usage history (from metrics-server and optionally Prometheus), computes target, lower-bound and upper-bound recommendations using percentiles with decay and safety margins (memory peak with a buffer, CPU around the 90th percentile).</li><li><strong>Updater</strong>: decides whether a running pod deviates enough and <strong>evicts</strong> it so it can be recreated (respecting PodDisruptionBudgets).</li><li><strong>Admission controller</strong> (mutating webhook): when pods are created it injects the recommended requests (and limits proportionally).</li></ul>
+<h4>Configuration</h4>
+<pre><code>apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata: { name: orders-vpa }
+spec:
+  targetRef: { apiVersion: apps/v1, kind: Deployment, name: orders }
+  updatePolicy:
+    updateMode: &quot;Auto&quot;          # Off | Initial | Recreate | Auto
+  resourcePolicy:
+    containerPolicies:
+    - containerName: app
+      minAllowed: { cpu: 100m, memory: 128Mi }
+      maxAllowed: { cpu: 2, memory: 4Gi }
+      controlledResources: [&quot;cpu&quot;, &quot;memory&quot;]
+      controlledValues: RequestsOnly      # or RequestsAndLimits</code></pre>
+<p>Modes: <strong>Off</strong> (recommendations only, visible with <code>kubectl describe vpa</code>, the safest start), <strong>Initial</strong> (applies at pod creation only), <strong>Recreate/Auto</strong> (evicts running pods to apply updates). <strong>In-place resize</strong> (Kubernetes 1.27+ alpha, newer beta, with VPA <code>InPlaceOrRecreate</code>) changes container resources without restart when the node has room.</p>
+<h4>Trade-offs and limitations</h4>
+<ul><li><strong>Disruption</strong>: resizing by eviction restarts pods; use PDBs, multiple replicas and avoid VPA Auto on single-replica stateful services without tolerance.</li><li><strong>Not combined with HPA on CPU or memory</strong> targeting the same Deployment, since both change resource signals and fight each other. Use HPA on custom or external metrics (requests per second, queue length) with VPA on CPU and memory, or keep VPA in recommendation mode and apply values manually or through GitOps.</li><li>Needs time and representative load to produce good recommendations (days of history); spikes and JVM warm-up can skew values.</li><li>JVM and memory-managed runtimes need heap settings aligned to limits.</li><li>Recommendations for requests do not guarantee node capacity: also use Cluster Autoscaler or Karpenter.</li><li>Quality of service: matching requests and limits yields Guaranteed QoS; VPA-set limits may change the class.</li><li>Large changes may leave pods Pending when no node fits.</li></ul>
+<h4>Practical approach</h4>
+<p>Start with <code>Off</code> mode across namespaces, review recommendations (Goldilocks dashboard by Fairwinds visualises them), adopt values in manifests or enable Auto for stateless, replicated workloads and batch jobs. Cloud variants: GKE Autopilot and multidimensional pod autoscaling, EKS with Karpenter consolidation, KEDA for event-driven horizontal scaling.</p>
+<h4>Monitoring</h4>
+<p>Watch OOMKilled events, CPU throttling (<code>container_cpu_cfs_throttled_seconds_total</code>), evictions caused by VPA, request-to-usage ratios and cost per namespace.</p>
+<h4>Pitfalls</h4>
+<p>Letting VPA and HPA fight, applying Auto mode to singletons, ignoring maxAllowed so recommendations exceed node size, and sizing from a quiet week not reflecting peaks.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does VPA differ from the Horizontal Pod Autoscaler and when do they conflict?</li><li>What are the downsides of recreating pods to apply new requests?</li><li>What is in-place pod resizing?</li></ul>
+<p><a class="btn primary" href="../#/q/do-88">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-88%3A+What+is+the+Vertical+Pod+Autoscaler+%28VPA%29+and+how+does+it%E2%80%A6&amp;question-id=do-88&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+Kubernetes%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-88.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does k-means clustering work, how do you choose k, and when does it fail? | InterviewGearUp</title>
+<meta name="description" content="K-means alternates between assigning points to the nearest centroid and recomputing centroids as cluster means until assignments stabilise, minimising…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-28.html">
+<meta property="og:title" content="How does k-means clustering work, how do you choose k, and when does it fail? | InterviewGearUp">
+<meta property="og:description" content="K-means alternates between assigning points to the nearest centroid and recomputing centroids as cluster means until assignments stabilise, minimising…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-28.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does k-means clustering work, how do you choose k, and when does it fail?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 2 (Mid-level) · Unsupervised learning · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>K-means alternates between assigning points to the nearest centroid and recomputing centroids as cluster means until assignments stabilise, minimising within-cluster squared distance. Choose k with the elbow method, silhouette score, gap statistic and business interpretability. It fails with non-spherical or differently sized and dense clusters, outliers, high dimensions and unscaled features.</p></div>
+<h4>Explained in depth</h4>
+<h4>Algorithm (Lloyd&#39;s)</h4>
+<ol start="1"><li>Choose k and initialise k centroids (<strong>k-means++</strong> spreads them out by sampling proportional to squared distance, giving better and more stable results).</li><li><strong>Assign</strong> each point to its nearest centroid (Euclidean distance).</li><li><strong>Update</strong> each centroid to the mean of its assigned points.</li><li>Repeat until assignments stop changing or the inertia improvement is tiny.</li></ol>
+<p>It minimises <strong>inertia</strong> (within-cluster sum of squares) but converges only to a <strong>local optimum</strong>, so run several initialisations (<code>n_init</code>) and keep the best. Complexity is about O(n k d) per iteration; <strong>mini-batch k-means</strong> scales to huge data.</p>
+<h4>Preprocessing</h4>
+<ul><li><strong>Scale features</strong> (standardise), because distance drives everything.</li><li>Handle outliers (they pull centroids), consider log transforms, remove highly correlated or irrelevant features, and apply <strong>PCA</strong> to reduce noise in high dimensions.</li><li>Categorical data: use k-modes or k-prototypes, or embed first.</li></ul>
+<h4>Choosing k</h4>
+<div class="md-table"><table><thead><tr><th>Method</th><th>Idea</th></tr></thead><tbody><tr><td><strong>Elbow</strong></td><td>plot inertia versus k; look for the bend where gains slow (subjective)</td></tr><tr><td><strong>Silhouette score</strong></td><td>for each point, (b - a) / max(a, b) comparing within-cluster to nearest-other-cluster distance; average from -1 to 1; pick k maximising it</td></tr><tr><td><strong>Gap statistic</strong></td><td>compare inertia with that expected under a null reference distribution</td></tr><tr><td><strong>Calinski-Harabasz, Davies-Bouldin</strong></td><td>variance-ratio indexes</td></tr><tr><td><strong>Stability</strong></td><td>do clusters persist across bootstrap samples and seeds?</td></tr><tr><td><strong>Business usefulness</strong></td><td>segments must be actionable and explainable (usually 3 to 8)</td></tr></tbody></table></div>
+<pre><code>from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
+from sklearn.preprocessing import StandardScaler
+Z = StandardScaler().fit_transform(X)
+for k in range(2, 11):
+    km = KMeans(k, n_init=20, random_state=0).fit(Z)
+    print(k, round(km.inertia_), round(silhouette_score(Z, km.labels_), 3))</code></pre>
+<h4>When it fails</h4>
+<ul><li><strong>Non-spherical or elongated clusters</strong> (rings, moons): k-means assumes convex, roughly equal-variance blobs.</li><li><strong>Clusters of very different sizes or densities.</strong></li><li><strong>Outliers and noise</strong> distort centroids.</li><li><strong>High dimensions</strong>: distances concentrate, so use dimensionality reduction first.</li><li><strong>Unknown k</strong> and the fact that every point must belong to a cluster.</li><li>Sensitive to initialisation and feature scaling.</li></ul>
+<h4>Alternatives</h4>
+<div class="md-table"><table><thead><tr><th>Algorithm</th><th>Good for</th></tr></thead><tbody><tr><td><strong>Gaussian mixture models</strong></td><td>elliptical clusters, soft assignments, probabilistic</td></tr><tr><td><strong>Hierarchical (agglomerative)</strong></td><td>dendrogram, no k upfront, small data</td></tr><tr><td><strong>DBSCAN / HDBSCAN</strong></td><td>arbitrary shapes, noise detection, density-based, no k</td></tr><tr><td><strong>Spectral clustering</strong></td><td>non-convex shapes via graph structure</td></tr><tr><td><strong>k-medoids</strong></td><td>robust to outliers, any distance</td></tr><tr><td><strong>Clustering on embeddings</strong></td><td>text and images using learned representations</td></tr></tbody></table></div>
+<h4>Validate and use the clusters</h4>
+<p>Profile each cluster (means, distributions of key features, size), name them, test <strong>stability</strong>, check that they relate to outcomes not used in clustering (conversion, churn), and verify they are actionable. Remember clusters are a <strong>model of the data</strong>, not discovered truth; refresh periodically and assign new customers by nearest centroid.</p>
+<h4>Pitfalls</h4>
+<p>Using unscaled features, picking k from the elbow alone, over-interpreting clusters from noisy data, and clustering on columns the business cannot act on.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is k-means++ initialisation better than random initialisation?</li><li>What clustering algorithms would you use for non-convex clusters or unknown cluster counts?</li><li>How do you validate and profile customer segments produced by clustering?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-28">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-28%3A+How+does+k-means+clustering+work%2C+how+do+you+choose+k%2C+and+when+does%E2%80%A6&amp;question-id=ds-28&amp;context=Data+scientist%2C+Gear+2%2C+topic%3A+Unsupervised+learning%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-28.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

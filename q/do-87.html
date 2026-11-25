@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do seccomp profiles and AppArmor security modules restrict containerized system calls? | InterviewGearUp</title>
+<meta name="description" content="seccomp filters which system calls a process may make, returning an error or killing it for blocked calls, shrinking the kernel attack surface. AppArmor…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-87.html">
+<meta property="og:title" content="How do seccomp profiles and AppArmor security modules restrict containerized system calls? | InterviewGearUp">
+<meta property="og:description" content="seccomp filters which system calls a process may make, returning an error or killing it for blocked calls, shrinking the kernel attack surface. AppArmor…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-87.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do seccomp profiles and AppArmor security modules restrict containerized system calls?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · Containers · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>seccomp filters which system calls a process may make, returning an error or killing it for blocked calls, shrinking the kernel attack surface. AppArmor (path-based) and SELinux enforce mandatory access control on files, capabilities and network by profile. Container runtimes apply default profiles, and custom profiles tighten them further as part of defence in depth.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why restrict syscalls</h4>
+<p>Containers share the host kernel. A compromised process can use any of the roughly 350 syscalls to exploit kernel bugs (for example <code>keyctl</code>, <code>ptrace</code>, <code>unshare</code>, <code>mount</code>, <code>bpf</code>, <code>userfaultfd</code>). Reducing available syscalls and access to resources limits escapes.</p>
+<h4>seccomp (secure computing mode)</h4>
+<p>A process loads a <strong>seccomp-BPF filter</strong> (via <code>prctl</code> or <code>seccomp()</code>), which the kernel evaluates for each syscall, returning an action: <code>SCMP_ACT_ALLOW</code>, <code>SCMP_ACT_ERRNO</code> (fail with an error), <code>SCMP_ACT_KILL_PROCESS</code>, <code>SCMP_ACT_LOG</code>, or <code>SCMP_ACT_TRACE</code>. Filters can inspect syscall number and arguments (for example block <code>clone</code> with <code>CLONE_NEWUSER</code>).</p>
+<ul><li><strong>Docker and containerd default profile</strong> blocks roughly 40 to 60 dangerous calls (<code>reboot</code>, <code>kexec_load</code>, <code>mount</code>, <code>swapon</code>, <code>init_module</code>, <code>ptrace</code> in older versions) while allowing common ones.</li><li><strong>Kubernetes</strong>: <code>securityContext.seccompProfile.type: RuntimeDefault</code> applies the runtime default; <code>Localhost</code> uses a custom file from the node (<code>/var/lib/kubelet/seccomp/profiles/app.json</code>); <code>Unconfined</code> disables it (avoid). Pod Security Standards (restricted) require RuntimeDefault or Localhost. The <code>SeccompDefault</code> kubelet feature enables RuntimeDefault for all workloads.</li></ul>
+<pre><code>securityContext:
+  runAsNonRoot: true
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities: { drop: [&quot;ALL&quot;] }
+  seccompProfile: { type: RuntimeDefault }</code></pre>
+<p>Custom profile JSON: <code>{&quot;defaultAction&quot;:&quot;SCMP_ACT_ERRNO&quot;,&quot;syscalls&quot;:[{&quot;names&quot;:[&quot;read&quot;,&quot;write&quot;,&quot;openat&quot;,&quot;close&quot;,&quot;futex&quot;,&quot;epoll_wait&quot;,&quot;accept4&quot;],&quot;action&quot;:&quot;SCMP_ACT_ALLOW&quot;}]}</code>. <strong>Generating profiles</strong>: record syscalls used under realistic tests with <code>strace -c</code>, <code>oci-seccomp-bpf-hook</code>, the Kubernetes <strong>Security Profiles Operator</strong> (record and apply), or tools like <code>inspektor-gadget</code>, then deny by default. Include library and runtime needs (Go, JVM use many calls) and test failure paths.</p>
+<h4>AppArmor</h4>
+<p>A Linux Security Module using <strong>path-based profiles</strong> to restrict what a program can read, write, execute, which capabilities it has, and network operations. Default Docker profile <code>docker-default</code>. Kubernetes selects it through <code>securityContext.appArmorProfile</code> (or the annotation in older versions). Profiles run in <strong>enforce</strong> or <strong>complain</strong> mode (log only), making iteration safe. Common on Ubuntu and Debian.</p>
+<pre><code>profile k8s-deny-write flags=(attach_disconnected) {
+  file,
+  deny /** w,           # no writes anywhere
+  deny /proc/sys/** w,
+  network inet tcp,
+}</code></pre>
+<h4>SELinux versus AppArmor</h4>
+<p>SELinux (RHEL, Fedora, OpenShift) labels every process and object with a <strong>type</strong> and enforces rules between types (type enforcement), plus MCS categories that isolate containers from each other (<code>container_t</code> with unique category pairs). More expressive and stricter, but more complex. AppArmor is simpler, path-based. Only one is typically active per host.</p>
+<h4>Layering with other controls</h4>
+<p>Combine: non-root user, user namespaces, dropped capabilities, <code>no-new-privileges</code>, read-only root filesystem, seccomp, AppArmor or SELinux, network policies, and sandboxed runtimes (gVisor, Kata) for untrusted code. Each layer assumes the others may fail.</p>
+<h4>Testing and rollout</h4>
+<p>Run in log or complain mode first, check kernel logs (<code>dmesg | grep audit</code>, <code>journalctl</code>) for denied calls, roll out progressively, and ensure debugging tools do not require blocked calls. Keep profiles in version control and update them when the application changes.</p>
+<h4>Pitfalls</h4>
+<p>Using <code>Unconfined</code> or privileged containers, profiles too tight that cause mysterious EPERM failures, custom profiles not distributed to all nodes, and assuming seccomp replaces capabilities or filesystem restrictions.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you generate a seccomp profile for an application?</li><li>What is the difference between AppArmor and SELinux?</li><li>How do these controls interact with capabilities and Kubernetes security contexts?</li></ul>
+<p><a class="btn primary" href="../#/q/do-87">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-87%3A+How+do+seccomp+profiles+and+AppArmor+security+modules+restrict%E2%80%A6&amp;question-id=do-87&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+Containers%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-87.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

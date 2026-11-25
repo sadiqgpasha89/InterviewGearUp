@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is the difference between Kubernetes liveness probes and readiness probes in backend services? | InterviewGearUp</title>
+<meta name="description" content="A liveness probe tells Kubernetes whether a container is stuck and should be restarted. A readiness probe tells whether it can serve traffic right now,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-70.html">
+<meta property="og:title" content="What is the difference between Kubernetes liveness probes and readiness probes in backend services? | InterviewGearUp">
+<meta property="og:description" content="A liveness probe tells Kubernetes whether a container is stuck and should be restarted. A readiness probe tells whether it can serve traffic right now,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-70.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is the difference between Kubernetes liveness probes and readiness probes in backend services?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 2 (Mid-level) · Reliability · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A liveness probe tells Kubernetes whether a container is stuck and should be restarted. A readiness probe tells whether it can serve traffic right now, controlling its inclusion in Service endpoints. A startup probe gives slow-starting apps time before the other probes begin. Failing readiness removes the pod from load balancing without restarting it.</p></div>
+<h4>Explained in depth</h4>
+<h4>Purposes</h4>
+<div class="md-table"><table><thead><tr><th>Probe</th><th>Question</th><th>Action on failure</th></tr></thead><tbody><tr><td>Liveness</td><td>Is the process healthy or deadlocked?</td><td>kubelet <strong>restarts</strong> the container</td></tr><tr><td>Readiness</td><td>Can it handle requests now?</td><td>pod <strong>removed from Service endpoints</strong>, no restart</td></tr><tr><td>Startup</td><td>Has the app finished starting?</td><td>blocks liveness and readiness until success; restart if it never succeeds</td></tr></tbody></table></div>
+<h4>Configuration</h4>
+<pre><code>containers:
+- name: api
+  readinessProbe:
+    httpGet: { path: /ready, port: 8080 }
+    periodSeconds: 5
+    failureThreshold: 3
+  livenessProbe:
+    httpGet: { path: /healthz, port: 8080 }
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 2
+    failureThreshold: 3
+  startupProbe:
+    httpGet: { path: /healthz, port: 8080 }
+    failureThreshold: 30            # up to 30 x 10s = 5 minutes to start
+    periodSeconds: 10</code></pre>
+<p>Probe types: HTTP GET, TCP socket, exec command, and gRPC.</p>
+<h4>What each endpoint should check</h4>
+<ul><li><strong>Liveness (<code>/healthz</code>)</strong>: cheap, local checks only: the event loop responds, the main thread is not deadlocked. Do <strong>not</strong> check databases or other services; if the database is down, restarting every pod will not fix it and causes a restart storm and larger outage.</li><li><strong>Readiness (<code>/ready</code>)</strong>: whether this instance can serve: initialisation done, caches warmed, connections to critical dependencies established, not overloaded or draining. It may briefly include a dependency check, but beware that a shared dependency outage will mark all pods unready and take the whole service out; sometimes it is better to stay ready and return degraded responses.</li><li><strong>Startup</strong>: protects slow starters (JVM warm-up, migrations, large model load) from being killed by liveness.</li></ul>
+<h4>Interaction with deployments</h4>
+<p>During a rolling update, new pods receive traffic only when ready, so users never hit half-started instances. On termination, Kubernetes sends SIGTERM and removes the pod from endpoints concurrently, so the app should flip readiness to failing, wait for in-flight requests (and endpoint propagation, often a 5 to 15 second <code>preStop</code> sleep), then exit. <code>terminationGracePeriodSeconds</code> must exceed the drain time.</p>
+<h4>Tuning and pitfalls</h4>
+<ul><li>Too aggressive thresholds cause flapping; too lax delay failure detection. Set timeouts above normal p99 latency and avoid heavy probe handlers.</li><li>Probes consume resources and run on every pod; keep them light and unauthenticated on an internal port.</li><li>Without readiness probes, traffic goes to pods as soon as the container starts, causing errors on deploys.</li><li>Do not use the same endpoint for liveness and readiness, since their purposes differ.</li><li>Monitor restarts (<code>kubectl describe pod</code>, <code>kube_pod_container_status_restarts_total</code>) and probe failures in events.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>What goes wrong if the liveness probe checks a downstream dependency?</li><li>When do you need a startup probe?</li><li>How do readiness probes and graceful shutdown work together during rolling deploys?</li></ul>
+<p><a class="btn primary" href="../#/q/be-70">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-70%3A+What+is+the+difference+between+Kubernetes+liveness+probes+and%E2%80%A6&amp;question-id=be-70&amp;context=Backend+engineer%2C+Gear+2%2C+topic%3A+Reliability%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-70.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

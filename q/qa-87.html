@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you use Docker Compose to spin up local integration testing environments for developers? | InterviewGearUp</title>
+<meta name="description" content="Define the full stack in a docker-compose.yml with application, database, cache, queue and mocks, add healthchecks and depends_on conditions, seed data…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-87.html">
+<meta property="og:title" content="How do you use Docker Compose to spin up local integration testing environments for developers? | InterviewGearUp">
+<meta property="og:description" content="Define the full stack in a docker-compose.yml with application, database, cache, queue and mocks, add healthchecks and depends_on conditions, seed data…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-87.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you use Docker Compose to spin up local integration testing environments for developers?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 2 (Mid-level) · Infrastructure · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Define the full stack in a docker-compose.yml with application, database, cache, queue and mocks, add healthchecks and depends_on conditions, seed data via init scripts or migrations, and expose ports and env files per profile. Developers start it with one command, run tests against it, and tear it down cleanly, using the same images in CI for parity.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why Compose for integration environments</h4>
+<p>Integration tests need real dependencies (PostgreSQL, Redis, Kafka, S3-compatible storage, partner simulators). A Compose file describes them declaratively, so every developer and CI job gets <strong>the same environment</strong> with one command, without installing databases locally or sharing a flaky staging server.</p>
+<h4>Example</h4>
+<pre><code># compose.test.yml
+services:
+  db:
+    image: postgres:16
+    environment: { POSTGRES_PASSWORD: test, POSTGRES_DB: shop }
+    volumes: [ &quot;./db/init:/docker-entrypoint-initdb.d:ro&quot; ]       # schema + seed on first start
+    healthcheck: { test: [&quot;CMD-SHELL&quot;, &quot;pg_isready -U postgres -d shop&quot;], interval: 3s, timeout: 3s, retries: 20 }
+    tmpfs: [ /var/lib/postgresql/data ]                            # fast, disposable storage
+  redis:
+    image: redis:7
+    healthcheck: { test: [&quot;CMD&quot;, &quot;redis-cli&quot;, &quot;ping&quot;], interval: 3s, retries: 10 }
+  partner-mock:
+    image: wiremock/wiremock:3
+    volumes: [ &quot;./mocks:/home/wiremock:ro&quot; ]
+    ports: [ &quot;8089:8080&quot; ]
+  mailpit:
+    image: axllent/mailpit
+    ports: [ &quot;8025:8025&quot; ]
+  api:
+    build: .
+    environment: { DATABASE_URL: postgres://postgres:test@db/shop, REDIS_URL: redis://redis:6379, PARTNER_URL: http://partner-mock:8080, SMTP_HOST: mailpit }
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    ports: [ &quot;8080:8080&quot; ]
+    healthcheck: { test: [&quot;CMD&quot;, &quot;curl&quot;, &quot;-f&quot;, &quot;http://localhost:8080/health&quot;], interval: 3s, retries: 20 }</code></pre>
+<pre><code>docker compose -f compose.test.yml up -d --build --wait          # --wait blocks until healthchecks pass
+npm run test:integration                                          # tests use http://localhost:8080
+docker compose -f compose.test.yml down -v --remove-orphans       # clean volumes for a fresh state</code></pre>
+<h4>Design guidelines</h4>
+<ol start="1"><li><strong>Readiness, not just start order</strong>: <code>depends_on</code> without conditions only waits for container start. Use <code>healthcheck</code> plus <code>condition: service_healthy</code> and <code>up --wait</code>; avoid <code>sleep</code> and wait-for scripts.</li><li><strong>Deterministic data</strong>: run migrations on startup (Flyway, Liquibase, Alembic jobs as one-shot services with <code>restart: &quot;no&quot;</code>), seed via init scripts or a seed container, versioned with the code; per-test isolation by transaction-free cleanup (truncate tables, unique tenants) or by recreating the database from a template (<code>CREATE DATABASE ... TEMPLATE</code>).</li><li><strong>Parity with production</strong>: same major versions of PostgreSQL, Kafka, and Redis, pinned image tags (not <code>latest</code>) or digests, similar configuration where behaviour matters (collation, extensions, memory limits).</li><li><strong>Configuration</strong>: <code>.env</code> files per environment, <code>profiles</code> for optional services (<code>--profile kafka</code>), overrides (<code>compose.override.yml</code>) for local debugging ports, never real secrets or production endpoints; mocks for third parties to avoid external calls.</li><li><strong>Networking</strong>: services reach each other by service name; map only the ports tests need; avoid port clashes between parallel stacks with <code>COMPOSE_PROJECT_NAME</code> and dynamic ports (<code>ports: [&quot;0:8080&quot;]</code>, then <code>docker compose port api 8080</code>).</li><li><strong>Performance</strong>: tmpfs for databases, cached image layers, pre-pulled images in CI, <code>docker compose up --no-build</code> with prebuilt images, resource limits to emulate constraints.</li><li><strong>Debuggability</strong>: <code>docker compose logs -f</code>, exposing debugger ports, volume-mounted source with hot reload for local development (separate from CI), and collecting logs as CI artefacts on failure.</li><li><strong>Tooling</strong>: Makefile or npm scripts (<code>make test-env</code>, <code>make test-clean</code>), documentation in the README, healthy defaults for Apple Silicon (multi-arch images) and Windows (WSL2).</li></ol>
+<h4>Compose vs Testcontainers</h4>
+<p><strong>Testcontainers</strong> starts containers from test code with dynamic ports, per-test or per-class lifecycle and automatic cleanup, which is excellent for integration tests inside a language ecosystem (JUnit, pytest, Go). <strong>Compose</strong> is better for running a <strong>whole multi-service system</strong> for end-to-end tests, manual exploration, demos and onboarding. Many teams use both: Testcontainers for service-level tests, Compose for system-level.</p>
+<h4>Pitfalls</h4>
+<p>Assuming <code>depends_on</code> implies readiness, persisting volumes between runs (stale data causing flaky tests), unpinned images, hard-coded ports clashing locally, tests that mutate shared seed data without cleanup, and drifting from production versions.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do healthchecks and depends_on conditions prevent tests starting before services are ready?</li><li>How do you manage test data seeding and reset between runs in Compose environments?</li><li>When should you use Testcontainers instead of a Compose file?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-87">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-87%3A+How+do+you+use+Docker+Compose+to+spin+up+local+integration+testing%E2%80%A6&amp;question-id=qa-87&amp;context=QA+%2F+SDET%2C+Gear+2%2C+topic%3A+Infrastructure%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-87.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you configure synthetic monitoring to continuously probe critical user journeys from the outside? | InterviewGearUp</title>
+<meta name="description" content="Synthetic monitoring runs scripted checks against production from outside, on a schedule and from multiple regions, to verify critical user journeys such…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-82.html">
+<meta property="og:title" content="How do you configure synthetic monitoring to continuously probe critical user journeys from the outside? | InterviewGearUp">
+<meta property="og:description" content="Synthetic monitoring runs scripted checks against production from outside, on a schedule and from multiple regions, to verify critical user journeys such…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-82.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you configure synthetic monitoring to continuously probe critical user journeys from the outside?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 2 (Mid-level) · Observability · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Synthetic monitoring runs scripted checks against production from outside, on a schedule and from multiple regions, to verify critical user journeys such as login, search and checkout. It detects outages, slowness and third-party failures before users report them, measures availability and latency as seen by customers, and feeds alerts and SLOs.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why probe from outside</h4>
+<p>Internal metrics can look healthy while users fail: DNS, CDN, TLS certificates, load balancers, routing, third-party scripts and regional network problems are invisible to the app. Synthetic probes act like a user at the edge, giving a clear <strong>up or down</strong> signal and an end-to-end latency baseline even at 3 a.m. with no real traffic.</p>
+<h4>Types of checks</h4>
+<ul><li><strong>Uptime (ping, TCP, HTTP)</strong>: status code, response time, body assertion, redirects, TLS expiry (certificate days remaining), DNS resolution.</li><li><strong>API checks</strong>: multi-step flows with authentication tokens, assertions on JSON, schema and latency.</li><li><strong>Browser checks (journeys)</strong>: real browser automation (Playwright) for login, add to cart, checkout in a test account, with screenshots, traces and Web Vitals.</li><li><strong>Heartbeat or dead man&#39;s switch</strong>: expects pings from cron jobs and batch processes.</li><li><strong>Multi-location</strong>: run every 1 to 5 minutes from several regions and networks; alert only when several locations fail (to avoid single-probe false positives).</li></ul>
+<h4>Example tools</h4>
+<p>Blackbox Exporter with Prometheus, Grafana Synthetic Monitoring (k6 and Playwright based), Datadog Synthetics, Checkly (monitoring as code), New Relic, Pingdom, UptimeRobot, AWS CloudWatch Synthetics canaries, Google Cloud Uptime checks, Azure Application Insights availability tests.</p>
+<pre><code># Prometheus blackbox exporter module and probe
+modules:
+  http_2xx:
+    prober: http
+    http: { valid_status_codes: [200], fail_if_body_not_matches_regexp: [&quot;Add to cart&quot;], preferred_ip_protocol: ip4 }
+# prometheus.yml scrape config targets https://shop.example.com/ via /probe, alert on probe_success == 0 for 5m, probe_ssl_earliest_cert_expiry</code></pre>
+<pre><code>// Playwright journey run as a monitor (Checkly style)
+test(&#39;checkout journey&#39;, async ({ page }) =&gt; {
+  await page.goto(&#39;https://shop.example.com&#39;);
+  await page.getByRole(&#39;link&#39;, { name: &#39;Shoes&#39; }).click();
+  await page.getByRole(&#39;button&#39;, { name: &#39;Add to cart&#39; }).first().click();
+  await expect(page.getByTestId(&#39;cart-count&#39;)).toHaveText(&#39;1&#39;);
+});</code></pre>
+<h4>Design principles</h4>
+<ul><li><strong>Cover the money paths</strong> and key dependencies first (login, search, payment, API gateway), not every page.</li><li><strong>Isolate test data</strong>: dedicated synthetic accounts, test payment modes, tagging requests with a header so analytics, fraud systems and inventory ignore them; clean up created records; avoid actions with real-world effects (emails, orders).</li><li><strong>Stable selectors and assertions</strong> (roles, data-testid), explicit timeouts, retries (one quick retry before alerting) and tolerance for expected variance.</li><li><strong>Measure SLIs</strong>: availability (percent of successful checks), latency percentiles per location and step, correlate with deploys. Use for SLO dashboards and error budgets, and alert on symptoms with runbook links.</li><li><strong>Secure credentials</strong> in a secrets store; rotate test passwords; avoid hitting rate limiters and WAF bot protection (allowlist probe IPs or headers).</li><li>Keep check suites in version control, review them like code, and run them against staging and after deployments (smoke tests in CD).</li></ul>
+<h4>Complement with RUM</h4>
+<p>Real user monitoring shows actual device and network diversity and rare issues but needs traffic and cannot detect outages with no users. Synthetic gives controlled, repeatable measurements and proactive detection. Use both, plus internal metrics and tracing for diagnosis.</p>
+<h4>Pitfalls</h4>
+<p>Single-location alerts causing false pages, brittle UI scripts breaking on every release, probes polluting business metrics, and monitoring only the home page.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you design checks that are reliable and do not cause side effects in production?</li><li>How do synthetic checks complement real user monitoring?</li><li>How do you run browser-based journey checks as code?</li></ul>
+<p><a class="btn primary" href="../#/q/do-82">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-82%3A+How+do+you+configure+synthetic+monitoring+to+continuously+probe%E2%80%A6&amp;question-id=do-82&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+2%2C+topic%3A+Observability%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-82.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

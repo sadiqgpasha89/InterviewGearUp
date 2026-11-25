@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is the difference between Airflow standard Sensors and Deferrable (Async) Operators? | InterviewGearUp</title>
+<meta name="description" content="A standard sensor occupies a worker slot while it polls repeatedly for a condition, wasting capacity during long waits. A deferrable operator hands the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-46.html">
+<meta property="og:title" content="What is the difference between Airflow standard Sensors and Deferrable (Async) Operators? | InterviewGearUp">
+<meta property="og:description" content="A standard sensor occupies a worker slot while it polls repeatedly for a condition, wasting capacity during long waits. A deferrable operator hands the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-46.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is the difference between Airflow standard Sensors and Deferrable (Async) Operators?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Orchestration · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A standard sensor occupies a worker slot while it polls repeatedly for a condition, wasting capacity during long waits. A deferrable operator hands the wait to the triggerer, an asyncio process that runs thousands of lightweight triggers in one process, then resumes on a worker only when the event happens, freeing the slot in between.</p></div>
+<h4>Explained in depth</h4>
+<h4>The problem with sensors</h4>
+<p>Sensors wait for something external: a file in S3, a partition, an HTTP endpoint, another DAG&#39;s task. In <strong>poke mode</strong> (default) the sensor task holds a worker slot and sleeps between checks. Fifty sensors waiting hours for late data can consume fifty slots, starving real work and driving up worker costs.</p>
+<h4>Sensor modes</h4>
+<ul><li><strong>poke</strong>: occupies the slot the whole time; low latency, high resource use. Fine for short waits.</li><li><strong>reschedule</strong>: the task releases its slot between pokes and is rescheduled (state <code>up_for_reschedule</code>). Saves slots but adds scheduler load and metadata churn for very frequent pokes.</li></ul>
+<pre><code>S3KeySensor(task_id=&quot;wait_file&quot;, bucket_key=&quot;s3://data/{{ ds }}/_SUCCESS&quot;, mode=&quot;reschedule&quot;, poke_interval=300, timeout=6*3600)</code></pre>
+<h4>Deferrable operators</h4>
+<p>Operators with <code>deferrable=True</code> (or <code>*Async</code> variants) run in two phases:</p>
+<ol start="1"><li>The worker starts the task, validates, and calls <code>self.defer(trigger=..., method_name=&quot;execute_complete&quot;)</code>. The task moves to state <strong>deferred</strong> and <strong>frees the worker slot</strong> completely.</li><li>A <strong>trigger</strong> (an async Python class) runs inside the <strong>triggerer</strong> process on the asyncio event loop. Thousands of triggers can share one process because they only await I/O (HTTP polling, cloud API calls, timers).</li><li>When the trigger yields a <code>TriggerEvent</code>, the scheduler resumes the task on a worker, running <code>execute_complete</code> to finish.</li></ol>
+<pre><code>S3KeySensorAsync = S3KeySensor(task_id=&quot;wait_file&quot;, bucket_key=&quot;s3://data/{{ ds }}/_SUCCESS&quot;, deferrable=True)
+DataprocSubmitJobOperator(task_id=&quot;spark&quot;, job=job, deferrable=True)    # long jobs awaited without a slot</code></pre>
+<h4>Why it is better</h4>
+<ul><li><strong>Efficient</strong>: a single triggerer handles very large numbers of waiting tasks with minimal CPU and memory, versus one worker slot (process) each.</li><li><strong>Cost</strong>: fewer workers needed; works well with Kubernetes autoscaling.</li><li><strong>Scalability</strong>: less pressure on pools and parallelism limits.</li><li>Ideal for long waits or long external jobs (EMR, Databricks, BigQuery, Dataproc, dbt Cloud, Snowflake).</li></ul>
+<h4>Requirements and caveats</h4>
+<ul><li>Run at least one <strong>triggerer</strong> component (and ideally several for HA); without it deferred tasks never resume.</li><li>Trigger code must be async and non-blocking; no synchronous sleeps or CPU-heavy work, which would stall every trigger on that loop.</li><li>Triggers run in the triggerer, so they cannot access task-local state; pass serialisable arguments.</li><li>Not every provider operator supports deferral; check provider docs. Debugging is slightly harder, so rely on logs from the triggerer.</li><li>Timeouts still apply (<code>execution_timeout</code>, trigger <code>timeout</code>).</li></ul>
+<h4>Choosing</h4>
+<div class="md-table"><table><thead><tr><th></th><th>Sensor (poke)</th><th>Sensor (reschedule)</th><th>Deferrable</th></tr></thead><tbody><tr><td>Worker slot</td><td>held</td><td>released between pokes</td><td>released</td></tr><tr><td>Overhead</td><td>high</td><td>scheduler churn</td><td>low</td></tr><tr><td>Best for</td><td>short waits</td><td>medium waits</td><td>long or numerous waits</td></tr></tbody></table></div>
+<h4>Also consider</h4>
+<p>Event-driven alternatives: <strong>datasets and asset-based scheduling</strong> (trigger a DAG when upstream data is produced), cloud event notifications, or external triggers (REST API) so you avoid polling altogether.</p>
+<h4>Pitfalls</h4>
+<p>Poke sensors with day-long timeouts filling pools, blocking code inside triggers, and forgetting to deploy the triggerer.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What are poke and reschedule modes and how do they compare?</li><li>How do you write a custom trigger?</li><li>What must be running for deferrable operators to work?</li></ul>
+<p><a class="btn primary" href="../#/q/de-46">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-46%3A+What+is+the+difference+between+Airflow+standard+Sensors+and%E2%80%A6&amp;question-id=de-46&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Orchestration%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-46.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

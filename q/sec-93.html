@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are the primary phases of a professional penetration test: Scoping, Recon, Exploitation, and Reporting? | InterviewGearUp</title>
+<meta name="description" content="A professional penetration test follows agreed phases: pre-engagement and scoping with rules of engagement and written authorisation, reconnaissance and…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-93.html">
+<meta property="og:title" content="What are the primary phases of a professional penetration test: Scoping, Recon, Exploitation, and Reporting? | InterviewGearUp">
+<meta property="og:description" content="A professional penetration test follows agreed phases: pre-engagement and scoping with rules of engagement and written authorisation, reconnaissance and…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-93.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are the primary phases of a professional penetration test: Scoping, Recon, Exploitation, and Reporting?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · Operations · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A professional penetration test follows agreed phases: pre-engagement and scoping with rules of engagement and written authorisation, reconnaissance and enumeration, vulnerability analysis, exploitation and post-exploitation within the scope, then analysis and reporting with prioritised findings, evidence, remediation advice and a retest. Safety, legal authorisation and communication run through every phase.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why a methodology</h4>
+<p>A penetration test is a <strong>time-boxed, authorised simulation of an attacker</strong> to find exploitable weaknesses and measure real risk. Standards: <strong>PTES</strong> (Penetration Testing Execution Standard), <strong>OWASP Web Security Testing Guide</strong>, <strong>NIST SP 800-115</strong>, <strong>OSSTMM</strong>, <strong>CREST</strong> and <strong>PCI-DSS penetration testing guidance</strong>, MITRE ATT&amp;CK for mapping. Types: black, grey and white box; external, internal, web, API, mobile, cloud, wireless, social engineering, physical, red team (objective-based, stealthy) versus pen test (breadth, noisy).</p>
+<h4>Phase 1: Pre-engagement and scoping</h4>
+<ul><li><strong>Business goals and threat model</strong>: crown jewels, compliance drivers (PCI, SOC 2, ISO 27001), prior incidents.</li><li><strong>Scope</strong>: in-scope IP ranges, domains, applications, cloud accounts and environments (production or staging), explicitly <strong>out-of-scope</strong> systems (third-party SaaS, payment processors, fragile OT), allowed techniques (phishing, DoS, brute force, physical), data handling and credentials provided (test accounts per role).</li><li><strong>Legal and contractual</strong>: signed <strong>statement of work, NDA and authorisation letter</strong> (&quot;get out of jail free&quot; letter), third-party and cloud provider permission policies (AWS permits most testing without approval; others require notice), liability, insurance, jurisdictional and data protection constraints (GDPR for personal data encountered).</li><li><strong>Rules of engagement (RoE)</strong>: testing windows, source IPs, emergency contacts, escalation if critical issues or an actual intruder is found, stop conditions, rate limits, backups and rollback plans, evidence handling, deconfliction with the SOC (white-team knowledge or blind test).</li><li><strong>Timeline, effort and deliverables</strong> agreed.</li></ul>
+<h4>Phase 2: Reconnaissance and information gathering</h4>
+<ul><li><strong>Passive (OSINT)</strong>: no direct contact with targets: WHOIS, DNS and certificate transparency logs (crt.sh), Shodan and Censys, search engines and dorks, GitHub and code leaks, breached credential lists, social media and job posts for technology and employee names, archived pages.</li><li><strong>Active</strong>: direct interaction: DNS enumeration, subdomain brute force (amass, subfinder), port and service scanning (<code>nmap -sS -sV -p- --min-rate</code>), web content discovery (ffuf, gobuster), banner grabbing, technology fingerprinting (httpx, Wappalyzer), SMB, SNMP, LDAP enumeration.</li></ul>
+<p>Output: an <strong>attack surface map</strong> (hosts, services, versions, endpoints, users).</p>
+<h4>Phase 3: Vulnerability analysis</h4>
+<p>Combine <strong>automated scanners</strong> (Nessus, Qualys, OpenVAS, Nuclei, Burp Scanner, OWASP ZAP, Trivy for containers, ScoutSuite and Prowler for cloud) with <strong>manual testing</strong> (business logic flaws, authentication and authorisation checks, IDOR, injection, misconfigurations, default credentials, weak crypto). <strong>Validate and prioritise</strong> to eliminate false positives, correlate with exploit availability (CVE, EPSS, CISA KEV), and plan attack paths.</p>
+<h4>Phase 4: Exploitation</h4>
+<p>Attempt to <strong>safely exploit</strong> confirmed weaknesses to prove impact: SQL injection to data access, RCE through unpatched services, credential attacks (spraying within lockout thresholds), Kerberoasting and relay attacks in Active Directory, cloud IAM abuse. Tools: Metasploit, Burp Suite, sqlmap, Impacket, Responder, BloodHound, Cobalt Strike or Sliver (red team), custom scripts. Rules: minimal footprint, avoid destructive payloads, respect scope, record every action with timestamps.</p>
+<h4>Phase 5: Post-exploitation</h4>
+<p>Determine the <strong>real business impact</strong>: privilege escalation, <strong>lateral movement</strong>, persistence (only if allowed, and then documented and removed), access to sensitive data (prove with minimal samples, never exfiltrate real production data unnecessarily), domain or cloud admin, pivoting between network segments, detection coverage (did the SOC notice?). <strong>Clean up</strong>: remove tools, accounts, web shells, test data.</p>
+<h4>Phase 6: Analysis and reporting</h4>
+<ul><li><strong>Executive summary</strong>: scope, overall risk, key themes, business impact in plain language, strategic recommendations.</li><li><strong>Technical findings</strong>, each with: title, <strong>severity</strong> (CVSS plus business context), affected assets, description, <strong>reproducible steps and evidence</strong> (screenshots, requests and responses, commands), impact, <strong>remediation guidance</strong>, references (CWE, OWASP).</li><li><strong>Attack narrative / chain</strong> showing how low-severity issues combined into compromise; positive observations; methodology, tools and testing dates; appendices.</li><li><strong>Debrief</strong> presentation, answer questions, then <strong>remediation support and retest</strong> to verify fixes (attestation letter for compliance).</li></ul>
+<h4>Best practices</h4>
+<p>Communicate early about critical findings (do not wait for the final report), protect report confidentiality and credentials, align severity with business risk, track findings into the ticketing system, rotate testers or vendors periodically, and complement tests with continuous scanning and bug bounty.</p>
+<h4>Pitfalls</h4>
+<p>Vague scope, no written authorisation, running scanners against production without limits, reporting raw scanner output, ignoring business logic, and delivering a report without prioritisation or retest.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What must a rules of engagement document and statement of work include before testing begins?</li><li>How do passive and active reconnaissance differ and what legal or operational risks does each carry?</li><li>How should a penetration test report communicate findings to executives and engineers differently?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-93">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-93%3A+What+are+the+primary+phases+of+a+professional+penetration+test%3A%E2%80%A6&amp;question-id=sec-93&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+Operations%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-93.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

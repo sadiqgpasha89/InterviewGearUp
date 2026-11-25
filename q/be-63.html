@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does a sliding window log rate limiter compare to a sliding window counter approximation? | InterviewGearUp</title>
+<meta name="description" content="A sliding window log stores a timestamp for every request in the window, giving exact limits at the cost of O(n) memory per client. A sliding window…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-63.html">
+<meta property="og:title" content="How does a sliding window log rate limiter compare to a sliding window counter approximation? | InterviewGearUp">
+<meta property="og:description" content="A sliding window log stores a timestamp for every request in the window, giving exact limits at the cost of O(n) memory per client. A sliding window…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-63.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does a sliding window log rate limiter compare to a sliding window counter approximation?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 2 (Mid-level) · APIs · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A sliding window log stores a timestamp for every request in the window, giving exact limits at the cost of O(n) memory per client. A sliding window counter keeps counts for the current and previous fixed windows and weights the previous one by overlap, approximating the log with O(1) memory and small error.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why not fixed windows</h4>
+<p>A fixed window counter (reset each minute) permits up to 2x the limit around the boundary: 100 requests at 12:00:59 and 100 more at 12:01:00 are both allowed under a 100 per minute limit. Sliding windows remove this boundary effect.</p>
+<h4>Sliding window log</h4>
+<p>Keep a timestamp per accepted request; on each request remove entries older than the window and count the rest.</p>
+<pre><code>now = 12:01:30, window = 60 s
+drop timestamps &lt; 12:00:30; if count &lt; limit: record now and allow, else reject</code></pre>
+<p>Redis implementation with a sorted set and a Lua script for atomicity:</p>
+<pre><code>-- KEYS[1]=key, ARGV: now_ms, window_ms, limit, unique_id
+redis.call(&#39;ZREMRANGEBYSCORE&#39;, KEYS[1], 0, ARGV[1] - ARGV[2])
+if redis.call(&#39;ZCARD&#39;, KEYS[1]) &lt; tonumber(ARGV[3]) then
+  redis.call(&#39;ZADD&#39;, KEYS[1], ARGV[1], ARGV[4])
+  redis.call(&#39;PEXPIRE&#39;, KEYS[1], ARGV[2])
+  return 1
+end
+return 0</code></pre>
+<p>Pros: exact, no boundary bursts, accurate <code>Retry-After</code> (oldest entry plus window). Cons: memory grows with the limit (1 million users at 1,000 requests means up to a billion entries), and each request costs O(log n) on the sorted set.</p>
+<h4>Sliding window counter (approximation)</h4>
+<p>Store counters for the current window and the previous window. Estimate requests in the sliding window as:</p>
+<pre><code>estimate = current_count + previous_count * (1 - elapsed_fraction_of_current_window)</code></pre>
+<p>Example: limit 100 per minute, previous minute had 84 requests, current minute has 36 so far, we are 25 percent into the current minute: <code>36 + 84 * 0.75 = 99</code> which is under 100, so the next request is allowed. Pros: two counters per key, O(1) time and memory, cheap in Redis (<code>INCR</code> plus <code>EXPIRE</code>, or hash), good enough for most APIs (Cloudflare reported errors around 0.003 percent). Cons: assumes requests were evenly distributed within the previous window, so it is an approximation and can slightly over- or under-limit.</p>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th></th><th>Window log</th><th>Window counter</th><th>Token bucket</th></tr></thead><tbody><tr><td>Accuracy</td><td>exact</td><td>approximate</td><td>exact for rate, allows controlled bursts</td></tr><tr><td>Memory per key</td><td>O(limit)</td><td>O(1)</td><td>O(1)</td></tr><tr><td>Burst behaviour</td><td>strict</td><td>smooth</td><td>configurable burst capacity</td></tr><tr><td>Complexity</td><td>higher</td><td>low</td><td>low</td></tr></tbody></table></div>
+<h4>Practical advice</h4>
+<p>Use the counter approximation for high-volume public APIs, the log for low limits where exactness matters (login attempts, payments, OTP). Return <code>429 Too Many Requests</code> with <code>Retry-After</code> and <code>RateLimit-*</code> headers, key by API key, user or IP (plus route), and decide failure mode if Redis is down (fail open for availability or closed for security). Use local in-memory pre-limiting plus a global store for multi-node accuracy.</p>
+<h4>Pitfalls</h4>
+<p>Non-atomic read-modify-write sequences causing races, clock skew across nodes (use Redis <code>TIME</code>), unbounded keys for attackers rotating identifiers, and counting rejected requests toward the limit unintentionally.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does the fixed window algorithm allow bursts at boundaries?</li><li>How do token bucket and leaky bucket compare to sliding windows?</li><li>How do you implement the sliding window log atomically in Redis?</li></ul>
+<p><a class="btn primary" href="../#/q/be-63">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-63%3A+How+does+a+sliding+window+log+rate+limiter+compare+to+a+sliding%E2%80%A6&amp;question-id=be-63&amp;context=Backend+engineer%2C+Gear+2%2C+topic%3A+APIs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-63.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

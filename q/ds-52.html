@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is training-serving skew and how do feature stores and consistent pipelines help you avoid it? | InterviewGearUp</title>
+<meta name="description" content="Training-serving skew occurs when features at inference differ from those used in training because of different code paths, data sources, timing or…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-52.html">
+<meta property="og:title" content="What is training-serving skew and how do feature stores and consistent pipelines help you avoid it? | InterviewGearUp">
+<meta property="og:description" content="Training-serving skew occurs when features at inference differ from those used in training because of different code paths, data sources, timing or…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-52.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is training-serving skew and how do feature stores and consistent pipelines help you avoid it?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 4 (Lead / Staff) · ML engineering · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Training-serving skew occurs when features at inference differ from those used in training because of different code paths, data sources, timing or defaults, silently degrading accuracy. Prevent it by defining each feature once, sharing transformation code, using a feature store with point-in-time correct offline retrieval and low-latency online serving, logging served features, and testing parity automatically.</p></div>
+<h4>Explained in depth</h4>
+<h4>What skew looks like</h4>
+<p>A model trained on a notebook-engineered feature &quot;average spend in the last 30 days&quot; works offline, but in production the service computes it with a different window, time zone, null handling or stale data. The model receives inputs that differ from what it learned, so performance degrades <strong>without errors or crashes</strong>. Causes:</p>
+<ul><li><strong>Duplicate logic</strong>: Python in training, Java or SQL in serving.</li><li><strong>Different data sources</strong>: warehouse snapshot versus operational database.</li><li><strong>Time travel issues</strong>: training uses values as of today (leaks the future) while serving uses values as of the request time.</li><li><strong>Staleness and latency</strong>: batch features updated daily but treated as fresh.</li><li><strong>Defaults and missing handling</strong>: NaN in training, 0 online.</li><li><strong>Library or version differences</strong>: tokenisers, encoders, rounding.</li><li><strong>Schema drift</strong> in upstream tables.</li></ul>
+<h4>Principles to prevent it</h4>
+<ol start="1"><li><strong>Define features once</strong>, in code that runs both offline and online (or compiles to both), with owners and documentation.</li><li><strong>Package preprocessing with the model</strong> (sklearn Pipeline, TF Transform, ONNX with preprocessing, model server containing the transformation graph).</li><li><strong>Point-in-time correct training data</strong>: for each label timestamp, retrieve feature values <strong>as they were at that time</strong>, never later.</li><li><strong>Log what was served</strong>: store the exact feature vector and model version used for each prediction; later joined with outcomes it becomes the <strong>training data</strong>, eliminating skew by construction.</li><li><strong>Automated parity tests</strong>: run the same entities through offline and online paths and compare values (tolerances), in CI and as continuous checks.</li><li><strong>Monitor</strong> feature distributions online versus training, freshness, null rates, and latency.</li></ol>
+<h4>Feature store</h4>
+<p>A feature store (Feast, Tecton, Databricks Feature Store, SageMaker or Vertex feature stores) provides:</p>
+<ul><li><strong>Registry and definitions</strong> (entities, features, transformations, ownership, lineage, versioning).</li><li><strong>Offline store</strong> (warehouse or lake) for training and batch scoring with <strong>point-in-time joins</strong> (as-of joins) to prevent leakage.</li><li><strong>Online store</strong> (Redis, DynamoDB, Bigtable) with millisecond lookups of the latest values.</li><li><strong>Materialisation pipelines</strong> syncing offline to online, plus streaming ingestion for fresh features.</li><li>Reuse across teams, governance and access control.</li></ul>
+<pre><code># Feast-style retrieval for training with point-in-time correctness
+training_df = store.get_historical_features(
+    entity_df=labels_df[[&quot;customer_id&quot;, &quot;event_timestamp&quot;]],       # timestamp of each label
+    features=[&quot;customer_stats:avg_spend_30d&quot;, &quot;customer_stats:tickets_90d&quot;],
+).to_df()
+online = store.get_online_features(features=[...], entity_rows=[{&quot;customer_id&quot;: 42}]).to_dict()</code></pre>
+<h4>Feature computation modes</h4>
+<div class="md-table"><table><thead><tr><th>Mode</th><th>Freshness</th><th>Complexity</th><th>Example</th></tr></thead><tbody><tr><td><strong>Batch</strong> (daily or hourly jobs)</td><td>hours</td><td>low</td><td>lifetime value</td></tr><tr><td><strong>Streaming</strong> (Flink, Spark Structured Streaming, Kafka)</td><td>seconds to minutes</td><td>higher</td><td>transactions in the last 10 minutes</td></tr><tr><td><strong>On-demand / request-time</strong></td><td>exact</td><td>latency cost</td><td>distance between request and home location</td></tr></tbody></table></div>
+<p>Pick the cheapest mode that meets the model&#39;s freshness needs; mixed-mode features need careful consistency.</p>
+<h4>Testing and rollout</h4>
+<p>Shadow-deploy a new model and compare features and predictions with the champion; canary traffic; keep schemas and contracts under version control; backfill features when definitions change and retrain.</p>
+<h4>Pitfalls</h4>
+<p>Rewriting notebook logic by hand for production, backfilling features with latest values, no monitoring of feature freshness, and adopting a feature store without ownership and quality processes.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does a feature store provide point-in-time correct joins for training data?</li><li>How would you detect skew between offline and online feature values in production?</li><li>What are the trade-offs between batch, streaming and on-demand features?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-52">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-52%3A+What+is+training-serving+skew+and+how+do+feature+stores+and%E2%80%A6&amp;question-id=ds-52&amp;context=Data+scientist%2C+Gear+4%2C+topic%3A+ML+engineering%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-52.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

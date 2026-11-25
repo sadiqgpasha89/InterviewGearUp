@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do PromQL `rate()`, `irate()`, and `histogram_quantile()` functions calculate 99th percentile latency? | InterviewGearUp</title>
+<meta name="description" content="rate() computes the per-second average increase of a counter over a window, handling resets; irate() uses only the last two samples for an instant rate…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-57.html">
+<meta property="og:title" content="How do PromQL `rate()`, `irate()`, and `histogram_quantile()` functions calculate 99th percentile latency? | InterviewGearUp">
+<meta property="og:description" content="rate() computes the per-second average increase of a counter over a window, handling resets; irate() uses only the last two samples for an instant rate…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-57.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do PromQL `rate()`, `irate()`, and `histogram_quantile()` functions calculate 99th percentile latency?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · Observability · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>rate() computes the per-second average increase of a counter over a window, handling resets; irate() uses only the last two samples for an instant rate that is spiky and best for graphing fast-moving counters. histogram_quantile() estimates a quantile from histogram bucket rates by interpolating inside the bucket where the target rank falls, so p99 is histogram_quantile(0.99, sum by (le)(rate(bucket[5m]))).</p></div>
+<h4>Explained in depth</h4>
+<h4>rate()</h4>
+<p>For a counter, <code>rate(metric[5m])</code> returns the average per-second increase over the last 5 minutes, using the first and last samples in the window, extrapolated to window edges, and <strong>compensating for counter resets</strong> (a drop to zero is treated as a restart). Good for alerting and dashboards because it smooths noise.</p>
+<pre><code>rate(http_requests_total[5m])               # requests per second
+sum by (service) (rate(http_requests_total{status=~&quot;5..&quot;}[5m]))</code></pre>
+<p>Rules: the range must contain at least two samples, so use a window of at least <strong>4 times the scrape interval</strong> (for a 15 s scrape use 1 minute or more). Use <code>increase()</code> for total growth over the window, which equals <code>rate * window seconds</code>. Apply <code>rate()</code> first, then <code>sum()</code>: <code>sum(rate(x[5m]))</code>, not <code>rate(sum(x)[5m])</code>, because summing before the rate breaks reset detection.</p>
+<h4>irate()</h4>
+<p><code>irate(metric[5m])</code> uses only the <strong>last two samples</strong> in the window: an instantaneous rate. It shows short spikes and is useful for fast-moving counters on zoomed-in graphs, but it is volatile, can miss spikes between scrapes, and is not suitable for alerts (flapping). The range only sets how far back to look for the two samples.</p>
+<h4>histogram_quantile()</h4>
+<p>Histogram buckets are cumulative counters: <code>latency_bucket{le=&quot;0.1&quot;}</code> counts requests faster than or equal to 0.1 s, <code>le=&quot;+Inf&quot;</code> equals the total. To get p99 over the last 5 minutes across all pods:</p>
+<pre><code>histogram_quantile(
+  0.99,
+  sum by (le) (rate(http_request_duration_seconds_bucket[5m]))
+)</code></pre>
+<p>Steps Prometheus performs:</p>
+<ol start="1"><li><code>rate(...[5m])</code> converts each cumulative bucket counter to a per-second rate.</li><li><code>sum by (le)</code> aggregates over instances while <strong>keeping the <code>le</code> label</strong>, which is required (dropping it breaks the function). Add other labels to keep them: <code>sum by (le, route)</code>.</li><li><code>histogram_quantile</code> finds the bucket where the cumulative rate crosses 0.99 × total and <strong>linearly interpolates</strong> between its lower and upper bounds.</li></ol>
+<p>Example: total rate 1000 req/s; the 0.5 s bucket holds 985 and the 1 s bucket holds 998, so the 99th percentile rank (990) falls in the 0.5 to 1 s bucket: <code>0.5 + (990-985)/(998-985) * 0.5 ≈ 0.69 s</code>.</p>
+<h4>Accuracy and pitfalls</h4>
+<ul><li>The estimate is only as precise as the bucket widths; a wide bucket gives a coarse answer, and values above the highest finite bucket return that bound. Add buckets around your SLO values (for example 0.25, 0.3, 0.35).</li><li>Never average quantiles from different series; aggregate buckets first.</li><li>If data is sparse (low traffic) quantiles jump around; use longer windows.</li><li>Use recording rules to precompute expensive quantiles:</li></ul>
+<pre><code>- record: job:http_request_duration_seconds:p99_5m
+  expr: histogram_quantile(0.99, sum by (job, le) (rate(http_request_duration_seconds_bucket[5m])))</code></pre>
+<ul><li>Native histograms use <code>histogram_quantile(0.99, sum(rate(metric[5m])))</code> without <code>le</code> and give better precision.</li><li>Alert example: <code>job:http_request_duration_seconds:p99_5m &gt; 0.5</code> for 10 minutes, combined with a minimum traffic condition to avoid noise.</li></ul>
+<h4>Related</h4>
+<p><code>avg_over_time</code>, <code>quantile_over_time</code> (quantile of samples, not of requests), <code>increase</code>, <code>delta</code> for gauges, and <code>rate</code> with <code>by</code>, <code>on</code>, and <code>group_left</code> for joins.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why must you aggregate with sum by (le) before histogram_quantile?</li><li>How does bucket layout limit quantile accuracy?</li><li>Why should alerts use rate() over a window of at least 4 scrape intervals?</li></ul>
+<p><a class="btn primary" href="../#/q/do-57">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-57%3A+How+do+PromQL+%60rate%28%29%60%2C+%60irate%28%29%60%2C+and+%60histogram_quantile%28%29%60%E2%80%A6&amp;question-id=do-57&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+Observability%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-57.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

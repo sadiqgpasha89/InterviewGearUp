@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you design a resilient Dead Letter Queue (DLQ) with exponential backoff and retry limits? | InterviewGearUp</title>
+<meta name="description" content="A resilient DLQ design retries transient failures with exponential backoff and jitter on separate delay queues or topics, caps attempts, moves poison…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-36.html">
+<meta property="og:title" content="How do you design a resilient Dead Letter Queue (DLQ) with exponential backoff and retry limits? | InterviewGearUp">
+<meta property="og:description" content="A resilient DLQ design retries transient failures with exponential backoff and jitter on separate delay queues or topics, caps attempts, moves poison…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-36.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you design a resilient Dead Letter Queue (DLQ) with exponential backoff and retry limits?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 2 (Mid-level) · Messaging · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A resilient DLQ design retries transient failures with exponential backoff and jitter on separate delay queues or topics, caps attempts, moves poison messages to a dead letter queue with failure metadata, and gives operators tooling to inspect, fix and replay them. Consumers must be idempotent and alerts watch DLQ depth.</p></div>
+<h4>Explained in depth</h4>
+<h4>Goals</h4>
+<p>Avoid losing messages, avoid blocking the queue behind one bad message (poison pill), avoid hammering a failing dependency, and make failures visible and recoverable.</p>
+<h4>Failure classification</h4>
+<ul><li><strong>Transient</strong> (timeouts, 503, deadlocks, rate limits): retry with backoff.</li><li><strong>Permanent</strong> (schema violation, validation error, missing reference, 4xx): send straight to the DLQ without retries.</li><li><strong>Unknown</strong>: retry a few times, then DLQ.</li></ul>
+<h4>Retry topology</h4>
+<pre><code>main queue -&gt; consumer fails -&gt; retry-5s -&gt; retry-30s -&gt; retry-5m -&gt; DLQ</code></pre>
+<ul><li><strong>RabbitMQ</strong>: per-delay queues with <code>x-message-ttl</code> and a dead-letter exchange that routes back to the main queue when the TTL expires (or the delayed-message plugin).</li><li><strong>SQS</strong>: <code>ChangeMessageVisibility</code> increases the visibility timeout per attempt; a redrive policy moves messages to the DLQ after <code>maxReceiveCount</code>.</li><li><strong>Kafka</strong>: no per-message delay, so use retry topics (<code>orders.retry.1m</code>, <code>orders.retry.10m</code>) with a consumer that pauses the partition until the delay elapses, then a <code>orders.dlq</code> topic. Never block the main partition on one failing record.</li><li>Add jitter: <code>delay = min(cap, base * 2^attempt) * random(0.5, 1.0)</code>.</li></ul>
+<pre><code>def handle(msg):
+    try:
+        process(msg)
+    except Permanent as e:
+        publish_dlq(msg, reason=str(e), attempt=msg.attempt)
+    except Exception as e:
+        if msg.attempt &gt;= MAX_ATTEMPTS: publish_dlq(msg, reason=str(e), attempt=msg.attempt)
+        else: publish_retry(msg, delay=backoff(msg.attempt), attempt=msg.attempt + 1)</code></pre>
+<h4>DLQ message contents</h4>
+<p>Keep the original payload and headers plus: error type and message, stack trace, consumer name and version, first-failure and last-failure time, attempt count, original topic, partition and offset, and a correlation or trace id.</p>
+<h4>Operating the DLQ</h4>
+<ul><li><strong>Alert</strong> on DLQ depth and age; dashboards by error type.</li><li><strong>Tooling</strong> to inspect, edit, redrive one or all messages back to the main queue (SQS &quot;redrive&quot;, RabbitMQ shovel, custom Kafka tool), with rate limiting.</li><li><strong>Retention</strong> long enough (days to weeks) for investigation; DLQs must not silently expire data that matters.</li><li>Protect sensitive payloads (PII) with access control and encryption.</li></ul>
+<h4>Correctness</h4>
+<ul><li>At-least-once delivery means duplicates, so consumers must be <strong>idempotent</strong> (dedupe by message id, upsert).</li><li>Preserve ordering only where required; retries break strict order, so use per-key retry handling or accept reordering.</li><li>Use circuit breakers and pause consumption when a downstream dependency is down, rather than burning retries and filling the DLQ.</li><li>Poison messages that crash the consumer (out of memory) need a max-delivery guard before processing.</li></ul>
+<h4>Pitfalls</h4>
+<p>Infinite retry loops, retries without backoff (retry storms), a DLQ nobody watches, replaying fixed data into a changed schema without migration, and losing the original ordering context.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you implement delayed retries in Kafka versus RabbitMQ or SQS?</li><li>How do you distinguish transient from permanent errors?</li><li>How do you safely replay a DLQ without causing duplicates?</li></ul>
+<p><a class="btn primary" href="../#/q/be-36">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-36%3A+How+do+you+design+a+resilient+Dead+Letter+Queue+%28DLQ%29+with%E2%80%A6&amp;question-id=be-36&amp;context=Backend+engineer%2C+Gear+2%2C+topic%3A+Messaging%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-36.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

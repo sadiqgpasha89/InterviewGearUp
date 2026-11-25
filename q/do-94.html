@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you handle rollbacks in GitOps: `git revert` versus ArgoCD manual rollback overrides? | InterviewGearUp</title>
+<meta name="description" content="In GitOps, the preferred rollback is git revert: it creates a new commit undoing the change, keeps history and the audit trail, and lets the controller…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-94.html">
+<meta property="og:title" content="How do you handle rollbacks in GitOps: `git revert` versus ArgoCD manual rollback overrides? | InterviewGearUp">
+<meta property="og:description" content="In GitOps, the preferred rollback is git revert: it creates a new commit undoing the change, keeps history and the audit trail, and lets the controller…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-94.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you handle rollbacks in GitOps: `git revert` versus ArgoCD manual rollback overrides?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · GitOps · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>In GitOps, the preferred rollback is git revert: it creates a new commit undoing the change, keeps history and the audit trail, and lets the controller reconcile to the previous state. ArgoCD&#39;s manual rollback or sync to an older revision is faster in emergencies but creates drift from Git, which must be reconciled, and does not work with auto-sync enabled.</p></div>
+<h4>Explained in depth</h4>
+<h4>The principle</h4>
+<p>In GitOps the Git repository is the <strong>single source of truth</strong> for desired state. Any rollback should end with Git describing the state running in the cluster; otherwise the controller will keep fighting your change (or silently diverge).</p>
+<h4>Option 1: <code>git revert</code> (recommended)</h4>
+<pre><code>git revert &lt;bad-commit-sha&gt;          # or revert a merge: git revert -m 1 &lt;merge-sha&gt;
+git push origin main                 # or open a PR for review</code></pre>
+<p>Effects: a new commit that restores previous manifests or image tags; ArgoCD (or Flux) detects the change and syncs (automatically, or after manual sync). Advantages: full audit trail (who reverted and why), reviewable via pull request, consistent across clusters and environments, works with branch protection, never rewrites history. Drawbacks: depends on CI and sync latency (webhook can reduce to seconds), and the revert must itself pass checks (use a fast-track path for incidents). Avoid <code>git reset --hard</code> plus force-push on shared branches: it rewrites history, loses audit information and can confuse controllers and teammates.</p>
+<h4>Option 2: ArgoCD rollback / sync to a previous revision</h4>
+<pre><code>argocd app history orders
+argocd app rollback orders &lt;ID&gt;        # redeploys a previous recorded revision
+argocd app sync orders --revision &lt;older-sha&gt;</code></pre>
+<p>This tells Argo CD to apply an earlier revision&#39;s manifests <strong>without changing Git</strong>. Properties:</p>
+<ul><li>Very fast in an emergency, does not need pipeline or approvals.</li><li><strong>Fails when automated sync is enabled</strong> (&quot;rollback cannot be initiated when auto-sync is enabled&quot;): the controller would immediately re-sync to Git HEAD; you must disable auto-sync first, which is itself a risk.</li><li>Creates <strong>drift</strong>: live state differs from Git HEAD (OutOfSync). Follow up with a revert commit so Git matches, then re-enable auto-sync.</li><li>Not recorded in Git history (only in Argo CD history and events).</li></ul>
+<h4>Which to use</h4>
+<div class="md-table"><table><thead><tr><th>Situation</th><th>Approach</th></tr></thead><tbody><tr><td>Normal rollback, time allows</td><td>git revert via PR</td></tr><tr><td>Severe incident, need seconds</td><td>disable auto-sync, rollback in Argo, then revert in Git and re-enable</td></tr><tr><td>Rollback of image tag only</td><td>revert the commit that bumped the tag, or use image updater&#39;s pinned tag</td></tr><tr><td>Progressive rollouts</td><td>automated abort and rollback (Argo Rollouts, Flagger) based on metrics</td></tr></tbody></table></div>
+<h4>Automation and safety</h4>
+<ul><li><strong>Argo Rollouts / Flagger</strong> run canary or blue-green with analysis (error rate, latency); on failure they abort and revert traffic automatically, leaving Git to be corrected afterwards.</li><li><strong>Health checks and sync waves</strong> prevent partial bad rollouts; set <code>progressDeadlineSeconds</code> and readiness probes so failed rollouts stop.</li><li>Keep <strong>immutable image tags or digests</strong> so rollbacks reference exactly what ran before; avoid <code>latest</code>.</li><li><strong>Pin previous known-good versions</strong> in release branches or tags, and keep Helm chart versions in Git.</li></ul>
+<h4>What rollback does not undo</h4>
+<p>Database migrations, deleted data, external side effects, and changed secrets. Design migrations as backward compatible (expand and contract) so older application versions still run after a rollback, and keep backups and restore procedures. Feature flags offer faster, safer rollback of behaviour without redeploying.</p>
+<h4>Best practices</h4>
+<p>Document the rollback runbook, test it in game days, ensure on-call has permissions, record incident links in commit messages, and monitor after rollback for completion and drift.</p>
+<h4>Pitfalls</h4>
+<p>Manual <code>kubectl</code> edits during an incident that self-heal reverts, leaving auto-sync disabled afterwards, reverting a merge commit incorrectly (missing <code>-m</code>), and forgetting dependent environment overlays.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does ArgoCD manual rollback fail when automated sync is enabled?</li><li>How do you roll back data or schema changes that a deployment triggered?</li><li>How do progressive delivery tools automate rollback?</li></ul>
+<p><a class="btn primary" href="../#/q/do-94">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-94%3A+How+do+you+handle+rollbacks+in+GitOps%3A+%60git+revert%60+versus+ArgoCD%E2%80%A6&amp;question-id=do-94&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+GitOps%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-94.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

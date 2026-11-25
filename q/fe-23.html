@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What triggers a Block Formatting Context (BFC) and how does it prevent margin collapse? | InterviewGearUp</title>
+<meta name="description" content="A Block Formatting Context is an isolated layout region in which block boxes lay out vertically and floats are contained. It is created by overflow other…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-23.html">
+<meta property="og:title" content="What triggers a Block Formatting Context (BFC) and how does it prevent margin collapse? | InterviewGearUp">
+<meta property="og:description" content="A Block Formatting Context is an isolated layout region in which block boxes lay out vertically and floats are contained. It is created by overflow other…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-23.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What triggers a Block Formatting Context (BFC) and how does it prevent margin collapse?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · CSS · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A Block Formatting Context is an isolated layout region in which block boxes lay out vertically and floats are contained. It is created by overflow other than visible, display flow-root, floats, absolute positioning, flex or grid items and similar properties, and margins do not collapse across its boundary.</p></div>
+<h4>Explained in depth</h4>
+<h4>What a BFC is</h4>
+<p>A BFC is a region of the page where block-level boxes are laid out according to normal flow rules, <strong>independently of the outside</strong>. The root element always forms one. Within a BFC, boxes stack vertically, each touching the left edge of the container, and vertical distances are determined by margins.</p>
+<h4>What creates a new BFC</h4>
+<ul><li>The root <code>&lt;html&gt;</code> element</li><li><code>float</code> other than <code>none</code></li><li><code>position: absolute</code> or <code>fixed</code></li><li><code>display: inline-block</code>, <code>table-cell</code>, <code>table-caption</code>, <code>flow-root</code></li><li><code>overflow</code> other than <code>visible</code> (such as <code>hidden</code>, <code>auto</code>, <code>scroll</code>)</li><li>Flex items and grid items (they establish independent formatting contexts), flex and grid containers for their children</li><li><code>contain: layout</code>, <code>content</code> or <code>paint</code>, and elements with <code>column-span: all</code></li></ul>
+<p>The cleanest modern way is <strong><code>display: flow-root</code></strong>, which exists only to create a BFC.</p>
+<h4>What a BFC changes</h4>
+<ol start="1"><li><strong>Contains floats</strong>: a parent whose children are all floated normally collapses to zero height; a BFC parent grows to enclose them (the old &quot;clearfix&quot; problem).</li><li><strong>Prevents margin collapse</strong> between the BFC&#39;s box and its children or siblings outside.</li><li><strong>Does not overlap floats</strong>: a BFC box next to a float is placed beside it, not underneath, which is how the &quot;media object&quot; layout works.</li></ol>
+<h4>Margin collapse in practice</h4>
+<p>Adjacent vertical margins of block boxes in the same BFC combine into the larger one (<code>20px</code> over <code>30px</code> gives <code>30px</code>). A parent and its first child collapse if nothing (padding, border, inline content or a BFC) separates them, causing the notorious bug where a child&#39;s <code>margin-top</code> pushes the whole parent down.</p>
+<pre><code>.card { display: flow-root; }      /* child margins stay inside the card, floats are contained */
+.clear::after { content: &quot;&quot;; display: block; clear: both; }  /* legacy approach */</code></pre>
+<h4>Margins that never collapse</h4>
+<p>Horizontal margins, margins of floats, absolutely positioned boxes, inline-blocks, and flex or grid items.</p>
+<h4>Debugging tip</h4>
+<p>If a gap appears or disappears unexpectedly, check whether a parent is a BFC. Adding <code>padding</code>, <code>border</code> or <code>display: flow-root</code> stops the collapse; switching a parent to flex or grid also stops the child&#39;s margin from collapsing through it.</p>
+<h4>Pitfalls</h4>
+<p><code>overflow: hidden</code> creates a BFC but also clips shadows and focus outlines and can create scrollbars. Prefer <code>flow-root</code> when the goal is only containment.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does display: flow-root clear floats without side effects?</li><li>In which situations do vertical margins collapse and in which do they never collapse?</li><li>How do flex and grid containers relate to BFC?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-23">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-23%3A+What+triggers+a+Block+Formatting+Context+%28BFC%29+and+how+does+it%E2%80%A6&amp;question-id=fe-23&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+CSS%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-23.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

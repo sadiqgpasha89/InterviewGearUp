@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you eliminate knowledge silos and single points of failure (bus factor) on key services? | InterviewGearUp</title>
+<meta name="description" content="Reduce the bus factor by making knowledge shared: pair and rotate people across services, document decisions and runbooks, share on-call, use code…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/lead-50.html">
+<meta property="og:title" content="How do you eliminate knowledge silos and single points of failure (bus factor) on key services? | InterviewGearUp">
+<meta property="og:description" content="Reduce the bus factor by making knowledge shared: pair and rotate people across services, document decisions and runbooks, share on-call, use code…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/lead-50.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you eliminate knowledge silos and single points of failure (bus factor) on key services?</h1>
+<p class="muted small-text meta-line">Tech lead / Engineering manager · Gear 3 (Senior) · Culture · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Reduce the bus factor by making knowledge shared: pair and rotate people across services, document decisions and runbooks, share on-call, use code reviews and design docs for context, run knowledge-transfer sessions, identify single points of failure through ownership and commit analysis, and make learning others&#39; areas a rewarded part of the job.</p></div>
+<h4>Explained in depth</h4>
+<h4>The risk</h4>
+<p>A <strong>bus factor</strong> (truck factor) of one means a service or process depends on a single person. If they leave, get sick, or are on vacation, incidents last longer, delivery stalls, and morale suffers. Silos also reduce code quality (no reviews from knowledgeable peers) and limit career growth.</p>
+<h4>Find silos</h4>
+<ul><li><strong>Quantitative signals</strong>: analyse Git history (ownership concentration: who authored more than 70 percent of commits or reviews in a repo; tools like git-fame, <code>git shortlog</code>, CodeScene knowledge maps, Truck Factor analyses), on-call logs (who resolves incidents), pull request reviewers, and ticket assignees.</li><li><strong>Qualitative</strong>: ask the team &quot;Which areas would you be afraid to touch? What breaks when X is away?&quot;; examine critical systems with no documented runbook; list <strong>single points of failure by person</strong> in a skills matrix (rows: services and processes; columns: people; level of competence: none, can operate, can change, can teach). Highlight rows with fewer than two capable people.</li><li><strong>Prioritise</strong> by business criticality, change frequency, incident history, and the likelihood that the expert is unavailable (planned departure, burnout).</li></ul>
+<h4>Spread knowledge</h4>
+<ol start="1"><li><strong>Pairing and mob programming</strong>: the expert pairs with a learner on real tasks (&quot;driver and navigator&quot;), then reverses roles (the learner drives, the expert watches). Use <strong>shadow-then-reverse-shadow</strong> on on-call and incident handling.</li><li><strong>Rotation</strong>: rotate engineers through services and on-call shifts, cross-train in pairs for a quarter, and use &quot;tours of duty&quot;. Assign a <strong>primary and secondary owner</strong> for every service; make this visible in the service catalogue (Backstage).</li><li><strong>Code review as teaching</strong>: require reviews from someone outside the main author group for critical code, rotate reviewers, and encourage explanatory comments. Pull requests that explain the &quot;why&quot; create lasting context.</li><li><strong>Documentation that survives</strong>:</li></ol>
+<ul><li><strong>README and architecture overview</strong> per service (what it does, diagrams, dependencies, how to run and deploy).</li><li><strong>ADRs and RFCs</strong> for decisions and trade-offs.</li><li><strong>Runbooks</strong> for alerts and operations, tested by someone other than the author during game days.</li><li><strong>Docs as code</strong> in the repository, reviewed with changes, with ownership and a &quot;last verified&quot; date; add documentation checks to the definition of done.</li><li><strong>Recorded walkthroughs</strong> (architecture tours, incident replays) and onboarding guides.</li><li>Prefer short, living docs over exhaustive manuals; delete stale ones.</li></ul>
+<ol start="5"><li><strong>Knowledge sessions</strong>: brown-bag talks, &quot;how X works&quot; sessions, incident reviews, internal tech talks, and onboarding exercises where a new hire improves docs as they learn (fixing the doc becomes their first contribution).</li><li><strong>Automate and simplify</strong>: reduce complexity that only one person understands (scripts, manual procedures), codify tribal knowledge in automation, infrastructure as code, tests, and self-service tooling. Clear naming and consistent patterns reduce cognitive load.</li><li><strong>Incentives and culture</strong>: recognise teaching and documentation in performance reviews and promotions (especially for senior and staff roles), celebrate knowledge sharing, and set explicit goals (&quot;bus factor of at least 2 for tier 1 services by Q3&quot;). Do not reward heroics that create dependency.</li><li><strong>Handle the reluctant expert</strong>: understand their concerns (job security, loss of status, time pressure); position them as a <strong>mentor and architect</strong> whose impact multiplies; protect time to teach; offer growth into broader scope; and be clear that sharing knowledge is how they get promoted, not replaced.</li><li><strong>Continuity planning</strong>: succession for key roles, access and credentials in shared secure vaults (not personal accounts), offboarding checklists including knowledge transfer, and <strong>vacation drills</strong> where the expert is deliberately unavailable for a week.</li></ol>
+<h4>Measure progress</h4>
+<p>Skills matrix coverage, number of services with at least two on-call-capable engineers, share of incidents resolved by non-owners, time to onboard new engineers, bus factor from repository analysis, and documentation freshness.</p>
+<h4>Pitfalls</h4>
+<p>Writing one big document nobody reads, expecting experts to document in their spare time, rotating too fast so nobody learns deeply, punishing slower delivery during knowledge transfer, and ignoring non-code silos (vendor relationships, customer knowledge).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you measure the bus factor of a service and prioritise where to act first?</li><li>How do you encourage a reluctant expert to share knowledge without feeling replaceable?</li><li>Which documentation and practices actually stay current instead of rotting?</li></ul>
+<p><a class="btn primary" href="../#/q/lead-50">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+lead-50%3A+How+do+you+eliminate+knowledge+silos+and+single+points+of+failure%E2%80%A6&amp;question-id=lead-50&amp;context=Tech+lead+%2F+Engineering+manager%2C+Gear+3%2C+topic%3A+Culture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Flead-50.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

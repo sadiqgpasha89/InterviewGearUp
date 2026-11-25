@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you execute zero-downtime database schema migrations using the expand-contract pattern? | InterviewGearUp</title>
+<meta name="description" content="The expand-contract (parallel change) pattern splits a breaking schema change into backward-compatible steps: expand the schema with the new structure,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-24.html">
+<meta property="og:title" content="How do you execute zero-downtime database schema migrations using the expand-contract pattern? | InterviewGearUp">
+<meta property="og:description" content="The expand-contract (parallel change) pattern splits a breaking schema change into backward-compatible steps: expand the schema with the new structure,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-24.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you execute zero-downtime database schema migrations using the expand-contract pattern?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · Databases · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>The expand-contract (parallel change) pattern splits a breaking schema change into backward-compatible steps: expand the schema with the new structure, migrate code and data while old and new coexist, then contract by removing the old structure. Each deploy stays compatible with both old and new application versions, so no downtime or lock outage is needed.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why simple migrations cause outages</h4>
+<p><code>ALTER TABLE ... RENAME COLUMN</code> breaks code still referencing the old name; adding a column with a default or an index can lock a large table; during rolling deploys old and new application versions run simultaneously against the same schema.</p>
+<h4>The three phases</h4>
+<ol start="1"><li><strong>Expand</strong>: add the new column, table or index in a backward-compatible way (nullable, no constraint yet, created concurrently).</li><li><strong>Migrate</strong>: deploy application code that writes to <strong>both</strong> old and new structures, backfill existing data in small batches, then switch reads to the new structure.</li><li><strong>Contract</strong>: after all instances use the new structure and data is verified, stop writing the old one, then drop it in a later release.</li></ol>
+<h4>Example: rename <code>users.fullname</code> to <code>users.display_name</code></h4>
+<pre><code>-- Release 1 (expand)
+ALTER TABLE users ADD COLUMN display_name text;                  -- metadata-only change
+
+-- Release 2: application writes both columns; reads fullname
+-- Backfill in batches
+UPDATE users SET display_name = fullname
+ WHERE id BETWEEN :lo AND :hi AND display_name IS NULL;           -- loop in chunks of 1k to 10k rows, sleep between
+
+-- Release 3: application reads display_name (falls back to fullname), still writes both
+-- Verify: SELECT count(*) FROM users WHERE display_name IS DISTINCT FROM fullname;
+
+-- Release 4: stop writing fullname
+-- Release 5 (contract)
+ALTER TABLE users DROP COLUMN fullname;</code></pre>
+<h4>Safe DDL practices</h4>
+<ul><li>Set <code>lock_timeout</code> (for example 2 s) and retry, so a migration waits briefly instead of queueing behind a long transaction and blocking all traffic.</li><li>PostgreSQL: <code>CREATE INDEX CONCURRENTLY</code>; add constraints as <code>NOT VALID</code> then <code>VALIDATE CONSTRAINT</code>; adding a column with a constant default is fast on modern versions; <code>SET NOT NULL</code> needs a validated check constraint first.</li><li>MySQL: use online DDL (<code>ALGORITHM=INPLACE, LOCK=NONE</code>) or tools like gh-ost and pt-online-schema-change, which copy data using a shadow table and swap.</li><li>Never mix a long data backfill and DDL in one transaction.</li><li>Use feature flags to flip reads, and keep every migration reversible until the contract step.</li></ul>
+<h4>Backfills</h4>
+<p>Batch by primary key ranges, throttle on replication lag and load, make the job idempotent and resumable, and verify counts with checksums before cutting over. Dual writes can drift, so alternatively use triggers or change data capture to keep both copies in sync until cutover.</p>
+<h4>Pitfalls</h4>
+<p>Dropping a column before all old pods are gone, enum or type changes that rewrite the whole table, unique indexes created without concurrency, and forgetting that rollback after the contract step is a data restore.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you rename a column with zero downtime step by step?</li><li>Which operations take long locks in PostgreSQL and MySQL and how do you avoid them?</li><li>How do you backfill billions of rows safely?</li></ul>
+<p><a class="btn primary" href="../#/q/be-24">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-24%3A+How+do+you+execute+zero-downtime+database+schema+migrations+using%E2%80%A6&amp;question-id=be-24&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+Databases%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-24.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

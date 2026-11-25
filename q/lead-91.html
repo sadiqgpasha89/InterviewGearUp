@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you manage the deprecation, communication, and sunsetting of public customer-facing APIs? | InterviewGearUp</title>
+<meta name="description" content="Sunset a public API responsibly by publishing a deprecation policy and timeline, marking endpoints with headers and docs, measuring usage per customer,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/lead-91.html">
+<meta property="og:title" content="How do you manage the deprecation, communication, and sunsetting of public customer-facing APIs? | InterviewGearUp">
+<meta property="og:description" content="Sunset a public API responsibly by publishing a deprecation policy and timeline, marking endpoints with headers and docs, measuring usage per customer,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/lead-91.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you manage the deprecation, communication, and sunsetting of public customer-facing APIs?</h1>
+<p class="muted small-text meta-line">Tech lead / Engineering manager · Gear 3 (Senior) · Strategy · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Sunset a public API responsibly by publishing a deprecation policy and timeline, marking endpoints with headers and docs, measuring usage per customer, notifying through multiple channels, offering migration guides and tooling, supporting a parallel period, using brownouts to surface stragglers, handling enterprise exceptions through agreed extensions, and only then shutting down with a clear final error response.</p></div>
+<h4>Explained in depth</h4>
+<h4>Principles</h4>
+<p>A public API is a <strong>contract</strong>; breaking it breaks customers&#39; products and trust. Deprecation should be <strong>predictable, well-communicated, measured and as painless as possible</strong>, while giving you a path to retire costly or insecure interfaces. Examples: Stripe&#39;s versioning, Twitter API changes (a cautionary tale), Google&#39;s deprecation policies, GitHub API sunsets.</p>
+<h4>Step 1: policy and decision</h4>
+<ul><li>Publish a <strong>deprecation policy</strong> in advance (developer docs and terms): minimum notice (for example 6 to 12 months for GA APIs, 3 to 6 for beta, longer for enterprise contracts), how changes are communicated, versioning scheme (semantic or date-based, <code>/v1</code>, <code>/v2</code>), which changes are breaking, and support commitments. Reflect contractual SLAs.</li><li>Decide to deprecate based on a business case: cost, security risk, replacement available, low usage. Obtain internal alignment (product, support, sales, legal, customer success) and prepare a <strong>replacement</strong> or alternative path with feature parity or documented gaps.</li></ul>
+<h4>Step 2: measure usage</h4>
+<p>Instrument the API to identify <strong>who uses which endpoints and versions</strong> (API key, client ID, user agent, SDK version, volume, last call time), build dashboards, segment by customer tier and criticality, and list high-volume and strategic accounts. This drives communication, prioritisation and extension decisions.</p>
+<h4>Step 3: announce and document</h4>
+<ol start="1"><li><strong>Announcement</strong> through multiple channels: email to API key owners and account contacts, developer portal banner, changelog, release notes, blog post, status page, in-dashboard notifications, SDK warnings, direct outreach for key accounts via customer success.</li><li><strong>Clear timeline</strong>: announcement date, deprecation date (no new customers or features), <strong>sunset date</strong> (shutdown), and milestones for reminders (for example 12, 6, 3, 1 months and 1 week before).</li><li><strong>Machine-readable signals</strong>: the HTTP <strong><code>Deprecation</code></strong> header (RFC 9745) and <strong><code>Sunset</code></strong> header (RFC 8594) with date, and a <code>Link</code> header pointing to migration docs:</li></ol>
+<pre><code>Deprecation: @1767225600
+Sunset: Wed, 30 Sep 2026 23:59:59 GMT
+Link: &lt;https://developers.example.com/migrate-v2&gt;; rel=&quot;deprecation&quot;; type=&quot;text/html&quot;</code></pre>
+<p>   Add deprecation notes in OpenAPI specs, SDK warnings and logs, and response warnings in the body if appropriate.</p>
+<ol start="4"><li><strong>Migration guide</strong>: explain why, what changes (field mapping, behaviours, auth, rate limits), step-by-step instructions, code samples, a compatibility checklist, and FAQs. Offer <strong>tooling</strong> (SDK upgrades, codemods, compatibility proxies or shims, a sandbox for v2, a diff tool) and an <strong>API changelog</strong>.</li></ol>
+<h4>Step 4: support and parallel run</h4>
+<p>Keep both versions available during the transition, with equal reliability. Provide <strong>support channels</strong> (office hours, dedicated migration engineers for large customers, community forum). Avoid breaking the old version further (security fixes only). Track migration progress (percentage of traffic on new version) and contact stragglers proactively.</p>
+<h4>Step 5: brownouts and warnings</h4>
+<p>Before the final sunset, run <strong>scheduled brownouts</strong>: short, announced periods where the deprecated API returns errors (for example 1 hour, then 4 hours, then 24 hours), to alert teams who ignore documentation and to test their readiness. Provide clear error messages (<code>410 Gone</code> or <code>400</code> with a body explaining the deprecation and migration URL). Increase rate-limits or add delays slightly for deprecated endpoints, only if announced.</p>
+<h4>Step 6: extensions and exceptions</h4>
+<p>Define criteria for extensions (strategic customers, contractual obligations, regulated industries) and process (formal request, executive approval, fee or limited support, firm end date). Document exceptions and avoid open-ended promises. Consider offering a <strong>compatibility proxy</strong> if the cost is manageable.</p>
+<h4>Step 7: shutdown and aftermath</h4>
+<p>On sunset date, disable access (or return <code>410 Gone</code> with a helpful body, at least for a while) rather than silent failures; keep monitoring for residual traffic and errors, provide an emergency contact; and optionally allow a short grace window for critical customers if previously agreed. Remove code, infrastructure, credentials, docs, and update SDKs and SEO redirects. Conduct a <strong>retrospective</strong>: customers affected, support load, lessons, and policy improvements.</p>
+<h4>Metrics</h4>
+<p>Percentage of traffic migrated by milestone, number of customers contacted, support tickets, churn or escalations, time to complete, cost savings, error rates after sunset.</p>
+<h4>Pitfalls</h4>
+<p>Short notice, relying on a single email, no usage data, no migration path, silent breaking changes, ignoring large customers, and indefinite support of old versions.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How long should the deprecation window be and what factors justify extending it for specific customers?</li><li>How do the Deprecation and Sunset HTTP headers and brownouts help clients notice and prepare for removal?</li><li>How do you handle customers who ignore every notice until the day the API stops working?</li></ul>
+<p><a class="btn primary" href="../#/q/lead-91">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+lead-91%3A+How+do+you+manage+the+deprecation%2C+communication%2C+and+sunsetting+of%E2%80%A6&amp;question-id=lead-91&amp;context=Tech+lead+%2F+Engineering+manager%2C+Gear+3%2C+topic%3A+Strategy%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Flead-91.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

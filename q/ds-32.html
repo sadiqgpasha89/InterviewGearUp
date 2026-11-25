@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is difference-in-differences, what assumptions does it need, and how do you validate them? | InterviewGearUp</title>
+<meta name="description" content="Difference-in-differences compares the before-after change in a treated group with the before-after change in a comparison group, which removes fixed…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-32.html">
+<meta property="og:title" content="What is difference-in-differences, what assumptions does it need, and how do you validate them? | InterviewGearUp">
+<meta property="og:description" content="Difference-in-differences compares the before-after change in a treated group with the before-after change in a comparison group, which removes fixed…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-32.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is difference-in-differences, what assumptions does it need, and how do you validate them?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 3 (Senior) · Causal inference · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Difference-in-differences compares the before-after change in a treated group with the before-after change in a comparison group, which removes fixed group differences and common time shocks. It relies on parallel trends, no anticipation and stable composition, which you check with pre-period trends, event-study plots and placebo tests.</p></div>
+<h4>Explained in depth</h4>
+<h4>When to use it</h4>
+<p>You cannot randomise (a price change in one city, a policy rolled out in some states, a feature launched to one market), but you have <strong>outcomes before and after</strong> for a treated group and a <strong>comparison group</strong>. DiD estimates the treatment effect by differencing out stable differences between groups and shocks affecting both.</p>
+<h4>The estimator</h4>
+<p>With group means: <strong>DiD = (Y_treated,post - Y_treated,pre) - (Y_control,post - Y_control,pre)</strong>. Example: sales in test stores rise from 100 to 130 (+30) while control stores rise from 90 to 105 (+15); the estimated effect is <strong>+15</strong>. Regression form (two-way fixed effects for the simple 2 x 2 case): <code>Y_it = a + b1 Treated_i + b2 Post_t + b3 (Treated_i x Post_t) + e_it</code>, where <strong>b3 is the DiD estimate</strong>. Add unit and time fixed effects, covariates, and cluster standard errors by unit (or by the level of treatment assignment).</p>
+<pre><code>import statsmodels.formula.api as smf
+m = smf.ols(&quot;y ~ treated * post&quot;, data=df).fit(cov_type=&quot;cluster&quot;, cov_kwds={&quot;groups&quot;: df[&quot;unit&quot;]})
+print(m.params[&quot;treated:post&quot;], m.conf_int().loc[&quot;treated:post&quot;].values)</code></pre>
+<h4>Key assumptions</h4>
+<ol start="1"><li><strong>Parallel trends</strong>: without treatment, the treated group&#39;s outcome would have moved in parallel with the control&#39;s. Untestable after treatment, but testable in the <strong>pre-period</strong>.</li><li><strong>No anticipation</strong>: units do not change behaviour before the treatment starts.</li><li><strong>Stable composition and no spillovers (SUTVA)</strong>: the same kinds of units appear before and after; the control is not affected by treatment (a promotion in one city pulling customers from the control city breaks this).</li><li><strong>No other simultaneous shocks</strong> hitting only one group.</li></ol>
+<h4>Validation</h4>
+<ul><li>Plot <strong>pre-period trends</strong> for both groups over many periods.</li><li><strong>Event-study specification</strong>: estimate effects for each period relative to treatment (leads and lags). Leads should be near zero; a trend in leads is a warning.</li><li><strong>Placebo tests</strong>: fake treatment dates in the pre-period, or a placebo outcome not expected to change, or placebo groups.</li><li>Robustness to the choice of control group (matching or weighting controls on pre-trends), to time windows, and to excluding outlier units.</li><li>Look at levels as well as logs (parallel trends in logs does not imply parallel in levels).</li></ul>
+<h4>Modern issues</h4>
+<ul><li><strong>Staggered adoption</strong> with heterogeneous effects: classic two-way fixed effects can give <strong>biased, even wrongly signed</strong> estimates because already-treated units serve as controls for later-treated ones. Use estimators designed for it (<strong>Callaway and Sant&#39;Anna</strong>, Sun and Abraham, de Chaisemartin and D&#39;Haultfoeuille, Borusyak et al. imputation) and report event-study plots.</li><li><strong>Few treated clusters</strong> (one city): standard errors are unreliable; use wild cluster bootstrap, randomisation inference, or <strong>synthetic control</strong> (build a weighted combination of control units matching the treated unit&#39;s pre-trend).</li><li><strong>Conditional parallel trends</strong>: when groups differ in trends driven by covariates, adjust with covariates or doubly robust DiD.</li><li><strong>Continuous or varying intensity</strong> treatments need dose-response versions.</li></ul>
+<h4>Reporting</h4>
+<p>State the estimand (ATT), show raw trends, event-study estimates, confidence intervals, robustness checks, and the plausibility argument for parallel trends; convert to business impact.</p>
+<h4>Pitfalls</h4>
+<p>Choosing a control group because it was convenient, ignoring pre-trends, using plain TWFE with staggered rollout, and reporting naive standard errors that ignore serial correlation.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How would you handle staggered adoption where different units are treated at different times?</li><li>What can you do if parallel trends looks violated in the pre-period?</li><li>How does synthetic control relate to difference-in-differences?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-32">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-32%3A+What+is+difference-in-differences%2C+what+assumptions+does+it+need%2C%E2%80%A6&amp;question-id=ds-32&amp;context=Data+scientist%2C+Gear+3%2C+topic%3A+Causal+inference%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-32.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

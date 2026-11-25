@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is tree shaking and what package configuration (`sideEffects`) is required for bundlers to prune unused code? | InterviewGearUp</title>
+<meta name="description" content="Tree shaking removes exports that are never imported from the final bundle. It relies on static ES module syntax, so the bundler can prove what is…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-42.html">
+<meta property="og:title" content="What is tree shaking and what package configuration (`sideEffects`) is required for bundlers to prune unused code? | InterviewGearUp">
+<meta property="og:description" content="Tree shaking removes exports that are never imported from the final bundle. It relies on static ES module syntax, so the bundler can prove what is…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-42.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is tree shaking and what package configuration (`sideEffects`) is required for bundlers to prune unused code?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · Performance · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Tree shaking removes exports that are never imported from the final bundle. It relies on static ES module syntax, so the bundler can prove what is unused, and on package.json sideEffects metadata, which tells it which files are safe to drop entirely when none of their exports are used.</p></div>
+<h4>Explained in depth</h4>
+<h4>How it works</h4>
+<p>ES modules (<code>import</code>/<code>export</code>) are <strong>static</strong>: imports and exports are known at build time without running code. The bundler builds a module graph, marks which exports are used (the &quot;used exports&quot; analysis), and the minifier (Terser, esbuild) deletes unused code. CommonJS (<code>require</code>, <code>module.exports</code>) is dynamic, so a bundler generally cannot prove an export is unused and keeps the whole module.</p>
+<pre><code>// utils.js
+export function used() { return 1; }
+export function unused() { return heavy(); }
+// app.js
+import { used } from &#39;./utils.js&#39;;   // &#39;unused&#39; and heavy() are dropped from the bundle</code></pre>
+<h4>The sideEffects flag</h4>
+<p>Even if nothing from a module is imported, the module may have <strong>side effects</strong> on import: polyfills, <code>window.foo = ...</code>, registering custom elements, injecting CSS. Without information the bundler must keep <code>import &#39;./foo&#39;</code>. In <code>package.json</code>:</p>
+<pre><code>{ &quot;name&quot;: &quot;my-lib&quot;, &quot;sideEffects&quot;: false }</code></pre>
+<p>means &quot;no file in this package has import-time side effects, so any module whose exports are unused may be removed&quot;. For libraries with some side-effectful files, list them:</p>
+<pre><code>{ &quot;sideEffects&quot;: [&quot;*.css&quot;, &quot;./src/polyfills.js&quot;, &quot;./src/register-elements.js&quot;] }</code></pre>
+<p>Wrongly declaring <code>false</code> breaks apps by dropping CSS imports or global registrations (symptom: missing styles that appear only in production).</p>
+<h4>Practical requirements</h4>
+<ol start="1"><li>Publish an <strong>ES module build</strong> (<code>&quot;module&quot;</code> / <code>&quot;exports&quot;</code> with <code>import</code> condition) alongside CJS.</li><li>Keep exports <strong>granular</strong>: many small named exports, not one object (<code>export default { a, b, c }</code> cannot be shaken).</li><li>Avoid <strong>barrel files</strong> (<code>index.js</code> re-exporting everything) in app code with heavy modules, or ensure <code>sideEffects: false</code> and use direct paths; barrels can make the bundler evaluate large graphs and slow builds.</li><li>Use <code>import { debounce } from &#39;lodash-es&#39;</code>, not <code>import _ from &#39;lodash&#39;</code>.</li><li>Do not let Babel transpile ESM to CJS before the bundler (<code>modules: false</code>).</li><li>Mark pure calls with <code>/*#__PURE__*/</code> so unused calls like <code>createFoo()</code> can be removed.</li><li>Run in <strong>production mode</strong> so dead-code elimination (minification) happens.</li></ol>
+<h4>Verification</h4>
+<p>Analyse the bundle (<code>webpack-bundle-analyzer</code>, <code>source-map-explorer</code>, Rollup visualizer), search the output for a known unused symbol, and compare size with and without an import. Tools such as <code>bundlephobia</code> and <code>size-limit</code> show the cost of dependencies.</p>
+<h4>Pitfalls</h4>
+<p>Class static blocks, getters and top-level calls that the minifier cannot prove pure keep code alive; re-exporting <code>export * from</code> of CJS packages; and treating tree shaking as a substitute for <strong>code splitting</strong> (shaking removes unused code, splitting delays used code).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why do CommonJS modules and barrel files block tree shaking?</li><li>What does marking sideEffects false break if a module registers a global or imports CSS?</li><li>How do you verify that a dependency was really removed?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-42">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-42%3A+What+is+tree+shaking+and+what+package+configuration+%28%60sideEffects%60%29%E2%80%A6&amp;question-id=fe-42&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+Performance%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-42.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

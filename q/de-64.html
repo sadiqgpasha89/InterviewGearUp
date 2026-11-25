@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you handle late-arriving dimensions and early-arriving facts in data pipelines? | InterviewGearUp</title>
+<meta name="description" content="Late-arriving dimensions occur when a fact references a dimension row not yet loaded, so insert an inferred placeholder member (unknown attributes,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-64.html">
+<meta property="og:title" content="How do you handle late-arriving dimensions and early-arriving facts in data pipelines? | InterviewGearUp">
+<meta property="og:description" content="Late-arriving dimensions occur when a fact references a dimension row not yet loaded, so insert an inferred placeholder member (unknown attributes,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-64.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you handle late-arriving dimensions and early-arriving facts in data pipelines?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Data Modeling · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Late-arriving dimensions occur when a fact references a dimension row not yet loaded, so insert an inferred placeholder member (unknown attributes, flagged as inferred) with the natural key and update it when the real record arrives. Early-arriving facts are handled the same way, or held in a quarantine and reprocessed. For SCD2, rejoin late-arriving history by effective dates.</p></div>
+<h4>Explained in depth</h4>
+<h4>Definitions</h4>
+<p>In dimensional models, facts reference dimensions through surrogate keys. The pipeline normally loads dimensions first, then facts, looking up each natural key to find the surrogate key. Real systems break the ordering:</p>
+<ul><li><strong>Early-arriving fact</strong> (also called late-arriving dimension): a fact (an order, click or payment) arrives before its dimension row (customer, product) exists in the warehouse. Causes: independent source feeds, CDC lag, event streams outrunning master data, or customers created in a different system.</li><li><strong>Late-arriving fact</strong>: a fact arrives late relative to its event date (for example yesterday&#39;s sale), and must be tied to the dimension version valid at the <strong>event time</strong> (SCD Type 2), not the current version.</li><li><strong>Late-arriving dimension attribute changes</strong>: an update with an effective date in the past (a corrected address), forcing history revision.</li></ul>
+<h4>Strategies for missing dimension rows</h4>
+<ol start="1"><li><strong>Inferred member (placeholder) pattern</strong> (Kimball): when the fact lookup fails, insert a new dimension row with the natural key, default attributes (&quot;Unknown&quot;), and a flag <code>is_inferred = true</code>. The fact gets a valid surrogate key, so referential integrity and counts are preserved. When the real dimension record arrives, <strong>update the inferred row in place</strong> (for SCD1) or fill it as the first version (SCD2), clearing the flag, without changing the surrogate key, so no fact rewrite is needed.</li></ol>
+<pre><code>-- 1. Create inferred members for unknown keys
+INSERT INTO dim_customer (customer_nk, name, segment, is_inferred, valid_from, valid_to, is_current)
+SELECT DISTINCT s.customer_id, &#39;Unknown&#39;, &#39;Unknown&#39;, TRUE, &#39;1900-01-01&#39;, &#39;9999-12-31&#39;, TRUE
+FROM staging.orders s LEFT JOIN dim_customer d ON d.customer_nk = s.customer_id AND d.is_current
+WHERE d.customer_nk IS NULL;
+-- 2. Load facts with surrogate key lookup
+-- 3. When real data arrives, MERGE into dim_customer updating inferred rows</code></pre>
+<ol start="2"><li><strong>Default &quot;Unknown&quot; member</strong> (surrogate key -1): simple, but loses the link, so facts need repair when the dimension arrives (re-key by a later reconciliation job).</li><li><strong>Quarantine and retry</strong>: hold unmatched facts in a suspense or error table and reprocess on later runs when dimensions land (works for batch, adds latency, risk of unbounded backlog).</li><li><strong>Reorder or synchronise sources</strong> (extract dimensions first, use the same snapshot time, CDC with transactional ordering, outbox pattern) to reduce occurrence.</li><li><strong>Late-binding views</strong> or store natural keys in the fact and resolve to the surrogate at query time (flexible but slower).</li></ol>
+<h4>SCD Type 2 and effective dating</h4>
+<p>For history, the lookup is a <strong>range join</strong>: match the natural key and <code>fact_event_time BETWEEN valid_from AND valid_to</code>. For late-arriving facts, the correct dimension version is the one active at the event time. For late-arriving dimension changes, close and reopen version intervals (split history), then <strong>re-point affected facts</strong> if their surrogate keys change.</p>
+<pre><code>SELECT f.*, d.customer_sk FROM staging.orders f
+JOIN dim_customer d ON d.customer_nk = f.customer_id AND f.order_ts &gt;= d.valid_from AND f.order_ts &lt; d.valid_to;</code></pre>
+<h4>Monitoring</h4>
+<p>Track the count of inferred members and age (alert if not resolved within N days), orphan facts (surrogate keys without dimension rows must be zero), percentage of facts mapped to unknown, referential integrity tests (<code>relationships</code> in dbt), and freshness of source feeds.</p>
+<h4>Pitfalls</h4>
+<p>Dropping unmatched facts silently, creating duplicate dimension rows for the same natural key, forgetting to flip <code>is_inferred</code>, mixing event time and load time in SCD joins, and ignoring dimension corrections that require fact re-keying.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do inferred members interact with SCD Type 2 history?</li><li>What is the difference between late-arriving facts and early-arriving facts in the Kimball sense?</li><li>How do you test and monitor orphan fact keys?</li></ul>
+<p><a class="btn primary" href="../#/q/de-64">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-64%3A+How+do+you+handle+late-arriving+dimensions+and+early-arriving+facts%E2%80%A6&amp;question-id=de-64&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Data+Modeling%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-64.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is the difference between Airflow TaskGroups and legacy SubDAGs? | InterviewGearUp</title>
+<meta name="description" content="TaskGroups are purely a UI and organisational construct: tasks inside a group remain ordinary tasks in the same DAG and run on the normal scheduler and…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-77.html">
+<meta property="og:title" content="What is the difference between Airflow TaskGroups and legacy SubDAGs? | InterviewGearUp">
+<meta property="og:description" content="TaskGroups are purely a UI and organisational construct: tasks inside a group remain ordinary tasks in the same DAG and run on the normal scheduler and…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-77.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is the difference between Airflow TaskGroups and legacy SubDAGs?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 2 (Mid-level) · Orchestration · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>TaskGroups are purely a UI and organisational construct: tasks inside a group remain ordinary tasks in the same DAG and run on the normal scheduler and executors, so they are lightweight and safe. SubDAGs were a separate DAG run triggered as a task, with its own scheduling, executor and concurrency quirks and deadlock risks, so they are deprecated and removed in Airflow 3.</p></div>
+<h4>Explained in depth</h4>
+<h4>Motivation</h4>
+<p>Large DAGs with hundreds of tasks become unreadable. Teams want to bundle repeating patterns (extract, validate, load per table) into reusable units.</p>
+<h4>Legacy SubDAGs</h4>
+<p><code>SubDagOperator</code> embedded another DAG (named <code>parent.child</code>) as a single task in the parent. The subdag was a <strong>separate DAG with its own DAG runs</strong>, so:</p>
+<ul><li>It used its own concurrency settings and by default a <strong>SequentialExecutor</strong> (so its tasks ran sequentially) unless configured.</li><li>The <code>SubDagOperator</code> task occupied a <strong>worker slot</strong> while waiting for the child DAG&#39;s tasks, and children needed slots too, so with many subdags or a limited pool the system could <strong>deadlock</strong> (all slots taken by waiting subdag operators).</li><li>Scheduling issues: the child&#39;s schedule had to match the parent&#39;s; clearing and retrying behaviour was confusing; the UI separate, extra metadata runs.</li><li>Deprecated in Airflow 2.0, removed in Airflow 3.</li></ul>
+<h4>TaskGroups (Airflow 2.0+)</h4>
+<p>A TaskGroup groups tasks <strong>within a single DAG</strong> for visual nesting and shared dependency wiring. Each task keeps its place in the same DAG run and uses the standard executor and pools.</p>
+<pre><code>from airflow.decorators import dag, task, task_group
+
+@dag(schedule=&quot;@daily&quot;, start_date=datetime(2026, 1, 1), catchup=False)
+def ingest():
+    @task_group(group_id=&quot;load_table&quot;)
+    def load_table(table: str):
+        @task
+        def extract(t): ...
+        @task
+        def validate(path): ...
+        @task
+        def load(path): ...
+        load(validate(extract(table)))
+
+    start = EmptyOperator(task_id=&quot;start&quot;)
+    groups = [load_table(t) for t in [&quot;orders&quot;, &quot;customers&quot;, &quot;payments&quot;]]
+    start &gt;&gt; groups
+ingest()</code></pre>
+<ul><li>Task ids are <strong>prefixed</strong> with the group id (<code>load_table.extract</code>) to avoid collisions; set <code>prefix_group_id=False</code> to disable.</li><li>Groups can be <strong>nested</strong>, collapsed in the Graph view, and linked: <code>group_a &gt;&gt; group_b</code> sets dependencies between all tasks of the groups&#39; edges.</li><li>Combine with <strong>dynamic task mapping</strong> (<code>.expand()</code>) and <code>@task_group</code> mapping (Airflow 2.5+), so a group instance is created per input at runtime.</li><li>Tooltips, UI colours and default arguments can be defined per group.</li></ul>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th></th><th>SubDAG</th><th>TaskGroup</th></tr></thead><tbody><tr><td>Execution</td><td>separate DAG run</td><td>same DAG run</td></tr><tr><td>Resources</td><td>extra slots, own executor</td><td>normal pools and executor</td></tr><tr><td>Deadlock risk</td><td>yes</td><td>no</td></tr><tr><td>Purpose</td><td>logical and execution grouping</td><td>visual and dependency grouping</td></tr><tr><td>Status</td><td>removed in Airflow 3</td><td>recommended</td></tr></tbody></table></div>
+<h4>Alternatives when you need real separation</h4>
+<ul><li><strong>Trigger another DAG</strong> (<code>TriggerDagRunOperator</code>) with <code>wait_for_completion=True</code> (use deferrable mode) or <strong>dataset and asset scheduling</strong> for independent DAGs with data dependencies.</li><li><strong>Reusable DAG factories</strong>: Python functions generating DAGs or task patterns.</li><li>External sensors or <code>ExternalTaskSensor</code> for cross-DAG dependencies.</li></ul>
+<h4>Pitfalls</h4>
+<p>Task id collisions without groups, huge groups hiding poor design, trying to set separate concurrency for a TaskGroup (it has none; use pools), and keeping legacy subdags during upgrade to Airflow 3.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you build dynamic TaskGroups with task mapping?</li><li>Why could SubDagOperator deadlock the worker pool?</li><li>How do you pass dependencies between groups?</li></ul>
+<p><a class="btn primary" href="../#/q/de-77">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-77%3A+What+is+the+difference+between+Airflow+TaskGroups+and+legacy+SubDAGs%3F&amp;question-id=de-77&amp;context=Data+engineer%2C+Gear+2%2C+topic%3A+Orchestration%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-77.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

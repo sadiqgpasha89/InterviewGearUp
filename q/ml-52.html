@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare vector distance metrics: Cosine Similarity, Dot Product, and Euclidean Distance. | InterviewGearUp</title>
+<meta name="description" content="Cosine similarity measures the angle between vectors and ignores magnitude, dot product combines angle and magnitude, and Euclidean distance measures…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-52.html">
+<meta property="og:title" content="Compare vector distance metrics: Cosine Similarity, Dot Product, and Euclidean Distance. | InterviewGearUp">
+<meta property="og:description" content="Cosine similarity measures the angle between vectors and ignores magnitude, dot product combines angle and magnitude, and Euclidean distance measures…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-52.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare vector distance metrics: Cosine Similarity, Dot Product, and Euclidean Distance.</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 2 (Mid-level) · RAG · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Cosine similarity measures the angle between vectors and ignores magnitude, dot product combines angle and magnitude, and Euclidean distance measures straight-line separation. For unit-normalised embeddings all three give the same ranking. Use the metric the embedding model was trained with, and normalise when direction alone should matter.</p></div>
+<h4>Explained in depth</h4>
+<h4>Definitions</h4>
+<p>For vectors a and b:</p>
+<ul><li><strong>Dot product</strong>: <code>a · b = Σ aᵢbᵢ = ‖a‖‖b‖cos θ</code>. Larger is more similar. Depends on both direction and magnitudes.</li><li><strong>Cosine similarity</strong>: <code>cos θ = (a · b) / (‖a‖‖b‖)</code>, in [-1, 1]. Depends only on direction. Cosine distance = 1 − cosine similarity.</li><li><strong>Euclidean (L2) distance</strong>: <code>‖a − b‖ = sqrt(Σ(aᵢ − bᵢ)²)</code>. Smaller is more similar; depends on position in space.</li></ul>
+<h4>Relationship</h4>
+<p><code>‖a − b‖² = ‖a‖² + ‖b‖² − 2 a·b</code>. If both vectors are <strong>unit length</strong> (<code>‖a‖ = ‖b‖ = 1</code>), then <code>‖a − b‖² = 2 − 2 a·b = 2(1 − cos θ)</code> and <code>a·b = cos θ</code>. Consequently <strong>cosine, dot product and Euclidean distance produce identical rankings</strong> on normalised vectors. Many embedding models output normalised vectors (or you normalise them), so the choice is mostly about computational convenience: dot product on normalised vectors is the cheapest (a single multiply-add pass and optimised BLAS/SIMD).</p>
+<pre><code>import numpy as np
+a, b = np.random.randn(768), np.random.randn(768)
+cos = a @ b / (np.linalg.norm(a) * np.linalg.norm(b))
+a_n, b_n = a / np.linalg.norm(a), b / np.linalg.norm(b)
+assert np.isclose(a_n @ b_n, cos)
+assert np.isclose(np.linalg.norm(a_n - b_n) ** 2, 2 - 2 * cos)</code></pre>
+<h4>When they differ</h4>
+<ul><li><strong>Magnitude matters</strong>: in some models (matrix factorisation recommenders, certain two-tower models trained with dot product), vector norm encodes confidence or popularity: items with larger norms score higher for many users. Cosine would discard that signal, and dot product keeps it (and may over-recommend popular items). Maximum inner product search (MIPS) is the task there.</li><li><strong>Text embeddings</strong>: magnitude usually reflects text length or frequency artefacts rather than meaning, so cosine (or normalised dot) is preferred.</li><li><strong>Euclidean</strong> is natural when absolute positions and scales matter (clustering with k-means, anomaly detection on features, image descriptors like SIFT), but it suffers more from the <strong>curse of dimensionality</strong> (distances concentrate in high dimensions) and from scale differences between features.</li><li><strong>Un-normalised vectors</strong> produce different rankings for the three metrics: a long vector can have a large dot product with everything.</li></ul>
+<h4>Practical guidance</h4>
+<ol start="1"><li><strong>Use the metric the model was trained with</strong> (model card): sentence-transformers models are typically cosine; OpenAI embeddings are normalised (cosine = dot); some models document dot product (e.g. <code>msmarco-*-dot</code>).</li><li><strong>Normalise embeddings</strong> at write time and use inner product in the index for speed (FAISS <code>IndexFlatIP</code>, HNSW with inner product).</li><li>Configure the vector DB metric on index creation (<code>metric_type</code>: COSINE, IP, L2 in Milvus; <code>distance: Cosine|Dot|Euclid</code> in Qdrant; pgvector operators <code>&lt;=&gt;</code> cosine distance, <code>&lt;#&gt;</code> negative inner product, <code>&lt;-&gt;</code> L2). Mixing metrics between indexing and querying yields misleading results.</li><li>Beware of <strong>score interpretation</strong>: similarity thresholds are not comparable across models; calibrate on labelled data.</li><li>For quantised indexes (PQ, binary), the metric influences encoding quality; normalised vectors work best with cosine-based hamming approximations.</li></ol>
+<h4>Related metrics</h4>
+<p>Manhattan (L1), Hamming distance for binary embeddings, Jaccard for sets, Mahalanobis for correlated features.</p>
+<h4>Pitfalls</h4>
+<p>Comparing cosine scores across different models, forgetting normalisation when using inner product, using L2 with unscaled mixed features, and assuming a higher dot product always means &quot;more relevant&quot; when magnitudes vary.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why are cosine, dot product and L2 equivalent for normalised vectors?</li><li>When does vector magnitude carry useful information, such as popularity in recommenders?</li><li>How do vector databases configure the metric and what happens if you pick the wrong one?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-52">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-52%3A+Compare+vector+distance+metrics%3A+Cosine+Similarity%2C+Dot+Product%2C+and%E2%80%A6&amp;question-id=ml-52&amp;context=ML+%2F+AI+engineer%2C+Gear+2%2C+topic%3A+RAG%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-52.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

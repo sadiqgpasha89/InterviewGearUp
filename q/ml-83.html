@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does ONNX (Open Neural Network Exchange) provide cross-framework model interoperability? | InterviewGearUp</title>
+<meta name="description" content="ONNX defines an open graph format and operator set so a model trained in PyTorch, TensorFlow or scikit-learn can be exported once and run in ONNX…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-83.html">
+<meta property="og:title" content="How does ONNX (Open Neural Network Exchange) provide cross-framework model interoperability? | InterviewGearUp">
+<meta property="og:description" content="ONNX defines an open graph format and operator set so a model trained in PyTorch, TensorFlow or scikit-learn can be exported once and run in ONNX…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-83.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does ONNX (Open Neural Network Exchange) provide cross-framework model interoperability?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · Deployment · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>ONNX defines an open graph format and operator set so a model trained in PyTorch, TensorFlow or scikit-learn can be exported once and run in ONNX Runtime, TensorRT or OpenVINO. It decouples training frameworks from deployment targets and enables graph optimisation and hardware acceleration, with caveats around operator coverage and dynamic behaviour.</p></div>
+<h4>Explained in depth</h4>
+<h4>The interoperability problem</h4>
+<p>Teams train in PyTorch, TensorFlow or JAX, but production targets vary: C++ servers, mobile apps, browsers, edge accelerators, NVIDIA GPUs, Intel CPUs, cloud services. Without a common format, each framework-target pair needs a bespoke converter. ONNX provides the <strong>intermediate representation (IR)</strong>: M frameworks × N runtimes become M exporters + N importers.</p>
+<h4>What ONNX contains</h4>
+<ul><li>A <strong>protobuf model file</strong> (<code>.onnx</code>) with: a computation <strong>graph</strong> (nodes = operators, edges = tensors in a DAG), <strong>initialisers</strong> (weights), input and output tensor types and shapes (with symbolic or dynamic dimensions), <strong>metadata</strong>, and the <strong>opset version</strong> it targets.</li><li>A standard <strong>operator set</strong> (Conv, MatMul, Attention, LayerNormalization, Softmax, etc.) with precisely specified semantics, versioned by opset (for example opset 17 or 21). Domains: <code>ai.onnx</code> (core), <code>ai.onnx.ml</code> (tree ensembles, scalers, encoders for classical ML), and custom domains for extensions (<code>com.microsoft</code> contrib ops).</li></ul>
+<h4>Exporting</h4>
+<pre><code>import torch
+model.eval()
+dummy = torch.randn(1, 3, 224, 224)
+torch.onnx.export(model, dummy, &quot;resnet.onnx&quot;, opset_version=17,
+                  input_names=[&quot;image&quot;], output_names=[&quot;logits&quot;],
+                  dynamic_axes={&quot;image&quot;: {0: &quot;batch&quot;}, &quot;logits&quot;: {0: &quot;batch&quot;}})      # variable batch size
+# TensorFlow/Keras: tf2onnx.convert.from_keras; scikit-learn: skl2onnx.convert_sklearn; HF: optimum-cli export onnx</code></pre>
+<p>Export traces or scripts the model (TorchScript tracing, or the newer <code>torch.export</code>/dynamo exporter), recording the executed operations. <strong>Control flow that depends on data</strong> (Python ifs, loops over tensor values) can be baked in by tracing, so use scripting or ONNX <code>If</code>/<code>Loop</code> ops and test with varied inputs.</p>
+<h4>Running</h4>
+<pre><code>import onnxruntime as ort, numpy as np
+sess = ort.InferenceSession(&quot;resnet.onnx&quot;, providers=[&quot;CUDAExecutionProvider&quot;, &quot;CPUExecutionProvider&quot;])
+out = sess.run(None, {&quot;image&quot;: np.random.randn(8, 3, 224, 224).astype(np.float32)})</code></pre>
+<p><strong>ONNX Runtime</strong> applies graph optimisations (constant folding, node fusion such as Conv+BN+ReLU, attention fusion, layout transforms, memory planning) and dispatches subgraphs to <strong>execution providers (EPs)</strong>: CPU (MLAS), CUDA, TensorRT, DirectML, OpenVINO, CoreML, NNAPI, QNN, ROCm, WebGPU/WASM. Unsupported operators fall back to CPU. Other runtimes consume ONNX too: <strong>TensorRT</strong> (builds optimised engines), OpenVINO, TVM, Apple Core ML tools, SNPE, and Triton&#39;s ONNX backend.</p>
+<h4>Benefits</h4>
+<ul><li><strong>Portability</strong> across frameworks, languages (C++, C#, Java, JS, Python), OSs and devices; one artefact for many targets.</li><li><strong>Performance</strong>: runtime optimisations, quantisation tooling (INT8, FP16) and hardware-specific kernels, often 1.5x to 5x faster than the original framework inference on CPU.</li><li><strong>Smaller deployment footprint</strong> without the full training framework; stable, versioned spec.</li><li>Supports <strong>classical ML pipelines</strong> (scikit-learn, XGBoost, LightGBM) and LLM export for edge (ONNX Runtime GenAI).</li></ul>
+<h4>Limitations and gotchas</h4>
+<ul><li><strong>Operator coverage</strong>: new or custom PyTorch operators may lack an ONNX mapping; options: rewrite with supported ops, register a custom op or symbolic function, or keep that part outside.</li><li><strong>Opset compatibility</strong>: the exporter&#39;s opset must be supported by the target runtime; newer opsets add ops and fix semantics.</li><li><strong>Dynamic shapes and control flow</strong> add complexity; some runtimes (TensorRT) need optimisation profiles.</li><li><strong>Numerical differences</strong>: validate outputs with <code>np.testing.assert_allclose</code> against the original model (tolerances 1e-4 to 1e-5), run tests across batch sizes and sequence lengths.</li><li>Stateful or very large models (LLMs with KV cache) need special export handling (past key values as inputs and outputs), external data files for models over 2 GB.</li><li>Not every optimisation from the source framework (custom CUDA kernels, FlashAttention) carries over.</li><li>Tools: <strong>onnx-simplifier</strong>, <code>onnx.checker</code>, Netron for visualisation, <code>onnxruntime.tools</code> for quantisation and optimisation.</li></ul>
+<h4>Pitfalls</h4>
+<p>Exporting with the model in training mode, tracing with a single dummy input and hiding control flow, forgetting dynamic axes, and skipping parity tests before shipping.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What happens when a framework operator has no ONNX equivalent?</li><li>How do execution providers in ONNX Runtime map graphs to hardware?</li><li>How do opsets and dynamic axes affect compatibility?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-83">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-83%3A+How+does+ONNX+%28Open+Neural+Network+Exchange%29+provide+cross-framework%E2%80%A6&amp;question-id=ml-83&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+Deployment%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-83.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

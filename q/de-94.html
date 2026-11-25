@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you efficiently ingest and flatten semi-structured nested JSON arrays into tabular warehouses? | InterviewGearUp</title>
+<meta name="description" content="Land the raw JSON in a variant, JSON or string column, then flatten with the engine&#39;s native functions: explode or inline in Spark, FLATTEN or LATERAL in…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-94.html">
+<meta property="og:title" content="How do you efficiently ingest and flatten semi-structured nested JSON arrays into tabular warehouses? | InterviewGearUp">
+<meta property="og:description" content="Land the raw JSON in a variant, JSON or string column, then flatten with the engine&#39;s native functions: explode or inline in Spark, FLATTEN or LATERAL in…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-94.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you efficiently ingest and flatten semi-structured nested JSON arrays into tabular warehouses?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 2 (Mid-level) · Ingestion · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Land the raw JSON in a variant, JSON or string column, then flatten with the engine&#39;s native functions: explode or inline in Spark, FLATTEN or LATERAL in Snowflake, UNNEST in BigQuery and Postgres, and OPENJSON or JSON_TABLE elsewhere. Create one row per array element in child tables keyed to the parent, project typed columns, and handle schema drift and nulls.</p></div>
+<h4>Explained in depth</h4>
+<h4>Strategy</h4>
+<ol start="1"><li><strong>Land raw first</strong>: store the payload as-is in bronze with metadata (ingest time, source) so you can reprocess.</li><li><strong>Parse and type</strong> in silver: extract known fields with explicit types.</li><li><strong>Flatten arrays into child tables</strong> (normalisation) or keep as nested types when consumers use nested queries.</li></ol>
+<h4>Example payload</h4>
+<pre><code>{&quot;order_id&quot;: &quot;A1&quot;, &quot;customer&quot;: {&quot;id&quot;: 7, &quot;email&quot;: &quot;a@x.com&quot;},
+ &quot;items&quot;: [{&quot;sku&quot;: &quot;S1&quot;, &quot;qty&quot;: 2, &quot;price&quot;: 9.5}, {&quot;sku&quot;: &quot;S2&quot;, &quot;qty&quot;: 1, &quot;price&quot;: 20}],
+ &quot;tags&quot;: [&quot;gift&quot;, &quot;express&quot;]}</code></pre>
+<h4>Snowflake</h4>
+<pre><code>CREATE TABLE raw.orders (payload VARIANT, loaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
+-- parent
+SELECT payload:order_id::STRING AS order_id, payload:customer.id::NUMBER AS customer_id, payload:customer.email::STRING AS email FROM raw.orders;
+-- child rows, one per item
+SELECT o.payload:order_id::STRING AS order_id, i.index AS line_no, i.value:sku::STRING AS sku, i.value:qty::INT AS qty, i.value:price::DECIMAL(10,2) AS price
+FROM raw.orders o, LATERAL FLATTEN(input =&gt; o.payload:items) i;</code></pre>
+<p><code>FLATTEN(..., OUTER =&gt; TRUE)</code> keeps parents whose array is empty; <code>RECURSIVE =&gt; TRUE</code> descends nested levels.</p>
+<h4>BigQuery</h4>
+<pre><code>SELECT JSON_VALUE(p, &#39;$.order_id&#39;) AS order_id, JSON_VALUE(item, &#39;$.sku&#39;) AS sku, CAST(JSON_VALUE(item, &#39;$.qty&#39;) AS INT64) AS qty
+FROM raw.orders, UNNEST(JSON_QUERY_ARRAY(p, &#39;$.items&#39;)) AS item;</code></pre>
+<p>Native <code>STRUCT</code> and <code>ARRAY&lt;STRUCT&gt;</code> columns can be queried with <code>UNNEST</code> and avoid joins entirely.</p>
+<h4>Spark</h4>
+<pre><code>from pyspark.sql.functions import from_json, explode_outer, col
+schema = &quot;order_id STRING, customer STRUCT&lt;id: BIGINT, email: STRING&gt;, items ARRAY&lt;STRUCT&lt;sku: STRING, qty: INT, price: DOUBLE&gt;&gt;, tags ARRAY&lt;STRING&gt;&quot;
+df = raw.select(from_json(&quot;payload&quot;, schema).alias(&quot;o&quot;)).select(&quot;o.*&quot;)
+orders = df.select(&quot;order_id&quot;, col(&quot;customer.id&quot;).alias(&quot;customer_id&quot;))
+items  = df.select(&quot;order_id&quot;, explode_outer(&quot;items&quot;).alias(&quot;item&quot;)).select(&quot;order_id&quot;, &quot;item.*&quot;)</code></pre>
+<p>Use <code>schema_of_json</code> or a schema registry rather than relying on full inference in production. Auto Loader and Delta schema evolution handle new fields with <code>_rescued_data</code>.</p>
+<h4>Design considerations</h4>
+<ul><li><strong>Grain and keys</strong>: each child table has <code>(parent_id, line_no)</code> as key; keep ordering through array index. Joining children back to parents avoids duplication in facts.</li><li><strong>Avoid cartesian explosion</strong>: flattening two independent arrays (items and tags) in one query multiplies rows. Flatten each array into its own child table instead.</li><li><strong>Keep nested types</strong> when consumers benefit (BigQuery, Parquet and Spark columns) because nested columns reduce joins and storage; flatten for BI tools that need tabular data.</li><li><strong>Nulls and missing fields</strong>: use <code>try</code>-style casts (<code>TRY_CAST</code>, <code>SAFE_CAST</code>), defaults, and <code>OUTER</code> flattening to avoid dropping rows.</li><li><strong>Schema drift</strong>: monitor new keys, keep the raw column, and use contracts; avoid blindly materialising every key into columns (columns explosion with sparse data).</li><li><strong>Performance</strong>: persist flattened results as tables (incremental models in dbt) rather than flattening on every query; partition by ingest date; prune with filters on extracted columns; pushdown on Parquet nested fields.</li><li><strong>Security</strong>: mask PII (email) during flattening.</li><li>Use dbt (<code>dbt_utils</code> JSON helpers) or Dataform for maintainable flattening models, with tests for uniqueness of <code>(order_id, line_no)</code>.</li></ul>
+<h4>Pitfalls</h4>
+<p>Parsing JSON repeatedly in views, exploding multiple arrays together, losing parents with empty arrays, and number precision issues when JSON numbers become doubles (parse money as decimal strings).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>When should you keep nested data as STRUCT and ARRAY rather than flatten?</li><li>How do you avoid row explosion when flattening several arrays?</li><li>How do you handle schema evolution in nested JSON?</li></ul>
+<p><a class="btn primary" href="../#/q/de-94">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-94%3A+How+do+you+efficiently+ingest+and+flatten+semi-structured+nested%E2%80%A6&amp;question-id=de-94&amp;context=Data+engineer%2C+Gear+2%2C+topic%3A+Ingestion%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-94.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are the operational and cost trade-offs of using Spot/Preemptible instances in production clusters? | InterviewGearUp</title>
+<meta name="description" content="Spot and preemptible instances offer 60 to 90 percent discounts but can be reclaimed with short notice, so they suit stateless, fault-tolerant,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-76.html">
+<meta property="og:title" content="What are the operational and cost trade-offs of using Spot/Preemptible instances in production clusters? | InterviewGearUp">
+<meta property="og:description" content="Spot and preemptible instances offer 60 to 90 percent discounts but can be reclaimed with short notice, so they suit stateless, fault-tolerant,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-76.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are the operational and cost trade-offs of using Spot/Preemptible instances in production clusters?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · Cloud · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Spot and preemptible instances offer 60 to 90 percent discounts but can be reclaimed with short notice, so they suit stateless, fault-tolerant, horizontally scaled or batch workloads. Production use needs diversification across instance types and zones, interruption handling, graceful draining, a baseline of on-demand capacity and automation such as Karpenter or autoscaler mixed pools.</p></div>
+<h4>Explained in depth</h4>
+<h4>What spot capacity is</h4>
+<p>Cloud providers sell spare capacity cheaply (AWS Spot, GCP Spot VMs and preemptible, Azure Spot) and <strong>reclaim it</strong> when demand rises: AWS gives a <strong>2-minute warning</strong>, GCP about 30 seconds, Azure 30 seconds. Prices and interruption rates vary by instance type and zone.</p>
+<h4>Cost benefits</h4>
+<p>Typically 60 to 90 percent cheaper than on-demand; combined with right-sizing and savings plans for the baseline. Large impact for CI runners, batch and data processing, rendering, ML training, test environments, web tier replicas and queue consumers.</p>
+<h4>Operational trade-offs</h4>
+<ul><li><strong>Interruptions</strong> terminate nodes abruptly: in-memory state, local disks and long tasks are lost.</li><li><strong>Capacity unavailability</strong>: a pool of one instance type can be unavailable or interrupted all at once (correlated reclaim), causing outages if everything depends on it.</li><li>Scale-up can fail when no spot capacity exists; fallback is needed.</li><li>Churn increases operational noise (pod restarts, rebalancing, cold caches, connection resets).</li><li>Some features differ: no SLA, no live migration, stricter limits on GPUs.</li><li>Cost savings erode if retries, over-provisioning or engineer time dominate.</li></ul>
+<h4>Design for interruption</h4>
+<ol start="1"><li><strong>Stateless and idempotent</strong> workloads; externalise state (databases, object storage, queues); checkpoint long jobs and resume.</li><li><strong>Diversify</strong>: many instance types, sizes and families (<code>m5</code>, <code>m5a</code>, <code>m6i</code>, <code>c5</code>...) and several availability zones, using capacity-optimised allocation strategies (AWS <code>price-capacity-optimized</code>), so a shortage of one pool does not stop you.</li><li><strong>Keep a baseline on on-demand or reserved capacity</strong> (for example 20 to 40 percent) for critical replicas, using separate node groups with labels and taints; let Cluster Autoscaler expanders or <strong>Karpenter</strong> prefer spot and fall back to on-demand automatically.</li><li><strong>Handle the notice</strong>: run the AWS Node Termination Handler (or Karpenter&#39;s built-in interruption handling with SQS and EventBridge), which cordons and drains the node on the interruption event so pods terminate gracefully before the reclaim; set <code>terminationGracePeriodSeconds</code> below the notice period, implement SIGTERM handling and readiness, and use PodDisruptionBudgets and topology spread constraints.</li><li><strong>Spread replicas</strong> across nodes and zones so one interruption cannot remove all pods; run at least 3 replicas for important services; use <code>preferredDuringScheduling</code> affinity to spot with on-demand fallback.</li><li><strong>Rebalance recommendations</strong> (AWS) and capacity rebalancing can replace instances proactively before interruption.</li></ol>
+<h4>What not to run on spot</h4>
+<p>Single-replica or stateful primaries (databases without replication), control plane components, leader-only services without quick failover, long non-checkpointed jobs, latency-critical systems with no headroom, and anything with strict compliance availability.</p>
+<h4>Cost management</h4>
+<p>Track savings with Kubecost or cloud cost tools, measure interruption rate and rescheduling cost, set budgets, use Savings Plans for the steady state, and test interruption with fault injection (AWS FIS spot interruption experiments).</p>
+<h4>Pitfalls</h4>
+<p>Using one instance type, ignoring the notice, putting stateful workloads on spot without replication, and autoscaler settings that cannot fall back when spot capacity is missing.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How should you handle the two-minute interruption notice in Kubernetes?</li><li>Which workloads should never run on spot instances?</li><li>How does Karpenter or a mixed-instance policy improve spot availability?</li></ul>
+<p><a class="btn primary" href="../#/q/do-76">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-76%3A+What+are+the+operational+and+cost+trade-offs+of+using%E2%80%A6&amp;question-id=do-76&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+Cloud%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-76.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

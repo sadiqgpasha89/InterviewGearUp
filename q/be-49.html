@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain the trade-offs of the CAP theorem: When should a distributed system choose CP versus AP? | InterviewGearUp</title>
+<meta name="description" content="The CAP theorem says that during a network partition a distributed data store must choose between consistency (every read sees the latest write) and…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-49.html">
+<meta property="og:title" content="Explain the trade-offs of the CAP theorem: When should a distributed system choose CP versus AP? | InterviewGearUp">
+<meta property="og:description" content="The CAP theorem says that during a network partition a distributed data store must choose between consistency (every read sees the latest write) and…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-49.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain the trade-offs of the CAP theorem: When should a distributed system choose CP versus AP?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · Distributed systems · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>The CAP theorem says that during a network partition a distributed data store must choose between consistency (every read sees the latest write) and availability (every request gets a non-error response). Choose CP when wrong data is worse than downtime (money, inventory, leader election), and AP when serving possibly stale data is better than failing (feeds, carts, caches).</p></div>
+<h4>Explained in depth</h4>
+<h4>The three properties</h4>
+<ul><li><strong>Consistency (linearizability)</strong>: all clients see the same, latest data as if there were one copy.</li><li><strong>Availability</strong>: every non-failing node responds to every request (without guaranteeing the latest data).</li><li><strong>Partition tolerance</strong>: the system continues despite dropped or delayed messages between nodes.</li></ul>
+<p>Networks do partition (switch failures, cloud zone isolation, GC pauses acting like partitions), so partition tolerance is assumed. The real choice, <strong>when a partition happens</strong>, is C or A. Without a partition you can have both, and the trade-off becomes latency versus consistency (<strong>PACELC</strong>: if Partition then A or C, Else Latency or Consistency).</p>
+<h4>CP behaviour</h4>
+<p>During a partition, nodes that cannot reach a quorum refuse reads and writes (return errors or block) to avoid divergent data.</p>
+<ul><li>Examples: etcd, ZooKeeper, Consul, HBase, MongoDB with majority concern, Google Spanner, CockroachDB, relational databases with synchronous replication.</li><li>Use for: financial ledgers, inventory and seat booking, leader election, distributed locks and configuration, unique constraints.</li></ul>
+<h4>AP behaviour</h4>
+<p>Every node keeps accepting reads and writes during a partition; replicas may diverge and are reconciled later (last-write-wins, vector clocks, CRDTs, application merge).</p>
+<ul><li>Examples: Cassandra and DynamoDB (default settings), Riak, CouchDB, DNS, many caches.</li><li>Use for: shopping carts (merge items), social feeds, likes and view counters, session data, telemetry, product catalogs where slightly stale data is acceptable.</li></ul>
+<h4>Nuances</h4>
+<ul><li>CAP is about <strong>linearizability</strong> specifically, not all notions of consistency. Between strong and eventual lie causal, read-your-writes, monotonic reads and session consistency.</li><li>It applies per operation and per data type: one system can be CP for payments and AP for recommendations.</li><li><strong>Tunable quorums</strong>: with N replicas, write quorum W and read quorum R, <code>R + W &gt; N</code> gives strong consistency (Cassandra <code>QUORUM</code>, DynamoDB strongly consistent reads); <code>R = W = 1</code> favours availability and latency.</li><li>Availability in CAP is a strict definition; real systems measure uptime and latency SLOs, and CP systems can remain available for clients in the majority partition.</li><li>Mitigations for AP: conflict resolution, anti-entropy repair, hinted handoff, idempotent operations. Mitigations for CP: multi-region quorum placement, graceful degradation (read-only mode), client retries.</li></ul>
+<h4>Decision questions</h4>
+<p>What is the cost of stale or conflicting data versus the cost of rejecting requests? Can conflicts be merged automatically? What are the latency targets and how many regions are involved?</p>
+<h4>Pitfalls</h4>
+<p>Saying a system is &quot;CA&quot;, treating CAP as a permanent label for a product, and ignoring latency, which is the more common trade-off day to day.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does PACELC extend CAP to normal operation without partitions?</li><li>Why is partition tolerance not optional in practice?</li><li>How do tunable systems like Cassandra and DynamoDB let you choose per query?</li></ul>
+<p><a class="btn primary" href="../#/q/be-49">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-49%3A+Explain+the+trade-offs+of+the+CAP+theorem%3A+When+should+a+distributed%E2%80%A6&amp;question-id=be-49&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+Distributed+systems%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-49.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

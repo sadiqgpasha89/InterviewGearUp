@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does AWS GuardDuty use machine learning and threat intelligence to detect account compromises? | InterviewGearUp</title>
+<meta name="description" content="GuardDuty continuously analyses CloudTrail, VPC Flow Logs, DNS logs and other sources using threat intelligence feeds, anomaly detection and machine…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-75.html">
+<meta property="og:title" content="How does AWS GuardDuty use machine learning and threat intelligence to detect account compromises? | InterviewGearUp">
+<meta property="og:description" content="GuardDuty continuously analyses CloudTrail, VPC Flow Logs, DNS logs and other sources using threat intelligence feeds, anomaly detection and machine…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-75.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does AWS GuardDuty use machine learning and threat intelligence to detect account compromises?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · Cloud · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>GuardDuty continuously analyses CloudTrail, VPC Flow Logs, DNS logs and other sources using threat intelligence feeds, anomaly detection and machine learning models that baseline normal behaviour per account. It raises severity-rated findings such as credential exfiltration, anomalous API calls from unusual locations, crypto-mining and communication with known command and control servers, for response automation.</p></div>
+<h4>Explained in depth</h4>
+<h4>What GuardDuty is</h4>
+<p><strong>Amazon GuardDuty</strong> is a managed, agentless <strong>threat detection service</strong> for AWS accounts, workloads and data. It is enabled with a few clicks per region (and organisation-wide through a delegated administrator), without deploying sensors or changing configurations. It analyses <strong>independent streams of foundational data</strong> from AWS that you do not need to enable separately for detection:</p>
+<ul><li><strong>CloudTrail</strong> management events (and S3 data events with S3 Protection), <strong>VPC Flow Logs</strong>, <strong>Route 53 DNS query logs</strong>, <strong>EKS audit logs</strong>, <strong>Lambda network activity</strong>, <strong>RDS login activity</strong>, <strong>Runtime Monitoring</strong> (agent for EC2, ECS and EKS), <strong>EBS malware protection</strong>, S3 Malware Protection.</li></ul>
+<h4>Detection techniques</h4>
+<ol start="1"><li><strong>Threat intelligence</strong>: lists of known malicious IPs, domains and file hashes from AWS security teams and partners (CrowdStrike, Proofpoint) matched against traffic and API sources.</li><li><strong>Anomaly detection and baselining</strong>: models learn what is normal for each account, user and role, such as typical API calls, locations, ASNs, user agents, time-of-day and volume, then flag deviations (for example a long-idle user calling <code>ListBuckets</code> and <code>GetObject</code> at scale from a Tor exit node).</li><li><strong>Machine learning classifiers</strong> for specific attack patterns: credential compromise sequences, domain generation algorithms (DGA), DNS exfiltration tunnelling, brute force detection on SSH or RDP, port scanning, recon patterns, privilege escalation sequences, anomalous console login behaviour.</li><li><strong>Correlation across data sources</strong> into attack sequences (<strong>Extended Threat Detection</strong>), linking events (suspicious login, role assumption, then unusual data access) into a single high-severity finding with MITRE ATT&amp;CK mapping.</li></ol>
+<h4>Examples of account-compromise findings</h4>
+<ul><li><code>UnauthorizedAccess:IAMUser/InstanceCredentialExfiltration.OutsideAWS</code>: credentials of an EC2 role used from an external IP, a classic result of <strong>SSRF to the metadata service</strong>.</li><li><code>UnauthorizedAccess:IAMUser/MaliciousIPCaller.Custom</code>, <code>UnauthorizedAccess:IAMUser/TorIPCaller</code>, <code>Discovery:IAMUser/AnomalousBehavior</code>, <code>PrivilegeEscalation:IAMUser/AnomalousBehavior</code>, <code>Persistence:IAMUser/AnomalousBehavior</code>.</li><li><code>Stealth:IAMUser/CloudTrailLoggingDisabled</code>, <code>Policy:IAMUser/RootCredentialUsage</code>.</li><li><code>CredentialAccess:IAMUser/AnomalousBehavior</code>, <code>Exfiltration:S3/AnomalousBehavior</code>, <code>Impact:S3/MaliciousIPCaller</code>.</li><li>Workload threats: <code>CryptoCurrency:EC2/BitcoinTool.B!DNS</code>, <code>Trojan:EC2/DNSDataExfiltration</code>, <code>Backdoor:EC2/C&amp;CActivity.B</code>, <code>UnauthorizedAccess:EC2/SSHBruteForce</code>.</li></ul>
+<p>Each finding has <strong>severity</strong> (Low, Medium, High), resource details, actor, evidence and recommended remediation.</p>
+<h4>Response and automation</h4>
+<ol start="1"><li><strong>Aggregate</strong>: send findings to <strong>AWS Security Hub</strong> (normalised ASFF) and your <strong>SIEM</strong>; use the delegated administrator to view all accounts.</li><li><strong>Route with EventBridge</strong>: rule on <code>source: aws.guardduty</code> with <code>detail.severity &gt;= 7</code> to Lambda, Step Functions or SSM Automation, SNS or ticketing.</li><li><strong>Automated containment (with guardrails)</strong> examples:</li></ol>
+<ul><li>Credential finding: <strong>attach a deny-all inline policy</strong> or revoke sessions (<code>aws iam put-role-policy</code> with <code>DateLessThan aws:TokenIssueTime</code> condition), deactivate access keys, rotate the credentials, notify the owner.</li><li>EC2 compromise: change instance <strong>security group to a quarantine group</strong>, snapshot EBS volumes for forensics, isolate or stop the instance (preserve memory evidence if needed).</li><li>S3 exfiltration: apply restrictive bucket policy, enable Block Public Access, review CloudTrail data events.</li></ul>
+<ol start="4"><li><strong>Investigate</strong>: pivot with <strong>Amazon Detective</strong> (graph of entities and behaviour), CloudTrail Lake queries, VPC Flow Logs, and timelines; check for persistence (new users, roles, access keys, Lambda backdoors, OAuth apps), lateral movement and data access.</li><li><strong>Tune</strong>: <strong>suppression rules</strong> for known benign activity (penetration test hosts, scanners), trusted IP lists and threat lists (your own indicators), but keep documented exceptions.</li><li><strong>Operate</strong>: monitor coverage across all regions (including unused regions where attackers deploy miners), enable protection plans for S3, EKS, RDS, Lambda, malware scanning, define severity SLAs, test with sample findings (<code>CreateSampleFindings</code>) and tabletop exercises.</li></ol>
+<h4>Limitations</h4>
+<ul><li><strong>Detection, not prevention</strong>: findings arrive after suspicious activity; combine with preventive controls (SCPs, least privilege, MFA, IMDSv2, Block Public Access).</li><li>Dependent on available telemetry and <strong>baselining</strong> period; low-and-slow or legitimate-credential misuse may blend in; detections are AWS-centric (not endpoint EDR, not application logic).</li><li>Threat lists may not contain brand-new indicators; false positives occur (new office locations, automation).</li><li>Cost scales with log volume and enabled features (estimate with the free 30-day trial).</li></ul>
+<p>Complementary: <strong>IAM Access Analyzer</strong>, <strong>Macie</strong> for sensitive data, <strong>Inspector</strong> for vulnerabilities, <strong>Security Hub</strong> for posture, <strong>Config</strong>, <strong>Detective</strong>, third-party EDR and SIEM correlation.</p>
+<h4>Pitfalls</h4>
+<p>Enabling GuardDuty in only one region, ignoring low-severity findings that precede incidents, no automated or owned response, suppressing too broadly, and assuming GuardDuty replaces monitoring of application and identity-provider logs.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Which GuardDuty finding types indicate stolen IAM credentials or instance role exfiltration and how do you respond?</li><li>How do you integrate GuardDuty findings with EventBridge, Security Hub and automated remediation?</li><li>What are GuardDuty&#39;s limitations and which complementary controls are needed?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-75">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-75%3A+How+does+AWS+GuardDuty+use+machine+learning+and+threat+intelligence%E2%80%A6&amp;question-id=sec-75&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+Cloud%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-75.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

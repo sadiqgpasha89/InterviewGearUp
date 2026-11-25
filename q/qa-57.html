@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you verify client-side storage states (LocalStorage, SessionStorage, Cookies) during automated tests? | InterviewGearUp</title>
+<meta name="description" content="Verify client-side storage by reading it in the test and asserting values and attributes: page.evaluate or cy.getAllLocalStorage for localStorage and…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-57.html">
+<meta property="og:title" content="How do you verify client-side storage states (LocalStorage, SessionStorage, Cookies) during automated tests? | InterviewGearUp">
+<meta property="og:description" content="Verify client-side storage by reading it in the test and asserting values and attributes: page.evaluate or cy.getAllLocalStorage for localStorage and…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-57.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you verify client-side storage states (LocalStorage, SessionStorage, Cookies) during automated tests?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 2 (Mid-level) · Browser APIs · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Verify client-side storage by reading it in the test and asserting values and attributes: page.evaluate or cy.getAllLocalStorage for localStorage and sessionStorage, context.cookies or getCookies for cookies including HttpOnly, Secure, SameSite and expiry. Also test persistence across reloads and tabs, clearing on logout, and that no sensitive data is stored in plain text.</p></div>
+<h4>Explained in depth</h4>
+<h4>The storage mechanisms</h4>
+<div class="md-table"><table><thead><tr><th>Storage</th><th>Scope</th><th>Lifetime</th><th>Sent to server</th><th>Readable by JS</th></tr></thead><tbody><tr><td><strong>localStorage</strong></td><td>origin</td><td>persists until cleared</td><td>no</td><td>yes</td></tr><tr><td><strong>sessionStorage</strong></td><td>origin and tab</td><td>until the tab closes</td><td>no</td><td>yes</td></tr><tr><td><strong>Cookies</strong></td><td>domain and path</td><td>session or until expiry</td><td>yes, automatically</td><td>yes unless <code>HttpOnly</code></td></tr><tr><td>IndexedDB, Cache Storage, service worker</td><td>origin</td><td>persistent</td><td>no</td><td>yes</td></tr></tbody></table></div>
+<h4>Reading and asserting in tests</h4>
+<pre><code>// Playwright
+const ls = await page.evaluate(() =&gt; JSON.stringify(window.localStorage));
+expect(JSON.parse(ls)).toMatchObject({ theme: &#39;dark&#39; });
+const token = await page.evaluate(() =&gt; sessionStorage.getItem(&#39;cartId&#39;));
+expect(token).toBeTruthy();
+// cookies (include HttpOnly ones, which JS cannot read)
+const cookies = await context.cookies();
+const session = cookies.find(c =&gt; c.name === &#39;session&#39;);
+expect(session).toMatchObject({ httpOnly: true, secure: true, sameSite: &#39;Lax&#39; });
+expect(session!.expires).toBeGreaterThan(Date.now() / 1000);
+// set state before the page loads
+await context.addCookies([{ name: &#39;consent&#39;, value: &#39;accepted&#39;, domain: &#39;example.com&#39;, path: &#39;/&#39; }]);
+await context.addInitScript(() =&gt; localStorage.setItem(&#39;onboardingDone&#39;, &#39;true&#39;));</code></pre>
+<pre><code>// Cypress
+cy.getCookie(&#39;session&#39;).should(&#39;have.property&#39;, &#39;httpOnly&#39;, true);
+cy.window().then(win =&gt; expect(win.localStorage.getItem(&#39;theme&#39;)).to.eq(&#39;dark&#39;));
+cy.clearAllLocalStorage(); cy.clearCookies();</code></pre>
+<pre><code>// Selenium
+Cookie c = driver.manage().getCookieNamed(&quot;session&quot;); assertTrue(c.isHttpOnly() &amp;&amp; c.isSecure());
+String v = (String) ((JavascriptExecutor) driver).executeScript(&quot;return window.localStorage.getItem(&#39;theme&#39;);&quot;);</code></pre>
+<h4>What to test</h4>
+<ol start="1"><li><strong>Correct values written at the right time</strong>: preferences saved on change, cart or draft stored, consent recorded, feature flags, auth tokens, language choice.</li><li><strong>Persistence</strong>: survives reload and new tab (localStorage, cookies); sessionStorage survives reload but not new tabs or windows (open a second page and assert it is empty).</li><li><strong>Expiry and clearing</strong>: cookie <code>Max-Age</code> and <code>Expires</code>, session cookies removed on browser close (new context), <strong>logout clears</strong> tokens, user data and caches; switching accounts does not leak previous user&#39;s data.</li><li><strong>Security attributes</strong> on cookies: <code>HttpOnly</code> for session ids, <code>Secure</code>, <code>SameSite</code> (Lax or Strict), scoped <code>Domain</code> and <code>Path</code>, <code>__Host-</code> prefix; <strong>no sensitive data</strong> (passwords, PII, long-lived tokens, card numbers) in localStorage or cookies in plain text; tokens are the right type and length.</li><li><strong>Behaviour when storage is unavailable or full</strong>: block cookies and storage (browser setting, <code>page.addInitScript</code> overriding <code>Storage.prototype.setItem</code> to throw <code>QuotaExceededError</code>), private browsing, third-party cookie restrictions (Safari ITP, Chrome changes); the app should degrade gracefully with clear messaging.</li><li><strong>Cross-tab synchronisation</strong>: <code>storage</code> events update other tabs (logout in one tab logs out others); concurrent writes.</li><li><strong>Consent and privacy</strong>: no non-essential cookies before consent, removed after withdrawal (see consent banner tests), cookie inventory matches documentation.</li><li><strong>Tampering</strong>: edit stored values (role flags, prices, tokens) and assert the server does not trust client-side state; corrupted JSON handled without crashing; schema migrations of stored data between app versions.</li><li><strong>Storage and session reuse in test infrastructure</strong>: save authenticated state once (<code>context.storageState({ path })</code>) and load it in other tests to skip UI login; keep state files out of Git and per-environment.</li></ol>
+<h4>Pitfalls</h4>
+<p>Asserting on storage before the app finishes writing (wait for the event or expectation), forgetting that each browser context starts empty, stale <code>storageState</code> files with expired tokens, testing HttpOnly cookies via JavaScript (impossible), and leaving sensitive tokens in artifacts and logs.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you reuse login state across tests using storageState without leaking data?</li><li>Why can&#39;t JavaScript read HttpOnly cookies and how do tests assert them anyway?</li><li>How do you test storage quota errors, private mode and cross-tab synchronisation?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-57">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-57%3A+How+do+you+verify+client-side+storage+states+%28LocalStorage%2C%E2%80%A6&amp;question-id=qa-57&amp;context=QA+%2F+SDET%2C+Gear+2%2C+topic%3A+Browser+APIs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-57.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

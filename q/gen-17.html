@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain Robin Hood hashing and how stealing from the rich reduces probe sequence variance. | InterviewGearUp</title>
+<meta name="description" content="Robin Hood hashing is open addressing with a twist: on insert, an element that has probed farther from its home slot &quot;steals&quot; the slot of a richer…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-17.html">
+<meta property="og:title" content="Explain Robin Hood hashing and how stealing from the rich reduces probe sequence variance. | InterviewGearUp">
+<meta property="og:description" content="Robin Hood hashing is open addressing with a twist: on insert, an element that has probed farther from its home slot &quot;steals&quot; the slot of a richer…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-17.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain Robin Hood hashing and how stealing from the rich reduces probe sequence variance.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 3 (Senior) · Data structures · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Robin Hood hashing is open addressing with a twist: on insert, an element that has probed farther from its home slot &quot;steals&quot; the slot of a richer element that sits closer to home. This evens out probe lengths, so variance drops and lookups can stop early.</p></div>
+<h4>Explained in depth</h4>
+<h4>The problem it solves</h4>
+<p>Linear probing is cache friendly, but a few unlucky keys end up far from their home slot. The average probe length may look fine while the <strong>worst case and the variance are large</strong>, and every miss must scan a long cluster. Robin Hood hashing keeps the same memory layout but changes who wins a contested slot.</p>
+<h4>The rule</h4>
+<p>Each stored entry remembers its <strong>distance from its home bucket</strong> (DIB, also called probe sequence length). While inserting key <code>k</code> you walk forward from <code>hash(k) % capacity</code>, counting your own distance <code>d</code>:</p>
+<ol start="1"><li>If the slot is empty, place the entry there and stop.</li><li>If the resident has a <strong>smaller DIB</strong> than <code>d</code>, the resident is &quot;richer&quot; (closer to home). Swap: place the new entry here, then continue inserting the evicted resident with its own distance.</li><li>Otherwise move to the next slot and increment <code>d</code>.</li></ol>
+<pre><code>def insert(table, key, value):
+    i, d = hash(key) % len(table), 0
+    entry = (key, value, d)
+    while True:
+        slot = table[i]
+        if slot is None:
+            table[i] = (entry[0], entry[1], d); return
+        if slot[2] &lt; d:                    # resident is richer: steal its slot
+            table[i] = (entry[0], entry[1], d)
+            entry, d = slot, slot[2]       # keep inserting the evicted one
+        i, d = (i + 1) % len(table), d + 1</code></pre>
+<h4>Why variance drops</h4>
+<p>Total displacement is unchanged, but it is <strong>redistributed</strong> so that no entry is much farther from home than the others. Expected maximum probe length grows like <code>O(log n)</code> in practice instead of the long tail of plain linear probing, and the mean stays small even at high load factors (0.85 to 0.9 is workable).</p>
+<h4>Early termination on lookup</h4>
+<p>Because entries along a probe run are ordered by non-decreasing displacement from their own home, a lookup can stop as soon as it reaches a slot that is empty <strong>or whose DIB is smaller than the current probe distance</strong>: the key cannot be further along. Unsuccessful searches become much cheaper, which is where linear probing hurts most.</p>
+<h4>Deletion</h4>
+<p>Tombstones would break the early-exit invariant and pollute probe lengths. Use <strong>backward-shift deletion</strong>: remove the entry, then shift each following entry back by one slot while its DIB is greater than zero, stopping at an empty slot or an entry already at home.</p>
+<h4>Trade-offs and pitfalls</h4>
+<ul><li>Inserts do extra swapping work, and entries must store the DIB (a small integer) or recompute it from the hash.</li><li>Resizing at a threshold load factor is still required; rehash everything.</li><li>A weak hash function still causes clusters; Robin Hood only evens out the damage.</li><li>Used in practice in Rust&#39;s older <code>HashMap</code> and in several high-performance tables, but modern designs (SwissTable, F14) use SIMD group probing, which often wins on raw speed.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>Why can a lookup stop as soon as it meets an element whose probe distance is smaller than its own?</li><li>How does deletion work with backward-shift instead of tombstones?</li><li>How does it compare with cuckoo hashing and SwissTable?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-17">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-17%3A+Explain+Robin+Hood+hashing+and+how+stealing+from+the+rich+reduces%E2%80%A6&amp;question-id=gen-17&amp;context=Software+engineer+%28core%29%2C+Gear+3%2C+topic%3A+Data+structures%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-17.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

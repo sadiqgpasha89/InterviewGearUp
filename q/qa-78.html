@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you detect performance regressions automatically by tracking benchmark metrics across git commits? | InterviewGearUp</title>
+<meta name="description" content="Track benchmark and performance metrics per commit in a time-series store, run benchmarks on stable dedicated hardware with warmup and repeated samples,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-78.html">
+<meta property="og:title" content="How do you detect performance regressions automatically by tracking benchmark metrics across git commits? | InterviewGearUp">
+<meta property="og:description" content="Track benchmark and performance metrics per commit in a time-series store, run benchmarks on stable dedicated hardware with warmup and repeated samples,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-78.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you detect performance regressions automatically by tracking benchmark metrics across git commits?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 3 (Senior) · Performance · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Track benchmark and performance metrics per commit in a time-series store, run benchmarks on stable dedicated hardware with warmup and repeated samples, and compare each change against a baseline using statistical tests with tolerance thresholds rather than single runs. Fail or flag the PR on significant regressions, and use bisecting to find the offending commit when drift is noticed late.</p></div>
+<h4>Explained in depth</h4>
+<h4>What to measure</h4>
+<ul><li><strong>Microbenchmarks</strong> (function level): JMH (Java), <code>go test -bench</code>, <code>pytest-benchmark</code>, Criterion (Rust), BenchmarkDotNet, Google Benchmark, <code>benchmark.js</code>.</li><li><strong>Component and API performance</strong>: latency percentiles and throughput under fixed load (k6, Gatling, Locust) against a pinned build in a controlled environment.</li><li><strong>Resource metrics</strong>: CPU time, memory peak and allocations, bundle size, startup time, binary size, database query counts and durations, GC pauses.</li><li><strong>Frontend metrics</strong>: Lighthouse CI (LCP, TBT, CLS), bundle size budgets (<code>size-limit</code>), web vitals in synthetic tests.</li></ul>
+<p>Choose a small set that maps to user-visible or cost-impacting behaviour.</p>
+<h4>Making measurements reliable</h4>
+<ul><li><strong>Controlled environment</strong>: dedicated or isolated runners (bare metal or pinned VM size), consistent OS and CPU governor, no noisy neighbours, fixed dataset and configuration, same JDK or runtime version, disabled turbo variance where possible.</li><li><strong>Warm-up and repetitions</strong>: discard warm-up iterations (JIT), run multiple iterations and forks, record mean, median, p95, and variance; use <strong>instruction counts</strong> or allocations (deterministic) where time is too noisy (<code>perf stat</code>, cachegrind, Valgrind callgrind).</li><li><strong>A/B on the same machine</strong>: run baseline and candidate <strong>interleaved</strong> in the same job to cancel machine drift (this is how many compilers&#39; and browsers&#39; performance bots work).</li><li>Pin dependencies and seeds; isolate benchmarks from unrelated work.</li></ul>
+<h4>Storing and comparing</h4>
+<ol start="1"><li>On every merge to main, publish results to a <strong>time-series database or dashboard</strong> keyed by commit SHA, branch, benchmark name and environment (Grafana with Prometheus or InfluxDB, <code>github-action-benchmark</code>, Bencher, Codspeed, Speedscope, custom).</li><li>On pull requests, run the same benchmarks and <strong>compare against the base commit&#39;s result</strong> (or a rolling median of the last N main runs).</li><li>Decision rule: flag a regression if the change is <strong>both practically large</strong> (for example more than 5 to 10 percent slower) <strong>and statistically significant</strong>. Statistical options: Mann-Whitney U test or t-test across repeated runs, confidence intervals of the ratio, <strong>change-point detection</strong> (E-Divisive, used by MongoDB&#39;s performance CI) for gradual drift, control charts.</li></ol>
+<pre><code># GitHub Actions with github-action-benchmark (excerpt)
+- run: go test -bench=. -benchmem -count=10 ./... | tee bench.txt
+- uses: benchmark-action/github-action-benchmark@v1
+  with: { tool: go, output-file-path: bench.txt, alert-threshold: &#39;110%&#39;, fail-on-alert: true, comment-on-alert: true, github-token: &#39;${{ secrets.GITHUB_TOKEN }}&#39; }</code></pre>
+<ol start="4"><li><strong>Budgets</strong>: hard limits for critical metrics (API p95 under 300 ms, bundle under 250 KB) that fail the build regardless of trend.</li></ol>
+<h4>Handling findings</h4>
+<ul><li>Surface results in the PR (comment with a table of before and after, charts, links to profiles); attach CPU and memory <strong>profiles</strong> (pprof, async-profiler, flame graphs) automatically for regressions.</li><li>Allow <strong>approved exceptions</strong> with explanation (intentional trade-off), and update baselines deliberately.</li><li><strong>Bisect</strong> when a regression is found late: <code>git bisect run ./bench-check.sh</code> where the script runs the benchmark and exits non-zero beyond the threshold; automated tools bisect nightly results to the first bad commit.</li><li>Track <strong>trend over releases</strong> and long-term drift (&quot;boiling frog&quot; regressions of 1 percent per week).</li></ul>
+<h4>Production correlation</h4>
+<p>Combine synthetic checks with <strong>real-user and production metrics</strong> (APM, RUM, canary analysis with Kayenta or Argo Rollouts), because benchmarks cannot cover every workload; compare canary versus baseline latency and error rates automatically before full rollout.</p>
+<h4>Pitfalls</h4>
+<p>Single-run comparisons, benchmarking on shared noisy runners without repetition, comparing against stale baselines, thresholds that cause constant false alarms (people ignore them), benchmarks that test something users do not care about, and failing to keep benchmark data realistic.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you make benchmark results stable enough on noisy shared CI runners?</li><li>Which statistical methods separate real regressions from noise?</li><li>How do you automatically bisect a regression to a specific commit?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-78">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-78%3A+How+do+you+detect+performance+regressions+automatically+by+tracking%E2%80%A6&amp;question-id=qa-78&amp;context=QA+%2F+SDET%2C+Gear+3%2C+topic%3A+Performance%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-78.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

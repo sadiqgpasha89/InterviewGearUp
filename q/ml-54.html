@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does Inverted File Index with Product Quantization (IVF-PQ) compress billion-scale vector indexes? | InterviewGearUp</title>
+<meta name="description" content="IVF-PQ combines two ideas. The inverted file index clusters vectors with k-means into nlist cells and searches only the nprobe nearest cells. Product…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-54.html">
+<meta property="og:title" content="How does Inverted File Index with Product Quantization (IVF-PQ) compress billion-scale vector indexes? | InterviewGearUp">
+<meta property="og:description" content="IVF-PQ combines two ideas. The inverted file index clusters vectors with k-means into nlist cells and searches only the nprobe nearest cells. Product…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-54.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does Inverted File Index with Product Quantization (IVF-PQ) compress billion-scale vector indexes?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · RAG · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>IVF-PQ combines two ideas. The inverted file index clusters vectors with k-means into nlist cells and searches only the nprobe nearest cells. Product quantization splits each vector into m sub-vectors, each replaced by a one-byte codebook id, compressing a 768-dimensional float vector from about 3 KB to tens of bytes, with distances computed from lookup tables.</p></div>
+<h4>Explained in depth</h4>
+<h4>The scaling problem</h4>
+<p>One billion 768-dimensional float32 embeddings occupy about <strong>3 TB</strong> of RAM, and brute-force search is O(N). Graph indexes such as HNSW need the full vectors plus links in memory. IVF-PQ reduces both <strong>compute</strong> (searching a small fraction of vectors) and <strong>memory</strong> (compressed codes).</p>
+<h4>IVF: inverted file index (coarse quantisation)</h4>
+<ol start="1"><li><strong>Train</strong> k-means on a sample to get <code>nlist</code> centroids (for example 4096 to 262,144 for a billion vectors, about √N is a common start).</li><li><strong>Assign</strong> each vector to its nearest centroid and store it in that centroid&#39;s <strong>inverted list</strong>.</li><li><strong>Query</strong>: find the <code>nprobe</code> nearest centroids to the query, then scan only the vectors in those lists (about <code>nprobe/nlist</code> of the data).</li></ol>
+<p>Higher <code>nprobe</code> raises recall and latency. Vectors close to a cell boundary may fall in a different cell than the query probes, so recall is below 100 percent. Often vectors are stored as <strong>residuals</strong> (vector minus centroid) to improve quantisation accuracy.</p>
+<h4>PQ: product quantization (compression)</h4>
+<ol start="1"><li>Split each D-dimensional vector into <code>m</code> sub-vectors of dimension D/m (for example 768 → m = 96 sub-vectors of 8 dims).</li><li>For each subspace, run k-means with <code>2^nbits</code> centroids (typically 256 for 8 bits) to build a <strong>codebook</strong>.</li><li><strong>Encode</strong> each sub-vector as the index of its nearest sub-centroid. A vector becomes <code>m</code> bytes (96 bytes versus 3072 bytes: <strong>32x compression</strong>), code size = <code>m × nbits / 8</code>.</li><li><strong>Asymmetric distance computation (ADC)</strong>: for a query, precompute a <strong>lookup table</strong> of distances between each query sub-vector and each of the 256 centroids in that subspace (<code>m × 256</code> entries). The distance to any encoded vector is the <strong>sum of m table lookups</strong>, with no decompression. This is very fast and SIMD-friendly (FAISS fast scan with 4-bit codes).</li></ol>
+<p>The effective number of representable vectors is <code>256^m</code>, giving fine granularity from small codebooks.</p>
+<h4>Putting it together</h4>
+<pre><code>import faiss
+d, nlist, m, nbits = 768, 65536, 96, 8
+quantizer = faiss.IndexFlatL2(d)                       # coarse quantizer
+index = faiss.IndexIVFPQ(quantizer, d, nlist, m, nbits)
+index.train(train_vectors)                              # k-means for nlist + PQ codebooks (e.g. 10-50M samples)
+index.add(vectors)
+index.nprobe = 64
+D, I = index.search(queries, 100)                       # candidate ids, then optionally rerank</code></pre>
+<p>Memory per vector ≈ <code>m</code> bytes + id (8 bytes), so 1B vectors ≈ <strong>100 GB</strong> instead of 3 TB, which fits on a few machines or even disk-based setups.</p>
+<h4>Trade-offs and tuning</h4>
+<ul><li><strong>Recall versus compression</strong>: PQ introduces quantisation error; more sub-vectors (<code>m</code>) or bits improve accuracy at higher memory. OPQ (rotation before PQ) reduces error.</li><li><strong>Re-ranking</strong>: retrieve a larger candidate set (for example top 1000) with PQ distances, then re-score with <strong>full-precision vectors</strong> from disk or object storage to restore accuracy (IVF-PQ with refine, <code>IndexRefineFlat</code>).</li><li><strong>Training data</strong> must resemble the production distribution; retrain when distribution drifts. Index build is expensive (k-means on large samples, GPU accelerated).</li><li><strong>Updates</strong>: adding vectors is easy, but deletions and centroid drift need periodic rebuilds.</li><li>Combine with <strong>sharding</strong>, GPU search (FAISS GPU, cuVS), and <strong>metadata filtering</strong> (filter lists or pre-filtering).</li><li>Alternatives: <strong>HNSW</strong> (high recall and speed but memory-hungry), <strong>DiskANN/Vamana</strong> (graph on SSD with PQ in RAM), <strong>ScaNN</strong> (anisotropic quantisation), <strong>binary quantisation</strong> (32x with Hamming), scalar quantisation (4x).</li></ul>
+<h4>Pitfalls</h4>
+<p>Too few probes for the dataset, training codebooks on non-representative samples, ignoring re-ranking, using inner product with PQ without normalisation consideration, and forgetting memory for the coarse quantiser and inverted lists.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do nlist, nprobe, m and nbits trade recall for memory and latency?</li><li>Why is a re-ranking step with full-precision vectors often added?</li><li>How does IVF-PQ compare with HNSW and DiskANN?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-54">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-54%3A+How+does+Inverted+File+Index+with+Product+Quantization+%28IVF-PQ%29%E2%80%A6&amp;question-id=ml-54&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+RAG%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-54.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

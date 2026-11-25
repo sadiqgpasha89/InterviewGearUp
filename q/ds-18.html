@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare L1 (lasso) and L2 (ridge) regularisation, and explain when you would use elastic net. | InterviewGearUp</title>
+<meta name="description" content="Both penalise large coefficients to reduce variance. Ridge adds the squared magnitude and shrinks coefficients smoothly without zeroing them, which helps…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-18.html">
+<meta property="og:title" content="Compare L1 (lasso) and L2 (ridge) regularisation, and explain when you would use elastic net. | InterviewGearUp">
+<meta property="og:description" content="Both penalise large coefficients to reduce variance. Ridge adds the squared magnitude and shrinks coefficients smoothly without zeroing them, which helps…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-18.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare L1 (lasso) and L2 (ridge) regularisation, and explain when you would use elastic net.</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 2 (Mid-level) · Modeling · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Both penalise large coefficients to reduce variance. Ridge adds the squared magnitude and shrinks coefficients smoothly without zeroing them, which helps with correlated features. Lasso adds the absolute value and drives some coefficients exactly to zero, giving feature selection. Elastic net combines the two and is a good default with groups of correlated predictors.</p></div>
+<h4>Explained in depth</h4>
+<h4>The idea</h4>
+<p>Ordinary least squares minimises the loss. <strong>Regularisation</strong> adds a penalty on coefficient size so the model prefers simpler solutions that generalise better, trading a little bias for a larger drop in variance.</p>
+<ul><li><strong>Ridge (L2)</strong>: minimise loss + lambda x sum(beta_j squared).</li><li><strong>Lasso (L1)</strong>: minimise loss + lambda x sum(|beta_j|).</li><li><strong>Elastic net</strong>: loss + lambda x [alpha x L1 + (1 - alpha)/2 x L2].</li></ul>
+<p>Lambda (called alpha or C-inverse in some libraries) controls strength: larger means more shrinkage; zero means no regularisation.</p>
+<h4>Behaviour differences</h4>
+<div class="md-table"><table><thead><tr><th></th><th>Ridge</th><th>Lasso</th><th>Elastic net</th></tr></thead><tbody><tr><td>Coefficients</td><td>shrunk towards zero, rarely exactly zero</td><td>many become exactly zero (sparse)</td><td>some exact zeros, grouped shrinkage</td></tr><tr><td>Feature selection</td><td>no</td><td><strong>yes</strong> (implicit)</td><td>yes</td></tr><tr><td>Correlated features</td><td>spreads weight across the group, stable</td><td>tends to pick one arbitrarily, unstable across samples</td><td>keeps groups together</td></tr><tr><td>p &gt; n (more features than rows)</td><td>works</td><td>selects at most n features</td><td>works well</td></tr><tr><td>Closed form</td><td>yes</td><td>no (coordinate descent)</td><td>no</td></tr><tr><td>Best when</td><td>many small effects, multicollinearity</td><td>few strong predictors, need interpretability</td><td>correlated predictors and want sparsity</td></tr></tbody></table></div>
+<h4>Geometric intuition</h4>
+<p>The loss has elliptical contours; the penalty defines a constraint region: a <strong>circle (L2)</strong> for ridge, a <strong>diamond with corners on the axes (L1)</strong> for lasso. The optimum is where the contour first touches the region. With a diamond, contact often happens at a corner, where some coordinates are zero, so L1 yields sparsity. A circle has no corners, so coefficients shrink but are rarely zero.</p>
+<h4>Bayesian view</h4>
+<p>Ridge corresponds to a <strong>Gaussian prior</strong> on coefficients (MAP estimate); lasso to a <strong>Laplace (double exponential) prior</strong>, which has a sharp peak at zero.</p>
+<h4>Practical steps</h4>
+<ol start="1"><li><strong>Standardise features</strong> (zero mean, unit variance) first, because the penalty depends on scale; otherwise variables with small units are penalised unfairly. Do not penalise the intercept.</li><li><strong>Choose lambda by cross-validation</strong> (<code>RidgeCV</code>, <code>LassoCV</code>, <code>ElasticNetCV</code>, <code>LogisticRegressionCV</code>), often using the one-standard-error rule for a simpler model. Plot the <strong>regularisation path</strong> of coefficients versus lambda.</li><li>Inspect the nonzero coefficients; for selection stability, check across bootstrap samples (stability selection).</li></ol>
+<pre><code>from sklearn.linear_model import ElasticNetCV
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+m = make_pipeline(StandardScaler(), ElasticNetCV(l1_ratio=[.1, .5, .9, 1], cv=5, n_alphas=100)).fit(X_tr, y_tr)
+print(dict(zip(cols, m[-1].coef_.round(3))), m[-1].alpha_, m[-1].l1_ratio_)</code></pre>
+<h4>Beyond linear regression</h4>
+<p>The same penalties apply to logistic regression, GLMs, neural networks (weight decay is L2), and SVMs. Tree models use other regularisers (depth, leaf size, learning rate, subsampling).</p>
+<h4>Cautions</h4>
+<p>Regularised coefficients are <strong>biased</strong>; do not read them as unbiased effects or use naive p-values (post-selection inference needs special methods). Lasso selection is for prediction, not proof of importance. Highly correlated features make the selected set arbitrary.</p>
+<h4>Pitfalls</h4>
+<p>Forgetting to scale, tuning lambda on the test set, comparing coefficients across differently scaled models, and treating zero coefficients as &quot;no effect&quot;.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does the L1 penalty produce sparse solutions while L2 does not, geometrically?</li><li>How do you choose the regularisation strength and why must features be standardised first?</li><li>What does regularisation correspond to in a Bayesian view?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-18">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-18%3A+Compare+L1+%28lasso%29+and+L2+%28ridge%29+regularisation%2C+and+explain+when%E2%80%A6&amp;question-id=ds-18&amp;context=Data+scientist%2C+Gear+2%2C+topic%3A+Modeling%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-18.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

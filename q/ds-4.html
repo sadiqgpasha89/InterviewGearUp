@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is a p-value, and what does it not tell you? | InterviewGearUp</title>
+<meta name="description" content="A p-value is the probability of seeing data at least as extreme as observed if the null hypothesis were true. It is not the probability that the null is…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-4.html">
+<meta property="og:title" content="What is a p-value, and what does it not tell you? | InterviewGearUp">
+<meta property="og:description" content="A p-value is the probability of seeing data at least as extreme as observed if the null hypothesis were true. It is not the probability that the null is…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-4.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is a p-value, and what does it not tell you?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 1 (Junior) · Statistics · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A p-value is the probability of seeing data at least as extreme as observed if the null hypothesis were true. It is not the probability that the null is true, not the size or importance of an effect, and not the chance the result will replicate. Report effect sizes and confidence intervals alongside it.</p></div>
+<h4>Explained in depth</h4>
+<h4>Definition</h4>
+<p>In a hypothesis test you assume a <strong>null hypothesis H0</strong> (no effect, no difference). You compute a <strong>test statistic</strong> from the data and ask: <strong>if H0 were true, how often would random sampling give a statistic at least this extreme?</strong> That probability is the <strong>p-value</strong>. A small p-value means the data are surprising under H0, so you reject H0 at a chosen <strong>significance level alpha</strong> (commonly 0.05).</p>
+<p>Example: an A/B test shows conversion 5.4 percent versus 5.0 percent, p = 0.03. If the true conversion rates were equal, random noise would produce a gap this large in about 3 percent of repeated experiments.</p>
+<h4>What it does not mean</h4>
+<div class="md-table"><table><thead><tr><th>Common claim</th><th>Reality</th></tr></thead><tbody><tr><td>&quot;There is a 3 percent chance H0 is true&quot;</td><td>wrong: p-value is computed <strong>assuming</strong> H0; P(H0 given data) needs a prior (Bayesian)</td></tr><tr><td>&quot;There is a 97 percent chance the effect is real&quot;</td><td>wrong for the same reason</td></tr><tr><td>&quot;A small p means a large or important effect&quot;</td><td>no: with huge samples, trivial effects reach p &lt; 0.001; judge by <strong>effect size</strong> and practical significance</td></tr><tr><td>&quot;p &gt; 0.05 means no effect&quot;</td><td>no: absence of evidence is not evidence of absence; the test may lack <strong>power</strong></td></tr><tr><td>&quot;p = 0.04 will replicate with probability 96 percent&quot;</td><td>no</td></tr><tr><td>&quot;The result is significant, so the model or effect is useful&quot;</td><td>usefulness needs cost and benefit</td></tr></tbody></table></div>
+<h4>Related ideas</h4>
+<ul><li><strong>Type I error</strong> (false positive) rate equals alpha when H0 is true. <strong>Type II error</strong> (false negative) rate is beta; <strong>power</strong> = 1 - beta.</li><li><strong>Confidence interval</strong>: a range of effect sizes compatible with the data; it shows magnitude and uncertainty at once. If the 95 percent CI excludes zero, the two-sided test at 0.05 rejects.</li><li><strong>Multiple comparisons</strong>: testing 20 hypotheses at 0.05 gives about a 64 percent chance of at least one false positive. Use Bonferroni, Holm or false discovery rate control.</li><li><strong>p-hacking and forking paths</strong>: trying many metrics, segments or stopping rules until p &lt; 0.05 inflates false positives. Prevent with <strong>pre-registered</strong> hypotheses, one primary metric, and fixed analysis plans.</li><li><strong>Optional stopping</strong>: peeking at a running experiment repeatedly invalidates a fixed-horizon p-value; use sequential methods.</li></ul>
+<pre><code>from scipy import stats
+t, p = stats.ttest_ind(treat, control, equal_var=False)
+diff = treat.mean() - control.mean()
+se = (treat.var(ddof=1)/len(treat) + control.var(ddof=1)/len(control)) ** 0.5
+ci = (diff - 1.96*se, diff + 1.96*se)       # report this too, not only p</code></pre>
+<h4>How to report</h4>
+<p>&quot;Variant B increased conversion by 0.4 percentage points (95 percent CI 0.05 to 0.75, p = 0.03, n = 120k per arm), which is worth about X per month.&quot; Include effect size, interval, sample size, and the decision.</p>
+<h4>Pitfalls</h4>
+<p>Treating 0.05 as a magic line, confusing statistical with practical significance, and ignoring power and multiplicity.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why can a tiny effect be statistically significant with a huge sample?</li><li>What is p-hacking and how do pre-registration and multiple-testing corrections help?</li><li>How does a confidence interval communicate more than a p-value?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-4">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-4%3A+What+is+a+p-value%2C+and+what+does+it+not+tell+you%3F&amp;question-id=ds-4&amp;context=Data+scientist%2C+Gear+1%2C+topic%3A+Statistics%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-4.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

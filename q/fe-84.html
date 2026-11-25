@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you build a design system component library with themeable design tokens? | InterviewGearUp</title>
+<meta name="description" content="A design system library builds accessible, composable components on top of design tokens (named values for colour, spacing, type, radius, motion) exposed…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-84.html">
+<meta property="og:title" content="How do you build a design system component library with themeable design tokens? | InterviewGearUp">
+<meta property="og:description" content="A design system library builds accessible, composable components on top of design tokens (named values for colour, spacing, type, radius, motion) exposed…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-84.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you build a design system component library with themeable design tokens?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 3 (Senior) · Architecture · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A design system library builds accessible, composable components on top of design tokens (named values for colour, spacing, type, radius, motion) exposed as CSS custom properties. Themes then swap token values at runtime without touching component code. Package, document, version and test it like a product.</p></div>
+<h4>Explained in depth</h4>
+<h4>Layers</h4>
+<ol start="1"><li><strong>Primitive (global) tokens</strong>: raw palette and scales such as <code>blue-500: #3b82f6</code>, <code>space-4: 16px</code>.</li><li><strong>Semantic (alias) tokens</strong>: meaning-based names such as <code>color-bg-surface</code>, <code>color-text-muted</code>, <code>color-action-primary</code>, mapped to primitives. Components use only semantic tokens.</li><li><strong>Component tokens</strong> (optional): <code>button-radius</code>, <code>input-border-color</code>, mapped to semantic tokens for fine overrides.</li></ol>
+<p>Theme switching changes the mapping of semantic tokens, never component code.</p>
+<pre><code>:root {
+  --blue-500: #3b82f6; --gray-900: #111827; --white: #fff;
+  --color-bg-surface: var(--white);
+  --color-text: var(--gray-900);
+  --color-action: var(--blue-500);
+  --space-4: 1rem; --radius-md: 8px;
+}
+[data-theme=&quot;dark&quot;] {
+  --color-bg-surface: #0b1220; --color-text: #e5e7eb; --color-action: #60a5fa;
+}
+.btn { background: var(--color-action); color: #fff; padding: var(--space-4); border-radius: var(--radius-md); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme]) { --color-bg-surface: #0b1220; } }</code></pre>
+<h4>Token pipeline</h4>
+<p>Author tokens in JSON (the W3C Design Tokens format) and generate CSS variables, JS and native platform outputs with <strong>Style Dictionary</strong>. This keeps design tools (Figma Variables) and code in sync.</p>
+<h4>Component architecture</h4>
+<ul><li>Headless behaviour plus styling: accessibility (focus management, ARIA, keyboard) built into primitives such as Radix, React Aria.</li><li>Composition over configuration: compound components (<code>Dialog.Root</code>, <code>Dialog.Trigger</code>), <code>asChild</code> patterns, polymorphic <code>as</code> props, refs forwarded.</li><li>Variants through typed APIs (<code>cva</code>, Stitches style): <code>size</code>, <code>intent</code>.</li><li>Support density, RTL (logical properties like <code>margin-inline-start</code>) and reduced motion.</li><li>Avoid CSS-in-JS runtime cost in server components; prefer static CSS, CSS Modules or vanilla-extract.</li></ul>
+<h4>Delivery</h4>
+<ul><li>Monorepo package with tree-shakable ESM, types, and per-component entry points; sideEffects flagged.</li><li>Documentation and playground in <strong>Storybook</strong>, with a11y checks (axe), visual regression tests (Chromatic or Playwright), unit tests with Testing Library.</li><li><strong>Semantic versioning</strong>, changesets, deprecation periods and codemods for breaking changes; publish changelogs.</li><li>Governance: contribution guide, design review, usage analytics.</li></ul>
+<h4>Pitfalls</h4>
+<p>Leaking primitive tokens into components (blocks theming), too many tokens, inaccessible colour contrast in themes (test AA), flash of wrong theme (set <code>data-theme</code> before paint with a blocking inline script), and over-configurable components.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What are the semantic versus primitive token layers and why separate them?</li><li>How do you support dark mode and multiple brands from one component set?</li><li>How do you version and release a component library without breaking consumers?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-84">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-84%3A+How+do+you+build+a+design+system+component+library+with+themeable%E2%80%A6&amp;question-id=fe-84&amp;context=Frontend+engineer%2C+Gear+3%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-84.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

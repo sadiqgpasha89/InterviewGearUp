@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare model rollout strategies: Shadow deployment, Canary deployment, and A/B testing in production. | InterviewGearUp</title>
+<meta name="description" content="Shadow deployment sends copies of live traffic to a new model whose predictions are logged but not returned to users, so it is risk-free but measures…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-64.html">
+<meta property="og:title" content="Compare model rollout strategies: Shadow deployment, Canary deployment, and A/B testing in production. | InterviewGearUp">
+<meta property="og:description" content="Shadow deployment sends copies of live traffic to a new model whose predictions are logged but not returned to users, so it is risk-free but measures…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-64.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare model rollout strategies: Shadow deployment, Canary deployment, and A/B testing in production.</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · MLOps · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Shadow deployment sends copies of live traffic to a new model whose predictions are logged but not returned to users, so it is risk-free but measures only agreement and system behaviour. A canary routes a small share of real traffic to the new model and expands gradually while watching metrics. An A/B test splits users into randomised groups to measure the causal effect on business outcomes.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why staged rollout</h4>
+<p>Offline metrics do not guarantee production behaviour: data differs, latency and resource usage change, feedback loops appear, and user impact is uncertain. Rollout strategies reduce risk and answer different questions.</p>
+<h4>Shadow deployment (dark launch)</h4>
+<ul><li><strong>How</strong>: the router duplicates each production request to the candidate model (asynchronously); the <strong>champion&#39;s response is returned</strong> to the user, while the candidate&#39;s output is logged for comparison.</li><li><strong>Learns</strong>: system health (latency, memory, errors, throughput under real traffic), prediction distributions, agreement and disagreement with the champion, offline evaluation once labels arrive, feature pipeline correctness (train-serve skew).</li><li><strong>Risk</strong>: none to users (only extra compute cost, and side effects must be disabled).</li><li><strong>Limits</strong>: cannot measure <strong>user behaviour impact</strong> (clicks, conversion) because users never see its outputs; in interactive systems the model&#39;s decisions would change future data (feedback loop), which shadow cannot capture.</li><li>Best for: first validation of a new model or infrastructure, high-risk domains (credit, fraud), and migrations.</li></ul>
+<h4>Canary deployment</h4>
+<ul><li><strong>How</strong>: route a small percentage (1, 5, 10, 25, 50, 100 percent) of live traffic to the new version; increase if guardrail metrics stay healthy; otherwise roll back.</li><li><strong>Learns</strong>: real-world technical and quality signals with limited blast radius: error rate, latency percentiles, model score distributions, downstream business guardrails, user complaints.</li><li>Selection: random by request, or by user hash for consistency, region or tenant. Automated analysis (Argo Rollouts, Flagger, Istio, SageMaker deployment guardrails, Seldon) compares canary against baseline with statistical checks and <strong>auto-rollback</strong> on SLO violations.</li><li>Not designed for causal inference of long-term metrics; groups are small and not always randomised.</li></ul>
+<h4>A/B testing (online controlled experiment)</h4>
+<ul><li><strong>How</strong>: <strong>randomly assign</strong> users (or sessions or entities) to control (A, current model) and treatment (B, new model) for a planned duration and sample size; compare <strong>primary business metrics</strong> (conversion, revenue per user, retention, fraud loss) plus guardrails.</li><li><strong>Learns</strong>: <strong>causal effect</strong> of the model on outcomes with statistical significance.</li><li>Needs: sound <strong>experiment design</strong> (hypothesis, minimum detectable effect, power analysis, sample size, duration covering weekly cycles), consistent assignment, <strong>sample ratio mismatch (SRM) checks</strong>, no peeking-driven false positives (use sequential testing or fixed horizon), correction for multiple metrics, novelty effects, interference between users (marketplaces, social networks: use cluster or switchback designs).</li><li>Variants: multi-armed bandits for adaptive allocation, interleaving experiments for ranking, <strong>holdout groups</strong> for long-term effects.</li></ul>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th></th><th>Shadow</th><th>Canary</th><th>A/B test</th></tr></thead><tbody><tr><td>Users affected</td><td>none</td><td>small share</td><td>split (often 50/50)</td></tr><tr><td>Question</td><td>does it run safely, what would it predict?</td><td>is it safe at scale?</td><td>is it better for the business?</td></tr><tr><td>Output served</td><td>no</td><td>yes</td><td>yes</td></tr><tr><td>Duration</td><td>days</td><td>hours to days</td><td>days to weeks</td></tr><tr><td>Statistical rigour</td><td>descriptive</td><td>guardrail checks</td><td>causal inference</td></tr></tbody></table></div>
+<h4>Typical sequence</h4>
+<p>Offline evaluation → <strong>shadow</strong> → <strong>canary</strong> with automated guardrails → <strong>A/B test</strong> to prove benefit → full rollout with a <strong>holdout</strong> and rollback plan. Keep the old model warm, version everything (model, features, config), use feature flags, monitor drift after launch, and document decisions.</p>
+<h4>Pitfalls</h4>
+<p>Skipping shadow for infrastructure changes, canary with too little traffic to detect issues, ending A/B tests early on a good-looking day, contamination between groups, and neglecting segment effects (overall flat but negative for a key cohort).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>When is shadow mode not enough to validate a model?</li><li>How do you guard against sample ratio mismatch and peeking in A/B tests?</li><li>How do you roll back automatically if a canary degrades?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-64">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-64%3A+Compare+model+rollout+strategies%3A+Shadow+deployment%2C+Canary%E2%80%A6&amp;question-id=ml-64&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+MLOps%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-64.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do distributed tracing systems correlate requests across microservices using W3C Trace Context? | InterviewGearUp</title>
+<meta name="description" content="Distributed tracing correlates a request across services by propagating a trace context in headers. W3C Trace Context defines traceparent (version, trace…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-42.html">
+<meta property="og:title" content="How do distributed tracing systems correlate requests across microservices using W3C Trace Context? | InterviewGearUp">
+<meta property="og:description" content="Distributed tracing correlates a request across services by propagating a trace context in headers. W3C Trace Context defines traceparent (version, trace…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-42.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do distributed tracing systems correlate requests across microservices using W3C Trace Context?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · Observability · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Distributed tracing correlates a request across services by propagating a trace context in headers. W3C Trace Context defines traceparent (version, trace id, parent span id, flags) and tracestate. Each service creates spans as children of the incoming span, exports them to a collector, and the backend assembles the tree by trace id and parent id.</p></div>
+<h4>Explained in depth</h4>
+<h4>Concepts</h4>
+<ul><li><strong>Trace</strong>: the full journey of one request, identified by a 16-byte <code>trace-id</code>.</li><li><strong>Span</strong>: one unit of work (an HTTP handler, DB query, outbound call) with a span id, parent span id, name, start time, duration, attributes, events and status.</li><li><strong>Context propagation</strong>: passing the identifiers between processes.</li></ul>
+<h4>W3C Trace Context</h4>
+<pre><code>traceparent: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01
+             ver  trace-id (32 hex)               parent-id (16 hex) flags (01 = sampled)
+tracestate: vendor1=opaque,vendor2=value        # vendor-specific data</code></pre>
+<p>The standard replaces proprietary headers (B3, X-Cloud-Trace-Context, X-Amzn-Trace-Id) so different vendors and languages interoperate. <code>baggage</code> header (W3C Baggage) carries user key-values such as tenant id across services.</p>
+<h4>Flow</h4>
+<ol start="1"><li>The edge service receives a request without <code>traceparent</code>, generates a new trace id and a root span.</li><li>When calling service B, it injects <code>traceparent</code> with its <strong>current span id as the parent</strong> into the outgoing request.</li><li>Service B extracts the header, starts a new span with the same trace id and that parent, and continues the chain.</li><li>Each service exports finished spans (OTLP) to an <strong>OpenTelemetry Collector</strong>, which batches, samples and forwards them to a backend (Jaeger, Tempo, Zipkin, Datadog, Honeycomb).</li><li>The backend groups spans by trace id and builds the tree using parent ids, showing latency per hop and errors.</li></ol>
+<pre><code>// OpenTelemetry (Node): auto-instrumentation handles HTTP, gRPC, DB
+const { NodeSDK } = require(&#39;@opentelemetry/sdk-node&#39;);
+const sdk = new NodeSDK({ traceExporter: new OTLPTraceExporter(), instrumentations: [getNodeAutoInstrumentations()] });
+sdk.start();
+const span = tracer.startSpan(&#39;charge-card&#39;, { attributes: { &#39;order.id&#39;: id } });</code></pre>
+<h4>Beyond HTTP</h4>
+<ul><li><strong>Messaging</strong>: inject the context into message headers on publish, extract it on consume; use span links for batch consumers that process many messages from different traces.</li><li><strong>Async and threads</strong>: use context-aware executors, <code>AsyncLocalStorage</code> (Node), <code>ContextVar</code> (Python), or Go <code>context.Context</code> so the current span follows the logic flow.</li><li><strong>Browser to backend</strong>: propagate from the frontend (fetch instrumentation) for end-to-end visibility.</li></ul>
+<h4>Sampling and cost</h4>
+<p>Tracing everything is expensive. <strong>Head-based</strong> sampling decides at the root (for example 5 percent) and the decision propagates in the flags, which is cheap but may miss rare errors. <strong>Tail-based</strong> sampling in the collector keeps traces after seeing the complete result (all errors, slow requests, plus a baseline). Use consistent sampling so parents and children agree.</p>
+<h4>Correlation</h4>
+<p>Put <code>trace_id</code> and <code>span_id</code> into structured logs and use exemplars on metrics, so you can jump from an alert to a trace to the related logs.</p>
+<h4>Pitfalls</h4>
+<p>Broken propagation at proxies, queues or custom clients (orphan traces), high-cardinality attributes, sensitive data in span attributes (PII, tokens), clock skew between hosts, and missing instrumentation for third-party calls.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you propagate context across async boundaries such as message queues?</li><li>How does head-based sampling differ from tail-based sampling?</li><li>How do traces, metrics and logs connect through the trace id?</li></ul>
+<p><a class="btn primary" href="../#/q/be-42">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-42%3A+How+do+distributed+tracing+systems+correlate+requests+across%E2%80%A6&amp;question-id=be-42&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+Observability%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-42.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

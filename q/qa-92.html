@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you test infinite scroll lists and virtualized DOM components without missing scrolled elements? | InterviewGearUp</title>
+<meta name="description" content="For infinite and virtualized lists, drive scrolling deliberately and assert against the data model, not the DOM size. Scroll the container step by step…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-92.html">
+<meta property="og:title" content="How do you test infinite scroll lists and virtualized DOM components without missing scrolled elements? | InterviewGearUp">
+<meta property="og:description" content="For infinite and virtualized lists, drive scrolling deliberately and assert against the data model, not the DOM size. Scroll the container step by step…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-92.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you test infinite scroll lists and virtualized DOM components without missing scrolled elements?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 2 (Mid-level) · UI Automation · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>For infinite and virtualized lists, drive scrolling deliberately and assert against the data model, not the DOM size. Scroll the container step by step until the target appears or the end indicator shows, wait for new items or network pages after each step, and verify count through the API, since virtualization keeps only visible rows in the DOM.</p></div>
+<h4>Explained in depth</h4>
+<h4>How these components work</h4>
+<ul><li><strong>Infinite scroll</strong> loads another page when the user nears the bottom (IntersectionObserver or scroll event) and appends items; the DOM grows.</li><li><strong>Virtualized or windowed lists</strong> (react-window, react-virtualized, TanStack Virtual, Angular CDK virtual scroll, AG Grid) render only rows in the viewport plus a buffer; rows are <strong>recycled</strong> as you scroll, so most items do not exist in the DOM.</li></ul>
+<p>Consequences: a locator for a row far down the list matches nothing until you scroll; counting <code>li</code> elements gives the number rendered, not the total; element references go stale as nodes are recycled.</p>
+<h4>Strategies</h4>
+<ol start="1"><li><strong>Scroll until found, with a limit and a progress check</strong>:</li></ol>
+<pre><code>async function scrollToItem(page, container, itemLocator, maxScrolls = 50) {
+  for (let i = 0; i &lt; maxScrolls; i++) {
+    if (await itemLocator.count() &gt; 0 &amp;&amp; await itemLocator.first().isVisible()) return itemLocator.first();
+    const before = await container.evaluate(el =&gt; el.scrollTop);
+    await container.evaluate(el =&gt; el.scrollBy(0, el.clientHeight * 0.8));    // one page at a time
+    await page.waitForResponse(r =&gt; r.url().includes(&#39;/api/items&#39;) || true, { timeout: 1000 }).catch(() =&gt; {});   // optionally wait for page load
+    await page.waitForTimeout(100);                                            // short settle for rendering (prefer waiting on a condition)
+    const after = await container.evaluate(el =&gt; el.scrollTop);
+    if (after === before) break;                                              // reached the end
+  }
+  throw new Error(&#39;item not found after scrolling&#39;);
+}
+const row = await scrollToItem(page, page.locator(&#39;#list&#39;), page.getByText(&#39;Order #4821&#39;));
+await expect(row).toBeVisible();</code></pre>
+<p>Replace the fixed pause with a <strong>condition</strong>: wait for the number of items to change (<code>expect.poll(() =&gt; rows.count()).toBeGreaterThan(prev)</code>), the spinner to disappear, or a network response.</p>
+<ol start="2"><li><strong>Use <code>scrollIntoViewIfNeeded</code> or keyboard</strong> (<code>End</code>, <code>PageDown</code>) for simple lists; for pointer-based triggers use <code>mouse.wheel(0, 1200)</code>. For IntersectionObserver sentinels scroll the <strong>sentinel</strong> into view.</li><li><strong>Prefer data-level assertions</strong>: call the API with the same filters and verify the expected item exists and the UI shows items in the right order; jump directly to a target in virtualized lists through app features (search, deep link with item id, &quot;scroll to index&quot; API exposed in test mode).</li><li><strong>Verify totals without enumerating the DOM</strong>: read the count label (&quot;1,248 results&quot;), compare with the API total, or capture page requests (number of pages loaded, <code>hasNextPage</code> false at the end) and sum items from responses.</li><li><strong>Collect visible items iteratively</strong> if you must validate everything: scroll, read the ids of visible rows, add to a set, repeat until the end; assert the set equals the expected ids (no duplicates, no gaps, no missing items at page boundaries).</li><li><strong>Mock paging</strong> for determinism: route the API with fixed pages so scroll tests do not depend on live data; include an empty final page and an error page to test retry UI.</li></ol>
+<h4>What to verify</h4>
+<ul><li>New items appear after reaching the threshold; loading indicator displays then disappears; <strong>no duplicate</strong> items when requests overlap; correct ordering; stable sort on cursor pagination when items are inserted.</li><li>End-of-list message (&quot;You&#39;re all caught up&quot;); empty state; error and retry on page failure (abort a route); slow network behaviour (throttle) and rapid scrolling cancels or merges requests.</li><li><strong>Scroll position restoration</strong> after navigating to a detail view and back; keyboard accessibility (focus management, &quot;Load more&quot; alternative button for accessibility, <code>aria-busy</code>, live region announcements); screen reader row indexes (<code>aria-rowcount</code>, <code>aria-rowindex</code> in grids).</li><li><strong>Performance</strong>: DOM node count stays bounded in virtualized lists (assert row count within a limit while scrolling thousands of items), frame rate and memory (Chrome tracing), no layout shift.</li><li>Variable row heights and dynamic content, sticky headers, horizontal virtualization in grids, resize and orientation changes.</li></ul>
+<h4>Pitfalls</h4>
+<p>Counting DOM nodes as the total, storing row element handles across scrolls, fixed sleeps, endless loops with no progress check, scrolling the window when the scrollable element is an inner container, and tests that depend on live data that changes order.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you find an item deep in a virtualized list without scrolling blindly?</li><li>How do you verify the total number of items when only a window of rows exists in the DOM?</li><li>How do you test scroll position restoration and loading indicators?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-92">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-92%3A+How+do+you+test+infinite+scroll+lists+and+virtualized+DOM+components%E2%80%A6&amp;question-id=qa-92&amp;context=QA+%2F+SDET%2C+Gear+2%2C+topic%3A+UI+Automation%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-92.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

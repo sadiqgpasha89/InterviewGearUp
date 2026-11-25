@@ -33,21 +33,37 @@
       function index() {
         const all = store.get('coding', {});
         fill(root, h('h1', null, 'Coding lab'),
-          h('p', { class: 'lede' }, 'Small problems you solve in JavaScript. Your code runs in an isolated worker in your browser, with no network or page access and a 3 second limit. Hints and solutions stay hidden until you ask.'),
+          h('p', { class: 'lede' }, 'Small problems you solve in your own core language: JavaScript, TypeScript, Python, Java, C++, Go or C#. Pick the language on any problem. JavaScript code runs against tests in an isolated worker in your browser (no network or page access, 3 second limit). Other languages are editor-only practice. If you get stuck, press Show solution and it appears in the language you chose.'),
           IGU.coding.supported() ? null : h('p', { class: 'notice' }, 'This browser cannot run the isolated worker, so the lab is editor-only: write your solution and check it against the examples yourself.'),
           h('ul', { class: 'design-list' }, IGU.codingProblems.map(function (p) {
             const st = all[p.id] || {};
             return h('li', null, h('a', { href: '#/coding?p=' + p.id }, h('strong', null, p.title)),
-              h('div', { class: 'muted small-text' }, p.topic + ' · ' + p.difficulty + ' · JavaScript'),
+              h('div', { class: 'muted small-text' }, p.topic + ' · ' + p.difficulty),
               st.status === 'solved' ? h('span', { class: 'pill conf-high' }, 'solved') : st.runs ? h('span', { class: 'pill conf-medium' }, 'attempted') : null);
           })),
-          h('p', { class: 'muted small-text' }, 'Only JavaScript is supported: there is no safe in-browser runtime bundled for other languages. All problems and solutions are AI-drafted and not yet reviewed by a person.'));
+          h('p', { class: 'muted small-text' }, 'Only JavaScript can be run here: there is no safe in-browser runtime bundled for the other languages, so check those against the listed test cases yourself. All problems and solutions are AI-drafted and not yet reviewed by a person.'));
       }
 
       function lab(p, mode) {
         const all = store.get('coding', {});
         const st = Object.assign({ code: '', status: '', runs: 0, hints: 0 }, all[p.id]);
-        const save = function () { const cur = store.get('coding', {}); cur[p.id] = { code: String(st.code).slice(0, IGU.coding.MAX_CODE), status: st.status, runs: st.runs, hints: st.hints, at: new Date().toISOString() }; store.set('coding', cur); };
+        // Code is kept per language so switching never loses work. `code` stays the JavaScript text for older backups.
+        const codes = {};
+        if (st.codes && typeof st.codes === 'object') Object.keys(st.codes).forEach(function (k) { if (typeof st.codes[k] === 'string') codes[k] = st.codes[k]; });
+        if (st.code && !codes.javascript) codes.javascript = st.code;
+        const LANGS = IGU.codingLanguages, extra = IGU.codingLangs[p.id] || {};
+        const findLang = function (id) { return LANGS.filter(function (l) { return l.id === id; })[0]; };
+        let lang = (findLang(store.get('codingLang', 'javascript')) || LANGS[0]).id;
+        const starterFor = function (l) { return l === 'javascript' ? p.starter : (extra[l] && extra[l].starter) || p.starter; };
+        const solutionFor = function (l) { return l === 'javascript' ? p.solution.code : (extra[l] && extra[l].code) || ''; };
+        const canRun = function () { return lang === 'javascript' && IGU.coding.supported(); };
+        const save = function () {
+          const cur = store.get('coding', {});
+          const out = {};
+          Object.keys(codes).forEach(function (k) { out[k] = String(codes[k]).slice(0, IGU.coding.MAX_CODE); });
+          cur[p.id] = { code: out.javascript || '', codes: out, status: st.status, runs: st.runs, hints: st.hints, at: new Date().toISOString() };
+          store.set('coding', cur);
+        };
         let timer = null, deadline = 0, timeUp = false, gaveUp = false, timeout = null;
         u.setCleanup(function () { if (timer) clearInterval(timer); clearTimeout(timeout); });
 
@@ -55,8 +71,8 @@
         const hintBox = h('div', { 'aria-live': 'polite' });
         const solBox = h('div', { 'aria-live': 'polite' });
         const clockEl = h('span', { class: 'timer', role: 'timer', 'aria-label': 'Time remaining' }, '');
-        const editor = h('textarea', { id: 'code', class: 'code-editor', rows: '14', spellcheck: 'false', autocapitalize: 'off', autocomplete: 'off', 'aria-label': 'Your JavaScript solution. Press Control plus Enter to run the tests.' });
-        editor.value = st.code || p.starter;
+        const editor = h('textarea', { id: 'code', class: 'code-editor', rows: '14', spellcheck: 'false', autocapitalize: 'off', autocomplete: 'off', 'aria-label': 'Your solution. In JavaScript, press Control plus Enter to run the tests.' });
+        editor.value = codes[lang] || starterFor(lang);
 
         const paintHints = function () {
           fill(hintBox, st.hints ? h('ol', { class: 'hint-list' }, p.hints.slice(0, st.hints).map(function (x) { return h('li', null, x); })) : null,
@@ -65,21 +81,25 @@
         const solutionAllowed = function () { return mode === 'review' || st.status === 'solved' || gaveUp || (mode === 'timed' ? timeUp : false) || (mode === 'practice' && false); };
         const paintSolution = function () {
           if (!solutionAllowed()) {
-            fill(solBox, h('button', { class: 'btn small ghost', type: 'button', onclick: function () {
-              if (!confirm(mode === 'timed' ? 'End the timed attempt and show the solution?' : 'Show the solution? Try the hints first if you have not.')) return;
+            fill(solBox, h('button', { class: 'btn small primary', type: 'button', onclick: function () {
+              if (mode === 'timed' && !confirm('End the timed attempt and show the solution?')) return;
               gaveUp = true; paintSolution();
-            } }, 'Show solution'));
+            } }, 'Show solution (' + findLang(lang).label + ')'));
             return;
           }
+          const code = solutionFor(lang);
           fill(solBox, h('h2', null, 'Solution walkthrough'), md(p.solution.explanation), h('p', null, h('strong', null, 'Complexity: '), p.solution.complexity),
             h('p', null, h('strong', null, 'Edge cases: ')), h('ul', null, p.solution.edgeCases.map(function (x) { return h('li', null, x); })),
-            h('pre', { class: 'code' }, p.solution.code), h('p', { class: 'muted small-text' }, 'AI-drafted reference solution, not yet reviewed by a person. Other correct solutions exist.'));
+            h('h3', null, 'Solution in ' + findLang(lang).label),
+            code ? h('pre', { class: 'code', 'data-lang': lang }, code) : h('p', { class: 'notice' }, 'No ' + findLang(lang).label + ' solution is available for this problem yet. Pick another language to see one.'),
+            h('p', { class: 'muted small-text' }, 'AI-drafted reference solution' + (lang === 'csharp' ? ' (not compiled or run)' : '') + ', not yet reviewed by a person. Other correct solutions exist.'));
         };
 
         const run = async function () {
-          st.code = editor.value; st.runs++; save();
+          if (!canRun()) return;
+          codes[lang] = editor.value; st.code = codes.javascript || ''; st.runs++; save();
           fill(results, h('p', { class: 'muted' }, 'Running...'));
-          const r = await IGU.coding.run(st.code, p);
+          const r = await IGU.coding.run(codes.javascript, p);
           const wasSolved = st.status === 'solved';
           if (r.state === 'done' && !r.error && r.passed === r.total) st.status = 'solved'; else if (!wasSolved) st.status = 'attempted';
           save(); if (st.status === 'solved' && !wasSolved) u.touchActivity();
@@ -93,8 +113,34 @@
             r.logs.length ? h('details', null, h('summary', null, 'Console output (' + r.logs.length + ')'), h('pre', { class: 'code' }, r.logs.join('\n'))) : null);
           paintSolution();
         };
-        editor.addEventListener('input', function () { st.code = editor.value; clearTimeout(timeout); timeout = setTimeout(save, 400); });
+        editor.addEventListener('input', function () { codes[lang] = editor.value; clearTimeout(timeout); timeout = setTimeout(save, 400); });
         editor.addEventListener('keydown', function (ev) { if ((ev.ctrlKey || ev.metaKey) && ev.key === 'Enter') { ev.preventDefault(); run(); } });
+
+        // Language switcher: keep each language's code, swap the editor, and repaint everything that depends on the language.
+        const controls = h('div'), actions = h('div');
+        const testList = function () {
+          return h('ul', null, p.tests.map(function (t) { return h('li', null, h('code', null, p.fn + '(' + t.args.map(function (a) { return JSON.stringify(a); }).join(', ') + ')'), ' should return ', h('code', null, JSON.stringify(t.expected))); }));
+        };
+        const paintControls = function () {
+          const langSel = h('select', { id: 'lang', 'aria-label': 'Programming language', onchange: function (ev) {
+            codes[lang] = editor.value; save();
+            lang = ev.target.value; store.set('codingLang', lang);
+            editor.value = codes[lang] || starterFor(lang);
+            fill(results);
+            paintControls(); paintSolution();
+            const again = document.getElementById('lang'); if (again) again.focus();
+          } }, LANGS.map(function (l) { return h('option', { value: l.id, selected: l.id === lang }, l.label + (l.runnable ? ' (runs tests)' : ' (editor only)')); }));
+          fill(controls,
+            h('p', null, h('label', { for: 'lang' }, 'Language '), langSel),
+            lang !== 'javascript' ? h('p', { class: 'notice' }, 'Tests only run for JavaScript. In ' + findLang(lang).label + ' write your solution in the editor and compare it with the test cases below. Stuck? Press Show solution to see it in ' + findLang(lang).label + '.') : null,
+            lang === 'javascript' && !IGU.coding.supported() ? h('p', { class: 'notice' }, 'Editor-only: this browser cannot run the isolated worker. Check your code against the tests below by hand.') : null);
+          fill(actions,
+            h('div', { class: 'q-actions' },
+              canRun() ? h('button', { class: 'btn primary', type: 'button', onclick: run }, 'Run tests') : null,
+              h('button', { class: 'btn ghost', type: 'button', onclick: function () { if (confirm('Replace your ' + findLang(lang).label + ' code with the starter?')) { editor.value = starterFor(lang); codes[lang] = editor.value; save(); } } }, 'Reset code'),
+              canRun() ? h('span', { class: 'kbd-hint' }, h('kbd', null, 'Ctrl'), '+', h('kbd', null, 'Enter'), ' run') : null),
+            canRun() ? null : testList());
+        };
 
         if (mode === 'timed') {
           deadline = Date.now() + 20 * 60000;
@@ -109,24 +155,20 @@
         const modeLink = function (m, label) { return h('a', { class: 'btn small' + (m === mode ? ' primary' : ' ghost'), href: '#/coding?p=' + p.id + '&mode=' + m, 'aria-current': m === mode ? 'true' : null }, label); };
         fill(root,
           h('p', null, h('a', { href: '#/coding' }, '← All problems')),
-          h('h1', null, p.title), h('p', { class: 'muted small-text' }, p.topic + ' · ' + p.difficulty + ' · JavaScript'),
+          h('h1', null, p.title), h('p', { class: 'muted small-text' }, p.topic + ' · ' + p.difficulty),
           h('div', { class: 'q-actions' }, modeLink('practice', 'Practice'), modeLink('timed', 'Timed (20 min)'), modeLink('review', 'Review'), clockEl),
           md(p.statement),
           h('h2', null, 'Constraints'), h('ul', null, p.constraints.map(function (c) { return h('li', null, c); })),
           h('h2', null, 'Examples'), h('pre', { class: 'code' }, p.examples.map(function (e) { return e.input + '  // ' + e.output; }).join('\n')),
           mode === 'review' ? null : h('section', null,
             h('h2', null, 'Your solution'),
-            IGU.coding.supported() ? null : h('p', { class: 'notice' }, 'Editor-only: this browser cannot run the isolated worker. Check your code against the tests below by hand.'),
+            controls,
             editor,
-            h('div', { class: 'q-actions' },
-              IGU.coding.supported() ? h('button', { class: 'btn primary', type: 'button', onclick: run }, 'Run tests') : null,
-              h('button', { class: 'btn ghost', type: 'button', onclick: function () { if (confirm('Replace your code with the starter?')) { editor.value = p.starter; st.code = p.starter; save(); } } }, 'Reset code'),
-              h('span', { class: 'kbd-hint' }, h('kbd', null, 'Ctrl'), '+', h('kbd', null, 'Enter'), ' run')),
-            IGU.coding.supported() ? null : h('ul', null, p.tests.map(function (t) { return h('li', null, h('code', null, p.fn + '(' + t.args.map(function (a) { return JSON.stringify(a); }).join(', ') + ')'), ' should return ', h('code', null, JSON.stringify(t.expected))); })),
+            actions,
             results),
           mode === 'review' ? null : h('section', null, h('h2', null, 'Hints'), hintBox),
           h('section', null, solBox));
-        paintHints(); paintSolution();
+        paintControls(); paintHints(); paintSolution();
       }
     }
   };

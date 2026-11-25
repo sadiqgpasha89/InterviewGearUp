@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you build self-cleaning test fixtures that prevent test database pollution during parallel runs? | InterviewGearUp</title>
+<meta name="description" content="Make each test own its data: create uniquely named records through APIs or builders inside a fixture, register them for teardown, and delete them in…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-100.html">
+<meta property="og:title" content="How do you build self-cleaning test fixtures that prevent test database pollution during parallel runs? | InterviewGearUp">
+<meta property="og:description" content="Make each test own its data: create uniquely named records through APIs or builders inside a fixture, register them for teardown, and delete them in…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-100.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you build self-cleaning test fixtures that prevent test database pollution during parallel runs?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 2 (Mid-level) · Infrastructure · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Make each test own its data: create uniquely named records through APIs or builders inside a fixture, register them for teardown, and delete them in reverse order even when the test fails. Isolate parallel workers with per-worker schemas, tenants or databases, or wrap work in transactions, and add a janitor job that purges stale tagged data.</p></div>
+<h4>Explained in depth</h4>
+<h4>The problem</h4>
+<p>Parallel and repeated runs share a database. Without discipline you get <strong>test pollution</strong>: leftover rows from failed tests, name collisions (<code>user@example.com</code> already exists), tests that read each other&#39;s data, order-dependent results, and slow, flaky suites. The goal is <strong>isolation, determinism and automatic cleanup</strong>.</p>
+<h4>Principles</h4>
+<ol start="1"><li><strong>Each test creates what it needs</strong> (arrange via API, repository or builders), never relying on pre-existing mutable data; read-only reference data (countries, currencies, plans) is seeded once and treated as immutable.</li><li><strong>Unique identity</strong>: generate unique values per test (<code>user-${uuid}@test.local</code>, <code>order-${runId}-${workerIndex}-${counter}</code>); include a run ID and worker ID in names for traceability.</li><li><strong>Tag everything</strong>: add <code>created_by_test=true</code> and <code>test_run_id</code> columns or naming prefixes to allow safe bulk cleanup and to guarantee tests never delete production-like data.</li><li><strong>Cleanup in <code>finally</code></strong>: teardown runs even if assertions fail, in reverse dependency order (children before parents), and failures in cleanup are logged without hiding the test result.</li></ol>
+<h4>Self-cleaning fixtures</h4>
+<pre><code># pytest: fixture creates data, yields it, then removes it, even on failure
+@pytest.fixture
+def customer(api, cleanup):
+    c = api.create_customer(email=f&quot;cust-{uuid4()}@test.local&quot;, run_id=RUN_ID)
+    cleanup.register(lambda: api.delete_customer(c[&quot;id&quot;]))        # stack: executed LIFO in teardown
+    return c
+
+@pytest.fixture
+def cleanup():
+    actions = []
+    class Registry:
+        def register(self, fn): actions.append(fn)
+    yield Registry()
+    for fn in reversed(actions):
+        try: fn()
+        except Exception as e: logging.warning(&quot;cleanup failed: %s&quot;, e)</code></pre>
+<pre><code>// Playwright test fixtures with auto teardown
+export const test = base.extend&lt;{ order: Order }&gt;({
+  order: async ({ request }, use) =&gt; {
+    const order = await (await request.post(&#39;/api/orders&#39;, { data: buildOrder() })).json();
+    await use(order);                                             // test runs here
+    await request.delete(`/api/orders/${order.id}`);             // teardown always runs
+  },
+});</code></pre>
+<h4>Isolation strategies for parallel runs</h4>
+<div class="md-table"><table><thead><tr><th>Strategy</th><th>How</th><th>Pros</th><th>Cons</th></tr></thead><tbody><tr><td><strong>Transaction rollback</strong></td><td>open a transaction per test, roll back at the end</td><td>very fast, perfect cleanup</td><td>cannot test commit behaviour, multiple connections or async workers cannot see the data</td></tr><tr><td><strong>Truncate or delete between tests</strong></td><td>clear tables (in dependency order)</td><td>simple, deterministic</td><td>serial only unless each worker has its own database</td></tr><tr><td><strong>Database or schema per worker</strong></td><td><code>test_db_${WORKER}</code> created from a template database</td><td>true parallelism, full realism</td><td>setup cost, resource use</td></tr><tr><td><strong>Container per test class</strong></td><td>Testcontainers starts a fresh DB</td><td>strongest isolation</td><td>slower startup</td></tr><tr><td><strong>Tenant or namespace per test</strong></td><td>multi-tenant key, unique org per test</td><td>works against shared staging, parallel safe</td><td>requires tenant-scoped data model</td></tr><tr><td><strong>Unique data, no deletion</strong></td><td>tests only touch their own uniquely named data, janitor cleans later</td><td>simple, scalable</td><td>database grows, needs janitor</td></tr></tbody></table></div>
+<p>PostgreSQL <code>CREATE DATABASE worker_3 TEMPLATE seeded_template</code> clones a seeded schema in milliseconds; MySQL and others use snapshots or dump restore. Use <code>pytest-xdist</code> worker ids (<code>worker_id</code>) or <code>TEST_WORKER_INDEX</code> in Playwright to name resources.</p>
+<h4>Guarding against leaks</h4>
+<ul><li><strong>Janitor job</strong>: scheduled task deleting rows tagged as test data older than N hours (and storage objects, queues, users in identity provider, emails in sinks, feature flags), with safeguards (environment check, dry run, limits).</li><li><strong>Global setup and teardown</strong>: set up shared infrastructure once; teardown also runs in a CI <code>always()</code> step; a crashed or cancelled job leaves data behind, so the janitor is essential.</li><li><strong>Leak detection</strong>: after the suite, count records with the run tag that remain, and fail the pipeline or report to owners.</li><li><strong>TTL columns</strong> or expiring tenants for temporary data; ephemeral environments per pull request that are destroyed after the run.</li><li>Beware <strong>external resources</strong>: cloud buckets, third-party sandbox accounts, message queues, caches (Redis <code>FLUSHDB</code> per worker database number or key prefix).</li></ul>
+<h4>Data builders and factories</h4>
+<p>Use builder patterns (<code>aCustomer().withVip().build()</code>), libraries (Factory Boy, FactoryBot, fishery, Bogus), with sensible defaults and overrides for the relevant fields only. Create through the <strong>fastest valid path</strong> (API or direct DB insert via repository) rather than UI.</p>
+<h4>Handling shared data</h4>
+<p>Read-only reference data seeded by migration; mutable singletons (global settings, feature flags) accessed through locked helpers or per-test tenants; serialise the few tests that must change global state (<code>@serial</code> tag) and restore values in teardown; snapshot and restore configuration.</p>
+<h4>Pitfalls</h4>
+<p>Relying on test order, deleting by broad <code>WHERE</code> clauses that can hit other runs, teardown that skips on failure, hard-coded IDs and emails, rollback fixtures hiding commit bugs, shared accounts reused by parallel tests, and no janitor for crashed runs.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>When do you choose transaction rollback, truncation or per-worker databases for isolation?</li><li>How do you guarantee cleanup after a crashed test run or killed CI job?</li><li>How do you handle shared reference data that tests must not modify?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-100">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-100%3A+How+do+you+build+self-cleaning+test+fixtures+that+prevent+test%E2%80%A6&amp;question-id=qa-100&amp;context=QA+%2F+SDET%2C+Gear+2%2C+topic%3A+Infrastructure%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-100.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

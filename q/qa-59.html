@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you design a fast, high-confidence smoke test suite that gates pull requests and deployments? | InterviewGearUp</title>
+<meta name="description" content="A pull-request smoke suite is a small set of fast, deterministic, high-value checks that proves the build is viable and critical user journeys work. Keep…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-59.html">
+<meta property="og:title" content="How do you design a fast, high-confidence smoke test suite that gates pull requests and deployments? | InterviewGearUp">
+<meta property="og:description" content="A pull-request smoke suite is a small set of fast, deterministic, high-value checks that proves the build is viable and critical user journeys work. Keep…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-59.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you design a fast, high-confidence smoke test suite that gates pull requests and deployments?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 2 (Mid-level) · CI/CD · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A pull-request smoke suite is a small set of fast, deterministic, high-value checks that proves the build is viable and critical user journeys work. Keep it to a few minutes, run it in parallel on every PR and before deploy, base it on business risk and production telemetry, avoid flaky and slow tests, and treat any failure as a block.</p></div>
+<h4>Explained in depth</h4>
+<h4>Purpose</h4>
+<p>Smoke tests answer: &quot;Is this build fundamentally healthy enough to continue testing or deploy?&quot; They are a <strong>gate</strong>, not comprehensive coverage. A good gate gives developers feedback in minutes with high signal and low false alarms.</p>
+<h4>Smoke vs sanity vs regression</h4>
+<ul><li><strong>Smoke</strong>: broad and shallow, covers the most critical paths and system health (app starts, login works, main purchase flow, key APIs respond, dependencies reachable).</li><li><strong>Sanity</strong>: narrow and deep checks after a small change to confirm a specific fix or feature works.</li><li><strong>Regression</strong>: broad and deep, runs the entire suite to verify nothing else broke; longer, scheduled or post-merge.</li></ul>
+<h4>Selecting tests</h4>
+<ol start="1"><li>Rank journeys by <strong>business impact and usage</strong> (revenue, security, core features) using analytics and incident history: sign up or login, search, add to cart and checkout, payment authorisation (sandbox), key admin action, API health endpoints.</li><li>Include <strong>system-level checks</strong>: service starts and readiness probes, database migrations applied, configuration valid, dependencies and secrets available, version endpoint returns the expected build.</li><li>Prefer <strong>API-level and component tests</strong> over UI where they give the same confidence (faster, more stable); keep 3 to 10 <strong>UI journeys</strong> for end-to-end confidence.</li><li>Add a test for every <strong>production incident</strong> root cause only if it is critical; otherwise place it in regression.</li><li>Set a <strong>time budget</strong> (for example under 5 to 10 minutes total wall time) and a count cap; when adding a test, remove or demote another.</li></ol>
+<h4>Design principles</h4>
+<ul><li><strong>Deterministic</strong>: independent tests, own data via API setup, no reliance on shared state, mocked unstable third parties (or sandbox endpoints with retries), fixed clocks.</li><li><strong>Fast and parallel</strong>: shard across workers, reuse authenticated state, avoid sleeps, run against a preview environment or containerised stack created per PR.</li><li><strong>Self-diagnosing</strong>: clear failure messages, screenshots and traces, logs and request IDs attached, link to artifacts in the PR.</li><li><strong>Tagged and selectable</strong> (<code>@smoke</code>), simple to run locally (<code>npm run test:smoke</code>).</li><li><strong>Fail fast</strong>: run smoke before heavier suites (unit → build → smoke → integration → regression) and cancel remaining jobs on failure.</li></ul>
+<h4>Pipeline integration</h4>
+<pre><code># GitHub Actions excerpt
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose up -d --wait         # stack with seeded data
+      - run: npx playwright test --grep @smoke --workers=4 --retries=1
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with: { name: smoke-traces, path: test-results/ }</code></pre>
+<p>Make it a <strong>required status check</strong> on protected branches; use merge queues so the gate runs against the up-to-date main. For deployments, run the same suite post-deploy against the target environment.</p>
+<h4>Keeping it trustworthy</h4>
+<ul><li><strong>Zero tolerance for flakiness</strong>: quarantine immediately, fix within days, track flake rate; allow at most limited retries with visibility (retries hide instability).</li><li>Review the suite regularly (quarterly) against analytics; delete obsolete tests.</li><li>Monitor duration trends and failure causes; ownership per test.</li><li>Distinguish <strong>gate failures from infrastructure failures</strong> (report separately and auto-rerun infra problems).</li></ul>
+<h4>Metrics</h4>
+<p>Gate duration, pass rate, flake rate, escaped defects that smoke should have caught, time to first feedback, percentage of PRs blocked by smoke versus reviewers.</p>
+<h4>Pitfalls</h4>
+<p>Letting the smoke suite become a slow mini-regression, UI-only checks that flake, testing against shared unstable environments, ignoring failures with &quot;rerun until green&quot;, and not testing what actually matters to users.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you choose which tests belong in the smoke suite and how do you prevent it from growing slowly?</li><li>What is the difference between smoke, sanity and regression suites?</li><li>How do you handle flakiness so the gate stays trusted?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-59">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-59%3A+How+do+you+design+a+fast%2C+high-confidence+smoke+test+suite+that%E2%80%A6&amp;question-id=qa-59&amp;context=QA+%2F+SDET%2C+Gear+2%2C+topic%3A+CI%2FCD%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-59.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

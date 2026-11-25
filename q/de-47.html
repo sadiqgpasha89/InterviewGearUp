@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does OpenLineage capture and visualize end-to-end data lineage across multi-engine pipelines? | InterviewGearUp</title>
+<meta name="description" content="OpenLineage is an open standard and API for emitting lineage events (job, run and dataset facets) as pipelines run. Integrations for Airflow, Spark, dbt,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-47.html">
+<meta property="og:title" content="How does OpenLineage capture and visualize end-to-end data lineage across multi-engine pipelines? | InterviewGearUp">
+<meta property="og:description" content="OpenLineage is an open standard and API for emitting lineage events (job, run and dataset facets) as pipelines run. Integrations for Airflow, Spark, dbt,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-47.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does OpenLineage capture and visualize end-to-end data lineage across multi-engine pipelines?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Governance · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>OpenLineage is an open standard and API for emitting lineage events (job, run and dataset facets) as pipelines run. Integrations for Airflow, Spark, dbt, Flink and others send RunEvents to a backend such as Marquez, DataHub or OpenMetadata, which stitches them into a graph showing which datasets and columns feed which jobs across engines.</p></div>
+<h4>Explained in depth</h4>
+<h4>The problem</h4>
+<p>Pipelines span Airflow, Spark, dbt, Kafka, Flink and warehouses. Without end-to-end lineage you cannot answer &quot;which dashboards break if this column changes?&quot;, &quot;where did this number come from?&quot; or &quot;which tables contain PII from this source?&quot;. Each tool&#39;s own lineage view stops at its boundary.</p>
+<h4>The OpenLineage model</h4>
+<p>OpenLineage defines a vendor-neutral <strong>JSON event specification</strong> with three core entities:</p>
+<ul><li><strong>Job</strong>: a recurring process definition (<code>sales_daily_etl</code>), namespaced by system.</li><li><strong>Run</strong>: one execution of a job (UUID, start, complete, fail times).</li><li><strong>Dataset</strong>: an input or output (a table <code>warehouse.analytics.fct_sales</code>, a Kafka topic, an S3 path), identified by namespace and name.</li></ul>
+<p>Events (<code>START</code>, <code>RUNNING</code>, <code>COMPLETE</code>, <code>FAIL</code>, <code>ABORT</code>) carry the job, run, inputs and outputs. <strong>Facets</strong> are pluggable metadata attachments: schema, data source, SQL text, column lineage, data quality metrics, row counts, ownership, Spark logical plan, error messages.</p>
+<pre><code>{ &quot;eventType&quot;: &quot;COMPLETE&quot;, &quot;eventTime&quot;: &quot;2026-11-24T02:10:00Z&quot;,
+  &quot;job&quot;: {&quot;namespace&quot;: &quot;airflow-prod&quot;, &quot;name&quot;: &quot;sales_dag.load_fct_sales&quot;},
+  &quot;run&quot;: {&quot;runId&quot;: &quot;0192-...&quot;},
+  &quot;inputs&quot;:  [{&quot;namespace&quot;: &quot;snowflake://acct&quot;, &quot;name&quot;: &quot;raw.orders&quot;}],
+  &quot;outputs&quot;: [{&quot;namespace&quot;: &quot;snowflake://acct&quot;, &quot;name&quot;: &quot;analytics.fct_sales&quot;,
+     &quot;facets&quot;: {&quot;columnLineage&quot;: {&quot;fields&quot;: {&quot;revenue&quot;: {&quot;inputFields&quot;: [{&quot;name&quot;: &quot;raw.orders&quot;, &quot;field&quot;: &quot;amount&quot;}]}}}}}] }</code></pre>
+<h4>How capture works</h4>
+<p>Integrations observe execution rather than parsing code ahead of time:</p>
+<ul><li><strong>Airflow</strong>: the provider emits events from task listeners, extracting inputs and outputs from operators (SQL parsing for SQL operators, operator-specific extractors).</li><li><strong>Spark</strong>: a <code>SparkListener</code> plugin inspects the <strong>logical plan</strong> to find datasets read and written, including column-level lineage.</li><li><strong>dbt</strong>: reads <code>manifest.json</code> and <code>run_results.json</code> after runs (<code>dbt-ol</code>), emitting models, sources and tests.</li><li><strong>Flink, Trino, Great Expectations, Dagster</strong> and others have integrations; custom jobs can use client libraries (Python, Java).</li></ul>
+<p>Events are posted over HTTP (or Kafka, or a file) to a <strong>lineage backend</strong>.</p>
+<h4>Backends and visualisation</h4>
+<p><strong>Marquez</strong> (reference implementation), DataHub, OpenMetadata, Atlan, Collibra, Datadog and Amazon DataZone consume the events, <strong>stitch</strong> runs into a graph keyed by dataset names, and show upstream and downstream views, run history, schema changes and column-level lineage. Because dataset naming is standardised (namespace plus name), a table written by Spark and read by dbt resolves to the same node, producing true <strong>multi-engine lineage</strong>.</p>
+<h4>Value</h4>
+<p>Impact analysis before schema changes, root-cause tracing of bad data, compliance (PII flow, GDPR), data quality context, cost attribution, and governance catalogues.</p>
+<h4>Considerations</h4>
+<ul><li><strong>Runtime lineage</strong> reflects what actually ran (accurate, includes dynamic SQL) but only exists after runs and misses unexecuted paths; parse-time lineage (static SQL analysis) covers code that has not run but struggles with dynamic logic.</li><li>Keep dataset naming consistent across tools (same namespace conventions) or nodes will not stitch.</li><li>Event volume can be high for chatty jobs; control with transport batching and filtering.</li><li>Secure the endpoint and avoid leaking sensitive SQL or data in facets.</li><li>Coverage gaps (custom scripts, spreadsheets, BI tools) need manual or custom emitters.</li></ul>
+<h4>Pitfalls</h4>
+<p>Inconsistent dataset naming, partial integration rollouts, and treating lineage as documentation instead of wiring it to alerts and change reviews.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What are facets and how do you extend them?</li><li>How does column-level lineage get captured for Spark and SQL?</li><li>How does runtime lineage differ from parse-time lineage?</li></ul>
+<p><a class="btn primary" href="../#/q/de-47">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-47%3A+How+does+OpenLineage+capture+and+visualize+end-to-end+data+lineage%E2%80%A6&amp;question-id=de-47&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Governance%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-47.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

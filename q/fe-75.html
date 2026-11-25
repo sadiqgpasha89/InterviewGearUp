@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you measure and debug memory leaks in Chrome DevTools using heap snapshots? | InterviewGearUp</title>
+<meta name="description" content="To find a memory leak in Chrome DevTools, take heap snapshots before and after repeating an action, compare them to see objects that grew, and inspect…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-75.html">
+<meta property="og:title" content="How do you measure and debug memory leaks in Chrome DevTools using heap snapshots? | InterviewGearUp">
+<meta property="og:description" content="To find a memory leak in Chrome DevTools, take heap snapshots before and after repeating an action, compare them to see objects that grew, and inspect…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-75.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you measure and debug memory leaks in Chrome DevTools using heap snapshots?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 3 (Senior) · Performance · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>To find a memory leak in Chrome DevTools, take heap snapshots before and after repeating an action, compare them to see objects that grew, and inspect their retainers path to find what holds them. The allocation timeline and the three-snapshot technique help to separate real leaks from normal growth.</p></div>
+<h4>Explained in depth</h4>
+<h4>Symptoms</h4>
+<p>Heap size keeps climbing after repeated actions (opening and closing a modal, navigating routes), page slows, tabs crash on mobile, and <code>performance.memory</code> or the Memory panel&#39;s graph shows a sawtooth that never returns to its baseline.</p>
+<h4>Workflow</h4>
+<ol start="1"><li>Open DevTools <strong>Memory</strong> panel. Click the garbage can to force a GC.</li><li>Take <strong>Snapshot 1</strong> (baseline) after the app loads.</li><li>Perform the suspicious action several times (for example open and close a view 10 times).</li><li>Force GC again, take <strong>Snapshot 2</strong>. Use the <strong>three-snapshot technique</strong> (snapshot 3 after another round): objects allocated between snapshots 1 and 2 that still exist in snapshot 3 are strong leak candidates.</li><li>In the snapshot choose <strong>Comparison</strong> view, sort by <strong># Delta</strong> or <strong>Size Delta</strong>, filter by constructor name. Search &quot;Detached&quot; to find <strong>detached DOM nodes</strong> (removed from the document but still referenced).</li><li>Select an object and read the <strong>Retainers</strong> panel at the bottom: it shows the reference chain from a GC root (window, closure, event listener, timer) keeping it alive.</li></ol>
+<p>Other tools: <strong>Allocation instrumentation on timeline</strong> (blue bars that stay blue are allocations never freed), <strong>Allocation sampling</strong> (low overhead), and the <strong>Performance monitor</strong> (JS heap, DOM nodes, event listeners counters).</p>
+<h4>Typical causes</h4>
+<ul><li>Event listeners added and never removed (<code>window.addEventListener(&#39;resize&#39;, ...)</code> in a component, without cleanup).</li><li><code>setInterval</code>, <code>setTimeout</code>, <code>requestAnimationFrame</code> loops not cleared.</li><li>Closures capturing large objects, caches and Maps without eviction (use <code>WeakMap</code> or LRU), global variables.</li><li>Detached DOM nodes referenced from JavaScript variables.</li><li>Subscriptions (observables, WebSocket handlers, stores) never unsubscribed; <code>IntersectionObserver</code> not disconnected.</li><li>Framework specifics: missing <code>useEffect</code> cleanup, stale refs, long-lived singleton services holding component references.</li></ul>
+<h4>Fixing</h4>
+<p>Return cleanup functions from effects, <code>AbortController</code> for fetches and listeners (<code>{ signal }</code>), <code>disconnect()</code> observers, null out references, bound the size of caches, and prefer <code>WeakRef</code> or <code>WeakMap</code> for associative data about objects.</p>
+<pre><code>useEffect(() =&gt; {
+  const onResize = () =&gt; setW(window.innerWidth);
+  window.addEventListener(&#39;resize&#39;, onResize);
+  return () =&gt; window.removeEventListener(&#39;resize&#39;, onResize);
+}, []);</code></pre>
+<h4>Verifying</h4>
+<p>Repeat the scenario and confirm retained size is flat. Add automated memory checks with Puppeteer or Playwright (<code>performance.measureUserAgentSpecificMemory</code>, CDP heap snapshots), and monitor field data.</p>
+<h4>Pitfalls</h4>
+<p>Taking snapshots without forcing GC, mistaking normal caches for leaks, profiling in dev mode with extensions loaded (use an incognito window), and focusing on shallow size rather than <strong>retained size</strong>.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What are the most common sources of frontend memory leaks?</li><li>How do detached DOM nodes appear in snapshots and why do they happen?</li><li>How do you tell GC-eligible garbage from a true leak?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-75">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-75%3A+How+do+you+measure+and+debug+memory+leaks+in+Chrome+DevTools+using%E2%80%A6&amp;question-id=fe-75&amp;context=Frontend+engineer%2C+Gear+3%2C+topic%3A+Performance%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-75.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

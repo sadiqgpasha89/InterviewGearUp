@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you test application behavior under simulated geolocation shifts and device time zone changes? | InterviewGearUp</title>
+<meta name="description" content="Override the environment instead of the real device: set geolocation, time zone, locale and clock through the browser context in Playwright, Cypress or…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-94.html">
+<meta property="og:title" content="How do you test application behavior under simulated geolocation shifts and device time zone changes? | InterviewGearUp">
+<meta property="og:description" content="Override the environment instead of the real device: set geolocation, time zone, locale and clock through the browser context in Playwright, Cypress or…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-94.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you test application behavior under simulated geolocation shifts and device time zone changes?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 2 (Mid-level) · Integration · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Override the environment instead of the real device: set geolocation, time zone, locale and clock through the browser context in Playwright, Cypress or Selenium CDP, and the device simulators for mobile (adb emu geo fix, simctl location). Then verify displayed times, regional rules and DST edges, and run the pure date logic as unit tests with a fixed clock.</p></div>
+<h4>Explained in depth</h4>
+<h4>What can change</h4>
+<p>Applications are affected by <strong>where</strong> the user is (geolocation coordinates, country rules, pricing, content licensing, store locators), <strong>when</strong> the user is (time zone, offset, daylight saving transitions, clock settings) and <strong>how they are configured</strong> (locale, calendar, 12 or 24 hour format).</p>
+<h4>Browser automation controls</h4>
+<pre><code>// Playwright: context-level overrides; no real device movement needed
+const context = await browser.newContext({
+  geolocation: { latitude: 48.8566, longitude: 2.3522, accuracy: 25 },   // Paris
+  permissions: [&#39;geolocation&#39;],
+  timezoneId: &#39;Europe/Paris&#39;,
+  locale: &#39;fr-FR&#39;,
+});
+await context.setGeolocation({ latitude: 35.6762, longitude: 139.6503 });   // &quot;move&quot; to Tokyo during the test
+await page.reload();
+// fake clock for deterministic time logic (Playwright 1.45+)
+await page.clock.install({ time: new Date(&#39;2026-03-29T00:30:00Z&#39;) });      // just before EU DST change
+await page.clock.fastForward(&#39;02:00:00&#39;);</code></pre>
+<pre><code>// Cypress: stub navigator.geolocation and control time
+cy.visit(&#39;/&#39;, { onBeforeLoad(win) { cy.stub(win.navigator.geolocation, &#39;getCurrentPosition&#39;).callsFake(cb =&gt; cb({ coords: { latitude: 51.5, longitude: -0.12, accuracy: 10 } })); } });
+cy.clock(new Date(&#39;2026-10-25T00:30:00Z&#39;).getTime());</code></pre>
+<pre><code># Selenium Chrome via DevTools Protocol
+driver.execute_cdp_cmd(&quot;Emulation.setGeolocationOverride&quot;, {&quot;latitude&quot;: 40.71, &quot;longitude&quot;: -74.0, &quot;accuracy&quot;: 100})
+driver.execute_cdp_cmd(&quot;Emulation.setTimezoneOverride&quot;, {&quot;timezoneId&quot;: &quot;America/New_York&quot;})
+# Android emulator and iOS simulator
+adb emu geo fix -0.1276 51.5072          # longitude then latitude
+xcrun simctl location booted set 40.7128,-74.0060
+adb shell settings put global auto_time_zone 0 &amp;&amp; adb shell service call alarm 3 s16 Asia/Kolkata   # change device time zone</code></pre>
+<p>For IP-based geolocation (content blocking, regional banners, tax) browser overrides do not apply; use a staging flag, CDN country header injection (<code>CF-IPCountry</code>), a geo-IP stub, a proxy in the target region, or cloud providers&#39; geolocation features (BrowserStack, Sauce Labs).</p>
+<h4>Geolocation scenarios</h4>
+<ul><li><strong>Permission flow</strong>: prompt shown, <strong>granted</strong>, <strong>denied</strong> (<code>PERMISSION_DENIED</code>), dismissed, revoked later, &quot;precise vs approximate&quot; on iOS 14+ and Android 12+; fallback to manual address entry; no repeated prompting.</li><li><strong>Behaviour at positions</strong>: nearest store ordering and distances (units km versus miles by locale), geofences (inside, outside, at the boundary), country-specific pricing, tax and legal rules, restricted regions, delivery availability.</li><li><strong>Accuracy and errors</strong>: low accuracy, timeouts (<code>TIMEOUT</code>), position unavailable, mock location detection, rapid movement (speed and jumps), watchPosition updates and battery.</li><li><strong>Privacy</strong>: location sent only with consent and not logged excessively; stale or coarse storage.</li></ul>
+<h4>Time zone and clock scenarios</h4>
+<ul><li><strong>Display vs storage</strong>: store UTC, convert for display; the same event shows the correct local time in New York, Kolkata (UTC+5:30), Kathmandu (+5:45), Auckland, and zones with DST; date boundaries (a UTC midnight event is &quot;yesterday&quot; in Los Angeles).</li><li><strong>DST transitions</strong>: the 23-hour and 25-hour days, non-existent local times (02:30 on spring-forward) and ambiguous times (01:30 occurs twice), recurring events and reminders across DST, billing cycles and cron jobs, &quot;end of day&quot; cutoffs, age and duration calculations.</li><li><strong>Server vs client zones</strong>: run server in UTC while tests set the browser to various zones; mismatches reveal bugs where server renders local times with the wrong zone or compares dates as strings.</li><li><strong>Device clock manipulation</strong>: user sets the clock wrong (certificate validation errors, token expiry, trial period bypass), time going backwards, <strong>clock skew</strong> between services (JWT <code>nbf</code> and <code>exp</code>).</li><li><strong>Calendar and locale</strong>: first day of week, 12 vs 24 hour, week numbering, non-Gregorian calendars, leap years and leap seconds, Feb 29, year 2038 for 32-bit systems.</li><li><strong>Tooling for logic tests</strong>: use a <strong>fixed clock abstraction</strong> in code (Clock interface, <code>java.time.Clock</code>, Freezegun, <code>sinon.useFakeTimers</code>, <code>libfaketime</code>, <code>TZ</code> environment variable) and table-driven tests across many zones and dates.</li></ul>
+<h4>Pitfalls</h4>
+<p>Tests that pass only in the developer&#39;s own time zone, relying on <code>new Date()</code> in tests, ignoring DST dates, assuming fixed UTC offsets, forgetting that mobile OS time zone changes require app restart or broadcast handling, and testing geolocation only with permission granted.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What are the most common time zone and daylight saving bugs and how do you test for them?</li><li>How do you test location permission flows, denied access and inaccurate positions?</li><li>Why should server time zones differ from browser time zones in your test matrix?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-94">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-94%3A+How+do+you+test+application+behavior+under+simulated+geolocation%E2%80%A6&amp;question-id=qa-94&amp;context=QA+%2F+SDET%2C+Gear+2%2C+topic%3A+Integration%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-94.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

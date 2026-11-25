@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you load test gRPC microservices utilizing Protocol Buffers serialization? | InterviewGearUp</title>
+<meta name="description" content="Load test gRPC with tools that speak HTTP/2 and protobuf natively, such as ghz, k6 with its gRPC module or Gatling&#39;s gRPC plugin, using .proto files or…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-73.html">
+<meta property="og:title" content="How do you load test gRPC microservices utilizing Protocol Buffers serialization? | InterviewGearUp">
+<meta property="og:description" content="Load test gRPC with tools that speak HTTP/2 and protobuf natively, such as ghz, k6 with its gRPC module or Gatling&#39;s gRPC plugin, using .proto files or…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-73.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you load test gRPC microservices utilizing Protocol Buffers serialization?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 3 (Senior) · Performance · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Load test gRPC with tools that speak HTTP/2 and protobuf natively, such as ghz, k6 with its gRPC module or Gatling&#39;s gRPC plugin, using .proto files or reflection. Model unary and streaming calls, reuse channels realistically, and measure latency percentiles, errors by status code, and server CPU, serialisation cost and connection behaviour behind the load balancer.</p></div>
+<h4>Explained in depth</h4>
+<h4>What is different about gRPC</h4>
+<ul><li>Transport is <strong>HTTP/2</strong> with multiplexed streams over few long-lived TCP connections; payloads are <strong>Protocol Buffers</strong> (binary, schema-first); four call types: <strong>unary, server streaming, client streaming, bidirectional streaming</strong>.</li><li>Status codes are gRPC codes (<code>OK</code>, <code>DEADLINE_EXCEEDED</code>, <code>UNAVAILABLE</code>, <code>RESOURCE_EXHAUSTED</code>), not HTTP codes; deadlines propagate across services.</li><li>Standard HTTP load tools (ab, wrk, JMeter HTTP sampler) cannot easily generate valid gRPC calls.</li></ul>
+<h4>Tools</h4>
+<ul><li><strong>ghz</strong>: purpose-built CLI for unary and streaming gRPC.</li></ul>
+<pre><code>ghz --proto ./orders.proto --call shop.OrderService/GetOrder \
+    --insecure -d &#39;{&quot;id&quot;:&quot;{{.RequestNumber}}&quot;}&#39; \
+    --connections 20 --concurrency 200 --rps 5000 --duration 5m \
+    --metadata &#39;{&quot;authorization&quot;:&quot;Bearer &#39;$TOKEN&#39;&quot;}&#39; --format html -o report.html api.test.svc:50051</code></pre>
+<ul><li><strong>k6</strong> gRPC module (<code>k6/net/grpc</code>), <strong>Gatling</strong> (gRPC plugin), <strong>Locust</strong> with grpcio, <strong>JMeter</strong> gRPC plugin, <strong>Artillery</strong> (gRPC engine), custom clients in Go or Java for specialised scenarios.</li></ul>
+<pre><code>import grpc from &#39;k6/net/grpc&#39;; import { check } from &#39;k6&#39;;
+const client = new grpc.Client(); client.load([&#39;proto&#39;], &#39;orders.proto&#39;);
+export default () =&gt; {
+  client.connect(&#39;api.test.svc:50051&#39;, { plaintext: true });
+  const r = client.invoke(&#39;shop.OrderService/GetOrder&#39;, { id: `${__VU}-${__ITER}` }, { timeout: &#39;2s&#39; });
+  check(r, { &#39;status OK&#39;: (x) =&gt; x &amp;&amp; x.status === grpc.StatusOK });
+  client.close();
+};</code></pre>
+<p>(Reuse connections in real tests: connecting per iteration measures TCP and TLS handshakes, not the service.)</p>
+<h4>Designing a realistic test</h4>
+<ol start="1"><li><strong>Workload model</strong>: mix of RPCs by production share (from tracing), realistic request sizes and nested message depth, authentication metadata, think time, and <strong>deadlines</strong> that match client behaviour.</li><li><strong>Connection model</strong>: production clients keep a small number of channels with many concurrent streams. Configure the generator with comparable channel counts. Include a test with <strong>many clients</strong> (thousands of channels) for fan-in capacity.</li><li><strong>Load balancing</strong>: L4 balancers pin a long-lived HTTP/2 connection to one backend, so a test with few connections shows <strong>uneven load</strong> (one pod saturated, others idle). Use an L7-aware balancer (Envoy, Linkerd, Istio, gRPC client-side <code>round_robin</code>, headless services with <code>dns:///</code>) and verify even distribution per pod in metrics.</li><li><strong>Streaming</strong>: for server streaming measure time to first message, messages per second, stream duration and memory; for bidirectional, hold thousands of concurrent streams and test <strong>flow control</strong> and <strong>backpressure</strong> (slow consumer), keepalives (<code>GRPC_ARG_KEEPALIVE_TIME_MS</code>), <code>max_concurrent_streams</code> limits (often 100 per connection), and message size limits (default 4 MB).</li><li><strong>Test types</strong>: baseline, ramp-up to capacity, soak (leaks, connection churn), spike, <strong>failure injection</strong> (kill a pod, observe <code>UNAVAILABLE</code> and client retry policies, hedging, circuit breaking), and rolling deployment under load (graceful shutdown with <code>GOAWAY</code>).</li></ol>
+<h4>Metrics and analysis</h4>
+<ul><li><strong>Client</strong>: latency p50, p95, p99 per method, throughput, error rate <strong>by gRPC status</strong>, deadline exceeded count, retry counts, connection resets.</li><li><strong>Server</strong>: CPU (protobuf encode and decode, TLS), memory and GC, thread or goroutine pools, queue length, per-method histograms (grpc-prometheus, OpenTelemetry), downstream calls (database, cache), network bytes, HTTP/2 stream and connection counts.</li><li>Compare with SLOs, and use distributed traces to see where time is spent.</li></ul>
+<h4>Protobuf vs JSON benchmarking</h4>
+<p>Isolate serialisation with microbenchmarks (JMH, Go benchmarks) using real message shapes: size on the wire (protobuf is typically 3 to 10 times smaller), encode and decode time, allocations. Then confirm at system level, since in many services the database or business logic dominates and serialisation is a small part.</p>
+<h4>Pitfalls</h4>
+<p>Opening a new connection per request, testing through a balancer that pins connections, ignoring deadlines and retries (which amplify load), comparing only averages, using tiny payloads that do not reflect production, and forgetting TLS cost (test with TLS enabled as in production).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why can HTTP/2 multiplexing and long-lived connections make load balancing misleading in gRPC tests?</li><li>How do you load test streaming RPCs rather than only unary calls?</li><li>How do you compare protobuf serialisation cost against JSON in a benchmark?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-73">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-73%3A+How+do+you+load+test+gRPC+microservices+utilizing+Protocol+Buffers%E2%80%A6&amp;question-id=qa-73&amp;context=QA+%2F+SDET%2C+Gear+3%2C+topic%3A+Performance%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-73.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

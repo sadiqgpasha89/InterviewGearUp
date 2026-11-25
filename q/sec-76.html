@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you secure CI/CD build environments against software supply chain attacks and poisoned pipelines? | InterviewGearUp</title>
+<meta name="description" content="Secure CI/CD by treating the pipeline as production infrastructure: lock down who can change workflows, run builds on ephemeral isolated runners with…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-76.html">
+<meta property="og:title" content="How do you secure CI/CD build environments against software supply chain attacks and poisoned pipelines? | InterviewGearUp">
+<meta property="og:description" content="Secure CI/CD by treating the pipeline as production infrastructure: lock down who can change workflows, run builds on ephemeral isolated runners with…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-76.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you secure CI/CD build environments against software supply chain attacks and poisoned pipelines?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · CI/CD · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Secure CI/CD by treating the pipeline as production infrastructure: lock down who can change workflows, run builds on ephemeral isolated runners with least-privilege short-lived credentials via OIDC, pin actions and dependencies by digest, verify provenance and sign artefacts, restrict secrets from forks and untrusted PRs, scan code and dependencies, and protect branches with reviews and required checks.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why CI/CD is a prime target</h4>
+<p>Build systems hold <strong>secrets, signing keys and deploy rights</strong>, run code from many contributors, and produce artefacts that flow to production. Compromising the pipeline compromises everything downstream: SolarWinds (build system implant), Codecov bash uploader, <code>ua-parser-js</code> and <code>event-stream</code> npm incidents, the <strong>tj-actions/changed-files</strong> GitHub Action compromise (2025) that leaked secrets from CI logs, dependency confusion, and typosquatting. Frameworks: <strong>SLSA</strong>, OWASP Top 10 CI/CD Security Risks, NIST SSDF (SP 800-218), CIS Software Supply Chain guidance.</p>
+<h4>Threats</h4>
+<p>Poisoned pipeline execution (PPE: attacker modifies workflow or build scripts via PR), <strong>injection via untrusted input</strong> (branch names, PR titles in <code>run:</code> steps), compromised third-party actions/plugins, malicious dependencies, leaked or over-privileged secrets, self-hosted runner persistence, stolen tokens, artefact or cache poisoning, tampering between build and deploy, unsigned or unverifiable artefacts, insecure registries.</p>
+<h4>Controls</h4>
+<ol start="1"><li><strong>Source and branch protection</strong>: required reviews (CODEOWNERS for <code>.github/workflows</code>, build scripts and IaC), signed commits, protected branches, no force-push, required status checks, restricted admin bypass, SSO and MFA, least-privilege repository permissions, audit logs.</li><li><strong>Isolate and harden runners</strong>: prefer <strong>ephemeral, single-use runners</strong> (fresh VM or container per job, destroyed after) to prevent cross-job persistence; self-hosted runners only for trusted repositories, never for public forks; network egress restrictions and allow-lists (StepSecurity Harden-Runner), no access to production networks or metadata credentials, minimal tooling, patched images.</li><li><strong>Secrets and identity</strong>:</li></ol>
+<ul><li><strong>Replace long-lived cloud keys with OIDC federation</strong>: the CI platform issues a short-lived signed JWT per job; the cloud IAM trusts it with conditions on repo, branch and environment, returning temporary credentials.</li></ul>
+<pre><code>permissions: { id-token: write, contents: read }       # least privilege GITHUB_TOKEN, per job
+steps:
+  - uses: aws-actions/configure-aws-credentials@&lt;commit-sha&gt;
+    with: { role-to-assume: arn:aws:iam::111122223333:role/deploy-prod, aws-region: eu-west-1 }</code></pre>
+<ul><li>Trust policy: <code>token.actions.githubusercontent.com:sub = repo:acme/app:ref:refs/heads/main</code> (and <code>environment:production</code>).</li><li>Scope secrets to <strong>environments with required approvers</strong>; mask in logs; never expose to untrusted PRs or forks; rotate on suspicion; use a secret manager (Vault) with dynamic credentials.</li></ul>
+<ol start="4"><li><strong>Untrusted code and injection</strong>: in GitHub Actions avoid <code>pull_request_target</code> with checkout of PR code; do not interpolate <code>${{ github.event.pull_request.title }}</code> into shell, pass via environment variables; require approval for workflows from first-time contributors; default <code>GITHUB_TOKEN</code> permissions to read-only.</li><li><strong>Pin everything</strong>: third-party actions and orbs <strong>by full commit SHA</strong> (tags are mutable), container base images by <strong>digest</strong>, dependencies with <strong>lockfiles and hash verification</strong> (<code>npm ci</code>, <code>pip --require-hashes</code>, <code>go.sum</code>), private registries or proxies (Artifactory, Nexus) with namespace/scope controls to prevent <strong>dependency confusion</strong>; allow-list actions; use Dependabot/Renovate with review.</li><li><strong>Scan and test in the pipeline</strong>: SAST (CodeQL, Semgrep), SCA (Dependabot, OWASP Dependency-Check, Snyk, Trivy), <strong>secret scanning</strong>, IaC scanning, container image scanning, licence checks; fail on high severity; block known-malicious packages (OpenSSF Scorecard, Socket).</li><li><strong>Build integrity</strong>: hermetic, reproducible builds where possible; builds run in a <strong>separate trusted builder</strong> from the repository&#39;s own scripts (SLSA Level 3: provenance generated by the platform, not the build steps); produce <strong>SBOMs</strong> (CycloneDX, SPDX via Syft) and <strong>provenance attestations</strong> (in-toto, SLSA GitHub generator), <strong>sign</strong> images and artefacts with <strong>Sigstore Cosign</strong> (keyless using OIDC identity) and publish to a transparency log.</li><li><strong>Verify before deploy</strong>: admission control (Kyverno, Gatekeeper, Sigstore policy-controller) enforces <strong>signature and provenance verification</strong>, approved registries and vulnerability thresholds; promote <strong>the same immutable artefact</strong> across environments; separate duties (build vs deploy roles), manual approval gates for production, GitOps with pull-based deployment so CI never holds cluster credentials.</li><li><strong>Cache and artefact safety</strong>: scoped caches per branch and trust level, no restoring caches from untrusted PRs into privileged jobs, checksum verification, short retention.</li><li><strong>Monitoring and response</strong>: audit logs for workflow changes, secrets access and runner registrations; alert on new self-hosted runners, unusual egress, modified workflow files; incident runbook to rotate all pipeline secrets, revoke tokens, re-verify artefacts; regularly review third-party integrations and OAuth apps.</li><li><strong>Assess maturity</strong>: OpenSSF Scorecard, SLSA levels, CIS benchmarks, threat modelling the pipeline.</li></ol>
+<h4>Pitfalls</h4>
+<p>Long-lived admin cloud keys in CI secrets, unpinned third-party actions, running forked PR code with secrets, a shared self-hosted runner for all repos, builds that can alter their own provenance, and deploying artefacts that were rebuilt rather than promoted.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do poisoned pipeline execution and pull_request_target misconfigurations lead to secret theft?</li><li>How do SLSA provenance, SBOMs and Sigstore signing help consumers trust build outputs?</li><li>Why should CI use OIDC federation instead of long-lived cloud keys stored as secrets?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-76">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-76%3A+How+do+you+secure+CI%2FCD+build+environments+against+software+supply%E2%80%A6&amp;question-id=sec-76&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+CI%2FCD%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-76.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

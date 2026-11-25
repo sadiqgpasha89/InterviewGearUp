@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you secure CI/CD runners using ephemeral VMs, OIDC authentication, and restricted network egress? | InterviewGearUp</title>
+<meta name="description" content="Secure CI/CD runners by making them ephemeral (fresh VM or container per job, destroyed afterwards), authenticating to clouds with short-lived OIDC…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-80.html">
+<meta property="og:title" content="How do you secure CI/CD runners using ephemeral VMs, OIDC authentication, and restricted network egress? | InterviewGearUp">
+<meta property="og:description" content="Secure CI/CD runners by making them ephemeral (fresh VM or container per job, destroyed afterwards), authenticating to clouds with short-lived OIDC…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-80.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you secure CI/CD runners using ephemeral VMs, OIDC authentication, and restricted network egress?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · CI/CD · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Secure CI/CD runners by making them ephemeral (fresh VM or container per job, destroyed afterwards), authenticating to clouds with short-lived OIDC tokens instead of stored secrets, applying least-privilege scoped permissions, restricting network egress to allowed destinations, isolating untrusted pull request code from privileged jobs, and logging and monitoring runner activity.</p></div>
+<h4>Explained in depth</h4>
+<h4>Threat model</h4>
+<p>CI systems execute arbitrary code (build scripts, tests, dependencies, third-party actions) with access to secrets and deployment credentials, making them a high-value target (SolarWinds, Codecov, the tj-actions compromise). Risks: secret exfiltration, persistence across jobs, lateral movement into the network, supply chain injection into artifacts, and poisoned caches.</p>
+<h4>Ephemeral runners</h4>
+<ul><li>Run each job in a <strong>fresh VM or container</strong> created on demand and destroyed after the job (GitHub Actions hosted runners, Actions Runner Controller on Kubernetes with ephemeral pods, Firecracker microVMs, Buildkite agent stack, GitLab runners with autoscaling executors).</li><li>No state survives: no leftover credentials, build artifacts, Docker layers from another project, or backdoors. Self-hosted runners that serve many jobs persistently let one malicious job compromise all later jobs.</li><li>Do not use self-hosted runners for <strong>public repositories</strong> or untrusted forks without strong isolation; a pull request can run attacker code on your network.</li><li>Rebuild runner images regularly from a hardened base, patched and minimal; mount no host Docker socket (use rootless builds or Kaniko/BuildKit).</li></ul>
+<h4>OIDC instead of long-lived secrets</h4>
+<p>The CI platform issues a signed, short-lived <strong>JWT</strong> identifying the workflow (repository, branch, environment, workflow ref). The cloud trusts the issuer and exchanges the token for temporary credentials limited by claims.</p>
+<pre><code>permissions: { id-token: write, contents: read }
+steps:
+- uses: aws-actions/configure-aws-credentials@v4
+  with: { role-to-assume: arn:aws:iam::123456789012:role/gha-deploy, aws-region: eu-west-1 }</code></pre>
+<pre><code>// AWS role trust policy condition: only the main branch of one repo in the production environment
+&quot;Condition&quot;: { &quot;StringEquals&quot;: { &quot;token.actions.githubusercontent.com:sub&quot;: &quot;repo:acme/app:environment:production&quot;,
+                                 &quot;token.actions.githubusercontent.com:aud&quot;: &quot;sts.amazonaws.com&quot; } }</code></pre>
+<p>Benefits: no stored access keys to leak, credentials expire in minutes, fine-grained trust per repo, branch and environment. Equivalent: GCP Workload Identity Federation, Azure federated credentials, Vault JWT auth, HashiCorp or Sigstore keyless signing.</p>
+<h4>Least privilege and isolation</h4>
+<ul><li>Default <code>GITHUB_TOKEN</code> permissions to read-only; grant write per job. Separate <strong>build jobs (untrusted code, no secrets)</strong> from <strong>deploy jobs (secrets, protected branches, approvals)</strong>. Use <code>pull_request</code> rather than <code>pull_request_target</code> for untrusted forks, and never check out and execute fork code in privileged contexts.</li><li>Environment secrets with required reviewers; one role per environment and per pipeline stage.</li><li><strong>Pin third-party actions and images by commit SHA or digest</strong>, review them, and mirror critical ones internally. Use dependency lockfiles and private registries with allow lists to reduce <strong>dependency confusion</strong> and typosquatting.</li></ul>
+<h4>Restricting network egress</h4>
+<ul><li>Run runners in private subnets with a default-deny egress policy through a proxy or firewall allowing only package registries, artifact stores and necessary APIs (DNS filtering, <code>allowed-domains</code>; tools such as StepSecurity Harden-Runner, Cilium network policies, VPC egress rules).</li><li>Block access to the cloud metadata service (IMDSv2 with hop limit 1 or blocking 169.254.169.254) and internal networks so a compromised job cannot reach internal systems or steal instance roles.</li><li>Log all outbound connections and alert on unexpected destinations.</li></ul>
+<h4>Supply chain integrity</h4>
+<p>Build in isolated, hermetic steps, generate <strong>SBOMs and provenance attestations (SLSA, in-toto)</strong>, sign artifacts with cosign (keyless OIDC), verify signatures at deploy time via admission policies, and avoid cache poisoning by scoping caches per branch and not restoring caches from untrusted PRs into privileged jobs.</p>
+<h4>Monitoring</h4>
+<p>Audit logs of workflow changes, secrets access, runner registration; alert on modified workflow files, new self-hosted runner tokens, and unusual job durations or outbound traffic. Rotate and revoke secrets on suspicion.</p>
+<h4>Pitfalls</h4>
+<p>Persistent shared runners, overly permissive cloud roles in trust policies (<code>repo:acme/*</code>), secrets passed as environment variables to every step, and unpinned third-party actions.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why are self-hosted runners with persistent state dangerous for public repositories?</li><li>How does OIDC federation to AWS or GCP replace static credentials?</li><li>How do you prevent exfiltration and dependency confusion from a compromised build?</li></ul>
+<p><a class="btn primary" href="../#/q/do-80">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-80%3A+How+do+you+secure+CI%2FCD+runners+using+ephemeral+VMs%2C+OIDC%E2%80%A6&amp;question-id=do-80&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+CI%2FCD%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-80.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

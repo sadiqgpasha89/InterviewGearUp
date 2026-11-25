@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain the State pattern and how it models state machine transitions without nested switch cases. | InterviewGearUp</title>
+<meta name="description" content="The State pattern represents each state of an object as its own class with the state-specific behaviour, and the context delegates to its current state…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-77.html">
+<meta property="og:title" content="Explain the State pattern and how it models state machine transitions without nested switch cases. | InterviewGearUp">
+<meta property="og:description" content="The State pattern represents each state of an object as its own class with the state-specific behaviour, and the context delegates to its current state…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-77.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain the State pattern and how it models state machine transitions without nested switch cases.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 2 (Mid-level) · Design patterns · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>The State pattern represents each state of an object as its own class with the state-specific behaviour, and the context delegates to its current state object. Transitions replace the current state, which removes sprawling switch statements and makes every state&#39;s rules local.</p></div>
+<h4>Explained in depth</h4>
+<h4>Problem</h4>
+<p>An order, a connection or a media player behaves differently depending on its state. Naive code scatters <code>switch (state)</code> across every method, and a new state requires editing all of them.</p>
+<h4>Structure</h4>
+<pre><code>interface OrderState {
+    void pay(Order o);
+    void ship(Order o);
+    void cancel(Order o);
+}
+
+class NewState implements OrderState {
+    public void pay(Order o)    { o.setState(new PaidState()); }
+    public void ship(Order o)   { throw new IllegalStateException(&quot;pay first&quot;); }
+    public void cancel(Order o) { o.setState(new CancelledState()); }
+}
+class PaidState implements OrderState {
+    public void pay(Order o)    { throw new IllegalStateException(&quot;already paid&quot;); }
+    public void ship(Order o)   { o.setState(new ShippedState()); }
+    public void cancel(Order o) { o.refund(); o.setState(new CancelledState()); }
+}
+
+class Order {
+    private OrderState state = new NewState();
+    void setState(OrderState s) { this.state = s; }
+    void pay()    { state.pay(this); }      // delegate, no conditionals
+    void ship()   { state.ship(this); }
+    void cancel() { state.cancel(this); }
+}</code></pre>
+<p>Each class contains exactly the rules for its state, including illegal operations, and transitions are explicit assignments.</p>
+<h4>Who owns transitions</h4>
+<ul><li><strong>Inside states</strong> (shown above): states know their successors; easy to extend locally but couples states to each other.</li><li><strong>In the context</strong> or a transition table: one place shows the entire diagram, which helps review and testing.</li><li>A <strong>table-driven FSM</strong> (<code>(state, event) -&gt; next state</code>) is more compact when states have little unique behaviour; State objects win when behaviour per state is rich.</li></ul>
+<h4>Strategy comparison</h4>
+<p>The structure is almost identical, but a Strategy is picked externally and stays fixed, while State changes <strong>itself</strong> as the object evolves.</p>
+<h4>Practical concerns</h4>
+<ul><li><strong>Stateless states</strong> can be shared singletons; states holding data must be per context.</li><li><strong>Persistence</strong>: store a state identifier (enum or string), not the object; rebuild the state object on load.</li><li><strong>Concurrency</strong>: transitions must be atomic, and in a database use optimistic locking or a conditional update (<code>WHERE status = &#39;NEW&#39;</code>) so that two requests cannot both move an order.</li><li><strong>Testing</strong>: assert both legal transitions and rejections of illegal ones.</li><li>Libraries and languages help: Spring State Machine, XState, Rust enums with <code>match</code>, sealed types in Java and Kotlin.</li></ul>
+<h4>Pitfalls</h4>
+<p>For two or three states a simple enum with a switch is fine. Too many tiny classes, duplicated behaviour across states (extract a base class) and hidden transitions in distant classes are the typical costs.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Who should own the transition logic: the context or the states?</li><li>How does the State pattern relate to a table-driven finite state machine?</li><li>How do you persist and restore an object that uses State objects?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-77">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-77%3A+Explain+the+State+pattern+and+how+it+models+state+machine%E2%80%A6&amp;question-id=gen-77&amp;context=Software+engineer+%28core%29%2C+Gear+2%2C+topic%3A+Design+patterns%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-77.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

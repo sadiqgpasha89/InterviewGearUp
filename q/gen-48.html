@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Solve the Coin Change problem: Minimum coins required versus total distinct combination counts. | InterviewGearUp</title>
+<meta name="description" content="Coin Change has two classic variants solved with 1D dynamic programming: the minimum number of coins to reach an amount (min over dp[a - c] + 1) and the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-48.html">
+<meta property="og:title" content="Solve the Coin Change problem: Minimum coins required versus total distinct combination counts. | InterviewGearUp">
+<meta property="og:description" content="Coin Change has two classic variants solved with 1D dynamic programming: the minimum number of coins to reach an amount (min over dp[a - c] + 1) and the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-48.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Solve the Coin Change problem: Minimum coins required versus total distinct combination counts.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 2 (Mid-level) · Dynamic programming · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Coin Change has two classic variants solved with 1D dynamic programming: the minimum number of coins to reach an amount (min over dp[a - c] + 1) and the number of distinct combinations (add dp[a - c], with coins in the outer loop so order is ignored).</p></div>
+<h4>Explained in depth</h4>
+<h4>Variant 1: minimum coins</h4>
+<p>Define <code>dp[a]</code> as the fewest coins that sum to <code>a</code>. Base case <code>dp[0] = 0</code>. For every amount, try each coin:</p>
+<pre><code>def min_coins(coins, amount):
+    INF = amount + 1
+    dp = [0] + [INF] * amount
+    for a in range(1, amount + 1):
+        for c in coins:
+            if c &lt;= a:
+                dp[a] = min(dp[a], dp[a - c] + 1)
+    return -1 if dp[amount] &gt;= INF else dp[amount]</code></pre>
+<p>Time <code>O(amount * len(coins))</code>, space <code>O(amount)</code>. Return <code>-1</code> when the amount is unreachable (for example coins <code>[2]</code>, amount <code>3</code>).</p>
+<h4>Variant 2: number of combinations</h4>
+<p>Define <code>dp[a]</code> as the number of multisets of coins that sum to <code>a</code>. Base case <code>dp[0] = 1</code> (one way to make zero: take nothing).</p>
+<pre><code>def ways(coins, amount):
+    dp = [1] + [0] * amount
+    for c in coins:                 # coins in the OUTER loop
+        for a in range(c, amount + 1):
+            dp[a] += dp[a - c]
+    return dp[amount]</code></pre>
+<h4>Loop order matters</h4>
+<p>With coins outside and amounts inside, each coin type is &quot;introduced&quot; once, so <code>1+2</code> and <code>2+1</code> are counted as the same combination. If you put amounts outside and coins inside, you count <strong>ordered sequences</strong> (permutations), which is a different problem (<code>3</code> with <code>[1,2]</code> gives 3 instead of 2).</p>
+<h4>Why greedy is not enough</h4>
+<p>Greedy (take the largest coin first) works for canonical systems such as US coins but fails for <code>[1, 3, 4]</code> and amount <code>6</code>: greedy gives <code>4+1+1</code> (3 coins), DP finds <code>3+3</code> (2 coins).</p>
+<h4>Reconstructing the answer</h4>
+<p>Store <code>choice[a]</code> (the coin that achieved the minimum) and walk back from <code>amount</code> subtracting <code>choice[a]</code> until zero.</p>
+<h4>Edge cases and pitfalls</h4>
+<ul><li>Amount <code>0</code> returns 0 coins and 1 combination.</li><li>Large counts overflow 32 bit ints in other languages: use 64 bit or a modulus.</li><li>Unbounded versus bounded supply: with each coin usable once it becomes 0/1 knapsack, and the inner loop must run <strong>downward</strong> to avoid reusing a coin.</li><li>Complexity can be improved with BFS over amounts for the minimum-coins variant, but the DP is simpler and has the same bound.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does swapping the loop order turn combinations into permutations?</li><li>When does greedy work for coin change and when does it fail?</li><li>How would you reconstruct which coins were used?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-48">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-48%3A+Solve+the+Coin+Change+problem%3A+Minimum+coins+required+versus+total%E2%80%A6&amp;question-id=gen-48&amp;context=Software+engineer+%28core%29%2C+Gear+2%2C+topic%3A+Dynamic+programming%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-48.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

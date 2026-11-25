@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you diagnose and resolve a memory leak in a production backend service using heap dumps? | InterviewGearUp</title>
+<meta name="description" content="Diagnose a production memory leak by confirming growth after garbage collection in metrics, capturing heap dumps (live service, ideally two or three over…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-56.html">
+<meta property="og:title" content="How do you diagnose and resolve a memory leak in a production backend service using heap dumps? | InterviewGearUp">
+<meta property="og:description" content="Diagnose a production memory leak by confirming growth after garbage collection in metrics, capturing heap dumps (live service, ideally two or three over…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-56.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you diagnose and resolve a memory leak in a production backend service using heap dumps?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · Performance · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Diagnose a production memory leak by confirming growth after garbage collection in metrics, capturing heap dumps (live service, ideally two or three over time), comparing them to find object types and retainers that keep growing, mapping the dominator or retainer chain to application code, then fixing the reference and verifying with load tests.</p></div>
+<h4>Explained in depth</h4>
+<h4>Confirm that it is a leak</h4>
+<ul><li>Metrics: resident memory, <strong>heap used after full GC</strong> (the sawtooth baseline), GC time and frequency, <code>OutOfMemoryError</code> events and container OOM kills. A leak shows a baseline that rises steadily with traffic or time; a high allocation rate shows steep sawtooth but a flat baseline.</li><li>Rule out legitimate growth (caches filling, warm-up) and configuration (heap size versus container limit, off-heap, thread stacks, metaspace).</li></ul>
+<h4>Capture evidence</h4>
+<ul><li><strong>JVM</strong>: <code>jcmd &lt;pid&gt; GC.heap_dump /tmp/heap1.hprof</code> (or <code>-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=...</code>), <code>jmap -histo:live &lt;pid&gt;</code> for a quick class histogram, JFR (Java Flight Recorder) allocation profiling.</li><li><strong>Node.js</strong>: <code>--heapsnapshot-signal=SIGUSR2</code>, <code>v8.writeHeapSnapshot()</code>, Chrome DevTools inspector.</li><li><strong>Python</strong>: <code>tracemalloc</code> snapshots and comparison, <code>objgraph</code>, <code>memray</code>.</li><li><strong>Go</strong>: <code>pprof</code> heap profile (<code>/debug/pprof/heap</code>), <code>go tool pprof -base heap1 heap2</code> for diffs.</li><li><strong>.NET</strong>: <code>dotnet-gcdump</code>, <code>dotnet-dump</code>.</li></ul>
+<p>A dump may pause the process (and equals memory size on disk, containing sensitive data). Take it from one instance drained from the load balancer, store it securely and delete it afterwards. Take <strong>several snapshots</strong> (for example before load, after 30 minutes, after 60 minutes) so you can diff them.</p>
+<h4>Analyse</h4>
+<ol start="1"><li>Open in <strong>Eclipse MAT</strong>, VisualVM, YourKit, or Chrome DevTools.</li><li>Compare snapshots: which classes increased in <strong>instance count</strong> and <strong>retained size</strong>? Typical suspects: <code>HashMap$Node</code>, <code>byte[]</code>, <code>String</code>, your domain objects, <code>ThreadLocalMap$Entry</code>.</li><li>Use the <strong>dominator tree</strong> and &quot;paths to GC roots (excluding weak references)&quot; to find what holds the objects: static collections, caches without eviction, listeners and callbacks never removed, <code>ThreadLocal</code> values in pooled threads, class loaders from redeploys, unclosed streams or connections, ever-growing metric label sets, and request-scoped data stored in singletons.</li><li>Correlate with code and recent changes; reproduce with a load test that triggers the suspected path.</li></ol>
+<pre><code>Leak suspect: 1,204,331 instances of SessionData retained by static Map&lt;String, SessionData&gt; SessionCache.INSTANCE -&gt; never evicted</code></pre>
+<h4>Fix and verify</h4>
+<p>Bound caches (LRU with max size and TTL, Caffeine, <code>WeakHashMap</code> where appropriate), remove listeners in <code>finally</code> or lifecycle hooks, clean <code>ThreadLocal</code>, close resources with try-with-resources, limit label cardinality. Rerun the load test and confirm a flat post-GC baseline; add a regression test or alert on heap trend.</p>
+<h4>Native and off-heap</h4>
+<p>If heap is flat but RSS grows, look at direct byte buffers, JNI libraries, thread count, metaspace, glibc malloc fragmentation (try <code>jemalloc</code> or <code>MALLOC_ARENA_MAX</code>), and use <code>NativeMemoryTracking</code> (<code>-XX:NativeMemoryTracking=summary</code>) or Linux tools (<code>pmap</code>, <code>smem</code>).</p>
+<h4>Pitfalls</h4>
+<p>Diagnosing from a single snapshot, forgetting that dumps trigger GC and may differ, sending dumps to unsecured storage, and &quot;fixing&quot; by raising heap or restarting only (acceptable as a stopgap with alerts).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the difference between a leak, high allocation rate and legitimate cache growth?</li><li>How do you take a heap dump safely in production without long pauses?</li><li>How do you diagnose native or off-heap memory growth?</li></ul>
+<p><a class="btn primary" href="../#/q/be-56">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-56%3A+How+do+you+diagnose+and+resolve+a+memory+leak+in+a+production%E2%80%A6&amp;question-id=be-56&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+Performance%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-56.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

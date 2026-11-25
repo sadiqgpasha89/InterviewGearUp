@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does `IntersectionObserver` enable performant lazy loading and infinite scrolling without scroll listeners? | InterviewGearUp</title>
+<meta name="description" content="IntersectionObserver reports asynchronously when a target element enters or leaves the viewport or another root by given thresholds, without scroll…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-53.html">
+<meta property="og:title" content="How does `IntersectionObserver` enable performant lazy loading and infinite scrolling without scroll listeners? | InterviewGearUp">
+<meta property="og:description" content="IntersectionObserver reports asynchronously when a target element enters or leaves the viewport or another root by given thresholds, without scroll…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-53.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does `IntersectionObserver` enable performant lazy loading and infinite scrolling without scroll listeners?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · Browser APIs · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>IntersectionObserver reports asynchronously when a target element enters or leaves the viewport or another root by given thresholds, without scroll listeners or layout reads on the main thread. That makes lazy loading, infinite scroll, scroll-linked analytics and sticky effects cheap and simple.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why not scroll listeners</h4>
+<p>A <code>scroll</code> handler fires very frequently and typically calls <code>getBoundingClientRect()</code>, which forces <strong>synchronous layout</strong> (layout thrashing). Even throttled, it competes with rendering on the main thread. IntersectionObserver (IO) is implemented by the browser: intersection is computed during the rendering pipeline and callbacks are batched, so cost stays low.</p>
+<h4>API</h4>
+<pre><code>const io = new IntersectionObserver((entries, observer) =&gt; {
+  for (const e of entries) {
+    if (e.isIntersecting) {
+      loadImage(e.target);
+      observer.unobserve(e.target);         // lazy load once
+    }
+  }
+}, { root: null, rootMargin: &#39;200px 0px&#39;, threshold: 0 });
+
+document.querySelectorAll(&#39;img[data-src]&#39;).forEach(img =&gt; io.observe(img));</code></pre>
+<ul><li><strong>root</strong>: the ancestor used as viewport (<code>null</code> means the browser viewport).</li><li><strong>rootMargin</strong>: grows or shrinks the root box, e.g. <code>200px</code> to start loading before the element is visible.</li><li><strong>threshold</strong>: ratio (or list) of visibility at which to fire (<code>0</code> for any pixel, <code>1</code> for fully visible, <code>[0, .25, .5, 1]</code> for progress).</li><li>Entries provide <code>isIntersecting</code>, <code>intersectionRatio</code>, <code>boundingClientRect</code>, <code>time</code>.</li></ul>
+<h4>Infinite scroll</h4>
+<pre><code>const sentinel = document.querySelector(&#39;#sentinel&#39;);          // empty div after the last item
+let loading = false;
+new IntersectionObserver(async ([e]) =&gt; {
+  if (!e.isIntersecting || loading) return;
+  loading = true;
+  const items = await fetchNextPage();
+  render(items);
+  loading = false;
+}, { rootMargin: &#39;600px&#39; }).observe(sentinel);</code></pre>
+<p>Keep a cursor, guard against concurrent fetches, stop observing when there is no more data, and consider virtualisation (windowing) for very long lists so the DOM stays small.</p>
+<h4>Other uses</h4>
+<p>Impression tracking and ad viewability, auto-playing and pausing video, highlighting the current table of contents section, animating elements on reveal, sticky header detection (observe a sentinel at the top), and pausing expensive off-screen work.</p>
+<h4>Native alternatives</h4>
+<p><code>loading=&quot;lazy&quot;</code> on images and iframes covers simple lazy loading with no JavaScript. Use IO when you need custom behaviour, thresholds, background images, components or data loading. <code>content-visibility: auto</code> skips rendering off-screen sections.</p>
+<h4>Pitfalls</h4>
+<p>Not unobserving or disconnecting (memory leaks), assuming synchronous results, hidden elements (<code>display: none</code>) never intersect, cross-origin iframes give limited data, and an observer callback that changes layout can cause loops if it moves the sentinel back into view.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What do root, rootMargin and threshold control?</li><li>How do you build infinite scroll with a sentinel element and avoid duplicate fetches?</li><li>How does IntersectionObserver differ from loading=lazy and when do you still need it?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-53">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-53%3A+How+does+%60IntersectionObserver%60+enable+performant+lazy+loading+and%E2%80%A6&amp;question-id=fe-53&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+Browser+APIs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-53.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

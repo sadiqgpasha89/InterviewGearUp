@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is Cloud Security Posture Management (CSPM) and how does it detect configuration drift? | InterviewGearUp</title>
+<meta name="description" content="CSPM continuously inventories cloud resources through provider APIs, evaluates them against benchmarks and custom policies, and reports misconfigurations…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-42.html">
+<meta property="og:title" content="What is Cloud Security Posture Management (CSPM) and how does it detect configuration drift? | InterviewGearUp">
+<meta property="og:description" content="CSPM continuously inventories cloud resources through provider APIs, evaluates them against benchmarks and custom policies, and reports misconfigurations…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-42.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is Cloud Security Posture Management (CSPM) and how does it detect configuration drift?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · Cloud · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>CSPM continuously inventories cloud resources through provider APIs, evaluates them against benchmarks and custom policies, and reports misconfigurations with risk context and remediation guidance. It detects drift by comparing current state to a secure baseline or IaC-declared state, using scheduled and event-driven scans, then alerts, opens tickets or auto-remediates.</p></div>
+<h4>Explained in depth</h4>
+<h4>What CSPM is</h4>
+<p><strong>Cloud Security Posture Management</strong> tools discover and assess cloud accounts, subscriptions and projects (AWS, Azure, GCP, SaaS, Kubernetes) for <strong>misconfigurations, compliance violations and risky exposure</strong>. Examples: Wiz, Prisma Cloud, Orca, Microsoft Defender for Cloud, AWS Security Hub with Config, GCP Security Command Center, Sysdig, Lacework, plus open source Prowler, ScoutSuite, Cloud Custodian and Steampipe.</p>
+<h4>How it works</h4>
+<ol start="1"><li><strong>Connect</strong> with read-only roles (agentless API integration: <code>SecurityAudit</code>, <code>ViewOnlyAccess</code>), often across an AWS Organization or all subscriptions.</li><li><strong>Inventory and graph</strong>: collect resources and relationships (instances, IAM roles, networks, storage, databases, functions, Kubernetes objects) into a <strong>security graph</strong>, so toxic combinations are visible (an internet-facing VM with a critical CVE and an admin role).</li><li><strong>Evaluate rules</strong> from frameworks (CIS Benchmarks, NIST 800-53, PCI-DSS, HIPAA, SOC 2, ISO 27001, vendor best practices) and <strong>custom policies</strong> (Rego, Sentinel, Cloud Custodian YAML, SQL-like queries).</li><li><strong>Report</strong> findings with severity, affected resource, evidence, owner (from tags or code ownership) and remediation steps.</li><li><strong>Remediate</strong>: guided fixes, tickets in Jira or ServiceNow, pull requests to IaC repositories, and <strong>auto-remediation</strong> (Lambda or Cloud Function triggered by events) for low-risk fixes such as enabling bucket encryption.</li><li><strong>Compliance reporting</strong> and evidence for audits; trends and scorecards.</li></ol>
+<h4>Typical checks</h4>
+<p>Public storage, open security groups, unencrypted volumes and databases, missing MFA on root and privileged users, long-lived access keys, wildcard IAM policies, disabled CloudTrail or flow logs, public snapshots, unrestricted egress, expired certificates, outdated TLS, IMDSv1, exposed Kubernetes API, unused but powerful identities.</p>
+<h4>Configuration drift</h4>
+<p><strong>Drift</strong> is any divergence between the <strong>intended</strong> configuration (baseline, golden template, IaC) and the <strong>actual</strong> running configuration, caused by console hotfixes, emergency changes, scripts, automation bugs or malicious activity. Detection methods:</p>
+<ul><li><strong>Continuous and event-driven monitoring</strong>: CloudTrail events (<code>AuthorizeSecurityGroupIngress</code>, <code>PutBucketAcl</code>) via EventBridge, Azure Activity Log, GCP Audit Logs trigger immediate evaluation rather than waiting for a daily scan; AWS Config <strong>configuration recorder</strong> tracks changes and compliance timelines.</li><li><strong>State comparison</strong>: <code>terraform plan -refresh-only</code> or <code>terraform plan -detailed-exitcode</code> in a scheduled pipeline, CloudFormation <strong>drift detection</strong>, Pulumi <code>refresh</code>, <code>driftctl</code> and Spacelift or env0 drift detection; alert when real state differs from code.</li><li><strong>Baselines and snapshots</strong>: compare resources to approved templates (hardened AMI IDs, tag standards, encryption on) and highlight deviations.</li><li><strong>Policy as code at deployment</strong>: block non-compliant changes before they happen (admission control, Service Control Policies, Azure Policy <code>deny</code>, OPA/Conftest in CI) so drift is harder to introduce.</li></ul>
+<p>Responses: <strong>revert via IaC</strong> (preferred, so code stays the source of truth), codify legitimate hotfixes back into code, auto-revert for critical controls, or accept with documented exception and expiry.</p>
+<h4>Related categories</h4>
+<ul><li><strong>CWPP</strong> (workload protection): runtime and host protection, vulnerability scanning of VMs, containers and functions.</li><li><strong>CIEM</strong>: entitlement analysis, effective permissions, unused access.</li><li><strong>CNAPP</strong>: unified platform combining CSPM, CWPP, CIEM, IaC scanning, and sometimes DSPM (data security posture) with code to cloud context.</li><li><strong>KSPM</strong>: Kubernetes posture.</li></ul>
+<h4>Prioritising findings</h4>
+<p>Use <strong>context-based risk</strong>: internet exposure, data sensitivity (Macie, DSPM), privilege level, exploitability (CVE with known exploit, EPSS), blast radius via graph, and asset criticality tags. Group findings by root cause (one Terraform module fixing 400 findings), assign owners using tags, set SLAs by severity (critical 24 to 72 hours), and track mean time to remediate and posture score over time.</p>
+<h4>Operating model</h4>
+<p>Define <strong>guardrails</strong> (preventive), <strong>detective controls</strong> (CSPM) and <strong>response</strong> (auto-remediate or ticket); integrate with SIEM and incident response; treat exceptions with expiry; shift left with IaC scanning so the same policies run in CI and in the cloud.</p>
+<h4>Pitfalls</h4>
+<p>Alert fatigue from unfiltered benchmarks, scanning only production, no owner mapping, auto-remediation without testing that can break applications, ignoring multi-account coverage gaps (new accounts not onboarded), and fixing in the console without updating IaC (guaranteeing drift).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does CSPM differ from CWPP, CIEM and CNAPP platforms?</li><li>How do you detect and handle drift between Terraform state and the real cloud environment?</li><li>How do you prioritise thousands of CSPM findings so teams fix what matters?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-42">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-42%3A+What+is+Cloud+Security+Posture+Management+%28CSPM%29+and+how+does+it%E2%80%A6&amp;question-id=sec-42&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+Cloud%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-42.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

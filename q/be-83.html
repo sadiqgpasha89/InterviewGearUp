@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is the difference between Point-to-Point message queues and Publish-Subscribe topic patterns? | InterviewGearUp</title>
+<meta name="description" content="Point-to-point queues deliver each message to exactly one consumer among competing consumers, which suits work distribution. Publish-subscribe topics…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-83.html">
+<meta property="og:title" content="What is the difference between Point-to-Point message queues and Publish-Subscribe topic patterns? | InterviewGearUp">
+<meta property="og:description" content="Point-to-point queues deliver each message to exactly one consumer among competing consumers, which suits work distribution. Publish-subscribe topics…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-83.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is the difference between Point-to-Point message queues and Publish-Subscribe topic patterns?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 2 (Mid-level) · Architecture · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Point-to-point queues deliver each message to exactly one consumer among competing consumers, which suits work distribution. Publish-subscribe topics deliver every message to all subscribers, each with its own copy or offset, which suits event broadcasting and decoupling. Many brokers combine both through consumer groups or per-subscriber queues.</p></div>
+<h4>Explained in depth</h4>
+<h4>Point-to-point (queue)</h4>
+<p>One message, one consumer. Multiple workers can read the same queue (<strong>competing consumers</strong>) to scale throughput, but each message is processed by only one of them, then removed (or acknowledged).</p>
+<pre><code>Producer -&gt; [ queue ] -&gt; Worker A
+                      -&gt; Worker B     (each message goes to A or B, never both)</code></pre>
+<p>Use for: job processing, order fulfilment, email sending, image resizing, any command-like request that must be handled once. Examples: SQS standard queues, RabbitMQ queues, ActiveMQ queues, Celery tasks.</p>
+<h4>Publish-subscribe (topic)</h4>
+<p>A message is <strong>broadcast</strong> to all interested subscribers, producers do not know who consumes it.</p>
+<pre><code>Producer -&gt; [ topic ] -&gt; Subscriber 1 (billing)
+                      -&gt; Subscriber 2 (analytics)
+                      -&gt; Subscriber 3 (notifications)</code></pre>
+<p>Use for: events (<code>OrderPlaced</code>, <code>UserSignedUp</code>) where several services react independently, cache invalidation, fan-out notifications, audit and analytics streams. Examples: SNS, Google Pub/Sub, RabbitMQ fanout/topic exchanges, Kafka topics, Redis Pub/Sub (fire-and-forget, no persistence).</p>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th></th><th>Point-to-point</th><th>Pub-sub</th></tr></thead><tbody><tr><td>Receivers per message</td><td>one</td><td>all subscribers</td></tr><tr><td>Coupling</td><td>producer targets one logical consumer</td><td>producer unaware of consumers</td></tr><tr><td>Typical message type</td><td>command, task</td><td>event, notification</td></tr><tr><td>Scaling consumers</td><td>add competing workers</td><td>each subscriber scales independently</td></tr><tr><td>Replay</td><td>usually not (message deleted after ack)</td><td>possible with logs (Kafka) or per-subscriber queues</td></tr></tbody></table></div>
+<h4>Combining the two</h4>
+<ul><li><strong>Kafka</strong>: a topic is a log; each <strong>consumer group</strong> gets a full copy of the stream (pub-sub across groups) while partitions are shared among members within a group (competing consumers).</li><li><strong>SNS to SQS fan-out</strong>: publish once to a topic and each subscriber service has its own durable queue, so slow subscribers do not affect others and each gets retries and dead-letter queues.</li><li><strong>RabbitMQ</strong>: fanout or topic exchange bound to one queue per subscriber; multiple instances of a service consume from the same queue.</li></ul>
+<h4>Design guidance</h4>
+<ul><li>Use queues for commands (do this), topics for events (this happened).</li><li>Give each subscribing service its own queue or consumer group so failures and speed are isolated.</li><li>Ensure idempotent consumers, because redelivery happens in both models.</li><li>Decide on ordering needs (per key or partition), retention, replay requirements and delivery guarantees (at-least-once, at-most-once, exactly-once via transactions in specific systems).</li><li>Pure in-memory pub-sub (Redis Pub/Sub) loses messages for offline subscribers; use durable systems when delivery matters.</li></ul>
+<h4>Pitfalls</h4>
+<p>Using a topic when only one handler should act (duplicate side effects), using a queue when several services need the same event (lost fan-out), and unbounded subscriber backlogs without dead-letter handling.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do Kafka consumer groups combine both models?</li><li>When does pub-sub risk duplicate processing and how is it avoided?</li><li>How do SNS plus SQS implement fan-out with queues?</li></ul>
+<p><a class="btn primary" href="../#/q/be-83">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-83%3A+What+is+the+difference+between+Point-to-Point+message+queues+and%E2%80%A6&amp;question-id=be-83&amp;context=Backend+engineer%2C+Gear+2%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-83.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

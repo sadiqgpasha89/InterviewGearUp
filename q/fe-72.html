@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does custom hook extraction promote logic reuse without component hierarchy nesting? | InterviewGearUp</title>
+<meta name="description" content="A custom hook extracts stateful logic (state, effects, subscriptions) into a reusable function that any component can call. Unlike HOCs or render props…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-72.html">
+<meta property="og:title" content="How does custom hook extraction promote logic reuse without component hierarchy nesting? | InterviewGearUp">
+<meta property="og:description" content="A custom hook extracts stateful logic (state, effects, subscriptions) into a reusable function that any component can call. Unlike HOCs or render props…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-72.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does custom hook extraction promote logic reuse without component hierarchy nesting?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · React · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A custom hook extracts stateful logic (state, effects, subscriptions) into a reusable function that any component can call. Unlike HOCs or render props it adds no extra wrapper components, keeps the tree flat, and composes naturally because hooks can call other hooks.</p></div>
+<h4>Explained in depth</h4>
+<h4>The problem</h4>
+<p>Before hooks, sharing logic meant <strong>higher-order components</strong> (wrapper hell, prop name collisions) or <strong>render props</strong> (nested callbacks). Logic was tied to component structure.</p>
+<h4>A custom hook</h4>
+<p>A function whose name starts with <code>use</code> and which may call other hooks. Each call gets its own independent state.</p>
+<pre><code>function useDebouncedValue(value, delay = 300) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() =&gt; {
+    const id = setTimeout(() =&gt; setDebounced(value), delay);
+    return () =&gt; clearTimeout(id);               // cleanup when value changes or unmounts
+  }, [value, delay]);
+  return debounced;
+}
+
+function useFetch(url) {
+  const [state, setState] = useState({ data: null, error: null, loading: true });
+  useEffect(() =&gt; {
+    const c = new AbortController();
+    setState(s =&gt; ({ ...s, loading: true }));
+    fetch(url, { signal: c.signal }).then(r =&gt; r.json())
+      .then(data =&gt; setState({ data, error: null, loading: false }))
+      .catch(error =&gt; { if (error.name !== &#39;AbortError&#39;) setState({ data: null, error, loading: false }); });
+    return () =&gt; c.abort();
+  }, [url]);
+  return state;
+}
+
+function Search() {
+  const [q, setQ] = useState(&#39;&#39;);
+  const { data, loading } = useFetch(`/api/search?q=${useDebouncedValue(q)}`);
+  ...
+}</code></pre>
+<h4>Why it promotes reuse without nesting</h4>
+<ul><li>Components stay at the same tree level; no wrappers appear in DevTools.</li><li>Hooks <strong>compose</strong>: <code>useFetch</code> uses <code>useState</code>, <code>useEffect</code>; your <code>useSearch</code> can combine <code>useFetch</code> and <code>useDebouncedValue</code>.</li><li>The logic is separated from presentation: UI components become short and declarative.</li><li>Typed, explicit inputs and outputs replace implicit prop injection.</li></ul>
+<h4>Rules</h4>
+<p>Call hooks only at the <strong>top level</strong> (no conditions, loops or nested functions) and only from React functions or other hooks. React relies on call order to associate state with each hook. The <code>eslint-plugin-react-hooks</code> rules enforce this and check dependency arrays.</p>
+<h4>Custom hook versus utility function</h4>
+<p>If the code needs <code>useState</code>, <code>useEffect</code>, context or refs, it must be a hook. Pure computations (formatting, math) should remain plain functions that are easier to test and call anywhere.</p>
+<h4>Testing</h4>
+<p>Use <code>renderHook</code> from React Testing Library, wrapping providers when needed, and drive updates with <code>act</code>. Test the observable behaviour, not the internals.</p>
+<h4>Pitfalls</h4>
+<p>Hooks that return unstable objects and functions (memoise when passed to memoised children), stale closures from missing dependencies, hidden global state shared by module variables, and hooks that do too much. Prefer a battle-tested library (TanStack Query, SWR, VueUse-like collections) for data fetching.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do custom hooks differ from plain utility functions, and when is each right?</li><li>What are the rules of hooks and why do they exist?</li><li>How do you test a custom hook?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-72">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-72%3A+How+does+custom+hook+extraction+promote+logic+reuse+without%E2%80%A6&amp;question-id=fe-72&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+React%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-72.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

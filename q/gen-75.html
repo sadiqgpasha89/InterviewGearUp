@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does the Strategy pattern allow swapping algorithms at runtime without conditional statements? | InterviewGearUp</title>
+<meta name="description" content="The Strategy pattern puts each interchangeable algorithm behind a common interface and lets the context hold one and delegate to it. The algorithm can be…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-75.html">
+<meta property="og:title" content="How does the Strategy pattern allow swapping algorithms at runtime without conditional statements? | InterviewGearUp">
+<meta property="og:description" content="The Strategy pattern puts each interchangeable algorithm behind a common interface and lets the context hold one and delegate to it. The algorithm can be…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-75.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does the Strategy pattern allow swapping algorithms at runtime without conditional statements?</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 2 (Mid-level) · Design patterns · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>The Strategy pattern puts each interchangeable algorithm behind a common interface and lets the context hold one and delegate to it. The algorithm can be swapped at runtime, replacing if/else or switch logic and keeping each variant small and independently testable.</p></div>
+<h4>Explained in depth</h4>
+<h4>Problem</h4>
+<p>Code with conditionals on a mode or type grows with every new variant:</p>
+<pre><code>double shipping(Order o, String method) {
+    switch (method) {
+        case &quot;STANDARD&quot;: return o.weight() * 0.5;
+        case &quot;EXPRESS&quot;:  return 15 + o.weight() * 1.2;
+        case &quot;DRONE&quot;:    return 40;
+        default: throw new IllegalArgumentException(method);
+    }
+}</code></pre>
+<h4>Strategy version</h4>
+<pre><code>interface ShippingStrategy { double cost(Order o); }
+
+class Standard implements ShippingStrategy { public double cost(Order o) { return o.weight() * 0.5; } }
+class Express  implements ShippingStrategy { public double cost(Order o) { return 15 + o.weight() * 1.2; } }
+
+class Checkout {
+    private ShippingStrategy strategy;
+    Checkout(ShippingStrategy s) { this.strategy = s; }
+    void setStrategy(ShippingStrategy s) { this.strategy = s; }   // swappable at runtime
+    double total(Order o) { return o.subtotal() + strategy.cost(o); }
+}</code></pre>
+<p>The context (<code>Checkout</code>) does not know how shipping is computed. Adding a drone option means adding a class and registering it, not editing <code>Checkout</code>.</p>
+<h4>Picking the strategy</h4>
+<p>A single place maps input to strategy, for example a <code>Map&lt;String, ShippingStrategy&gt;</code> filled by DI or a registry. The branching moves to <strong>one lookup</strong> instead of being repeated throughout the code.</p>
+<h4>Functional alternative</h4>
+<p>In languages with first-class functions the interface is just a function type:</p>
+<pre><code>shipping = {&quot;standard&quot;: lambda o: o.weight * 0.5,
+            &quot;express&quot;:  lambda o: 15 + o.weight * 1.2}
+total = o.subtotal + shipping[method](o)</code></pre>
+<p>Use a class when the strategy needs state, configuration or several methods; use a function when it is a single computation.</p>
+<h4>Benefits</h4>
+<ul><li>Open/Closed: new algorithms without editing the context.</li><li>Each algorithm is isolated and unit tested separately.</li><li>Eliminates conditionals and duplicated branching.</li><li>Behaviour can be chosen per request, per tenant or by feature flag.</li></ul>
+<h4>Strategy versus State</h4>
+<p>Both delegate to a pluggable object. A Strategy is normally <strong>chosen by the client</strong> and does not change itself; a State object represents the context&#39;s lifecycle and <strong>triggers its own transitions</strong>.</p>
+<h4>Pitfalls</h4>
+<p>Too many tiny classes for trivial variation, clients needing to know differences between strategies to choose well, and strategies that need unrelated data from the context (consider passing a small context object rather than the whole context).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How can a first-class function replace a Strategy object in languages that support it?</li><li>How do you choose the strategy at runtime without a growing switch statement?</li><li>How does Strategy differ from the State pattern?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-75">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-75%3A+How+does+the+Strategy+pattern+allow+swapping+algorithms+at+runtime%E2%80%A6&amp;question-id=gen-75&amp;context=Software+engineer+%28core%29%2C+Gear+2%2C+topic%3A+Design+patterns%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-75.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

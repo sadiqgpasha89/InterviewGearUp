@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain the Command pattern: Encapsulating actions as objects for queueing, logging, and undo operations. | InterviewGearUp</title>
+<meta name="description" content="The Command pattern turns a request into an object holding the action, its receiver and its parameters. Because the request is now data, you can queue…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-76.html">
+<meta property="og:title" content="Explain the Command pattern: Encapsulating actions as objects for queueing, logging, and undo operations. | InterviewGearUp">
+<meta property="og:description" content="The Command pattern turns a request into an object holding the action, its receiver and its parameters. Because the request is now data, you can queue…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-76.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain the Command pattern: Encapsulating actions as objects for queueing, logging, and undo operations.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 2 (Mid-level) · Design patterns · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>The Command pattern turns a request into an object holding the action, its receiver and its parameters. Because the request is now data, you can queue it, log it, schedule it, send it elsewhere and undo it, decoupling who triggers an operation from who performs it.</p></div>
+<h4>Explained in depth</h4>
+<h4>Structure</h4>
+<ul><li><strong>Command</strong>: interface with <code>execute()</code> (and optionally <code>undo()</code>).</li><li><strong>ConcreteCommand</strong>: binds a receiver to an action and stores parameters.</li><li><strong>Receiver</strong>: the object that does the real work.</li><li><strong>Invoker</strong>: triggers the command (button, menu, scheduler) and knows nothing about the receiver.</li><li><strong>Client</strong>: creates and wires commands.</li></ul>
+<pre><code>interface Command { void execute(); void undo(); }
+
+class InsertText implements Command {
+    private final Editor ed; private final int pos; private final String text;
+    InsertText(Editor ed, int pos, String text) { this.ed = ed; this.pos = pos; this.text = text; }
+    public void execute() { ed.insert(pos, text); }
+    public void undo()    { ed.delete(pos, text.length()); }
+}
+
+class History {
+    private final Deque&lt;Command&gt; undo = new ArrayDeque&lt;&gt;(), redo = new ArrayDeque&lt;&gt;();
+    void run(Command c) { c.execute(); undo.push(c); redo.clear(); }
+    void undo() { if (!undo.isEmpty()) { Command c = undo.pop(); c.undo(); redo.push(c); } }
+    void redo() { if (!redo.isEmpty()) { Command c = redo.pop(); c.execute(); undo.push(c); } }
+}</code></pre>
+<h4>What reifying a request gives you</h4>
+<ul><li><strong>Undo and redo</strong>: store inverse operations or a before-snapshot (memento) in each command.</li><li><strong>Queuing and scheduling</strong>: thread pools execute <code>Runnable</code>s, which are commands.</li><li><strong>Logging and replay</strong>: persist commands to recover after a crash, or to implement audit logs. This is the seed of <strong>event sourcing</strong> and CQRS command handlers.</li><li><strong>Macro commands</strong>: a composite command that runs a list of commands as a transaction-like batch.</li><li><strong>Remote execution</strong>: serialise a command and send it to a worker.</li><li>Decoupled UI: a menu item and a keyboard shortcut trigger the same command object.</li></ul>
+<h4>Command versus Strategy</h4>
+<p>Both wrap behaviour. A Strategy is a <strong>how</strong> (interchangeable algorithm inside an object). A Command is a <strong>what and when</strong> (one specific request that can be stored, delayed and undone).</p>
+<h4>Pitfalls</h4>
+<ul><li>Undo requires deterministic inverses; irreversible actions (sending an email) need compensation instead.</li><li>Commands that capture mutable state by reference may behave differently at replay time, so copy what you need.</li><li>A large number of small command classes is the cost of the pattern; use lambdas for simple cases.</li><li>Idempotency matters when commands are retried from a queue.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How would you implement multi-level undo and redo with command objects?</li><li>How does a Command differ from a Strategy?</li><li>How are commands used in job queues and event sourcing?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-76">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-76%3A+Explain+the+Command+pattern%3A+Encapsulating+actions+as+objects+for%E2%80%A6&amp;question-id=gen-76&amp;context=Software+engineer+%28core%29%2C+Gear+2%2C+topic%3A+Design+patterns%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-76.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do recommender systems resolve the Cold Start problem for brand-new users and items? | InterviewGearUp</title>
+<meta name="description" content="Cold start occurs when there is no interaction history for a new user or item. Solve it with content and metadata features, popularity and trending…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-86.html">
+<meta property="og:title" content="How do recommender systems resolve the Cold Start problem for brand-new users and items? | InterviewGearUp">
+<meta property="og:description" content="Cold start occurs when there is no interaction history for a new user or item. Solve it with content and metadata features, popularity and trending…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-86.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do recommender systems resolve the Cold Start problem for brand-new users and items?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 2 (Mid-level) · Recommenders · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Cold start occurs when there is no interaction history for a new user or item. Solve it with content and metadata features, popularity and trending fallbacks, onboarding questions, contextual signals, exploration with bandits, transfer from similar users or items via embeddings, and hybrid models that blend content with collaborative signals as data accumulates.</p></div>
+<h4>Explained in depth</h4>
+<h4>The problem</h4>
+<p>Collaborative filtering relies on past interactions. A <strong>new user</strong> has none, a <strong>new item</strong> has none, and a <strong>new system</strong> has none. Without a strategy, new items never get shown (no data, so no recommendations, so no data: a feedback loop), and new users see poor results and may churn.</p>
+<h4>New-user strategies</h4>
+<ol start="1"><li><strong>Popularity and trending</strong>: recommend globally or regionally popular, recently trending, or editorially curated items as a safe default; segment by country, language, time, device.</li><li><strong>Onboarding preferences</strong>: ask users to pick interests, genres, artists or rate a few items (choose informative items by entropy or diversity); import from connected accounts.</li><li><strong>Context and implicit signals</strong>: location, device, referral source, time of day, first search queries, and first clicks within the session (<strong>session-based recommenders</strong> using sequences with GRU4Rec, transformers).</li><li><strong>Demographic or cohort models</strong>: map to similar existing users by available attributes.</li><li><strong>Rapid learning</strong>: update user embeddings online after a handful of interactions; use fast-adapting models.</li><li><strong>Exploration (bandits)</strong>: contextual bandits (LinUCB, Thompson sampling) show diverse candidates to learn preferences quickly while tracking reward.</li></ol>
+<h4>New-item strategies</h4>
+<ol start="1"><li><strong>Content-based features</strong>: represent items with metadata, text, image and audio embeddings, and recommend to users whose profiles match (content tower in a two-tower model).</li><li><strong>Feature-to-embedding mapping</strong>: train a model that predicts the <strong>collaborative embedding</strong> of an item from its content (as in DropoutNet, hybrid MF like LightFM), so a new item receives a plausible latent vector immediately; random <strong>dropout of interaction features during training</strong> teaches the model to rely on content when interactions are missing.</li><li><strong>Boost and exploration slots</strong>: reserve a share of impressions for new items using bandit or epsilon-greedy allocation with <strong>Thompson sampling</strong>, upper-confidence bounds, or explicit freshness boosts decaying with exposure; cap exposure to limit risk; ensure creators get initial traffic.</li><li><strong>Transfer</strong> from similar items (same category, creator, series) and from marketplace seller history.</li><li><strong>Editorial and manual curation</strong> for launches.</li></ol>
+<h4>Hybrid systems</h4>
+<p>Blend content-based scores and collaborative scores with weights depending on <strong>data availability</strong> (confidence): rely on content when counts are low, shift to collaborative as interactions grow (feature-weighted hybrid, switching hybrid, or learned gating). Modern rankers take both interaction features and content features, with count and recency features so the model can adapt.</p>
+<h4>Evaluation</h4>
+<p>Evaluate cold-start separately: construct test sets of <strong>users with fewer than k interactions</strong> and <strong>items first appearing in the test period</strong>; metrics recall@K and nDCG for those groups, coverage of new items, time-to-first-engagement, and online A/B tests on activation and retention. Monitor <strong>item exposure fairness</strong> and diversity.</p>
+<h4>Practical cautions</h4>
+<p>Avoid showing irrelevant items that damage trust, handle popularity bias (popular fallback can lock in a rich-get-richer effect), respect privacy when using attributes and external data, and log exposure properly for <strong>counterfactual learning</strong> (inverse propensity weighting).</p>
+<h4>Pitfalls</h4>
+<p>Optimising only for existing users&#39; offline metrics, ignoring exploration, leaking item metadata that encodes popularity, and slow pipelines that delay embedding of new items by days.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do multi-armed bandits balance exploration and exploitation for new items?</li><li>How can an item content embedding give a new item a collaborative-style vector?</li><li>How do you evaluate cold-start performance separately?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-86">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-86%3A+How+do+recommender+systems+resolve+the+Cold+Start+problem+for%E2%80%A6&amp;question-id=ml-86&amp;context=ML+%2F+AI+engineer%2C+Gear+2%2C+topic%3A+Recommenders%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-86.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

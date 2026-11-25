@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you automate Infrastructure as Code (IaC) security scanning using Checkov, tfsec, and Trivy? | InterviewGearUp</title>
+<meta name="description" content="Automate IaC scanning by running Checkov, tfsec (now merged into Trivy) and Trivy config scans in pre-commit hooks and CI on every pull request, scanning…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-43.html">
+<meta property="og:title" content="How do you automate Infrastructure as Code (IaC) security scanning using Checkov, tfsec, and Trivy? | InterviewGearUp">
+<meta property="og:description" content="Automate IaC scanning by running Checkov, tfsec (now merged into Trivy) and Trivy config scans in pre-commit hooks and CI on every pull request, scanning…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-43.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you automate Infrastructure as Code (IaC) security scanning using Checkov, tfsec, and Trivy?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 2 (Mid-level) · IaC · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Automate IaC scanning by running Checkov, tfsec (now merged into Trivy) and Trivy config scans in pre-commit hooks and CI on every pull request, scanning Terraform, CloudFormation, Kubernetes manifests and Dockerfiles against policy sets. Fail builds on high severity findings, upload SARIF to the code scanning dashboard, manage justified suppressions with expiry, and add custom policies.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why scan IaC</h4>
+<p>Infrastructure as Code turns cloud configuration into reviewable text, so misconfigurations (public buckets, open security groups, unencrypted disks, wildcard IAM) can be found <strong>before deployment</strong>, cheaply and with developer-friendly feedback. This is the shift-left complement to runtime CSPM.</p>
+<h4>The tools</h4>
+<ul><li><strong>Checkov</strong> (Prisma Cloud/Bridgecrew): Python, 1000+ built-in policies for Terraform, CloudFormation, ARM and Bicep, Kubernetes, Helm, Dockerfile, Serverless, GitHub Actions, secrets; graph-based checks across resources; custom policies in Python or YAML.</li><li><strong>tfsec</strong>: fast Terraform-focused static analyser, now <strong>merged into Trivy</strong>, which is the maintained path (<code>trivy config</code>).</li><li><strong>Trivy</strong>: all-in-one scanner (container images, filesystems, SBOM, IaC misconfigurations, secrets, licences) with Rego custom checks.</li><li>Others: <strong>KICS</strong> (Checkmarx), <strong>Terrascan</strong>, <strong>Snyk IaC</strong>, <strong>Conftest/OPA</strong>, <strong>Semgrep</strong>, <strong>kube-linter</strong>, <strong>kubesec</strong>, <strong>Hadolint</strong> (Dockerfile).</li></ul>
+<h4>Running locally and in CI</h4>
+<pre><code>checkov -d infra/ --framework terraform --compact --quiet
+checkov -d infra/ --soft-fail-on LOW,MEDIUM --hard-fail-on HIGH,CRITICAL
+trivy config --severity HIGH,CRITICAL --exit-code 1 infra/
+trivy config --format sarif -o trivy-iac.sarif infra/
+
+# scan the plan to include variables and module expansions
+terraform init &amp;&amp; terraform plan -out tf.plan &amp;&amp; terraform show -json tf.plan &gt; tf.json
+checkov -f tf.json --framework terraform_plan</code></pre>
+<pre><code># GitHub Actions
+name: iac-security
+on: [pull_request]
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    permissions: { contents: read, security-events: write }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bridgecrewio/checkov-action@v12
+        with: { directory: infra, framework: terraform, soft_fail: false, output_format: sarif, download_external_modules: true }
+      - uses: aquasecurity/trivy-action@master
+        with: { scan-type: config, scan-ref: infra, severity: &#39;HIGH,CRITICAL&#39;, exit-code: &#39;1&#39;, format: sarif, output: trivy.sarif }
+      - uses: github/codeql-action/upload-sarif@v3
+        with: { sarif_file: trivy.sarif }</code></pre>
+<pre><code># .pre-commit-config.yaml: fast feedback before commit
+repos:
+  - repo: https://github.com/bridgecrewio/checkov
+    rev: 3.2.0
+    hooks: [{ id: checkov, args: [&quot;--quiet&quot;, &quot;--framework&quot;, &quot;terraform&quot;] }]
+  - repo: https://github.com/aquasecurity/trivy
+    rev: v0.50.0
+    hooks: [{ id: trivy-config }]</code></pre>
+<h4>Typical findings caught</h4>
+<p><code>acl = &quot;public-read&quot;</code> on buckets, <code>cidr_blocks = [&quot;0.0.0.0/0&quot;]</code> on port 22, RDS without encryption or backups, EBS unencrypted, S3 without versioning or logging, IAM policies with <code>*</code>, Kubernetes pods running as root or privileged, <code>hostNetwork</code>, missing resource limits, containers using <code>latest</code> tags, Dockerfile running as root, secrets in variables.</p>
+<h4>Making it effective</h4>
+<ol start="1"><li><strong>Gate by severity and age</strong>: block new high and critical findings; <strong>baseline</strong> existing debt so teams are not stopped by legacy issues (Checkov baseline files), then burn down with tracked tickets.</li><li><strong>Scan at several points</strong>: IDE plugin, pre-commit, PR checks, scheduled full scans of the main branch, and <strong>registry/module scanning</strong> of shared Terraform modules (fixing a module fixes many stacks).</li><li><strong>Suppress responsibly</strong>: inline skips with required justification and expiry:</li></ol>
+<pre><code>resource &quot;aws_s3_bucket&quot; &quot;site&quot; {
+  #checkov:skip=CKV_AWS_18:Access logging not needed for public static assets (ticket SEC-142, review 2027-03-01)
+  bucket = &quot;marketing-site-assets&quot;
+}</code></pre>
+<p>   and review suppressions regularly; trivy uses <code>.trivyignore</code> with expiry dates.</p>
+<ol start="4"><li><strong>Custom policies</strong> for organisational standards (required tags, approved regions, mandatory KMS keys, no public IPs):</li></ol>
+<pre><code># Checkov custom check
+from checkov.terraform.checks.resource.base_resource_check import BaseResourceCheck
+from checkov.common.models.enums import CheckResult, CheckCategories
+class RequireOwnerTag(BaseResourceCheck):
+    def __init__(self): super().__init__(name=&quot;Ensure owner tag&quot;, id=&quot;CKV_ORG_1&quot;, categories=[CheckCategories.GENERAL_SECURITY], supported_resources=[&quot;aws_instance&quot;, &quot;aws_s3_bucket&quot;])
+    def scan_resource_conf(self, conf):
+        tags = conf.get(&quot;tags&quot;, [{}])[0]
+        return CheckResult.PASSED if isinstance(tags, dict) and &quot;owner&quot; in tags else CheckResult.FAILED
+check = RequireOwnerTag()</code></pre>
+<ol start="5"><li><strong>Policy as code with OPA/Conftest</strong> against Terraform plan JSON for contextual rules (cost, naming, network design); <strong>Sentinel</strong> in Terraform Cloud.</li><li><strong>Report and track</strong>: SARIF to GitHub Advanced Security, JUnit and dashboards, metrics (new vs fixed findings, mean time to fix), and send high-risk failures to owners via CODEOWNERS.</li><li><strong>Pair with runtime</strong>: CSPM verifies what actually deployed, catching console drift and resources outside IaC; keep rule sets aligned.</li></ol>
+<h4>Limits</h4>
+<p>Static analysis cannot see runtime state, dynamic values (unknown until apply) or business context; false positives happen on intentional exceptions. Scan the <strong>plan</strong> for better accuracy and combine with policy at deploy (SCPs, Azure Policy).</p>
+<h4>Pitfalls</h4>
+<p>Scanning only on main after merge, disabling noisy checks globally, no ownership for fixes, unversioned tool and policy updates that suddenly break pipelines (pin versions), and treating a clean scan as proof of security.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you scan Terraform plans so module outputs and computed values are evaluated?</li><li>How do you manage false positives and suppressions without losing signal?</li><li>How do you write a custom Checkov policy for an organisational rule?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-43">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-43%3A+How+do+you+automate+Infrastructure+as+Code+%28IaC%29+security+scanning%E2%80%A6&amp;question-id=sec-43&amp;context=Security+engineer%2C+Gear+2%2C+topic%3A+IaC%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-43.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

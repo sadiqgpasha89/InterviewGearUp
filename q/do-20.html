@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does subnetting and CIDR notation (e.g., `/24`, `/16`) allocate IP address ranges in a cloud VPC? | InterviewGearUp</title>
+<meta name="description" content="CIDR notation writes an address plus prefix length, such as 10.0.0.0/16, where the prefix is the number of fixed network bits and the remaining bits…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-20.html">
+<meta property="og:title" content="How does subnetting and CIDR notation (e.g., `/24`, `/16`) allocate IP address ranges in a cloud VPC? | InterviewGearUp">
+<meta property="og:description" content="CIDR notation writes an address plus prefix length, such as 10.0.0.0/16, where the prefix is the number of fixed network bits and the remaining bits…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-20.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does subnetting and CIDR notation (e.g., `/24`, `/16`) allocate IP address ranges in a cloud VPC?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 2 (Mid-level) · Networking · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>CIDR notation writes an address plus prefix length, such as 10.0.0.0/16, where the prefix is the number of fixed network bits and the remaining bits address hosts. A /24 has 256 addresses, a /16 has 65,536. Cloud VPCs are allocated one or more CIDR blocks and split into subnets with non-overlapping ranges, per availability zone and tier.</p></div>
+<h4>Explained in depth</h4>
+<h4>CIDR basics</h4>
+<p>An IPv4 address has 32 bits. <code>/N</code> means the first N bits identify the network. Host bits = 32 − N, giving 2^(32−N) addresses.</p>
+<div class="md-table"><table><thead><tr><th>CIDR</th><th>Netmask</th><th>Addresses</th><th>Typical use</th></tr></thead><tbody><tr><td>/32</td><td>255.255.255.255</td><td>1</td><td>single host route</td></tr><tr><td>/28</td><td>255.255.255.240</td><td>16</td><td>tiny subnet</td></tr><tr><td>/24</td><td>255.255.255.0</td><td>256</td><td>standard subnet</td></tr><tr><td>/20</td><td>255.255.240.0</td><td>4,096</td><td>large subnet (Kubernetes nodes and pods)</td></tr><tr><td>/16</td><td>255.255.0.0</td><td>65,536</td><td>whole VPC</td></tr><tr><td>/8</td><td>255.0.0.0</td><td>16,777,216</td><td>very large private range</td></tr></tbody></table></div>
+<p>Example: <code>10.0.1.0/24</code> covers 10.0.1.0 to 10.0.1.255 (256 addresses). Traditionally network and broadcast addresses are unusable; <strong>AWS reserves 5 addresses per subnet</strong> (network, VPC router, DNS, future use, broadcast), so a /24 gives 251 usable; Azure and GCP reserve 4 or 5 similarly.</p>
+<h4>Private ranges (RFC 1918)</h4>
+<p><code>10.0.0.0/8</code>, <code>172.16.0.0/12</code>, <code>192.168.0.0/16</code>. Also <code>100.64.0.0/10</code> (carrier-grade NAT) used for secondary ranges in some designs. VPC addresses are normally from these ranges and are translated by NAT gateways for internet access.</p>
+<h4>Designing a VPC</h4>
+<pre><code>VPC 10.20.0.0/16
+  Public subnets   : 10.20.0.0/24 (AZ a), 10.20.1.0/24 (AZ b), 10.20.2.0/24 (AZ c)       -&gt; load balancers, NAT gateways
+  Private app      : 10.20.16.0/20 (AZ a), 10.20.32.0/20 (AZ b), 10.20.48.0/20 (AZ c)     -&gt; services, Kubernetes nodes
+  Private data     : 10.20.64.0/24 ... per AZ                                              -&gt; databases, caches</code></pre>
+<p>Guidelines:</p>
+<ul><li>Spread each tier across at least <strong>two or three availability zones</strong>, with equal-size subnets per AZ.</li><li>Leave room to grow; resizing a subnet is hard (you usually add secondary CIDR blocks instead).</li><li>Size for workloads: Kubernetes with the AWS VPC CNI assigns a VPC IP to every pod, so subnets need large blocks (/19 or /20) or a secondary CIDR (100.64.0.0/16) for pods.</li><li><strong>Avoid overlapping ranges</strong> with other VPCs, on-premises networks and partners, since peering, Transit Gateway and VPNs cannot route between overlapping CIDRs. Keep a central IP address management (IPAM) plan or tool (AWS VPC IPAM, NetBox).</li><li>Use distinct non-default ranges per environment and region (dev, staging, prod).</li><li>Route tables decide reachability: public subnets route 0.0.0.0/0 to an internet gateway, private subnets to a NAT gateway, and data subnets may have no internet route. Security groups and network ACLs apply rules by CIDR or reference.</li></ul>
+<h4>Quick calculations</h4>
+<ul><li>Addresses in /N: 2^(32−N). A /22 is 1,024.</li><li>To split 10.0.0.0/16 into four equal subnets, increase the prefix by 2: /18 each (10.0.0.0, 10.0.64.0, 10.0.128.0, 10.0.192.0).</li><li>Two addresses are in the same subnet if they share the first N bits (AND with the mask gives the same network). Tools: <code>ipcalc</code>, <code>sipcalc</code>, Python <code>ipaddress</code>.</li></ul>
+<h4>IPv6</h4>
+<p>Uses /64 per subnet and /56 or /48 allocations; no NAT is usually needed, but security groups and egress-only gateways control access.</p>
+<h4>Pitfalls</h4>
+<p>Choosing too-small ranges, overlapping CIDRs discovered after peering, forgetting reserved addresses, and exhausting subnet IPs with Kubernetes pods or ENIs.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why do cloud providers reserve some addresses in each subnet?</li><li>How do you plan CIDR ranges to avoid overlap for VPC peering and VPNs?</li><li>What are RFC 1918 private ranges?</li></ul>
+<p><a class="btn primary" href="../#/q/do-20">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-20%3A+How+does+subnetting+and+CIDR+notation+%28e.g.%2C+%60%2F24%60%2C+%60%2F16%60%29+allocate%E2%80%A6&amp;question-id=do-20&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+2%2C+topic%3A+Networking%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-20.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

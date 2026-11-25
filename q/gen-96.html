@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain the Fenwick Tree (Binary Indexed Tree) for computing dynamic prefix sums in $O(\log N)$ time. | InterviewGearUp</title>
+<meta name="description" content="A Fenwick tree (binary indexed tree) stores partial sums in a flat array where index i covers a block of length equal to its lowest set bit. Prefix sums…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-96.html">
+<meta property="og:title" content="Explain the Fenwick Tree (Binary Indexed Tree) for computing dynamic prefix sums in $O(\log N)$ time. | InterviewGearUp">
+<meta property="og:description" content="A Fenwick tree (binary indexed tree) stores partial sums in a flat array where index i covers a block of length equal to its lowest set bit. Prefix sums…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-96.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain the Fenwick Tree (Binary Indexed Tree) for computing dynamic prefix sums in $O(\log N)$ time.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 3 (Senior) · Data structures · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A Fenwick tree (binary indexed tree) stores partial sums in a flat array where index i covers a block of length equal to its lowest set bit. Prefix sums and point updates both walk O(log N) indices by adding or subtracting i &amp; -i, using one array and very little code.</p></div>
+<h4>Explained in depth</h4>
+<h4>Idea</h4>
+<p>Use a 1-indexed array <code>bit[1..n]</code>. Position <code>i</code> stores the sum of the <code>lowbit(i)</code> elements ending at <code>i</code>, where <code>lowbit(i) = i &amp; -i</code>.</p>
+<pre><code>index i : 1  2  3  4  5  6  7  8
+lowbit  : 1  2  1  4  1  2  1  8
+bit[i] covers: [1] [1..2] [3] [1..4] [5] [5..6] [7] [1..8]</code></pre>
+<h4>Operations</h4>
+<pre><code>class Fenwick:
+    def __init__(self, n): self.n = n; self.t = [0] * (n + 1)
+    def add(self, i, delta):            # point update: a[i] += delta
+        while i &lt;= self.n:
+            self.t[i] += delta
+            i += i &amp; -i                 # jump to the next block that includes i
+    def prefix(self, i):                # sum of a[1..i]
+        s = 0
+        while i &gt; 0:
+            s += self.t[i]
+            i -= i &amp; -i                 # drop the lowest set bit
+        return s
+    def range_sum(self, l, r):          # a[l..r]
+        return self.prefix(r) - self.prefix(l - 1)</code></pre>
+<p>Both loops run at most <code>log2(n)</code> iterations because each step changes the lowest set bit. Memory is <code>n + 1</code> numbers, and constants are tiny compared to a segment tree.</p>
+<h4>Building in O(n)</h4>
+<p>Instead of <code>n</code> updates, copy the array in and for each <code>i</code> add <code>t[i]</code> into its parent <code>i + (i &amp; -i)</code>.</p>
+<h4>Useful variations</h4>
+<ul><li><strong>Range update, point query</strong>: store differences, so <code>add(l, v)</code> and <code>add(r + 1, -v)</code>; the value at <code>i</code> is <code>prefix(i)</code>.</li><li><strong>Range update, range query</strong>: two Fenwick trees (<code>B1</code>, <code>B2</code>) using the identity for prefix sums of a difference array.</li><li><strong>Order statistics</strong>: a Fenwick tree over counts finds the k-th smallest by binary lifting on the tree in <code>O(log n)</code>; <strong>counting inversions</strong> uses it with coordinate compression.</li><li><strong>2D Fenwick</strong> for submatrix sums with point updates.</li></ul>
+<h4>Limits</h4>
+<p>It requires an <strong>invertible</strong> operation for range queries (sum, XOR). Min and max are not invertible, so use a segment tree. Prefix-only monotone updates can still work for prefix max, with update that only increases values.</p>
+<h4>Comparison with a segment tree</h4>
+<p>Simpler, faster and half the memory for sum-like problems, but less flexible (no lazy propagation of arbitrary operations).</p>
+<h4>Pitfalls</h4>
+<p>Using 0-based indexes (<code>i &amp; -i</code> is 0 at <code>i = 0</code>, causing an infinite loop), forgetting <code>l - 1</code> for range sums, integer overflow in sums, and mixing difference-array versions without the second tree.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you get the sum of an arbitrary range and perform a range update with point query?</li><li>How would you find the k-th smallest element or the lower bound with a Fenwick tree?</li><li>Why can a Fenwick tree not directly support range minimum queries with updates?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-96">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-96%3A+Explain+the+Fenwick+Tree+%28Binary+Indexed+Tree%29+for+computing+dynamic%E2%80%A6&amp;question-id=gen-96&amp;context=Software+engineer+%28core%29%2C+Gear+3%2C+topic%3A+Data+structures%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-96.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

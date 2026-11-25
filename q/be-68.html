@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you build a resilient webhook ingestion pipeline that handles duplicate events and bursts? | InterviewGearUp</title>
+<meta name="description" content="A resilient webhook ingestion pipeline verifies the signature, immediately persists the raw event, acknowledges quickly with 2xx, and processes…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-68.html">
+<meta property="og:title" content="How do you build a resilient webhook ingestion pipeline that handles duplicate events and bursts? | InterviewGearUp">
+<meta property="og:description" content="A resilient webhook ingestion pipeline verifies the signature, immediately persists the raw event, acknowledges quickly with 2xx, and processes…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-68.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you build a resilient webhook ingestion pipeline that handles duplicate events and bursts?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · APIs · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A resilient webhook ingestion pipeline verifies the signature, immediately persists the raw event, acknowledges quickly with 2xx, and processes asynchronously from a queue. It dedupes by event id, handles out-of-order delivery, absorbs bursts with buffering and rate-limited workers, and exposes replay and reconciliation tools.</p></div>
+<h4>Explained in depth</h4>
+<h4>Characteristics of webhooks</h4>
+<p>Senders deliver <strong>at least once</strong>, may retry for days when you fail or time out, can send duplicates and out-of-order events, burst after your outage, and give you a short timeout (often 5 to 30 seconds). You do not control their rate.</p>
+<h4>Pipeline</h4>
+<pre><code>Provider -&gt; HTTPS endpoint -&gt; verify signature -&gt; store raw event (dedupe key) -&gt; enqueue -&gt; 2xx (fast)
+                                                                         |
+                                                              Worker pool -&gt; business logic (idempotent) -&gt; mark processed / DLQ</code></pre>
+<ol start="1"><li><strong>Authenticate</strong>: verify the HMAC signature header using the <strong>raw body</strong> and a shared secret in constant time; check the timestamp tolerance (for example 5 minutes) to prevent replay; optionally allowlist provider IPs and use mTLS. Rotate secrets.</li><li><strong>Persist first</strong>: insert the raw payload, headers and <code>event_id</code> into a durable table or queue (a unique constraint on provider plus event id). Duplicate insert means already received, so respond 200 without reprocessing.</li><li><strong>Acknowledge fast</strong>: return 2xx quickly. Do real work asynchronously; otherwise slow processing causes sender timeouts and retries, which multiply load.</li><li><strong>Queue and workers</strong>: a durable queue (SQS, Kafka, Pub/Sub) buffers bursts, workers scale with depth, and concurrency limits protect downstream systems.</li><li><strong>Idempotent handlers</strong>: processing keyed by event id (or by business entity plus version), using upserts or a processed-events table in the same transaction as side effects.</li><li><strong>Ordering</strong>: do not trust arrival order. Use event timestamps or sequence numbers and ignore stale updates (<code>WHERE version &lt; :new</code>), or <strong>fetch current state</strong> from the provider API when an event arrives (treat webhooks as notifications), which removes ordering concerns.</li><li><strong>Failures</strong>: retry with exponential backoff, send poison events to a DLQ, alert on depth, and keep an admin tool to inspect and replay.</li><li><strong>Reconciliation</strong>: periodically poll or list events from the provider to catch missed deliveries, because webhooks are not guaranteed.</li></ol>
+<pre><code>@app.post(&#39;/webhooks/pay&#39;)
+def hook():
+    raw = request.get_data()
+    if not verify_signature(raw, request.headers[&#39;X-Signature&#39;], SECRET, tolerance=300): abort(400)
+    evt = json.loads(raw)
+    if db.insert_if_absent(&#39;webhook_events&#39;, id=evt[&#39;id&#39;], payload=raw): queue.publish(evt[&#39;id&#39;])
+    return &#39;&#39;, 200</code></pre>
+<h4>Operational concerns</h4>
+<ul><li>Return 4xx only for permanently invalid requests (bad signature); return 5xx when you want a retry (storage down).</li><li>Rate limit by source, size-limit payloads, and set body and header timeouts.</li><li>Separate endpoint and queue per provider, version payload schemas, and log with the event id for tracing.</li><li>Retain raw events for audit and replay (with PII handling), and monitor delivery lag and failure rate.</li></ul>
+<h4>Pitfalls</h4>
+<p>Parsing and re-serialising the body before verifying the signature, doing slow processing inline, assuming exactly-once, using only in-memory dedupe, and no alerting on stopped deliveries (silent breakage).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why should you respond 200 before doing the real work?</li><li>How do you handle out-of-order and replayed events?</li><li>How do you protect the endpoint against forged or replayed requests?</li></ul>
+<p><a class="btn primary" href="../#/q/be-68">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-68%3A+How+do+you+build+a+resilient+webhook+ingestion+pipeline+that+handles%E2%80%A6&amp;question-id=be-68&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+APIs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-68.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

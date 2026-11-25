@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Design a notification service that fans out push notifications, SMS, and emails to millions of users. | InterviewGearUp</title>
+<meta name="description" content="A notification service accepts events through an API, applies user preferences and templates, and fans out to push, SMS and email channels via durable…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-92.html">
+<meta property="og:title" content="Design a notification service that fans out push notifications, SMS, and emails to millions of users. | InterviewGearUp">
+<meta property="og:description" content="A notification service accepts events through an API, applies user preferences and templates, and fans out to push, SMS and email channels via durable…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-92.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Design a notification service that fans out push notifications, SMS, and emails to millions of users.</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · Architecture · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A notification service accepts events through an API, applies user preferences and templates, and fans out to push, SMS and email channels via durable queues and per-channel workers with rate limiting, retries and provider failover. Key concerns are scale, idempotency, ordering, preferences and quiet hours, delivery tracking, and cost control.</p></div>
+<h4>Explained in depth</h4>
+<h4>Requirements</h4>
+<p>Multiple channels (mobile push, SMS, email, in-app, web push), transactional (OTP, receipts: low latency, high priority) and bulk or marketing (campaigns: high volume, lower priority) traffic, user preferences and opt-outs, localisation, scheduling, deduplication, delivery receipts, high availability and compliance (CAN-SPAM, GDPR, TCPA quiet hours).</p>
+<h4>Architecture</h4>
+<pre><code>Producers (services, campaigns) -&gt; Notification API (validate, idempotency key, auth)
+   -&gt; Event bus (Kafka) -&gt; Orchestrator:
+        resolve audience, load preferences, apply rules (dedupe, frequency caps, quiet hours, locale), render template
+   -&gt; Channel queues (push | sms | email), partitioned and prioritised
+   -&gt; Channel workers -&gt; providers (APNs, FCM, Twilio, SES/SendGrid) 
+   -&gt; delivery receipts/webhooks -&gt; status store + analytics</code></pre>
+<h4>Fan-out for millions</h4>
+<ul><li>A campaign targets a segment; do not expand it in one process. A <strong>splitter</strong> reads the audience in pages (cursor over a segment table or query) and publishes <strong>batches</strong> of recipient ids to a queue; workers expand each batch and enqueue per-user messages. This allows parallelism, resumability and backpressure.</li><li>Use <strong>partitions</strong> by user id for ordering and locality, autoscale workers on queue lag, and <strong>rate limit</strong> per provider and per tenant.</li><li>Separate <strong>priority lanes</strong>: OTP and security alerts never queue behind a million marketing emails.</li><li>Use batch APIs (FCM multicast, SES bulk) and keep long-lived HTTP/2 connections to APNs.</li></ul>
+<h4>Reliability</h4>
+<ul><li><strong>Idempotency</strong>: key <code>(event_id, user_id, channel)</code> stored with a unique constraint, so retries and duplicate events do not send twice.</li><li><strong>Retries</strong> with exponential backoff and jitter, dead-letter queues, and circuit breakers per provider; <strong>failover</strong> to a secondary SMS or email provider.</li><li>Handle provider throttling (429) by honouring <code>Retry-After</code>, and token hygiene: remove invalid device tokens when APNs or FCM report them, process email bounces and complaints, maintain suppression lists.</li><li><strong>Outbox pattern</strong> so a business transaction and the notification event commit atomically.</li></ul>
+<h4>Preferences and rules</h4>
+<p>Preference service per user and category (channel opt-in, frequency, digest, quiet hours by time zone), global unsubscribe, consent records, frequency capping with Redis counters, collapse similar notifications (<code>collapse_key</code>, thread ids), and time-zone aware scheduling using a delayed queue or scheduler.</p>
+<h4>Data and tracking</h4>
+<p>Store notification records (status: queued, sent, delivered, opened, failed) with TTL, ingest provider webhooks and open and click events, expose analytics and per-user history (in-app inbox via a database plus WebSocket or SSE updates).</p>
+<h4>Cost and scale estimates</h4>
+<p>10 million recipients at 5,000 sends per second takes about 33 minutes per channel; plan provider quotas, warm up email sender IPs and domains (SPF, DKIM, DMARC), and compare costs (SMS is the most expensive, so prefer push or email where possible).</p>
+<h4>Pitfalls</h4>
+<p>Single shared queue for all priorities, no dedupe (users get repeated pushes after retries), ignoring provider rate limits, synchronous sends in the request path, leaking PII in logs, and missing unsubscribe handling.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you fan out one event to ten million users without overloading the system?</li><li>How do you handle provider outages and rate limits (APNs, FCM, Twilio, SES)?</li><li>How do you prevent duplicate or too frequent notifications?</li></ul>
+<p><a class="btn primary" href="../#/q/be-92">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-92%3A+Design+a+notification+service+that+fans+out+push+notifications%2C+SMS%2C%E2%80%A6&amp;question-id=be-92&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-92.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

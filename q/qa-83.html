@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you verify that HTTP caching headers (`Cache-Control`, `ETag`) are correctly honored by browsers and CDNs? | InterviewGearUp</title>
+<meta name="description" content="Verify caching by inspecting response headers and then proving behaviour: assert Cache-Control, ETag, Last-Modified and Vary on each resource class,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-83.html">
+<meta property="og:title" content="How do you verify that HTTP caching headers (`Cache-Control`, `ETag`) are correctly honored by browsers and CDNs? | InterviewGearUp">
+<meta property="og:description" content="Verify caching by inspecting response headers and then proving behaviour: assert Cache-Control, ETag, Last-Modified and Vary on each resource class,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-83.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you verify that HTTP caching headers (`Cache-Control`, `ETag`) are correctly honored by browsers and CDNs?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 2 (Mid-level) · Performance · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Verify caching by inspecting response headers and then proving behaviour: assert Cache-Control, ETag, Last-Modified and Vary on each resource class, repeat requests with If-None-Match to expect 304, check that browsers reuse cached responses without network calls, and confirm CDN behaviour through cache status headers such as X-Cache or CF-Cache-Status across origin changes and purges.</p></div>
+<h4>Explained in depth</h4>
+<h4>What you are verifying</h4>
+<p>Correct caching makes sites fast and cheap; incorrect caching leaks private data (a CDN storing a logged-in page) or serves stale content (users see old prices after a deploy). Tests should check <strong>policy per resource type</strong> and the <strong>observable behaviour</strong> in browsers and CDNs.</p>
+<h4>Key headers</h4>
+<div class="md-table"><table><thead><tr><th>Header</th><th>Purpose</th></tr></thead><tbody><tr><td><code>Cache-Control: max-age=31536000, immutable</code></td><td>fresh for a year without revalidation (fingerprinted static assets)</td></tr><tr><td><code>Cache-Control: no-cache</code></td><td>may store, but must revalidate with the origin before reuse</td></tr><tr><td><code>Cache-Control: no-store</code></td><td>never store (sensitive responses)</td></tr><tr><td><code>private</code> / <code>public</code></td><td>only browser may cache vs shared caches (CDN) may cache</td></tr><tr><td><code>s-maxage</code></td><td>TTL for shared caches only</td></tr><tr><td><code>stale-while-revalidate</code>, <code>stale-if-error</code></td><td>serve stale while refreshing, or when origin fails</td></tr><tr><td><code>ETag</code> / <code>If-None-Match</code></td><td>validator for conditional requests, returns <code>304 Not Modified</code></td></tr><tr><td><code>Last-Modified</code> / <code>If-Modified-Since</code></td><td>time-based validator</td></tr><tr><td><code>Vary</code></td><td>headers that change the cached variant (<code>Accept-Encoding</code>, <code>Accept-Language</code>)</td></tr><tr><td><code>Age</code></td><td>seconds the object has spent in a shared cache</td></tr></tbody></table></div>
+<h4>API-level tests (fast, deterministic)</h4>
+<pre><code>def test_static_asset_is_immutable(client):
+    r = client.get(&quot;/assets/app.3f9a1c.js&quot;)
+    assert &quot;max-age=31536000&quot; in r.headers[&quot;Cache-Control&quot;] and &quot;immutable&quot; in r.headers[&quot;Cache-Control&quot;]
+    assert &quot;ETag&quot; in r.headers
+
+def test_conditional_request_returns_304(client):
+    first = client.get(&quot;/api/products/42&quot;)
+    second = client.get(&quot;/api/products/42&quot;, headers={&quot;If-None-Match&quot;: first.headers[&quot;ETag&quot;]})
+    assert second.status_code == 304 and second.content == b&quot;&quot;
+
+def test_private_data_not_cacheable_by_cdn(client, auth):
+    r = client.get(&quot;/api/me&quot;, headers=auth)
+    cc = r.headers[&quot;Cache-Control&quot;]
+    assert &quot;no-store&quot; in cc or (&quot;private&quot; in cc and &quot;public&quot; not in cc)
+
+def test_vary_on_compression(client):
+    assert &quot;Accept-Encoding&quot; in client.get(&quot;/&quot;, headers={&quot;Accept-Encoding&quot;: &quot;gzip&quot;}).headers.get(&quot;Vary&quot;, &quot;&quot;)</code></pre>
+<p>Policy matrix to assert: HTML (short TTL or <code>no-cache</code> with ETag), fingerprinted JS, CSS and images (long TTL, immutable), unversioned assets (revalidate), API GET responses (explicit policy), authenticated and personalised responses (<code>private</code> or <code>no-store</code>), error responses (short TTL or none), redirects, and <code>Set-Cookie</code> responses not cached publicly.</p>
+<h4>Browser behaviour tests</h4>
+<p>Use Playwright or Puppeteer to load a page twice and inspect network events: second load should show <code>fromCache</code> or <code>disk cache</code> or <code>memory cache</code> (<code>response.fromServiceWorker()</code>, CDP <code>Network.responseReceived.fromDiskCache</code>) for static assets, a <code>304</code> for validated resources, and <strong>no request</strong> for immutable assets within the TTL.</p>
+<pre><code>await page.goto(&#39;/&#39;); const reqs = [];
+page.on(&#39;requestfinished&#39;, r =&gt; reqs.push({ url: r.url(), cached: r.response()?.fromCache?.() }));  // via CDP session for fromDiskCache
+await page.reload();</code></pre>
+<p>Check hard reload and normal reload semantics (reload revalidates; navigation reuses cache), back/forward cache behaviour, and service worker interaction. DevTools &quot;Disable cache&quot; must be off in tests.</p>
+<h4>CDN tests</h4>
+<ul><li>Determine cache status headers (<code>X-Cache: HIT/MISS</code>, <code>CF-Cache-Status</code>, <code>X-Served-By</code>, <code>Age</code>, <code>x-amz-cf-pop</code>). First request MISS, second HIT, <code>Age</code> increases.</li><li><strong>Cache key correctness</strong>: query-string handling (ignore tracking params, respect meaningful ones), cookies and headers in the key (avoid fragmentation), device or language variants via <code>Vary</code>, and <strong>no cross-user leakage</strong> (request with cookie A, then without, ensure private content is never served from cache).</li><li><strong>Purge and invalidation</strong>: deploy a change, purge by URL or surrogate key/tag, and assert users get new content within the SLA; test <code>stale-while-revalidate</code> and <code>stale-if-error</code> by taking the origin down.</li><li><strong>Range requests</strong>, compression variants (gzip, br), TLS and HTTP/2 or 3, redirects at edge, and security headers present on cached responses.</li><li>Test multiple regions or PoPs (synthetic monitors from several locations).</li></ul>
+<h4>Release safety</h4>
+<p>After deployments verify HTML points to new fingerprinted assets, old assets remain available for users with open tabs (do not delete previous versions immediately), and <code>index.html</code> is not cached long enough to strand users.</p>
+<h4>Pitfalls</h4>
+<p>Using <code>no-cache</code> and thinking it means &quot;do not store&quot;, caching authenticated pages with <code>public</code>, forgetting <code>Vary</code>, caching error responses, testing only through a browser with dev tools cache disabled, and relying on manual CDN purges.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the difference between no-cache, no-store and max-age=0 with must-revalidate?</li><li>How do fingerprinted asset filenames change your caching test strategy?</li><li>How do you test cache invalidation and stale-while-revalidate at a CDN?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-83">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-83%3A+How+do+you+verify+that+HTTP+caching+headers+%28%60Cache-Control%60%2C%E2%80%A6&amp;question-id=qa-83&amp;context=QA+%2F+SDET%2C+Gear+2%2C+topic%3A+Performance%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-83.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

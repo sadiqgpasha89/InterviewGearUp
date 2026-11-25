@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare centralized state management architectures: Redux Toolkit versus Zustand versus Jotai. | InterviewGearUp</title>
+<meta name="description" content="Redux Toolkit is a structured, single-store, reducer-based system with strong devtools and middleware; Zustand is a minimal hook-based store with…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-38.html">
+<meta property="og:title" content="Compare centralized state management architectures: Redux Toolkit versus Zustand versus Jotai. | InterviewGearUp">
+<meta property="og:description" content="Redux Toolkit is a structured, single-store, reducer-based system with strong devtools and middleware; Zustand is a minimal hook-based store with…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-38.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare centralized state management architectures: Redux Toolkit versus Zustand versus Jotai.</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · State · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Redux Toolkit is a structured, single-store, reducer-based system with strong devtools and middleware; Zustand is a minimal hook-based store with selectors and almost no boilerplate; Jotai is atomic: state lives in small independent atoms with derived atoms. Pick by scale, team conventions and how state is shared and derived.</p></div>
+<h4>Explained in depth</h4>
+<h4>Redux Toolkit (RTK)</h4>
+<p>One store, state changed only by dispatching actions processed by pure reducers (Immer lets you write &quot;mutating&quot; logic safely).</p>
+<pre><code>const todos = createSlice({
+  name: &#39;todos&#39;, initialState: [],
+  reducers: { added: (s, a) =&gt; { s.push(a.payload); }, toggled: (s, a) =&gt; { const t = s.find(x =&gt; x.id === a.payload); if (t) t.done = !t.done; } },
+});
+const store = configureStore({ reducer: { todos: todos.reducer } });
+const done = useSelector(s =&gt; s.todos.filter(t =&gt; t.done).length);</code></pre>
+<ul><li><strong>Strengths</strong>: predictable, time-travel and action log in Redux DevTools, middleware (thunks, listeners), RTK Query for fetching and caching, strong conventions for large teams, easy testing of reducers.</li><li><strong>Costs</strong>: more concepts and boilerplate, one global tree to design.</li></ul>
+<h4>Zustand</h4>
+<pre><code>const useCart = create((set) =&gt; ({
+  items: [], add: (i) =&gt; set((s) =&gt; ({ items: [...s.items, i] })), clear: () =&gt; set({ items: [] }),
+}));
+const count = useCart((s) =&gt; s.items.length);      // selector: re-render only if count changes</code></pre>
+<ul><li><strong>Strengths</strong>: tiny API, no providers, works outside React, selectors, middleware (persist, devtools, immer), multiple small stores.</li><li><strong>Costs</strong>: fewer enforced conventions, so large teams need their own structure.</li></ul>
+<h4>Jotai</h4>
+<pre><code>const priceAtom = atom(10), qtyAtom = atom(2);
+const totalAtom = atom((get) =&gt; get(priceAtom) * get(qtyAtom));   // derived atom
+const [total] = useAtom(totalAtom);</code></pre>
+<ul><li><strong>Strengths</strong>: bottom-up, fine-grained subscriptions (a component re-renders only for atoms it reads), derived and async atoms, great for state that is local-but-shareable and for complex dependency graphs.</li><li><strong>Costs</strong>: state is scattered across atoms, so overall structure and debugging need discipline.</li></ul>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th></th><th>Redux Toolkit</th><th>Zustand</th><th>Jotai</th></tr></thead><tbody><tr><td>Model</td><td>single store, reducers</td><td>store with setters</td><td>atoms</td></tr><tr><td>Boilerplate</td><td>medium</td><td>low</td><td>low</td></tr><tr><td>Re-render control</td><td>selectors</td><td>selectors</td><td>per-atom</td></tr><tr><td>DevTools</td><td>excellent</td><td>via middleware</td><td>decent</td></tr><tr><td>Best for</td><td>large apps, many contributors, audit trails</td><td>small to medium apps, quick wins</td><td>derived-state-heavy or modular UIs</td></tr></tbody></table></div>
+<h4>Guidance</h4>
+<ul><li>First separate <strong>server state</strong> (React Query, SWR, RTK Query) from <strong>client UI state</strong>; this removes most global state.</li><li>Use local <code>useState</code> or <code>useReducer</code> before any library.</li><li>Choose Redux Toolkit when predictability, tooling and team conventions matter; Zustand for pragmatic minimal needs; Jotai for fine-grained derived state.</li></ul>
+<h4>Pitfalls</h4>
+<p>Putting everything in global state, storing derived data instead of computing it, non-serialisable values in Redux, subscribing to the whole store without selectors, and mixing three libraries without ownership rules.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>When would you keep server state in React Query rather than any of these stores?</li><li>How do selectors prevent unnecessary re-renders in each library?</li><li>How would you migrate a legacy Redux code base incrementally?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-38">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-38%3A+Compare+centralized+state+management+architectures%3A+Redux+Toolkit%E2%80%A6&amp;question-id=fe-38&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+State%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-38.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

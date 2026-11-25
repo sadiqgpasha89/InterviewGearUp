@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare CSS Flexbox and CSS Grid: When is each layout model appropriate? | InterviewGearUp</title>
+<meta name="description" content="Flexbox is a one-dimensional layout model that distributes space along a single axis, ideal for rows or columns of components. Grid is two-dimensional…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-25.html">
+<meta property="og:title" content="Compare CSS Flexbox and CSS Grid: When is each layout model appropriate? | InterviewGearUp">
+<meta property="og:description" content="Flexbox is a one-dimensional layout model that distributes space along a single axis, ideal for rows or columns of components. Grid is two-dimensional…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-25.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare CSS Flexbox and CSS Grid: When is each layout model appropriate?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · CSS · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Flexbox is a one-dimensional layout model that distributes space along a single axis, ideal for rows or columns of components. Grid is two-dimensional and lays out rows and columns together, ideal for page structure and aligned layouts. They are complementary and are often nested.</p></div>
+<h4>Explained in depth</h4>
+<h4>Mental model</h4>
+<ul><li><strong>Flexbox</strong>: content-first, one axis at a time. Items size themselves and the container distributes leftover space. Wrapping creates new lines, but each line is laid out independently, so items in different rows do not align in columns.</li><li><strong>Grid</strong>: layout-first. You define tracks (rows and columns) and place items into cells or areas, so items align on <strong>both axes</strong>.</li></ul>
+<h4>Flexbox in practice</h4>
+<pre><code>.toolbar { display: flex; gap: 12px; align-items: center; }
+.toolbar .spacer { margin-left: auto; }          /* push the rest to the end */
+.card { flex: 1 1 240px; }                       /* grow, shrink, basis */</code></pre>
+<p>Best for navbars, button groups, centring, form rows, card internals, and any list that should flow in one direction.</p>
+<h4>Grid in practice</h4>
+<pre><code>.page {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  grid-template-areas: &quot;side main&quot;;
+  gap: 24px;
+}
+.gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }</code></pre>
+<p>Best for page skeletons, dashboards, galleries, card grids that must align in rows and columns, overlapping items and complex responsive layouts without media queries.</p>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th>Aspect</th><th>Flexbox</th><th>Grid</th></tr></thead><tbody><tr><td>Dimensions</td><td>one</td><td>two</td></tr><tr><td>Sizing driven by</td><td>content</td><td>track definitions (and content with auto/fr)</td></tr><tr><td>Alignment across rows</td><td>no</td><td>yes</td></tr><tr><td>Overlap and areas</td><td>awkward</td><td>native (<code>grid-area</code>, named areas)</td></tr><tr><td>Reordering</td><td><code>order</code></td><td><code>order</code>, placement by line/area</td></tr><tr><td>Typical scope</td><td>components</td><td>page and section layout</td></tr></tbody></table></div>
+<h4>Common pitfalls</h4>
+<ul><li>Flex items have <code>min-width: auto</code>, so long text or images prevent shrinking and cause overflow. Add <code>min-width: 0</code> (and <code>overflow: hidden</code>/ellipsis) on the item. In grid use <code>minmax(0, 1fr)</code> instead of <code>1fr</code>.</li><li><code>auto-fit</code> collapses empty tracks (items stretch), <code>auto-fill</code> keeps empty tracks (items keep their size).</li><li>Percent heights need a defined parent height; use <code>align-items</code>/<code>stretch</code> rather than height hacks.</li><li>Do not use <code>order</code> or visual reordering to change meaning, because keyboard and screen reader order follows the DOM.</li></ul>
+<h4>Rule of thumb</h4>
+<p>If you care about <strong>rows and columns lining up</strong>, use Grid. If you are arranging a <strong>single line of things</strong> and letting content decide sizes, use Flexbox. Nest them: a grid page with flex toolbars and cards.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you decide between auto-fit and auto-fill in a responsive grid?</li><li>Why can flex items overflow unexpectedly and how does min-width: 0 fix it?</li><li>Can grid and flexbox be combined in the same layout, and when would you do that?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-25">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-25%3A+Compare+CSS+Flexbox+and+CSS+Grid%3A+When+is+each+layout+model%E2%80%A6&amp;question-id=fe-25&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+CSS%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-25.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

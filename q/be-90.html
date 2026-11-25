@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do distributed unique ID generators like Twitter Snowflake generate 64-bit sortable IDs? | InterviewGearUp</title>
+<meta name="description" content="Snowflake builds a 64-bit ID from a timestamp, a machine or datacenter id and a per-millisecond sequence: 1 unused sign bit, 41 bits of milliseconds…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-90.html">
+<meta property="og:title" content="How do distributed unique ID generators like Twitter Snowflake generate 64-bit sortable IDs? | InterviewGearUp">
+<meta property="og:description" content="Snowflake builds a 64-bit ID from a timestamp, a machine or datacenter id and a per-millisecond sequence: 1 unused sign bit, 41 bits of milliseconds…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-90.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do distributed unique ID generators like Twitter Snowflake generate 64-bit sortable IDs?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · Distributed systems · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Snowflake builds a 64-bit ID from a timestamp, a machine or datacenter id and a per-millisecond sequence: 1 unused sign bit, 41 bits of milliseconds since a custom epoch, 10 bits of worker id and 12 bits of sequence. IDs are unique across nodes without coordination and roughly time-sortable, supporting about 4096 IDs per millisecond per worker.</p></div>
+<h4>Explained in depth</h4>
+<h4>Requirements</h4>
+<p>Globally unique, generated without a central round trip, compact (fits in a <code>BIGINT</code>), roughly ordered by time (good for B-tree index locality and &quot;latest first&quot; queries), and high throughput.</p>
+<h4>Bit layout (Twitter Snowflake)</h4>
+<pre><code>| 1 bit sign (0) | 41 bits timestamp (ms since custom epoch) | 10 bits worker (5 datacenter + 5 machine) | 12 bits sequence |</code></pre>
+<ul><li>41 bits of milliseconds is about 69 years from the epoch.</li><li>10 bits allow 1,024 workers.</li><li>12 bits allow 4,096 IDs per millisecond per worker (about 4 million per second per worker).</li></ul>
+<pre><code>long next() {
+  long ts = System.currentTimeMillis() - EPOCH;
+  if (ts &lt; lastTs) throw new IllegalStateException(&quot;clock moved backwards&quot;);   // or wait
+  if (ts == lastTs) { seq = (seq + 1) &amp; 0xFFF; if (seq == 0) ts = waitNextMillis(lastTs); }
+  else seq = 0;
+  lastTs = ts;
+  return (ts &lt;&lt; 22) | (workerId &lt;&lt; 12) | seq;
+}</code></pre>
+<p>Within one millisecond the sequence increments; if exhausted, wait for the next millisecond.</p>
+<h4>Properties</h4>
+<ul><li>IDs from different workers cannot collide because worker bits differ; within a worker timestamp plus sequence is unique.</li><li>IDs are <strong>k-sorted</strong>: sorted by creation time to millisecond granularity across nodes (clock skew can reorder events across workers slightly), not strictly monotonic globally.</li><li>Time can be extracted from the ID for debugging, partitioning or range queries by time.</li><li>Fits JavaScript caveat: 64-bit integers exceed <code>Number.MAX_SAFE_INTEGER</code> (2^53), so send them as <strong>strings</strong> in JSON.</li></ul>
+<h4>Operational hazards</h4>
+<ul><li><strong>Clock drift or backwards jump</strong> (NTP correction, VM pause) can produce duplicates. Detect and refuse or wait until time catches up; use monotonic logic, and keep NTP slewing configured.</li><li><strong>Worker id assignment</strong>: assign uniquely through configuration, ZooKeeper or etcd leases, Kubernetes StatefulSet ordinals, or database registration; never let two live processes share an id. Reclaim ids after a lease expires and a safe delay.</li><li><strong>Epoch choice</strong>: set a custom epoch near launch to maximise lifetime.</li><li>Predictability: IDs reveal creation time and volume, so do not use them as secrets or for security tokens.</li></ul>
+<h4>Alternatives</h4>
+<div class="md-table"><table><thead><tr><th>ID type</th><th>Size</th><th>Sorted</th><th>Coordination</th></tr></thead><tbody><tr><td>Auto-increment</td><td>64 bit</td><td>yes</td><td>single DB bottleneck</td></tr><tr><td>UUID v4</td><td>128 bit</td><td>no (random index fragmentation)</td><td>none</td></tr><tr><td>UUID v7 and ULID</td><td>128 bit</td><td>yes (timestamp prefix)</td><td>none</td></tr><tr><td>Snowflake</td><td>64 bit</td><td>roughly</td><td>worker id assignment</td></tr><tr><td>Ticket server or ranges (Flickr, segment allocation)</td><td>64 bit</td><td>yes</td><td>small central service, batch allocation</td></tr></tbody></table></div>
+<p>Variants: Sonyflake (longer lifetime), Instagram&#39;s PostgreSQL-based scheme (41 bits time, 13 bits shard id, 10 bits sequence), MongoDB ObjectId.</p>
+<h4>Pitfalls</h4>
+<p>Duplicate worker ids, ignoring clock regression, overflow after the epoch lifetime, and exposing sequential IDs in public URLs when enumeration is a concern.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What happens when the system clock moves backwards?</li><li>How do you assign worker ids safely in a dynamic fleet?</li><li>How do Snowflake IDs compare with UUIDv4, UUIDv7 and ULID?</li></ul>
+<p><a class="btn primary" href="../#/q/be-90">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-90%3A+How+do+distributed+unique+ID+generators+like+Twitter+Snowflake%E2%80%A6&amp;question-id=be-90&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+Distributed+systems%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-90.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are Data Contracts and how do they establish API-like guarantees between producers and consumers? | InterviewGearUp</title>
+<meta name="description" content="A data contract is a versioned, machine-checkable agreement between a data producer and its consumers covering schema, semantics, quality, freshness,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-54.html">
+<meta property="og:title" content="What are Data Contracts and how do they establish API-like guarantees between producers and consumers? | InterviewGearUp">
+<meta property="og:description" content="A data contract is a versioned, machine-checkable agreement between a data producer and its consumers covering schema, semantics, quality, freshness,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-54.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are Data Contracts and how do they establish API-like guarantees between producers and consumers?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Data Quality · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A data contract is a versioned, machine-checkable agreement between a data producer and its consumers covering schema, semantics, quality, freshness, ownership and change rules. Like an API, it makes the data product an explicit interface: breaking changes are detected in CI and negotiated, instead of surfacing as broken dashboards downstream.</p></div>
+<h4>Explained in depth</h4>
+<h4>The problem</h4>
+<p>In many companies analytics pipelines are built on top of <strong>operational databases and event streams</strong> owned by application teams who do not know who consumes their data. A developer renames a column, changes an enum, or alters timestamp semantics, and finance dashboards, ML features and reverse ETL jobs break days later. Trust erodes because the <strong>coupling is implicit</strong>.</p>
+<h4>What a data contract contains</h4>
+<ul><li><strong>Identity and ownership</strong>: dataset name, owning team, contact and on-call, support SLA.</li><li><strong>Schema</strong>: fields, types, nullability, primary keys, allowed values, formats (for example ISO 8601 UTC timestamps), PII classification tags.</li><li><strong>Semantics</strong>: definitions of fields and metrics (&quot;order_total excludes tax and shipping&quot;), units, currency, time zones, grain (one row per order line).</li><li><strong>Quality expectations</strong>: uniqueness, not-null, referential integrity, ranges, row-count bounds, null-rate thresholds.</li><li><strong>Service levels</strong>: freshness (arrives within 15 minutes of event), availability, retention, delivery mechanism (topic, table, file).</li><li><strong>Evolution policy</strong>: versioning (semver), what counts as breaking, deprecation window, notification channel.</li><li><strong>Terms of use</strong>: allowed purposes, access, privacy and retention constraints.</li></ul>
+<pre><code># datacontract.yaml (Open Data Contract Standard style)
+apiVersion: v3.0.0
+kind: DataContract
+id: orders.v2
+owner: checkout-team
+status: active
+schema:
+  - name: orders
+    properties:
+      - {name: order_id, type: string, required: true, unique: true}
+      - {name: amount, type: decimal, required: true, quality: [{type: range, min: 0}]}
+      - {name: email, type: string, classification: pii}
+slaProperties:
+  - {property: freshness, value: 15, unit: minutes}</code></pre>
+<h4>Enforcement points</h4>
+<ol start="1"><li><strong>At the producer (shift left)</strong>: CI checks on the producing service&#39;s migrations or event schemas run contract tests; a breaking change fails the build or requires a new major version. Tools: Data Contract CLI, Schema Registry, Protobuf buf breaking checks, Pact-like testing.</li><li><strong>At ingestion</strong>: validate incoming data against the contract (Great Expectations, Soda, dbt tests, Flink or Kafka validation); route violations to a quarantine or dead letter table.</li><li><strong>At the platform</strong>: catalogue registration, lineage-based impact analysis, and monitoring against SLAs with alerts to the owner.</li></ol>
+<h4>Benefits</h4>
+<p>Fewer breakages and firefights, clear accountability, faster onboarding of consumers, safe self-service, and a foundation for data mesh and data products. They also document PII handling for governance and compliance.</p>
+<h4>Adoption approach</h4>
+<p>Start with the <strong>most critical datasets</strong> (revenue, customer, events driving ML), agree a minimal contract (schema, owner, freshness), automate checks, then expand. Pair with a <strong>change process</strong>: producers announce deprecations, run dual versions during a migration window, and consumers register their usage so impact is known.</p>
+<h4>Contracts versus schema compatibility</h4>
+<p>Registry compatibility only validates <strong>syntax</strong> (can this reader decode that writer). Contracts also cover semantics, quality, SLAs, ownership and process, so both are needed.</p>
+<h4>Pitfalls</h4>
+<p>Contracts written but not enforced, ownership unclear, contracts that over-specify and block legitimate change, and treating them as documentation only.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do data contracts differ from schema registry compatibility checks?</li><li>Who owns and enforces a contract in a data mesh?</li><li>How do you roll out contracts incrementally in an organisation with legacy pipelines?</li></ul>
+<p><a class="btn primary" href="../#/q/de-54">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-54%3A+What+are+Data+Contracts+and+how+do+they+establish+API-like%E2%80%A6&amp;question-id=de-54&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Data+Quality%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-54.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

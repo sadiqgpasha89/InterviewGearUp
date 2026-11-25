@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you secure database and cache instances: Enforcing TLS, VPC endpoints, and disabling default ports? | InterviewGearUp</title>
+<meta name="description" content="Secure databases and caches by keeping them off the public internet in private subnets, restricting access through security groups or VPC endpoints and…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-100.html">
+<meta property="og:title" content="How do you secure database and cache instances: Enforcing TLS, VPC endpoints, and disabling default ports? | InterviewGearUp">
+<meta property="og:description" content="Secure databases and caches by keeping them off the public internet in private subnets, restricting access through security groups or VPC endpoints and…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-100.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you secure database and cache instances: Enforcing TLS, VPC endpoints, and disabling default ports?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · Data · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Secure databases and caches by keeping them off the public internet in private subnets, restricting access through security groups or VPC endpoints and private links, enforcing TLS with certificate verification, requiring authentication and ACLs on Redis and Memcached, using least-privilege accounts, changing or hiding default ports as a minor measure, encrypting at rest, and auditing and patching continuously.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why this matters</h4>
+<p>Internet scans (Shodan, Censys) routinely find <strong>open Redis (6379), MongoDB (27017), Elasticsearch (9200), Memcached (11211), MySQL (3306), PostgreSQL (5432), MSSQL (1433), CouchDB, etcd and Cassandra</strong> servers with <strong>no authentication</strong>. Attackers dump or wipe data, plant ransom notes, abuse Redis <code>CONFIG SET dir</code> and <code>SLAVEOF</code> for remote code execution, use Memcached for amplification DDoS, and steal credentials. Most breaches here are <strong>configuration mistakes</strong>, not zero-days.</p>
+<h4>Layered controls</h4>
+<ol start="1"><li><strong>Network isolation (most important)</strong></li></ol>
+<ul><li>Place instances in <strong>private subnets</strong> with <strong>no public IP</strong>; bind to private interfaces (<code>bind 10.0.1.5</code> in Redis, <code>listen_addresses</code> in PostgreSQL, <code>bind_ip</code> in MongoDB), never <code>0.0.0.0</code> without firewalling.</li><li><strong>Security groups / firewalls / NetworkPolicies</strong>: allow only the application tier&#39;s security group on the DB port; deny everything else; no <code>0.0.0.0/0</code> rules. Cloud managed services: <strong>VPC endpoints / AWS PrivateLink, private service connect, private endpoints</strong> (Azure Private Link) and &quot;publicly accessible = false&quot; for RDS and ElastiCache.</li><li>Administrative access through <strong>bastion, SSM Session Manager, IAP, VPN or zero trust proxy</strong>, with MFA and audit, not open ports.</li><li><strong>Kubernetes</strong>: ClusterIP services only, NetworkPolicies, no NodePort or LoadBalancer for data stores.</li></ul>
+<ol start="2"><li><strong>Enforce encryption in transit (TLS)</strong></li></ol>
+<ul><li>PostgreSQL: <code>ssl = on</code>, <code>hostssl</code> entries in <code>pg_hba.conf</code> (reject <code>host</code>), TLS 1.2+, clients use <code>sslmode=verify-full</code>.</li><li>MySQL: <code>require_secure_transport=ON</code>, <code>tls_version=TLSv1.2,TLSv1.3</code>, <code>REQUIRE SSL</code> on users, clients <code>--ssl-mode=VERIFY_IDENTITY</code>.</li><li>Redis 6+: <code>tls-port 6380</code>, <code>port 0</code>, <code>tls-cert-file</code>, <code>tls-key-file</code>, <code>tls-ca-cert-file</code>, <code>tls-auth-clients yes</code> for mutual TLS; ElastiCache <code>TransitEncryptionEnabled</code>.</li><li>MongoDB: <code>net.tls.mode: requireTLS</code>; Elasticsearch/OpenSearch: security features and HTTP/transport TLS enabled; RDS: <code>rds.force_ssl=1</code> and certificate bundles; managed identity auth where available (IAM database authentication, Entra ID).</li><li>Verify <strong>server certificates and hostnames</strong> in clients; otherwise TLS is vulnerable to MITM.</li></ul>
+<ol start="3"><li><strong>Authentication and authorisation</strong></li></ol>
+<ul><li><strong>Redis</strong>: <code>requirepass</code> is not enough; use <strong>ACLs</strong> (Redis 6+): <code>user app on &gt;strongpass ~app:* +get +set +del -@dangerous</code>; rename or disable dangerous commands (<code>CONFIG</code>, <code>FLUSHALL</code>, <code>DEBUG</code>, <code>KEYS</code>, <code>MODULE</code>, <code>EVAL</code> as needed) with <code>rename-command</code> or ACL categories; <code>protected-mode yes</code>.</li><li><strong>Memcached</strong>: disable UDP (<code>-U 0</code>), enable SASL, bind to private IP.</li><li><strong>MongoDB</strong>: <code>security.authorization: enabled</code>, role-based access, no anonymous.</li><li><strong>PostgreSQL/MySQL</strong>: remove default and anonymous users, drop test databases, disable remote root, use <strong>separate least-privilege accounts per application</strong> (no superuser in apps), schema-level grants, row-level security where useful, short-lived credentials from Vault dynamic secrets or IAM auth, and <strong>rotate</strong> passwords.</li><li>Admin and application identities separated; MFA for human access.</li></ul>
+<ol start="4"><li><strong>Default ports and obscurity</strong>: changing from 6379, 5432 and 3306 only <strong>slightly reduces automated noise</strong>, since scanners find services on any port by fingerprinting. Treat it as optional hardening <strong>after</strong> network isolation, TLS and auth. Disabling unused listeners (<code>port 0</code> for plain Redis when using TLS only) is more valuable.</li><li><strong>Encryption at rest and backups</strong>: TDE or volume encryption (KMS), encrypted snapshots and backups, restricted snapshot sharing, no public snapshots; ensure secrets (connection strings) are in a secrets manager, not in code.</li><li><strong>Hardening and patching</strong>: run as non-root, minimal OS and container images, restrict file permissions on data directories and config, disable unused features (Lua scripting, <code>LOAD DATA LOCAL INFILE</code>, <code>xp_cmdshell</code>, file functions), keep versions patched (subscribe to CVEs), use CIS Benchmarks for PostgreSQL, MySQL, MongoDB, Redis, and Docker/Kubernetes.</li><li><strong>Audit and detect</strong>: enable audit logging (pgAudit, MySQL audit plugin, MongoDB auditLog, Redis <code>MONITOR</code> only for debugging), ship logs to the SIEM, alert on failed logins, new users and privilege grants, large exports, access from unusual hosts; use database activity monitoring, GuardDuty RDS protection, and <strong>external attack-surface scans</strong> (Shodan monitor, Nmap, AWS Inspector, Prowler checks like &quot;RDS publicly accessible&quot;) in CI and regularly.</li><li><strong>Resilience</strong>: connection limits, resource quotas, query timeouts, backups tested for restore, replicas in separate failure domains.</li></ol>
+<h4>Example configuration snippets</h4>
+<pre><code># redis.conf
+bind 10.0.1.5
+protected-mode yes
+port 0
+tls-port 6380
+tls-cert-file /etc/redis/tls/redis.crt
+tls-key-file  /etc/redis/tls/redis.key
+tls-ca-cert-file /etc/redis/tls/ca.crt
+tls-auth-clients yes
+aclfile /etc/redis/users.acl
+rename-command FLUSHALL &quot;&quot;</code></pre>
+<pre><code># pg_hba.conf: only TLS connections from the app subnet, SCRAM authentication
+hostssl  appdb  app_user  10.0.2.0/24  scram-sha-256
+host     all    all       0.0.0.0/0    reject</code></pre>
+<h4>Pitfalls</h4>
+<p>Cloud security groups open to the world &quot;temporarily&quot;, Redis with no password in Docker (<code>-p 6379:6379</code> bypasses host firewalls such as <code>ufw</code>), <code>sslmode=require</code> without verification, shared superuser credentials in application config, public snapshots, and relying on a non-default port as the control.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why have exposed Redis, MongoDB and Elasticsearch instances been repeatedly ransomed, and what misconfigurations caused it?</li><li>How do you enforce TLS and certificate verification for PostgreSQL, MySQL and Redis clients and servers?</li><li>Does changing the default port improve security and what stronger controls should come first?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-100">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-100%3A+How+do+you+secure+database+and+cache+instances%3A+Enforcing+TLS%2C+VPC%E2%80%A6&amp;question-id=sec-100&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+Data%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-100.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

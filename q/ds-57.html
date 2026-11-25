@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How would you build a demand forecasting system for thousands of products and stores, including hierarchy, intermittent demand, promotions and inventory decisions? | InterviewGearUp</title>
+<meta name="description" content="Forecast at the level decisions are made, mixing global machine learning models trained across series with features for price, promotions, holidays and…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-57.html">
+<meta property="og:title" content="How would you build a demand forecasting system for thousands of products and stores, including hierarchy, intermittent demand, promotions and inventory decisions? | InterviewGearUp">
+<meta property="og:description" content="Forecast at the level decisions are made, mixing global machine learning models trained across series with features for price, promotions, holidays and…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-57.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How would you build a demand forecasting system for thousands of products and stores, including hierarchy, intermittent demand, promotions and inventory decisions?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 4 (Lead / Staff) · Forecasting systems · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Forecast at the level decisions are made, mixing global machine learning models trained across series with features for price, promotions, holidays and weather, handle intermittent demand with specialised methods, reconcile forecasts across the product and location hierarchy, produce probabilistic forecasts for safety stock, backtest with rolling origins, and monitor bias and accuracy by segment.</p></div>
+<h4>Explained in depth</h4>
+<h4>Frame the decision</h4>
+<p>Forecasts exist to drive decisions: replenishment orders, staffing, pricing, production. Define granularity (SKU x store x day or week), <strong>horizon</strong> (lead time plus review period), refresh frequency, and costs of overstock versus stockouts. The relevant accuracy is at the <strong>decision level and horizon</strong>, not an arbitrary aggregate.</p>
+<h4>Data</h4>
+<p>Sales (distinguish demand from <strong>censored sales</strong>: stockouts hide true demand, so use availability flags and imputation), prices, promotions and marketing, calendar and holidays, weather, local events, product attributes, store attributes, competitor prices, and inventory and supply constraints. Clean returns, outliers, and structural changes (store closures).</p>
+<h4>Modeling strategy</h4>
+<div class="md-table"><table><thead><tr><th>Challenge</th><th>Approach</th></tr></thead><tbody><tr><td><strong>Thousands of series</strong></td><td><strong>global models</strong> (one model across series) such as LightGBM with lag, rolling and calendar features, or deep models (DeepAR, TFT, N-HiTS); per-series ETS/ARIMA baselines for stable items</td></tr><tr><td><strong>Promotions and price</strong></td><td>explicit features (discount depth, promo type, display), price elasticity, promo lift models; cannibalisation and halo effects</td></tr><tr><td><strong>Intermittent / lumpy demand</strong></td><td>Croston, SBA, TSB, zero-inflated or negative binomial models, aggregation to weekly level, <strong>probabilistic count</strong> models</td></tr><tr><td><strong>Cold start / new products</strong></td><td>use attributes and similar-product analogues, hierarchical priors, launch curves; update quickly as data arrive</td></tr><tr><td><strong>Multiple seasonalities</strong></td><td>day-of-week, week-of-year, holiday features, Fourier terms</td></tr><tr><td><strong>Trend and structural change</strong></td><td>recent-window weighting, changepoint handling, level adjustments</td></tr><tr><td><strong>Hierarchy</strong> (SKU, category, store, region, total)</td><td><strong>reconciliation</strong> so forecasts add up</td></tr></tbody></table></div>
+<p><strong>Hierarchical reconciliation</strong>: bottom-up, top-down, or optimal <strong>MinT</strong> (minimum trace) which combines forecasts from all levels using the error covariance to give coherent, usually more accurate forecasts.</p>
+<pre><code># global model with lag features across all series (conceptual)
+df[&quot;lag_7&quot;] = df.groupby(&quot;sku_store&quot;)[&quot;units&quot;].shift(7)
+df[&quot;roll_28_mean&quot;] = df.groupby(&quot;sku_store&quot;)[&quot;units&quot;].shift(1).rolling(28).mean().reset_index(level=0, drop=True)
+model = lgb.LGBMRegressor(objective=&quot;tweedie&quot;, tweedie_variance_power=1.3).fit(X_train, y_train)   # suits zero-heavy demand</code></pre>
+<h4>Probabilistic forecasts and inventory</h4>
+<p>Replenishment depends on the <strong>demand distribution over the lead time</strong>: safety stock at a target service level uses a quantile (e.g., the 95th percentile). Produce <strong>quantile forecasts</strong> (quantile regression, conformal prediction, distributional models) or sample paths. Evaluate with <strong>pinball loss / weighted quantile loss</strong>, coverage of intervals, and bias. The newsvendor logic sets the optimal quantile = cost of understock / (cost of understock + cost of overstock).</p>
+<h4>Evaluation</h4>
+<p><strong>Rolling-origin backtests</strong> on the decision horizon; metrics: <strong>WAPE / wMAPE</strong> (volume-weighted, robust to zeros), MASE, bias (tendency to over- or under-forecast), RMSSE; report by segment (fast versus slow movers, promo versus non-promo) and by horizon. Simple benchmarks (seasonal naive) must be beaten. Business metrics: fill rate, stockouts, waste, inventory turns.</p>
+<h4>Production</h4>
+<p>Daily or weekly pipelines with data quality checks, model versioning, overrides by planners with feedback (forecast value added), exception reports for abnormal series, scalable training (per cluster or global), explainability for planners, and continuous monitoring of bias and accuracy.</p>
+<h4>Pitfalls</h4>
+<p>Forecasting sales rather than demand during stockouts, optimising MAPE on low volumes, ignoring promotions&#39; effect on baselines, and delivering incoherent hierarchical numbers.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why do probabilistic or quantile forecasts matter more than point forecasts for inventory decisions?</li><li>How do you forecast a new product with no sales history?</li><li>Why would you reconcile forecasts across hierarchy levels, and how does MinT work conceptually?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-57">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-57%3A+How+would+you+build+a+demand+forecasting+system+for+thousands+of%E2%80%A6&amp;question-id=ds-57&amp;context=Data+scientist%2C+Gear+4%2C+topic%3A+Forecasting+systems%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-57.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

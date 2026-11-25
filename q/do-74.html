@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does GCP Workload Identity allow Kubernetes pods to access cloud resources without static JSON keys? | InterviewGearUp</title>
+<meta name="description" content="GKE Workload Identity maps a Kubernetes ServiceAccount to a Google service account so pods receive short-lived Google credentials from the metadata…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-74.html">
+<meta property="og:title" content="How does GCP Workload Identity allow Kubernetes pods to access cloud resources without static JSON keys? | InterviewGearUp">
+<meta property="og:description" content="GKE Workload Identity maps a Kubernetes ServiceAccount to a Google service account so pods receive short-lived Google credentials from the metadata…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-74.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does GCP Workload Identity allow Kubernetes pods to access cloud resources without static JSON keys?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · Cloud · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>GKE Workload Identity maps a Kubernetes ServiceAccount to a Google service account so pods receive short-lived Google credentials from the metadata server instead of static JSON keys. Applications use Application Default Credentials unchanged, access is granted through IAM on the mapped identity, and no secrets need to be stored, rotated or leaked.</p></div>
+<h4>Explained in depth</h4>
+<h4>The problem with JSON keys</h4>
+<p>A downloaded service account key is a long-lived credential. Mounted as a Kubernetes Secret, it can leak through repos, logs, images or compromised pods, rarely gets rotated, and cannot be tied to a specific pod. Google recommends avoiding user-managed keys.</p>
+<h4>How Workload Identity works</h4>
+<ol start="1"><li>Enable Workload Identity on the cluster (workload pool <code>PROJECT_ID.svc.id.goog</code>) and on node pools (GKE metadata server).</li><li>Create an IAM service account (GSA) with the permissions the app needs (for example <code>roles/storage.objectViewer</code>, <code>roles/cloudsql.client</code>).</li><li>Allow the Kubernetes ServiceAccount (KSA) to impersonate it by granting <code>roles/iam.workloadIdentityUser</code> to the principal <code>serviceAccount:PROJECT_ID.svc.id.goog[NAMESPACE/KSA_NAME]</code> on the GSA.</li><li>Annotate the KSA with <code>iam.gke.io/gcp-service-account=GSA_EMAIL</code>.</li></ol>
+<pre><code>gcloud iam service-accounts add-iam-policy-binding app-gsa@proj.iam.gserviceaccount.com \
+  --role roles/iam.workloadIdentityUser \
+  --member &quot;serviceAccount:proj.svc.id.goog[orders/orders-ksa]&quot;
+kubectl annotate serviceaccount orders-ksa -n orders iam.gke.io/gcp-service-account=app-gsa@proj.iam.gserviceaccount.com</code></pre>
+<pre><code>spec:
+  serviceAccountName: orders-ksa     # pods run as this KSA</code></pre>
+<ol start="5"><li>At runtime, the Google client library (ADC) asks the <strong>GKE metadata server</strong> (intercepting 169.254.169.254 on the node, running as a DaemonSet) for a token. The metadata server verifies the pod&#39;s KSA token with the cluster, <strong>exchanges</strong> it through the Security Token Service for a short-lived OAuth2 access token of the mapped GSA (about 1 hour), and returns it. Libraries refresh automatically.</li></ol>
+<h4>Direct resource access (newer)</h4>
+<p>GKE also supports granting IAM roles <strong>directly to the Kubernetes identity</strong> using a federated principal (<code>principal://iam.googleapis.com/projects/NUM/locations/global/workloadIdentityPools/PROJECT.svc.id.goog/subject/ns/NAMESPACE/sa/KSA</code>), without a separate GSA, reducing objects and impersonation steps. Not every Google API supports principal identities yet, so use the GSA binding when needed.</p>
+<h4>Benefits</h4>
+<ul><li><strong>No static secrets</strong> to store, rotate or leak; tokens are short-lived and scoped.</li><li><strong>Least privilege per workload</strong>: different KSAs map to different GSAs with different roles, instead of node-level credentials shared by all pods (the default node service account).</li><li>Auditable in Cloud Audit Logs (identity is the GSA, with impersonation trace).</li><li>Works for pods outside GKE through Workload Identity Federation (EKS, on-prem clusters, GitHub Actions, AWS workloads) using OIDC or SAML trust to a workload identity pool, instead of key files.</li></ul>
+<h4>Operational notes</h4>
+<ul><li>Protect the metadata concealment: blocking pods from reaching node credentials is handled by GKE metadata server mode; do not run pods with <code>hostNetwork</code> unless needed (they bypass the metadata server).</li><li>Namespace and name in the IAM binding must match exactly; typos produce <code>403</code> or fallback to node credentials.</li><li>Test with <code>gcloud auth list</code> inside a pod, or <code>curl -H &quot;Metadata-Flavor: Google&quot; http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/email</code>.</li><li>Disable key creation with the org policy <code>iam.disableServiceAccountKeyCreation</code> after migration, and audit existing keys.</li></ul>
+<h4>Migration steps</h4>
+<p>Inventory key usage, create GSAs and bindings, deploy with new KSAs, remove mounted key secrets and <code>GOOGLE_APPLICATION_CREDENTIALS</code>, verify via logs, then delete the old keys.</p>
+<h4>Pitfalls</h4>
+<p>Over-broad roles on the GSA, one shared KSA for everything, missing node-pool metadata mode, and forgetting that EKS has the equivalent IRSA or Pod Identity and AKS has Workload Identity with federated credentials.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the difference between binding to a Google service account and direct principal access on GKE?</li><li>How does the token exchange work through the metadata server?</li><li>How do you migrate from JSON key files safely?</li></ul>
+<p><a class="btn primary" href="../#/q/do-74">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-74%3A+How+does+GCP+Workload+Identity+allow+Kubernetes+pods+to+access+cloud%E2%80%A6&amp;question-id=do-74&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+Cloud%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-74.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Write SQL to compute monthly cohort retention for users based on their signup month. | InterviewGearUp</title>
+<meta name="description" content="Assign each user a cohort month from signup, join to activity events, compute the number of months since signup, count distinct active users per cohort…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-26.html">
+<meta property="og:title" content="Write SQL to compute monthly cohort retention for users based on their signup month. | InterviewGearUp">
+<meta property="og:description" content="Assign each user a cohort month from signup, join to activity events, compute the number of months since signup, count distinct active users per cohort…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-26.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Write SQL to compute monthly cohort retention for users based on their signup month.</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 2 (Mid-level) · SQL for data science · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Assign each user a cohort month from signup, join to activity events, compute the number of months since signup, count distinct active users per cohort and month offset, and divide by cohort size. Use date truncation, a CTE for cohort size, and distinct counts to avoid duplicates, then pivot for a triangle view.</p></div>
+<h4>Explained in depth</h4>
+<h4>Tables</h4>
+<p><code>users(user_id, signup_date)</code> and <code>events(user_id, event_date, event_type)</code> (activity events such as &quot;session_start&quot;).</p>
+<h4>Query (PostgreSQL style; adapt <code>DATE_TRUNC</code> and date difference for BigQuery, Snowflake)</h4>
+<pre><code>WITH cohorts AS (
+  SELECT user_id,
+         DATE_TRUNC(&#39;month&#39;, signup_date)::date AS cohort_month
+  FROM users
+),
+cohort_size AS (
+  SELECT cohort_month, COUNT(*) AS users_in_cohort
+  FROM cohorts
+  GROUP BY cohort_month
+),
+activity AS (
+  SELECT DISTINCT
+         e.user_id,
+         DATE_TRUNC(&#39;month&#39;, e.event_date)::date AS activity_month
+  FROM events e
+  WHERE e.event_type = &#39;session_start&#39;
+),
+cohort_activity AS (
+  SELECT c.cohort_month,
+         (EXTRACT(YEAR FROM a.activity_month) - EXTRACT(YEAR FROM c.cohort_month)) * 12
+         + (EXTRACT(MONTH FROM a.activity_month) - EXTRACT(MONTH FROM c.cohort_month)) AS month_offset,
+         COUNT(DISTINCT a.user_id) AS active_users
+  FROM cohorts c
+  JOIN activity a
+    ON a.user_id = c.user_id
+   AND a.activity_month &gt;= c.cohort_month          -- ignore activity before signup (data issues)
+  GROUP BY 1, 2
+)
+SELECT ca.cohort_month,
+       cs.users_in_cohort,
+       ca.month_offset,
+       ca.active_users,
+       ROUND(100.0 * ca.active_users / cs.users_in_cohort, 1) AS retention_pct
+FROM cohort_activity ca
+JOIN cohort_size cs USING (cohort_month)
+ORDER BY ca.cohort_month, ca.month_offset;</code></pre>
+<p>Month 0 is the signup month (retention should be near 100 percent if signup produces an event, otherwise define it explicitly). A <strong>pivot</strong> for a triangle: <code>MAX(CASE WHEN month_offset = 1 THEN retention_pct END) AS m1, ...</code>, or use the BI tool.</p>
+<h4>Definitions to clarify</h4>
+<ul><li><strong>Classic (N-day)</strong>: user returns <strong>on exactly day N</strong> after signup (D1, D7, D30). Strict, noisy.</li><li><strong>Rolling (unbounded)</strong>: user returns <strong>on or after</strong> day N.</li><li><strong>Bracket / range</strong>: user returns within a window (days 25 to 35).</li><li><strong>Active definition</strong>: any event, a core action (purchase), or a paid subscription still active. State it.</li><li><strong>Calendar months versus 30-day periods since signup</strong>: calendar cohorts mix users who signed up on the 1st and the 30th; use day-based offsets (<code>event_date - signup_date</code>) for precision.</li></ul>
+<h4>Correctness checks</h4>
+<ol start="1"><li><strong>Cohort size</strong> equals the number of users signed up in that month; month 0 retention is consistent.</li><li>Use <code>COUNT(DISTINCT user_id)</code> (events are many per user), and de-duplicate users and events.</li><li><strong>Immature cohorts</strong>: the current month and recent cohorts have fewer observable offsets; do not show missing future months as 0 percent; mask offsets beyond today.</li><li>Consider <strong>time zones</strong>, <strong>bot or test accounts</strong>, reactivated users, and users whose signup date is after their first event.</li><li>Validate with a small user sample manually and with a different method (pandas).</li><li>Zero-activity months simply have no row (left join from a month spine to show zero explicitly if needed).</li></ol>
+<h4>Performance</h4>
+<p>On billions of events: pre-aggregate to a <strong>user-month activity table</strong> (partitioned by month), filter early on event type and date range, use partition pruning and clustering by user_id, approximate distincts (<code>APPROX_COUNT_DISTINCT</code>) for exploratory work, and materialise the result incrementally (dbt incremental model).</p>
+<h4>Pandas equivalent idea</h4>
+<p><code>df[&quot;offset&quot;] = (act_month.dt.year - cohort.dt.year) * 12 + (act_month.dt.month - cohort.dt.month)</code>; <code>pivot_table(index=&quot;cohort&quot;, columns=&quot;offset&quot;, values=&quot;user_id&quot;, aggfunc=&quot;nunique&quot;)</code> divided by cohort size.</p>
+<h4>Pitfalls</h4>
+<p>Counting events instead of distinct users, dividing by active users rather than cohort size, treating immature cohorts as churned, and mixing definitions in one report.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How would you define retention differently for classic (N-day) versus rolling versus bracket retention?</li><li>How do you handle users with no activity in a month and cohorts that have not yet matured?</li><li>How would you verify the query and make it efficient on billions of events?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-26">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-26%3A+Write+SQL+to+compute+monthly+cohort+retention+for+users+based+on%E2%80%A6&amp;question-id=ds-26&amp;context=Data+scientist%2C+Gear+2%2C+topic%3A+SQL+for+data+science%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-26.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

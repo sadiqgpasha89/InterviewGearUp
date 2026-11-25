@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does Isolation Forest isolate anomalous points using random binary partitioning trees? | InterviewGearUp</title>
+<meta name="description" content="Isolation Forest isolates observations by randomly picking a feature and a random split value between its min and max, building many random binary trees.…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-69.html">
+<meta property="og:title" content="How does Isolation Forest isolate anomalous points using random binary partitioning trees? | InterviewGearUp">
+<meta property="og:description" content="Isolation Forest isolates observations by randomly picking a feature and a random split value between its min and max, building many random binary trees.…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-69.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does Isolation Forest isolate anomalous points using random binary partitioning trees?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 2 (Mid-level) · Anomaly · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Isolation Forest isolates observations by randomly picking a feature and a random split value between its min and max, building many random binary trees. Anomalies are few and different, so they are separated from the rest in fewer splits, giving shorter average path lengths. The anomaly score converts path length to a value near 1 for anomalies and well below 0.5 for normal points.</p></div>
+<h4>Explained in depth</h4>
+<h4>Intuition</h4>
+<p>Normal points sit in dense regions and need many random cuts to be separated from neighbours. An outlier lies far away or in a sparse region, so a few random cuts isolate it. Instead of profiling normal data and flagging deviations (distance, density, reconstruction methods), Isolation Forest <strong>explicitly isolates anomalies</strong>.</p>
+<h4>Algorithm</h4>
+<p><strong>Training</strong> (building iTrees):</p>
+<ol start="1"><li>Draw a <strong>subsample</strong> of size ψ (default 256) from the data; this controls swamping and masking and keeps trees small.</li><li>Build a binary tree recursively: choose a <strong>random feature</strong>, choose a <strong>random split value</strong> uniformly between the feature&#39;s min and max in the node; send points left or right; stop when a node has one point, all points are identical, or depth reaches <code>ceil(log2 ψ)</code>.</li><li>Repeat for <code>t</code> trees (default 100).</li></ol>
+<p><strong>Scoring</strong> a point x:</p>
+<ul><li>Compute the path length <code>h(x)</code> in each tree (number of edges from root to the leaf, plus an adjustment <code>c(size)</code> for leaves that were not fully isolated).</li><li>Average over trees: <code>E[h(x)]</code>.</li><li><strong>Anomaly score</strong>: <code>s(x, ψ) = 2^(−E[h(x)] / c(ψ))</code>, where <code>c(ψ) = 2H(ψ−1) − 2(ψ−1)/ψ</code> is the average path length of an unsuccessful search in a binary search tree (normalisation).</li></ul>
+<p>Interpretation: <code>s</code> close to <strong>1</strong> means very short path (anomaly); <code>s</code> much smaller than <strong>0.5</strong> means long paths (normal); <code>s</code> about 0.5 for all points means no clear anomalies.</p>
+<pre><code>from sklearn.ensemble import IsolationForest
+iso = IsolationForest(n_estimators=200, max_samples=256, contamination=&quot;auto&quot;, random_state=0).fit(X_train)
+scores = -iso.score_samples(X_test)            # higher means more anomalous
+labels = iso.predict(X_test)                    # -1 anomaly, 1 normal</code></pre>
+<h4>Properties</h4>
+<ul><li><strong>Linear time and low memory</strong>: <code>O(t · ψ · log ψ)</code> to train and <code>O(t · log ψ)</code> per point to score, independent of dataset size because of subsampling; handles millions of rows quickly.</li><li><strong>No distance or density computation</strong>, no normalisation of features needed (splits are per feature), handles mixed scales, works unsupervised (no labels).</li><li><strong>Parallelisable</strong> and easy to deploy; supports streaming variants (Robust Random Cut Forest, Extended Isolation Forest).</li><li>Sub-sampling actually <strong>improves</strong> detection by reducing swamping (normal points near anomalies) and masking (clusters of anomalies).</li></ul>
+<h4>Choosing the threshold</h4>
+<p><code>contamination</code> is the expected proportion of anomalies used to set the decision threshold on scores. Unknown in practice: use domain knowledge, review the top-ranked items with experts, set a threshold from a score distribution or percentile, or tune on any labelled anomalies using precision-recall at K. Treat output as a <strong>ranking</strong> feeding human review or downstream rules.</p>
+<h4>Limitations</h4>
+<ul><li><strong>Axis-parallel splits</strong> create artefacts (score bands along axes); <strong>Extended Isolation Forest</strong> uses random hyperplanes.</li><li>Struggles with <strong>local anomalies</strong> inside dense regions of different densities (use LOF), <strong>clustered anomalies</strong> larger than the sample size, and <strong>high-dimensional data with many irrelevant features</strong> (random feature choice dilutes signal); apply feature selection.</li><li>Categorical features need encoding; scores are not calibrated probabilities; no explanation by default (use SHAP&#39;s TreeExplainer on isolation trees or path analysis).</li><li>Time series need engineered features (rolling stats, seasonality-adjusted residuals).</li></ul>
+<h4>Applications</h4>
+<p>Fraud and payment anomalies, network intrusion, sensor and predictive maintenance, data quality monitoring, log analysis.</p>
+<h4>Pitfalls</h4>
+<p>Setting contamination arbitrarily, interpreting scores as probabilities, ignoring drift in what &quot;normal&quot; means (retrain periodically), and not validating with domain experts.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does it not need distance or density computation and why is it fast?</li><li>How do you set the contamination parameter and threshold?</li><li>What are its blind spots, such as clustered anomalies and high-dimensional noise?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-69">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-69%3A+How+does+Isolation+Forest+isolate+anomalous+points+using+random%E2%80%A6&amp;question-id=ml-69&amp;context=ML+%2F+AI+engineer%2C+Gear+2%2C+topic%3A+Anomaly%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-69.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

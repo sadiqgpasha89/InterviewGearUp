@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare model compression techniques: Pruning, Knowledge Distillation, and Post-Training Quantization. | InterviewGearUp</title>
+<meta name="description" content="Pruning removes weights, neurons or heads that contribute little, creating sparse or smaller networks. Knowledge distillation trains a small student to…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-82.html">
+<meta property="og:title" content="Compare model compression techniques: Pruning, Knowledge Distillation, and Post-Training Quantization. | InterviewGearUp">
+<meta property="og:description" content="Pruning removes weights, neurons or heads that contribute little, creating sparse or smaller networks. Knowledge distillation trains a small student to…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-82.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare model compression techniques: Pruning, Knowledge Distillation, and Post-Training Quantization.</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · Compression · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Pruning removes weights, neurons or heads that contribute little, creating sparse or smaller networks. Knowledge distillation trains a small student to imitate a large teacher&#39;s soft outputs or hidden states. Post-training quantization converts weights and activations from FP32 to lower precision such as INT8 or INT4 after training. They reduce size, memory and latency and can be combined, trading some accuracy.</p></div>
+<h4>Explained in depth</h4>
+<h4>Motivation</h4>
+<p>Large models are expensive to store, load and serve, and are too slow or power-hungry for mobile and edge devices. Compression reduces memory, bandwidth, latency, energy and cost while keeping most of the accuracy.</p>
+<h4>Pruning</h4>
+<p>Remove parameters with small importance.</p>
+<ul><li><strong>Unstructured pruning</strong>: zero individual weights (magnitude pruning: remove those with the smallest absolute values; movement pruning; SparseGPT and Wanda for LLMs). Can reach 50 to 90 percent sparsity with small accuracy loss, but the resulting irregular sparsity yields <strong>speedups only on hardware or libraries that exploit it</strong> (2:4 structured sparsity on NVIDIA Ampere, sparse kernels); otherwise just smaller files after compression.</li><li><strong>Structured pruning</strong>: remove whole channels, filters, attention heads, neurons or layers, shrinking dense matrices, so any hardware runs faster. Larger accuracy impact; typically needs <strong>fine-tuning</strong> afterwards.</li><li>Workflow: train → prune (iteratively, gradually increasing sparsity) → fine-tune → repeat; the <strong>lottery ticket hypothesis</strong> suggests sparse subnetworks exist that train as well as the full model.</li></ul>
+<pre><code>import torch.nn.utils.prune as prune
+prune.l1_unstructured(model.fc, name=&quot;weight&quot;, amount=0.5)      # zero 50% smallest-magnitude weights
+prune.remove(model.fc, &quot;weight&quot;)</code></pre>
+<h4>Knowledge distillation</h4>
+<p>A large <strong>teacher</strong> produces targets for a smaller <strong>student</strong>.</p>
+<ul><li>Loss: <code>L = α · CE(y, student) + (1 − α) · τ² · KL(softmax(teacher_logits/τ) ‖ softmax(student_logits/τ))</code>.</li><li>Temperature <code>τ &gt; 1</code> softens the teacher&#39;s distribution, revealing <strong>&quot;dark knowledge&quot;</strong>: the relative probabilities of wrong classes (a cat image is more like a dog than a truck) carry information that one-hot labels lack.</li><li>Variants: <strong>feature or hidden-state distillation</strong> (match intermediate layers, attention maps), <strong>sequence-level distillation</strong> for generation (train on teacher-generated outputs), <strong>on-policy distillation</strong>, and LLM distillation using teacher-generated data (DistilBERT 40 percent smaller and 60 percent faster, retaining 97 percent of BERT&#39;s performance; TinyLlama, instruction-tuned small models trained on larger model outputs).</li><li>Student architecture is free to differ (different depth, width), so it can deliver real speedups on any hardware. Needs training compute and a good transfer dataset.</li></ul>
+<h4>Post-training quantization (PTQ)</h4>
+<p>Convert weights (and activations) to lower precision after training, without retraining:</p>
+<ul><li><strong>Precision</strong>: FP32 → FP16/BF16 (2x), INT8 (4x), INT4 (8x), even lower (ternary, binary).</li><li><strong>Affine quantisation</strong>: <code>q = round(x / scale) + zero_point</code>; per-tensor or <strong>per-channel</strong> scales; <strong>calibration</strong> on a small dataset to choose activation ranges (min-max, percentile, entropy/KL).</li><li><strong>Weight-only quantisation</strong> (GPTQ, AWQ, bitsandbytes NF4, GGUF k-quants) is the standard for LLMs: it cuts memory and bandwidth (decoding is memory-bound) with little loss at 4-bit; <strong>weights and activations quantisation</strong> (SmoothQuant, FP8) accelerates compute on INT8 or FP8 tensor cores.</li><li><strong>Dynamic quantisation</strong> computes activation scales at runtime (easy for CPU and transformers/LSTMs); <strong>static quantisation</strong> uses calibrated scales.</li><li><strong>Quantisation-aware training (QAT)</strong> simulates quantisation during training (fake-quant nodes, straight-through estimator) so the model adapts; higher accuracy at low bit-widths but costs training.</li></ul>
+<pre><code>import torch
+qmodel = torch.ao.quantization.quantize_dynamic(model, {torch.nn.Linear}, dtype=torch.qint8)</code></pre>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th></th><th>Pruning</th><th>Distillation</th><th>PTQ</th></tr></thead><tbody><tr><td>What changes</td><td>removes weights or structures</td><td>trains a smaller network</td><td>reduces numeric precision</td></tr><tr><td>Needs training</td><td>fine-tuning usually</td><td>full student training</td><td>none (calibration only)</td></tr><tr><td>Hardware speedup</td><td>structured yes, unstructured limited</td><td>yes</td><td>yes with INT8/FP8 kernels; memory savings always</td></tr><tr><td>Accuracy risk</td><td>medium</td><td>low to medium</td><td>low at 8-bit, medium at 4-bit</td></tr><tr><td>Typical gain</td><td>2x size</td><td>2x to 10x size</td><td>2x to 8x size</td></tr></tbody></table></div>
+<h4>Combining and practice</h4>
+<p>Typical pipeline: distil to a smaller architecture, prune structurally, then quantise (and compile with TensorRT, ONNX Runtime, TFLite, OpenVINO). Always benchmark on <strong>target hardware</strong> for latency, throughput, memory and energy, and evaluate on task metrics including edge cases and fairness slices, not only average accuracy.</p>
+<h4>Pitfalls</h4>
+<p>Expecting sparse models to speed up on dense GPU kernels, quantising sensitive layers (embeddings, first and last layers, layer norm) without checks, calibration data that does not match production, and skipping post-compression evaluation.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does unstructured pruning often not speed up inference on GPUs while structured pruning does?</li><li>How does temperature in distillation expose dark knowledge?</li><li>What is the difference between post-training quantization and quantization-aware training?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-82">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-82%3A+Compare+model+compression+techniques%3A+Pruning%2C+Knowledge%E2%80%A6&amp;question-id=ml-82&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+Compression%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-82.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

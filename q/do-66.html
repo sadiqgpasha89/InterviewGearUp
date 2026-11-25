@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain TLS 1.3 handshake optimization and how 0-RTT resumption reduces connection latency. | InterviewGearUp</title>
+<meta name="description" content="TLS 1.3 cuts the full handshake to one round trip (1-RTT) by removing legacy options and sending key shares in the first flight. Session resumption with…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-66.html">
+<meta property="og:title" content="Explain TLS 1.3 handshake optimization and how 0-RTT resumption reduces connection latency. | InterviewGearUp">
+<meta property="og:description" content="TLS 1.3 cuts the full handshake to one round trip (1-RTT) by removing legacy options and sending key shares in the first flight. Session resumption with…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-66.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain TLS 1.3 handshake optimization and how 0-RTT resumption reduces connection latency.</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · Networking · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>TLS 1.3 cuts the full handshake to one round trip (1-RTT) by removing legacy options and sending key shares in the first flight. Session resumption with PSK tickets can reduce setup further, and 0-RTT lets a client send application data with its first flight on resumed connections, at the price of replay risk, so it is restricted to idempotent requests.</p></div>
+<h4>Explained in depth</h4>
+<h4>Handshake costs in earlier versions</h4>
+<p>TCP needs 1 RTT to connect; TLS 1.2 needed <strong>2 additional RTTs</strong> for a full handshake (ClientHello, ServerHello with certificate, key exchange, Finished), so about 3 RTTs before the first byte of the HTTP request. On a 100 ms link that is 300 ms of setup.</p>
+<h4>TLS 1.3 full handshake: 1-RTT</h4>
+<pre><code>Client                                   Server
+ClientHello (versions, ciphers, key_share[x25519], SNI, ALPN) --&gt;
+                                         &lt;-- ServerHello (key_share), {EncryptedExtensions, Certificate, CertificateVerify, Finished}
+{Finished}, application data --&gt;</code></pre>
+<p>The client <strong>guesses</strong> a key exchange group and sends its key share immediately, so the server can derive keys and encrypt everything after ServerHello (including the certificate, which also improves privacy). Removed: RSA key exchange, static DH, weak ciphers, compression, renegotiation. Only AEAD ciphers (AES-GCM, ChaCha20-Poly1305) and ephemeral (EC)DHE remain, giving <strong>forward secrecy by default</strong>. If the server does not support the guessed group it sends HelloRetryRequest (cost +1 RTT).</p>
+<h4>Resumption (still 1-RTT, cheaper crypto)</h4>
+<p>After a handshake the server sends a <strong>NewSessionTicket</strong> carrying a pre-shared key (PSK). On reconnect the client offers the ticket in <code>pre_shared_key</code>; the handshake skips certificate verification and signature work (less CPU) but remains 1-RTT. Use <code>psk_dhe_ke</code> mode to keep forward secrecy.</p>
+<h4>0-RTT (early data)</h4>
+<p>With a resumption PSK that allows early data, the client encrypts application data (an HTTP GET) under a key derived from the PSK and sends it <strong>together with the ClientHello</strong>, so the request reaches the server with zero additional round trips after TCP. Trade-offs and risks:</p>
+<ul><li><strong>Replay attacks</strong>: an attacker can capture the early data and send it again to the server (or another server in the cluster sharing ticket keys) and it may be processed twice. 0-RTT data lacks the freshness the server&#39;s random nonce provides.</li><li><strong>No forward secrecy for the early data</strong> with respect to PSK compromise.</li><li>Mitigations: accept 0-RTT <strong>only for safe, idempotent requests</strong> (GET without side effects); servers and CDNs enforce this (NGINX <code>ssl_early_data on</code> plus <code>$ssl_early_data</code> header checks, Cloudflare, <code>Early-Data: 1</code> header and <code>425 Too Early</code> response so clients retry after the full handshake); anti-replay caches storing ticket identifiers (single-use tickets, time windows); ticket lifetimes kept short.</li></ul>
+<h4>Latency summary</h4>
+<div class="md-table"><table><thead><tr><th>Scenario</th><th>Round trips before request is sent (after TCP)</th></tr></thead><tbody><tr><td>TLS 1.2 full</td><td>2</td></tr><tr><td>TLS 1.2 resumption</td><td>1</td></tr><tr><td>TLS 1.3 full</td><td>1</td></tr><tr><td>TLS 1.3 resumption</td><td>1 (cheaper crypto)</td></tr><tr><td>TLS 1.3 0-RTT</td><td>0 (data in first flight)</td></tr></tbody></table></div>
+<h4>QUIC and HTTP/3</h4>
+<p>QUIC embeds TLS 1.3 in its transport, combining transport and crypto handshakes: <strong>1-RTT for new connections, 0-RTT for resumed ones, with TCP&#39;s separate handshake eliminated</strong>. It also avoids head-of-line blocking and supports connection migration.</p>
+<h4>Operational advice</h4>
+<p>Enable TLS 1.3 and keep TLS 1.2 for compatibility, prefer ECDSA certificates and OCSP stapling, enable session tickets with regularly rotated keys shared across the fleet (or stateless ticket service), keep certificate chains small, use <code>preconnect</code> hints, and allow 0-RTT only after reviewing which endpoints are idempotent.</p>
+<h4>Pitfalls</h4>
+<p>Enabling 0-RTT for POST or state-changing routes, ticket keys never rotated (weakens forward secrecy), large certificate chains inflating the handshake, and middleboxes that break TLS 1.3 extensions.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is 0-RTT data vulnerable to replay attacks and how do servers mitigate it?</li><li>How does TLS 1.3 achieve forward secrecy for every connection?</li><li>How does QUIC integrate TLS 1.3 to remove the TCP handshake round trip too?</li></ul>
+<p><a class="btn primary" href="../#/q/do-66">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-66%3A+Explain+TLS+1.3+handshake+optimization+and+how+0-RTT+resumption%E2%80%A6&amp;question-id=do-66&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+Networking%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-66.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

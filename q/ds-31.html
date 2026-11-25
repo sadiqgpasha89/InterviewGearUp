@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you estimate a causal effect from observational data using propensity scores? | InterviewGearUp</title>
+<meta name="description" content="Model the probability of treatment given confounders, then use that propensity score to match, weight (IPW) or stratify so treated and control groups…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-31.html">
+<meta property="og:title" content="How do you estimate a causal effect from observational data using propensity scores? | InterviewGearUp">
+<meta property="og:description" content="Model the probability of treatment given confounders, then use that propensity score to match, weight (IPW) or stratify so treated and control groups…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-31.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you estimate a causal effect from observational data using propensity scores?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 3 (Senior) · Causal inference · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Model the probability of treatment given confounders, then use that propensity score to match, weight (IPW) or stratify so treated and control groups become comparable. Check overlap and covariate balance, estimate the effect with doubly robust methods where possible, and be explicit that unmeasured confounding can still bias the result.</p></div>
+<h4>Explained in depth</h4>
+<h4>The problem</h4>
+<p>When treatment is not randomised (users who chose a feature, patients who received a drug), treated and untreated groups differ in <strong>confounders</strong> that also affect the outcome. A naive difference in means mixes the treatment effect with that selection bias. Causal inference tries to recover a quantity such as the <strong>ATE</strong> (average treatment effect) or <strong>ATT</strong> (effect on the treated) under explicit assumptions.</p>
+<h4>Assumptions</h4>
+<ol start="1"><li><strong>Conditional ignorability (no unmeasured confounding)</strong>: given observed covariates X, treatment is as good as random.</li><li><strong>Positivity (overlap)</strong>: every kind of unit has a non-zero chance of both treatment and control (0 &lt; e(X) &lt; 1).</li><li><strong>SUTVA / consistency</strong>: no interference between units, and a well-defined treatment.</li></ol>
+<p>Only the first is untestable, and it is usually the weakest.</p>
+<h4>Propensity score</h4>
+<p>The <strong>propensity score</strong> e(X) = P(T = 1 | X) is the probability of receiving treatment given covariates (Rosenbaum and Rubin). Conditioning on this single number balances all of X. Estimate it with logistic regression or gradient boosting (calibrated), using <strong>pre-treatment</strong> covariates only. Include variables that affect the outcome, even if they affect treatment weakly; do not include post-treatment variables or colliders.</p>
+<h4>Using the score</h4>
+<div class="md-table"><table><thead><tr><th>Method</th><th>Idea</th><th>Notes</th></tr></thead><tbody><tr><td><strong>Matching</strong></td><td>pair each treated unit with nearest controls by score (with a caliper)</td><td>intuitive; discards data; use with replacement carefully</td></tr><tr><td><strong>Stratification</strong></td><td>split into 5 to 10 propensity bins, average within bins</td><td>simple, some residual bias</td></tr><tr><td><strong>Inverse probability weighting (IPW)</strong></td><td>weight treated by 1 / e and controls by 1 / (1 - e)</td><td>uses all data; unstable when e is near 0 or 1, so trim or stabilise weights</td></tr><tr><td><strong>Regression adjustment with the score</strong></td><td>include e(X) as a covariate</td><td>weaker</td></tr><tr><td><strong>Doubly robust (AIPW, TMLE, double ML)</strong></td><td>combine an outcome model and a propensity model</td><td>consistent if <strong>either</strong> model is right; usually the best default</td></tr></tbody></table></div>
+<pre><code>from sklearn.linear_model import LogisticRegression
+import numpy as np
+e = LogisticRegression(max_iter=1000).fit(X, t).predict_proba(X)[:, 1]
+e = np.clip(e, 0.02, 0.98)                               # trimming for stability
+w = t / e + (1 - t) / (1 - e)
+ate_ipw = np.average(y, weights=w * t) - np.average(y, weights=w * (1 - t))</code></pre>
+<h4>Diagnostics (do not skip)</h4>
+<ul><li><strong>Overlap</strong>: plot propensity distributions for both groups; restrict to the region of common support when overlap is poor.</li><li><strong>Covariate balance</strong> after weighting or matching: standardised mean differences below 0.1 for each covariate; compare before and after (a &quot;love plot&quot;).</li><li>Check effective sample size after weighting.</li><li><strong>Placebo and negative-control outcomes</strong> that treatment should not affect.</li><li><strong>Sensitivity analysis</strong> (E-values, Rosenbaum bounds): how strong would an unmeasured confounder need to be to explain away the effect?</li></ul>
+<h4>Interpretation and limits</h4>
+<p>Propensity methods adjust only for <strong>observed</strong> confounders. They do not fix unmeasured confounding, measurement error, or selection into the sample. Report the estimand (ATE, ATT, or overlap-weighted), assumptions, and uncertainty (bootstrap the whole pipeline including the propensity model). Where possible, prefer a <strong>randomised experiment</strong>, or natural experiments (difference-in-differences, regression discontinuity, instrumental variables).</p>
+<h4>Pitfalls</h4>
+<p>Conditioning on mediators or colliders, ignoring positivity violations, treating balance on observed variables as proof of unconfoundedness, and using the propensity model&#39;s predictive accuracy as a quality measure (good balance matters, not high AUC).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What does the overlap or positivity assumption require, and how do you diagnose violations?</li><li>Why are doubly robust estimators preferred over pure matching or pure weighting?</li><li>How would you assess sensitivity to unmeasured confounding?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-31">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-31%3A+How+do+you+estimate+a+causal+effect+from+observational+data+using%E2%80%A6&amp;question-id=ds-31&amp;context=Data+scientist%2C+Gear+3%2C+topic%3A+Causal+inference%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-31.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

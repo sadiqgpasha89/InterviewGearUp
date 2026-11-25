@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you fine-tune embedding models using contrastive InfoNCE loss over positive and negative pairs? | InterviewGearUp</title>
+<meta name="description" content="Contrastive fine-tuning teaches an embedding model to place related texts close and unrelated texts far apart. With InfoNCE loss, each query is scored…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-80.html">
+<meta property="og:title" content="How do you fine-tune embedding models using contrastive InfoNCE loss over positive and negative pairs? | InterviewGearUp">
+<meta property="og:description" content="Contrastive fine-tuning teaches an embedding model to place related texts close and unrelated texts far apart. With InfoNCE loss, each query is scored…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-80.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you fine-tune embedding models using contrastive InfoNCE loss over positive and negative pairs?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · Embeddings · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Contrastive fine-tuning teaches an embedding model to place related texts close and unrelated texts far apart. With InfoNCE loss, each query is scored against its positive and many negatives, and a temperature-scaled softmax cross-entropy pushes the positive&#39;s similarity above all negatives. In-batch negatives make this efficient, and hard negatives sharpen domain-specific distinctions.</p></div>
+<h4>Explained in depth</h4>
+<h4>Goal</h4>
+<p>Generic embedding models may rank domain-specific content poorly (legal clauses, internal product docs, medical codes). Fine-tuning on <strong>in-domain pairs</strong> (query, relevant passage) improves retrieval recall noticeably, often with only thousands of examples.</p>
+<h4>InfoNCE loss</h4>
+<p>For a query <code>q</code>, its positive passage <code>p⁺</code>, and a set of negatives <code>{p⁻ⱼ}</code>: <code>L = − log [ exp(sim(q, p⁺)/τ) / ( exp(sim(q, p⁺)/τ) + Σⱼ exp(sim(q, p⁻ⱼ)/τ) ) ]</code></p>
+<ul><li><code>sim</code> is cosine similarity (embeddings L2-normalised) or dot product.</li><li><code>τ</code> (temperature, for example 0.02 to 0.1) controls sharpness: small τ focuses the gradient on the hardest negatives; large τ treats all negatives more equally.</li><li>It is a <strong>(K+1)-way softmax classification</strong> that identifies the positive among negatives, and it maximises a lower bound on mutual information between query and positive (hence &quot;noise contrastive estimation&quot;).</li></ul>
+<p>Symmetric versions also compute passage-to-query loss.</p>
+<h4>In-batch negatives</h4>
+<p>Batch of B pairs <code>(q_i, p_i)</code>. Embed all queries and passages, compute the B × B similarity matrix; the diagonal holds positives and every off-diagonal entry in row i serves as a negative for <code>q_i</code>. This is <strong>MultipleNegativesRankingLoss</strong> in sentence-transformers.</p>
+<pre><code>from sentence_transformers import SentenceTransformer, losses, InputExample
+from torch.utils.data import DataLoader
+model = SentenceTransformer(&quot;BAAI/bge-base-en-v1.5&quot;)
+train = [InputExample(texts=[q, pos, hard_neg]) for q, pos, hard_neg in triples]      # optional hard negative as third text
+loader = DataLoader(train, shuffle=True, batch_size=128)
+loss = losses.MultipleNegativesRankingLoss(model, scale=20.0)                          # scale = 1/temperature
+model.fit(train_objectives=[(loader, loss)], epochs=2, warmup_steps=100, optimizer_params={&quot;lr&quot;: 2e-5})</code></pre>
+<p>Bigger batches provide more negatives per step and generally improve quality (use gradient caching, GradCache, to simulate large batches within memory).</p>
+<h4>Building training data</h4>
+<ul><li><strong>Positives</strong>: human-labelled relevance, click logs, FAQ question to answer, title to body, doc section to heading, and <strong>synthetic queries</strong>: an LLM generates questions for each chunk (GPL, InPars, Promptagator style), filtered by a cross-encoder or consistency check.</li><li><strong>Negatives</strong>: random in-batch (easy), <strong>hard negatives</strong> mined by retrieving top results with BM25 or the base embedding model and excluding true positives (ranks 10 to 100 work well; too-close items may be false negatives), plus cross-encoder-scored negatives with margin filtering.</li><li>Include instructions or prefixes if the base model requires them (<code>query:</code> and <code>passage:</code> in E5).</li><li>Hold out an evaluation set (queries with relevant docs from a <strong>different time period or documents</strong>) to avoid leakage.</li></ul>
+<h4>Issues and tips</h4>
+<ul><li><strong>False negatives</strong>: unlabelled relevant passages treated as negatives hurt training; use deduplication, cluster-aware batching, and denoising with a reranker.</li><li>Keep <strong>batch composition diverse</strong> (avoid many same-topic items) or use topic-aware hard-negative batches deliberately.</li><li><strong>Matryoshka representation learning</strong> trains embeddings that remain useful when truncated to smaller dimensions.</li><li>Prevent <strong>catastrophic forgetting</strong>: low learning rate, few epochs, mix some general data, LoRA adapters, evaluate on general benchmarks (MTEB subset).</li><li>Match training and inference <strong>similarity function, normalisation, max length and prefixes</strong>.</li><li><strong>Distillation</strong> from a cross-encoder (margin-MSE) can add quality.</li><li>Re-embed the entire corpus after fine-tuning and rebuild the index.</li></ul>
+<h4>Evaluation</h4>
+<p>Recall@k, MRR@10, nDCG@10 on the held-out set versus the base model and a BM25 baseline; end-to-end RAG answer quality; latency and index size. Expect the largest gains where domain vocabulary differs from web text.</p>
+<h4>Pitfalls</h4>
+<p>Training on test queries, too-high learning rate wrecking pretrained knowledge, hard negatives that are actually relevant, forgetting normalisation, and not re-indexing.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why do larger batches and hard negatives improve contrastive embedding training?</li><li>How do false negatives and the temperature parameter affect training?</li><li>How do you build positive and negative pairs from your own corpus and evaluate gains?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-80">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-80%3A+How+do+you+fine-tune+embedding+models+using+contrastive+InfoNCE+loss%E2%80%A6&amp;question-id=ml-80&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+Embeddings%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-80.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

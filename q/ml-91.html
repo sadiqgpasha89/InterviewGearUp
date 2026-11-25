@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you profile GPU kernel bottlenecks in PyTorch using the PyTorch Profiler and TensorBoard? | InterviewGearUp</title>
+<meta name="description" content="Use the PyTorch Profiler to record CPU and CUDA activity for a few training steps, view operator and kernel tables, and the TensorBoard trace to find GPU…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-91.html">
+<meta property="og:title" content="How do you profile GPU kernel bottlenecks in PyTorch using the PyTorch Profiler and TensorBoard? | InterviewGearUp">
+<meta property="og:description" content="Use the PyTorch Profiler to record CPU and CUDA activity for a few training steps, view operator and kernel tables, and the TensorBoard trace to find GPU…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-91.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you profile GPU kernel bottlenecks in PyTorch using the PyTorch Profiler and TensorBoard?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · MLOps · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Use the PyTorch Profiler to record CPU and CUDA activity for a few training steps, view operator and kernel tables, and the TensorBoard trace to find GPU idle gaps, slow kernels, data-loading stalls and memory growth. Then fix input pipeline bottlenecks, small-kernel overhead, host-device syncs and precision, and re-profile to confirm the speedup.</p></div>
+<h4>Explained in depth</h4>
+<h4>Profile with a schedule</h4>
+<p>Profile only a handful of steps after warm-up, since tracing adds overhead and generates large files.</p>
+<pre><code>import torch
+from torch.profiler import profile, ProfilerActivity, schedule, tensorboard_trace_handler
+
+with profile(
+    activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
+    schedule=schedule(wait=1, warmup=1, active=3, repeat=1),         # skip 1, warm 1, record 3 steps
+    on_trace_ready=tensorboard_trace_handler(&quot;./logs/prof&quot;),
+    record_shapes=True, profile_memory=True, with_stack=True, with_flops=True,
+) as prof:
+    for step, (x, y) in enumerate(loader):
+        with torch.profiler.record_function(&quot;train_step&quot;):
+            loss = loss_fn(model(x.cuda(non_blocking=True)), y.cuda(non_blocking=True))
+            loss.backward(); opt.step(); opt.zero_grad(set_to_none=True)
+        prof.step()
+        if step &gt;= 6: break
+print(prof.key_averages().table(sort_by=&quot;cuda_time_total&quot;, row_limit=15))</code></pre>
+<p>Then <code>tensorboard --logdir ./logs/prof</code> (with the <code>torch-tb-profiler</code> plugin) or open the trace in Chrome (<code>chrome://tracing</code>) or Perfetto / HTA (Holistic Trace Analysis).</p>
+<h4>TensorBoard views</h4>
+<ul><li><strong>Overview</strong>: step time breakdown (kernel, memcpy, memset, communication, CPU execution, <strong>DataLoader</strong>, other) and GPU utilisation, SM efficiency, achieved occupancy, with recommendations.</li><li><strong>Operator view</strong>: time per aten operator (self and total), calls, input shapes; sort by CUDA time to find hotspots (matmul, attention, layer norm, elementwise ops).</li><li><strong>Kernel view</strong>: individual CUDA kernels, duration, grid and block, registers, shared memory, tensor core use.</li><li><strong>Trace view</strong>: timeline of CPU threads and GPU streams; look for <strong>gaps</strong> where the GPU is idle (waiting for the CPU or data), host-to-device copies, <strong>synchronisation points</strong>, and overlap of compute and communication (NCCL).</li><li><strong>Memory view</strong>: allocations over time, peak memory, per-operator memory.</li><li><strong>Distributed view</strong>: communication versus computation overlap and stragglers.</li></ul>
+<h4>Diagnosing bottlenecks</h4>
+<div class="md-table"><table><thead><tr><th>Symptom in profile</th><th>Likely cause</th><th>Fixes</th></tr></thead><tbody><tr><td>Large &quot;DataLoader&quot; time, GPU idle at step start</td><td>input pipeline bound</td><td>more workers, <code>pin_memory</code>, <code>prefetch_factor</code>, persistent workers, faster storage, cache/preprocess offline, GPU decoding (DALI)</td></tr><tr><td>Many tiny kernels, gaps between them, CPU timeline busy</td><td>launch overhead, Python overhead</td><td><code>torch.compile</code>, CUDA graphs, fuse ops, larger batch, avoid Python loops</td></tr><tr><td><code>cudaMemcpy</code> / <code>.item()</code> / <code>.cpu()</code> calls, <code>cudaStreamSynchronize</code></td><td>host-device syncs</td><td>remove <code>.item()</code> and prints in the loop, use <code>non_blocking=True</code></td></tr><tr><td>Matmuls in FP32, low tensor-core use</td><td>no mixed precision</td><td>autocast BF16/FP16, TF32 (<code>torch.backends.cuda.matmul.allow_tf32</code>), align dims to multiples of 8</td></tr><tr><td>Attention dominates and is memory-bound</td><td>naive attention</td><td>FlashAttention / <code>scaled_dot_product_attention</code></td></tr><tr><td>NCCL all-reduce not overlapped</td><td>communication exposed</td><td>bucket sizes, DDP overlap, gradient accumulation, FSDP prefetch, faster interconnect</td></tr><tr><td>OOM or high memory</td><td>activations</td><td>activation checkpointing, smaller micro-batch, mixed precision, fused optimisers</td></tr></tbody></table></div>
+<p>GPU utilisation of &quot;100 percent&quot; only means a kernel was running, not that the GPU is used efficiently; check <strong>SM efficiency</strong>, tensor-core utilisation, <strong>MFU</strong> (model FLOPs utilisation), and kernel durations.</p>
+<h4>Methodology</h4>
+<ol start="1"><li>Establish a <strong>baseline</strong> (samples per second, step time, memory).</li><li>Profile <strong>after warm-up</strong> (CUDA initialisation, cudnn benchmark autotuning, compilation skew results).</li><li>Change <strong>one thing at a time</strong> and measure again; keep results reproducible (fixed seeds, same data).</li><li>Use Nsight Systems and Nsight Compute for deeper kernel-level analysis, <code>torch.cuda.memory_summary()</code> and <code>torch.cuda.memory._record_memory_history()</code> for memory.</li><li>Profile on <strong>representative batch shapes</strong>; dynamic shapes cause recompiles and varying kernels.</li></ol>
+<h4>Pitfalls</h4>
+<p>Profiling the first iterations (warm-up noise), keeping the profiler on for too long, optimising kernels that are not on the critical path, ignoring the data pipeline, and measuring without <code>torch.cuda.synchronize()</code> when timing manually.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you tell whether a job is data-loader-bound or compute-bound?</li><li>What do GPU utilisation and SM efficiency tell you and what do they hide?</li><li>Which optimisations fix many tiny kernels and CPU launch overhead?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-91">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-91%3A+How+do+you+profile+GPU+kernel+bottlenecks+in+PyTorch+using+the%E2%80%A6&amp;question-id=ml-91&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+MLOps%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-91.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

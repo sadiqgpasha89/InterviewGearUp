@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain Google Cloud BigQuery architecture: Dremel compute, Capacitor storage, and Colossus. | InterviewGearUp</title>
+<meta name="description" content="BigQuery is a serverless warehouse that separates storage and compute. Colossus is Google&#39;s distributed file system holding data, Capacitor is the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-36.html">
+<meta property="og:title" content="Explain Google Cloud BigQuery architecture: Dremel compute, Capacitor storage, and Colossus. | InterviewGearUp">
+<meta property="og:description" content="BigQuery is a serverless warehouse that separates storage and compute. Colossus is Google&#39;s distributed file system holding data, Capacitor is the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-36.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain Google Cloud BigQuery architecture: Dremel compute, Capacitor storage, and Colossus.</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Warehouses · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>BigQuery is a serverless warehouse that separates storage and compute. Colossus is Google&#39;s distributed file system holding data, Capacitor is the columnar storage format, Dremel is the distributed query engine that executes SQL as a tree of workers, and a petabit shuffle network (Jupiter) moves intermediate data between stages through a managed in-memory shuffle service.</p></div>
+<h4>Explained in depth</h4>
+<h4>Components</h4>
+<ol start="1"><li><strong>Colossus</strong> (successor to GFS): Google&#39;s cluster-level distributed file system. It stores table data with replication or erasure coding across racks and zones, automatic recovery, and very high aggregate throughput. Storage is decoupled from compute, so you can scale data without provisioning anything.</li><li><strong>Capacitor</strong>: BigQuery&#39;s proprietary <strong>columnar storage format</strong>. Data is stored column by column, compressed with encodings suited to each column (dictionary, run-length, delta), with statistics and metadata that enable skipping. It reorders rows within files to maximise compression, supports nested and repeated fields (from Protocol Buffers and Dremel) and <strong>reads only the columns referenced by a query</strong>.</li><li><strong>Dremel</strong>: the distributed query engine. A query is compiled into a <strong>DAG of stages</strong>; each stage runs on many parallel workers (slots). Early implementations used a serving tree (root server, intermediate mixers, leaf servers); the modern engine uses a flexible DAG with shuffle between stages.</li><li><strong>Jupiter network and shuffle</strong>: Google&#39;s petabit datacentre network and the in-memory <strong>shuffle tier</strong> let stages exchange data (repartition for joins and aggregations) at very high speed, separate from worker memory. This is why large joins are practical without managing a cluster.</li><li><strong>Borg</strong>: the cluster manager that allocates thousands of CPU workers (slots) on demand. A <strong>slot</strong> is a unit of compute (vCPU and memory) used to execute query work.</li><li><strong>Control plane</strong>: APIs, metadata, query planning and optimisation, job scheduling, IAM and security.</li></ol>
+<h4>Query lifecycle</h4>
+<p>SQL submitted → parser and planner create a logical and physical plan with partition and clustering pruning → stages scheduled on slots (fair-shared across projects and reservations) → leaf stages read Capacitor columns from Colossus in parallel and filter/aggregate → shuffle redistributes partial results → upper stages join, aggregate, sort → final stage writes results to a temporary table (cached for 24 hours) or the destination.</p>
+<h4>Consequences for design and cost</h4>
+<ul><li><strong>On-demand pricing is by bytes scanned</strong> (per TB), measured on compressed column data referenced. Select only needed columns (avoid <code>SELECT *</code>), and use partitioning and clustering to reduce scanned bytes; <code>LIMIT</code> does not reduce cost.</li><li><strong>Capacity pricing</strong> (slot reservations, autoscaling editions) gives predictable cost for heavy use.</li><li>No indexes or vacuuming; storage cost drops for long-term (unchanged for 90 days) tables; time travel up to 7 days and fail-safe.</li><li>Streaming inserts, the Storage Write API, batch loads, federated queries, BigQuery ML and BI Engine (in-memory acceleration) integrate with the same engine.</li><li>Nested and repeated fields avoid expensive joins for hierarchical data.</li></ul>
+<h4>Optimisation tips</h4>
+<p>Partition by date or integer range, cluster by commonly filtered columns, avoid cross joins and skewed keys, use approximate aggregates (<code>APPROX_COUNT_DISTINCT</code>), materialised views, and inspect the <strong>query plan</strong> (stage timings, slot usage, shuffle bytes, spilled data) in the console or <code>INFORMATION_SCHEMA.JOBS</code>.</p>
+<h4>Pitfalls</h4>
+<p>Assuming &quot;serverless&quot; means unlimited cost-free scaling, repeated full scans in dashboards (use BI Engine or materialised tables), many small DML statements (not optimised for OLTP), and unpartitioned multi-TB tables.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does the multi-level execution tree and slot scheduling work?</li><li>Why is BigQuery billed by bytes scanned and how does columnar storage affect cost?</li><li>How does Borg provide compute capacity?</li></ul>
+<p><a class="btn primary" href="../#/q/de-36">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-36%3A+Explain+Google+Cloud+BigQuery+architecture%3A+Dremel+compute%2C%E2%80%A6&amp;question-id=de-36&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Warehouses%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-36.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is Dynamic Batching in model inference servers and how does it balance latency and throughput? | InterviewGearUp</title>
+<meta name="description" content="Dynamic batching lets an inference server hold incoming requests for a short window and run them together as one batch, because GPUs are far more…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-62.html">
+<meta property="og:title" content="What is Dynamic Batching in model inference servers and how does it balance latency and throughput? | InterviewGearUp">
+<meta property="og:description" content="Dynamic batching lets an inference server hold incoming requests for a short window and run them together as one batch, because GPUs are far more…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-62.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is Dynamic Batching in model inference servers and how does it balance latency and throughput?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · MLOps · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Dynamic batching lets an inference server hold incoming requests for a short window and run them together as one batch, because GPUs are far more efficient on batches than single items. The key knobs are the maximum batch size and the maximum queue delay: longer waits raise throughput and utilisation but add latency, so you tune them against the latency SLO.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why batching helps</h4>
+<p>A GPU executes thousands of operations in parallel. A single request often leaves it underutilised: kernel launch overhead, memory-bound operations and small matrices dominate. Processing 16 requests at once costs only slightly more time than one, so throughput (requests per second) rises almost linearly with batch size until compute or memory saturates, and the cost per request falls. The tension: clients send requests one at a time at random moments, and waiting to fill a batch <strong>adds latency</strong>.</p>
+<h4>Dynamic batching</h4>
+<p>The server places requests in a queue and forms batches <strong>on the fly</strong>, combining requests that arrive within a short window, up to a maximum batch size, without clients coordinating.</p>
+<pre><code># Triton config.pbtxt
+max_batch_size: 32
+dynamic_batching {
+  preferred_batch_size: [ 8, 16, 32 ]       # sizes that fit optimised kernels (e.g., TensorRT profiles)
+  max_queue_delay_microseconds: 5000        # wait at most 5 ms to fill a batch
+}
+instance_group [ { count: 2, kind: KIND_GPU } ]</code></pre>
+<p>Behaviour: when a batch reaches a preferred size, or the oldest request has waited <code>max_queue_delay</code>, or the maximum is reached, the batch is dispatched. If traffic is light, requests wait up to the delay (small added latency); under heavy traffic batches fill quickly, giving high throughput with little extra waiting. Other implementations: TorchServe <code>batch_size</code> and <code>max_batch_delay</code>, TensorFlow Serving <code>max_batch_size</code>, <code>batch_timeout_micros</code>, KServe and Ray Serve <code>@serve.batch</code>, ONNX Runtime server.</p>
+<h4>Latency versus throughput trade-off</h4>
+<p><code>latency ≈ queue wait + batch compute time (+ network)</code>. Increasing the batch size and delay:</p>
+<ul><li>raises GPU utilisation and <strong>throughput</strong>, lowers <strong>cost per request</strong>;</li><li>raises <strong>average and tail latency</strong> (P99) at low load, and compute time per batch.</li></ul>
+<p>Tune with the <strong>service-level objective</strong>: choose the largest batch and delay that keep P99 under target (for a 50 ms SLO, maybe a 2 to 5 ms delay). Latency-critical endpoints (fraud scoring at 20 ms) use tiny delays and small batches; offline or asynchronous workloads use big batches.</p>
+<h4>Practical details</h4>
+<ul><li><strong>Padding</strong>: variable-length inputs (text, audio) are padded to the longest in the batch, wasting compute; mitigate with length-bucketing, ragged batching, or sorting by length.</li><li><strong>Multiple model instances</strong> on one GPU overlap execution of different batches and hide latency.</li><li><strong>Warm-up</strong> and fixed input shapes (TensorRT optimisation profiles) avoid first-request spikes.</li><li><strong>Concurrency and queues</strong>: bound the queue size, return 429 when overloaded, and use priority queues for tiered traffic.</li><li><strong>Autoscaling</strong> on queue time or GPU utilisation rather than CPU.</li><li><strong>Dynamic versus static batching</strong>: static means the client sends pre-built batches; dynamic builds them server side.</li></ul>
+<h4>LLMs: continuous batching</h4>
+<p>For autoregressive generation, request lengths differ and each output token is a separate step. Classic dynamic batching makes a batch wait for its <strong>slowest sequence</strong>. <strong>Continuous (iteration-level) batching</strong> (vLLM, TensorRT-LLM, TGI) schedules at every decoding iteration, adding new requests and removing finished ones immediately, with PagedAttention for KV cache. It yields much higher throughput and lower latency under mixed lengths.</p>
+<h4>Measuring</h4>
+<p>Use <code>perf_analyzer</code> (Triton), Locust, k6 or vegeta to sweep concurrency and batch settings; plot throughput versus P50, P95, P99 latency; watch GPU utilisation, queue time metrics (<code>nv_inference_queue_duration_us</code>), and error rate.</p>
+<h4>Pitfalls</h4>
+<p>Setting delays that exceed the SLO at low traffic, not testing with realistic arrival patterns (bursty), padding waste, and forgetting that batching changes numerical results slightly in some kernels.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do preferred batch sizes and queue delay microseconds interact in Triton?</li><li>Why is continuous batching needed for autoregressive LLMs?</li><li>How do you pick settings with perf_analyzer or load tests?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-62">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-62%3A+What+is+Dynamic+Batching+in+model+inference+servers+and+how+does+it%E2%80%A6&amp;question-id=ml-62&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+MLOps%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-62.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

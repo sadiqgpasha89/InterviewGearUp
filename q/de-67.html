@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do federated queries and external tables allow querying data lakes directly from SQL warehouses? | InterviewGearUp</title>
+<meta name="description" content="External tables define metadata over files that stay in object storage (S3, GCS, ADLS), so the warehouse engine scans them in place without loading.…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-67.html">
+<meta property="og:title" content="How do federated queries and external tables allow querying data lakes directly from SQL warehouses? | InterviewGearUp">
+<meta property="og:description" content="External tables define metadata over files that stay in object storage (S3, GCS, ADLS), so the warehouse engine scans them in place without loading.…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-67.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do federated queries and external tables allow querying data lakes directly from SQL warehouses?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Warehouses · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>External tables define metadata over files that stay in object storage (S3, GCS, ADLS), so the warehouse engine scans them in place without loading. Federated queries push SQL to another live system (Postgres, Cloud SQL, Spanner) and return results. Both avoid copies, but reads are usually slower and less optimised than native storage, so use them for exploration, occasional access, or as a staging bridge.</p></div>
+<h4>Explained in depth</h4>
+<h4>Two related ideas</h4>
+<ol start="1"><li><strong>External tables (query the lake)</strong>: you register a table whose definition points to files in object storage with a format (Parquet, ORC, Avro, CSV, JSON) and optional partition layout. The warehouse reads the files at query time.</li><li><strong>Federated queries (query other databases)</strong>: the warehouse connects to an external operational or analytical source, pushes down parts of the query, and joins results with warehouse tables.</li></ol>
+<h4>Examples</h4>
+<pre><code>-- BigQuery external table over Parquet in GCS (hive-partitioned)
+CREATE EXTERNAL TABLE lake.events
+WITH PARTITION COLUMNS (dt DATE)
+OPTIONS (format = &#39;PARQUET&#39;, uris = [&#39;gs://lake/events/*&#39;], hive_partition_uri_prefix = &#39;gs://lake/events&#39;, require_hive_partition_filter = TRUE);
+
+-- Snowflake
+CREATE EXTERNAL TABLE ext_events (dt DATE AS (SPLIT_PART(METADATA$FILENAME, &#39;/&#39;, 3)::DATE), payload VARIANT)
+PARTITION BY (dt) LOCATION=@lake_stage/events/ FILE_FORMAT=(TYPE=PARQUET) AUTO_REFRESH=TRUE;
+
+-- Redshift Spectrum
+CREATE EXTERNAL SCHEMA spectrum FROM DATA CATALOG DATABASE &#39;lake&#39; IAM_ROLE &#39;arn:aws:iam::123456789012:role/spectrum&#39;;
+SELECT * FROM spectrum.events WHERE dt = &#39;2026-11-24&#39;;
+
+-- BigQuery federated query to Cloud SQL
+SELECT * FROM EXTERNAL_QUERY(&#39;proj.us.cloudsql-conn&#39;, &#39;SELECT id, status FROM orders WHERE updated_at &gt; now() - interval &#39;&#39;1 day&#39;&#39;&#39;);</code></pre>
+<p>Athena and Trino/Presto query lake files this way natively; Databricks has Unity Catalog external tables and Lakehouse Federation.</p>
+<h4>Why use them</h4>
+<ul><li><strong>No ingestion pipeline</strong> and no duplicate storage; data is queryable immediately after landing.</li><li><strong>Single SQL interface</strong> to joins across warehouse, lake and operational systems.</li><li>Lets the warehouse act as a <strong>query engine over an open lakehouse</strong> (Iceberg and Delta tables registered via BigLake, Snowflake Iceberg tables, Redshift Spectrum with Glue catalog).</li><li>Useful for cold or rarely queried historical data, data sharing across clouds, exploration, and migration or validation work.</li></ul>
+<h4>Costs and limits</h4>
+<ul><li><strong>Performance</strong>: no proprietary columnar cache, weaker statistics and clustering, more file listing and small-file overhead, network transfer from storage. Federated queries to OLTP databases are limited by source speed and can <strong>load production systems</strong>.</li><li><strong>Features</strong>: fewer guarantees (no transactions or DML on plain external tables, schema drift problems, eventual consistency in listings), restricted join pushdown, concurrency limits.</li><li><strong>Cost</strong>: scanning raw JSON or CSV is expensive per query; Spectrum and Athena charge per bytes scanned.</li><li><strong>Governance</strong>: security needs to be handled on both sides (cloud IAM for the bucket and warehouse roles).</li></ul>
+<h4>Optimisation</h4>
+<p>Use <strong>columnar formats</strong> (Parquet with Snappy or Zstd), <strong>partition</strong> by common filters and require partition filters, compact small files (128 to 512 MB), maintain table metadata and statistics (Glue crawlers, <code>MSCK REPAIR</code>, auto-refresh), use <strong>table formats</strong> (Iceberg and Delta) for manifest-based planning instead of directory listing, cache with materialised views, and consider <strong>loading hot data</strong> into native tables while leaving cold data external.</p>
+<h4>Pitfalls</h4>
+<p>Pointing BI dashboards directly at federated OLTP sources, scanning CSV lakes without partitions, assuming ACID semantics on plain external tables, and cross-region egress costs.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Which performance issues arise and how do partitions, formats and statistics help?</li><li>How do BigLake and Snowflake external tables with Iceberg improve on plain external tables?</li><li>When would you load data instead of querying in place?</li></ul>
+<p><a class="btn primary" href="../#/q/de-67">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-67%3A+How+do+federated+queries+and+external+tables+allow+querying+data%E2%80%A6&amp;question-id=de-67&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Warehouses%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-67.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

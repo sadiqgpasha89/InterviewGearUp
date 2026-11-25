@@ -9,13 +9,13 @@
   const SKILLS = [
     ['javascript', 'JavaScript', 'Language', ['javascript', 'ecmascript', 'es6'], ['frontend']],
     ['typescript', 'TypeScript', 'Language', ['typescript'], ['frontend']],
-    ['python', 'Python', 'Language', ['python'], ['backend', 'data', 'ml']],
+    ['python', 'Python', 'Language', ['python'], ['backend', 'data', 'ml', 'datascience']],
     ['java', 'Java', 'Language', ['java'], ['backend']],
     ['golang', 'Go', 'Language', ['golang'], ['backend', 'devops'], ['(?:^|[^A-Za-z0-9])(?:in|with|using|and|or|,|/)\\s*Go(?![A-Za-z0-9])(?!\\s+to\\b)', '(?:^|[^A-Za-z0-9])Go\\s*(?:,|/)\\s*[A-Z]', '(?:^|[^A-Za-z0-9])Go\\s+(?:programming|language|and\\s+(?:Python|Java|Rust|C\\+\\+|TypeScript|JavaScript|Ruby))']],
     ['rust', 'Rust', 'Language', ['rust'], ['general']],
     ['csharp', 'C#', 'Language', ['c#', '\\.net', 'dotnet'], ['backend']],
     ['cpp', 'C++', 'Language', ['c\\+\\+'], ['general']],
-    ['sql', 'SQL', 'Data', ['sql', 'postgres', 'postgresql', 'mysql'], ['backend', 'data']],
+    ['sql', 'SQL', 'Data', ['sql', 'postgres', 'postgresql', 'mysql'], ['backend', 'data', 'datascience']],
     ['nosql', 'NoSQL', 'Data', ['nosql', 'mongodb', 'dynamodb', 'cassandra'], ['backend', 'data']],
     ['redis', 'Redis / caching', 'Data', ['redis', 'memcached', 'caching'], ['backend']],
     ['react', 'React', 'Frontend', ['react', 'reactjs', 'next\\.js', 'nextjs'], ['frontend']],
@@ -38,7 +38,9 @@
     ['spark', 'Spark / big data', 'Data', ['spark', 'hadoop', 'big data', 'databricks'], ['data']],
     ['etl', 'ETL / pipelines', 'Data', ['etl', 'elt', 'data pipeline', 'data pipelines', 'airflow', 'dbt'], ['data']],
     ['warehouse', 'Data warehousing / modeling', 'Data', ['data warehouse', 'snowflake', 'redshift', 'data modeling', 'dimensional model', 'lakehouse'], ['data']],
-    ['ml', 'Machine learning', 'ML', ['machine learning', 'deep learning', 'pytorch', 'tensorflow', 'scikit-learn', 'xgboost'], ['ml']],
+    ['ml', 'Machine learning', 'ML', ['machine learning', 'deep learning', 'pytorch', 'tensorflow', 'scikit-learn', 'xgboost'], ['ml', 'datascience']],
+    ['stats', 'Statistics and experimentation', 'Data science', ['statistics', 'statistical', 'hypothesis testing', 'a/b test', 'a/b testing', 'ab testing', 'experimentation', 'causal inference', 'bayesian'], ['datascience']],
+    ['dsmodeling', 'Predictive modeling and analytics', 'Data science', ['predictive modeling', 'predictive modelling', 'forecasting', 'feature engineering', 'regression', 'classification', 'pandas', 'numpy', 'jupyter', 'data analysis', 'data visualization', 'tableau'], ['datascience']],
     ['llm', 'LLMs / GenAI', 'ML', ['llm', 'llms', 'generative ai', 'genai', 'rag', 'prompt engineering', 'langchain'], ['ml']],
     ['mlops', 'MLOps', 'ML', ['mlops', 'model serving', 'feature store', 'model deployment'], ['ml']],
     ['testing', 'Test automation', 'QA', ['test automation', 'selenium', 'playwright', 'cypress', 'pytest', 'junit', 'unit testing', 'integration testing', 'sdet'], ['qa']],
@@ -56,7 +58,7 @@
     ['agile', 'Agile delivery', 'Leadership', ['agile', 'scrum', 'kanban', 'sprint'], ['leadership']]
   ].map(function (r) { return { id: r[0], name: r[1], category: r[2], aliases: r[3], roles: r[4], cs: r[5] || null }; });
 
-  const GENERIC_TAGS = { architecture: 1, engineering: 1, interview: 1, general: 1, frontend: 1, backend: 1, devops: 1, data: 1, ml: 1, qa: 1, security: 1, leadership: 1 };
+  const GENERIC_TAGS = { architecture: 1, engineering: 1, interview: 1, general: 1, frontend: 1, backend: 1, devops: 1, data: 1, ml: 1, datascience: 1, qa: 1, security: 1, leadership: 1 };
 
   const esc = function (s) { return s; }; // aliases are written as regex source already
   const reFor = function (alias) { return new RegExp('(^|[^a-z0-9+#])' + alias + '(?![a-z0-9#]|\\+\\+)', 'i'); };
@@ -117,7 +119,7 @@
 
   /* Best-guess role from the skills' role votes (the user can change it). */
   const TITLE_ROLES = [['backend', /back-?end/i], ['frontend', /front-?end|ui engineer/i], ['devops', /devops|sre|site reliability|platform engineer|cloud engineer/i], ['data', /data engineer/i],
-    ['ml', /machine learning|ml engineer|ai engineer/i], ['qa', /\bqa\b|sdet|test engineer|quality/i], ['security', /security engineer|appsec/i], ['leadership', /engineering manager|tech(nical)? lead/i]];
+    ['datascience', /data scientist|applied scientist|research scientist|decision scientist/i], ['ml', /machine learning|ml engineer|ai engineer/i], ['qa', /\bqa\b|sdet|test engineer|quality/i], ['security', /security engineer|appsec/i], ['leadership', /engineering manager|tech(nical)? lead/i]];
 
   function guessRole(skills, text) {
     const v = {};

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain SAML 2.0 Single Sign-On (SSO): Identity Provider (IdP), Service Provider (SP), and SAML Assertions. | InterviewGearUp</title>
+<meta name="description" content="SAML 2.0 SSO lets a user authenticate once at an Identity Provider and access many Service Providers. The SP redirects with an AuthnRequest, the IdP…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-35.html">
+<meta property="og:title" content="Explain SAML 2.0 Single Sign-On (SSO): Identity Provider (IdP), Service Provider (SP), and SAML Assertions. | InterviewGearUp">
+<meta property="og:description" content="SAML 2.0 SSO lets a user authenticate once at an Identity Provider and access many Service Providers. The SP redirects with an AuthnRequest, the IdP…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-35.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain SAML 2.0 Single Sign-On (SSO): Identity Provider (IdP), Service Provider (SP), and SAML Assertions.</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · IAM · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>SAML 2.0 SSO lets a user authenticate once at an Identity Provider and access many Service Providers. The SP redirects with an AuthnRequest, the IdP authenticates the user and posts a digitally signed XML assertion containing identity attributes and conditions, and the SP validates signature, audience, validity and replay before creating a session.</p></div>
+<h4>Explained in depth</h4>
+<h4>Concepts</h4>
+<p><strong>SAML 2.0</strong> (Security Assertion Markup Language) is an XML-based standard for exchanging authentication and authorisation data between parties. It underpins enterprise <strong>federated single sign-on</strong> for SaaS applications.</p>
+<ul><li><strong>Identity Provider (IdP)</strong>: authenticates users and issues assertions (Okta, Entra ID, ADFS, Ping, Shibboleth).</li><li><strong>Service Provider (SP)</strong>: the application that relies on the assertion (Salesforce, an internal app).</li><li><strong>Principal</strong>: the user.</li><li><strong>Assertion</strong>: signed XML statement with three parts: <strong>authentication statement</strong> (user authenticated at time T by method M), <strong>attribute statement</strong> (email, name, groups, roles) and optionally <strong>authorization decision</strong>. Contains <code>Issuer</code>, <code>Subject</code> (<code>NameID</code>), <code>Conditions</code> (<code>NotBefore</code>, <code>NotOnOrAfter</code>, <code>AudienceRestriction</code>), and <code>SubjectConfirmationData</code> (<code>Recipient</code>, <code>InResponseTo</code>).</li><li><strong>Metadata</strong>: XML documents exchanged beforehand with entity IDs, endpoints (SSO, SLO, ACS) and signing or encryption certificates.</li><li><strong>Bindings</strong>: HTTP Redirect (AuthnRequest, deflated and base64), <strong>HTTP POST</strong> (SAMLResponse in an auto-submitting form to the <strong>Assertion Consumer Service (ACS)</strong> URL), Artifact.</li></ul>
+<h4>SP-initiated flow</h4>
+<ol start="1"><li>User opens the SP resource without a session.</li><li>SP creates an <strong>AuthnRequest</strong> (ID, issuer, ACS URL, optional <code>ForceAuthn</code>, <code>NameIDPolicy</code>) and redirects the browser to the IdP SSO endpoint with <code>RelayState</code> (original URL).</li><li>IdP authenticates the user (password, MFA, existing IdP session).</li><li>IdP builds a <strong>Response</strong> with a signed assertion (optionally encrypted) and returns it via the browser as an HTTP POST to the SP&#39;s ACS.</li><li>SP validates the response and <strong>creates a local session</strong>, maps attributes to roles, redirects to <code>RelayState</code>.</li></ol>
+<p><strong>IdP-initiated</strong> flow starts at the IdP portal with no AuthnRequest, so the SP cannot bind the response to a request (<code>InResponseTo</code> absent), which weakens CSRF and replay protection; many SPs disable it.</p>
+<h4>Example assertion (abbreviated)</h4>
+<pre><code>&lt;saml:Assertion ID=&quot;_a75adf...&quot; IssueInstant=&quot;2026-11-26T09:00:00Z&quot; Version=&quot;2.0&quot;&gt;
+  &lt;saml:Issuer&gt;https://idp.example.com/metadata&lt;/saml:Issuer&gt;
+  &lt;ds:Signature&gt;...&lt;/ds:Signature&gt;
+  &lt;saml:Subject&gt;
+    &lt;saml:NameID Format=&quot;urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress&quot;&gt;ada@example.com&lt;/saml:NameID&gt;
+    &lt;saml:SubjectConfirmation Method=&quot;urn:oasis:names:tc:SAML:2.0:cm:bearer&quot;&gt;
+      &lt;saml:SubjectConfirmationData InResponseTo=&quot;_req123&quot; Recipient=&quot;https://app.example.com/saml/acs&quot; NotOnOrAfter=&quot;2026-11-26T09:05:00Z&quot;/&gt;
+    &lt;/saml:SubjectConfirmation&gt;
+  &lt;/saml:Subject&gt;
+  &lt;saml:Conditions NotBefore=&quot;2026-11-26T08:59:30Z&quot; NotOnOrAfter=&quot;2026-11-26T09:05:00Z&quot;&gt;
+    &lt;saml:AudienceRestriction&gt;&lt;saml:Audience&gt;https://app.example.com/metadata&lt;/saml:Audience&gt;&lt;/saml:AudienceRestriction&gt;
+  &lt;/saml:Conditions&gt;
+  &lt;saml:AuthnStatement AuthnInstant=&quot;2026-11-26T09:00:00Z&quot;&gt;&lt;saml:AuthnContext&gt;...MultiFactor...&lt;/saml:AuthnContext&gt;&lt;/saml:AuthnStatement&gt;
+  &lt;saml:AttributeStatement&gt;&lt;saml:Attribute Name=&quot;groups&quot;&gt;&lt;saml:AttributeValue&gt;engineering&lt;/saml:AttributeValue&gt;&lt;/saml:Attribute&gt;&lt;/saml:AttributeStatement&gt;
+&lt;/saml:Assertion&gt;</code></pre>
+<h4>What the SP must validate</h4>
+<ul><li><strong>Signature</strong> on the response and/or assertion using a certificate from trusted metadata (not from the message itself), with secure canonicalisation and <strong>protection against XML Signature Wrapping</strong>: verify the signed element is the one actually consumed; use hardened libraries (python3-saml, OneLogin, Spring Security SAML, passport-saml, Shibboleth) rather than custom XML parsing.</li><li><code>Issuer</code> equals the configured IdP; <code>Audience</code> equals the SP entity ID; <code>Recipient</code> and <code>Destination</code> equal the ACS URL; <strong>time window</strong> with small clock skew; <strong><code>InResponseTo</code></strong> matches an outstanding request; <strong>assertion ID not previously seen</strong> (replay cache); <code>StatusCode</code> success; encryption handled if used.</li><li>Disable DTDs and external entities to prevent <strong>XXE</strong>; limit message size; accept POST only to the ACS; require HTTPS.</li><li>Authorisation: map groups to roles server-side; do not trust user-editable attributes; handle <strong>NameID</strong> changes and account linking carefully (immutable identifiers).</li></ul>
+<h4>Operations</h4>
+<p>Exchange metadata, configure attribute mapping (email, groups), <strong>certificate rotation</strong> by publishing metadata with both old and new certificates and updating consumers before cutover, support <strong>Single Logout (SLO)</strong> where feasible (it is often unreliable, so also use short sessions), enforce MFA at the IdP with <code>AuthnContextClassRef</code>, and monitor failed assertions in logs. Provisioning is separate (<strong>SCIM</strong> for create and deprovision users).</p>
+<h4>SAML vs OIDC</h4>
+<p>SAML is mature and common in enterprise and B2B SaaS, with heavy XML and browser-redirect assumptions; <strong>OIDC</strong> is JSON and JWT based, simpler for APIs, SPAs and mobile. Many products support both.</p>
+<h4>Pitfalls</h4>
+<p>Accepting unsigned assertions, trusting certificates embedded in the response, skipping audience or time checks, enabling IdP-initiated flow without need, using email as the only identifier, and no plan for certificate expiry.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the difference between SP-initiated and IdP-initiated SAML flows and why is the latter riskier?</li><li>Which checks must a Service Provider perform on a SAML response to stop XML signature wrapping and replay?</li><li>How do SAML metadata, certificates and attribute mappings get configured and rotated?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-35">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-35%3A+Explain+SAML+2.0+Single+Sign-On+%28SSO%29%3A+Identity+Provider+%28IdP%29%2C%E2%80%A6&amp;question-id=sec-35&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+IAM%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-35.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

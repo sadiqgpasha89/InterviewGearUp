@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What strategies do you use for hyperparameter tuning, and how do you avoid overfitting the validation data? | InterviewGearUp</title>
+<meta name="description" content="Start with sensible defaults and a baseline, define the search space on a log scale where appropriate, use random search or Bayesian optimisation such as…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-29.html">
+<meta property="og:title" content="What strategies do you use for hyperparameter tuning, and how do you avoid overfitting the validation data? | InterviewGearUp">
+<meta property="og:description" content="Start with sensible defaults and a baseline, define the search space on a log scale where appropriate, use random search or Bayesian optimisation such as…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-29.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What strategies do you use for hyperparameter tuning, and how do you avoid overfitting the validation data?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 2 (Mid-level) · Modeling · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Start with sensible defaults and a baseline, define the search space on a log scale where appropriate, use random search or Bayesian optimisation such as Optuna instead of exhaustive grids, evaluate with a leakage-safe cross-validation, use early stopping and budgeted methods, and confirm the final choice on an untouched test set or nested cross-validation.</p></div>
+<h4>Explained in depth</h4>
+<h4>Parameters versus hyperparameters</h4>
+<p><strong>Parameters</strong> (weights, split thresholds) are learned from data. <strong>Hyperparameters</strong> (learning rate, tree depth, regularisation strength, number of layers, k in KNN) are set before training and control model capacity and optimisation. Poor settings cause under- or over-fitting; tuning typically yields modest but real gains once features and data are sound.</p>
+<h4>Process</h4>
+<ol start="1"><li><strong>Baseline</strong> with defaults to know the starting point.</li><li><strong>Understand what matters</strong>: for boosted trees (learning rate, number of trees, depth or leaves, min child weight, subsampling, regularisation); for random forests (number of features per split, min leaf size); for SVMs (C, gamma); for neural networks (learning rate, batch size, weight decay, architecture, dropout, schedule).</li><li><strong>Define the search space</strong> with sensible bounds, <strong>log scale</strong> for rates and regularisation (1e-4 to 1e-1), integers for depth, categorical choices for activation or optimiser.</li><li><strong>Select a validation scheme</strong> matching deployment (stratified, grouped, time-based) with the pipeline including preprocessing.</li><li><strong>Search</strong> within a <strong>compute budget</strong>.</li><li><strong>Refit</strong> the best configuration on all training data, evaluate <strong>once</strong> on the test set.</li></ol>
+<h4>Search strategies</h4>
+<div class="md-table"><table><thead><tr><th>Strategy</th><th>How</th><th>Notes</th></tr></thead><tbody><tr><td><strong>Manual / coordinate search</strong></td><td>change one thing at a time by intuition</td><td>cheap, depends on experience</td></tr><tr><td><strong>Grid search</strong></td><td>all combinations</td><td>cost explodes exponentially; wastes trials on unimportant dimensions</td></tr><tr><td><strong>Random search</strong> (Bergstra and Bengio)</td><td>sample configurations randomly</td><td>covers important dimensions better; strong default</td></tr><tr><td><strong>Bayesian optimisation</strong> (Gaussian process, <strong>TPE</strong> in Optuna and Hyperopt, SMAC)</td><td>model score as a function of hyperparameters, choose promising points</td><td>efficient for expensive models</td></tr><tr><td><strong>Successive halving / Hyperband / ASHA</strong></td><td>start many configs with small budgets (few epochs or trees), keep the best and give more budget</td><td>saves compute; pruning in Optuna</td></tr><tr><td><strong>Population-based training</strong></td><td>evolve hyperparameters during training</td><td>deep learning</td></tr><tr><td><strong>AutoML</strong> (AutoGluon, FLAML, H2O)</td><td>automated pipelines and ensembles</td><td>strong baselines</td></tr></tbody></table></div>
+<pre><code>import optuna, lightgbm as lgb
+from sklearn.model_selection import cross_val_score
+def objective(trial):
+    params = dict(learning_rate=trial.suggest_float(&quot;lr&quot;, 1e-3, 0.2, log=True),
+                  num_leaves=trial.suggest_int(&quot;leaves&quot;, 8, 128, log=True),
+                  min_child_samples=trial.suggest_int(&quot;mcs&quot;, 10, 200),
+                  subsample=trial.suggest_float(&quot;sub&quot;, 0.5, 1.0), colsample_bytree=trial.suggest_float(&quot;col&quot;, 0.5, 1.0),
+                  reg_lambda=trial.suggest_float(&quot;l2&quot;, 1e-3, 10, log=True), n_estimators=400)
+    return cross_val_score(lgb.LGBMClassifier(**params), X, y, cv=cv, scoring=&quot;roc_auc&quot;).mean()
+study = optuna.create_study(direction=&quot;maximize&quot;, pruner=optuna.pruners.MedianPruner())
+study.optimize(objective, n_trials=60)</code></pre>
+<h4>Avoiding overfitting the validation set</h4>
+<ul><li>Each evaluation leaks a little information; with hundreds of trials the best score is <strong>optimistically biased</strong> (selection bias).</li><li>Keep a <strong>final test set</strong> untouched. For small data use <strong>nested CV</strong>: an inner loop tunes, an outer loop estimates performance of the entire tuning procedure.</li><li>Prefer <strong>simpler, flat optima</strong>: choose configurations whose neighbours also perform well; use the one-standard-error rule.</li><li>Limit the number of trials relative to data size; check variance across seeds.</li><li>Fix random seeds, log experiments (MLflow, Weights and Biases), and compare against the baseline with uncertainty.</li></ul>
+<h4>Practical tips</h4>
+<p>Tune the <strong>data and features first</strong>; use early stopping to set the number of trees or epochs; parallelise trials; consider cost and latency alongside accuracy (multi-objective); and re-tune when data drift.</p>
+<h4>Pitfalls</h4>
+<p>Grid searching many parameters, tuning on the test set, ignoring leakage in CV, and spending days on tuning for 0.2 percent gain when a better feature would give more.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does random search often beat grid search for the same budget?</li><li>What is nested cross-validation and when is it worth the cost?</li><li>How do successive halving and Hyperband save compute?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-29">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-29%3A+What+strategies+do+you+use+for+hyperparameter+tuning%2C+and+how+do+you%E2%80%A6&amp;question-id=ds-29&amp;context=Data+scientist%2C+Gear+2%2C+topic%3A+Modeling%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-29.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

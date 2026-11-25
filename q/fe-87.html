@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Design a multi-step checkout wizard with client-side form validation and draft persistence. | InterviewGearUp</title>
+<meta name="description" content="A checkout wizard is a state machine of steps, each with its own schema validation, a shared form store, a guarded transition (validate before next),…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-87.html">
+<meta property="og:title" content="Design a multi-step checkout wizard with client-side form validation and draft persistence. | InterviewGearUp">
+<meta property="og:description" content="A checkout wizard is a state machine of steps, each with its own schema validation, a shared form store, a guarded transition (validate before next),…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-87.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Design a multi-step checkout wizard with client-side form validation and draft persistence.</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 3 (Senior) · Architecture · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A checkout wizard is a state machine of steps, each with its own schema validation, a shared form store, a guarded transition (validate before next), URL-synchronised step state for back button support, and debounced persistence of the draft to sessionStorage, localStorage or the server so users can resume after refresh or interruption.</p></div>
+<h4>Explained in depth</h4>
+<h4>Structure</h4>
+<p>Steps such as Cart, Shipping, Delivery, Payment, Review. Each step has: a <strong>schema</strong> (fields and rules), a <strong>component</strong>, and <strong>guards</strong> (for example &quot;cannot enter Payment without a valid address&quot;).</p>
+<pre><code>const steps = [&#39;shipping&#39;, &#39;delivery&#39;, &#39;payment&#39;, &#39;review&#39;];
+const schemas = { shipping: shippingSchema, delivery: deliverySchema, payment: paymentSchema };   // Zod, Yup or Valibot
+
+function next(state) {
+  const result = schemas[state.step]?.safeParse(state.data[state.step]);
+  if (result &amp;&amp; !result.success) return { ...state, errors: flatten(result.error) };      // stay on the step, show errors
+  return { ...state, errors: {}, step: steps[steps.indexOf(state.step) + 1] };
+}</code></pre>
+<p>A reducer or an XState machine makes valid transitions explicit and testable (no skipping, no invalid combinations).</p>
+<h4>Validation</h4>
+<ul><li><strong>Per-field on blur</strong> and <strong>per-step on submit</strong>, with the full form validated again before the final submit.</li><li>Share the schema between client and server where possible; always <strong>revalidate on the server</strong> (never trust the client) and map server field errors back onto inputs.</li><li>Cross-field rules (postcode versus country), async checks (coupon, address verification) with cancellation, accessible errors (<code>aria-invalid</code>, <code>aria-describedby</code>, error summary focused after failed submit).</li><li>Use correct <code>autocomplete</code> tokens and input types so browsers and password managers autofill.</li></ul>
+<h4>Navigation</h4>
+<p>Reflect the step in the URL (<code>/checkout/shipping</code>) so Back and Forward work, deep links resume, and analytics see funnel steps. Prevent jumping ahead via guards, allow going back without losing data, show a progress indicator (<code>aria-current=&quot;step&quot;</code>), and move focus to the step heading on change.</p>
+<h4>Draft persistence</h4>
+<ul><li>Save the form store (debounced, for example 500 ms) to <code>sessionStorage</code> (per tab) or <code>localStorage</code>/IndexedDB; for logged-in users save a server-side draft or cart so it follows them across devices.</li><li>Version the stored shape and ignore incompatible drafts; set an expiry; clear on completion.</li><li><strong>Never persist card numbers, CVV or secrets.</strong> Use the payment provider&#39;s hosted fields or iframe (Stripe Elements) so card data never touches your code, which keeps PCI scope small. Be careful with personal data on shared devices.</li></ul>
+<h4>Submission</h4>
+<p>Disable the button and show progress, send an <strong>idempotency key</strong> so retries do not create duplicate orders, handle 3-D Secure redirects, and recover gracefully on network failure (preserve data and offer retry).</p>
+<h4>Testing</h4>
+<p>Unit-test schemas and the reducer, component-test each step, and cover the happy path and failure paths with Playwright, including refresh mid-flow and the back button.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why model the wizard as a state machine and how do you keep the browser back button working?</li><li>What must never be stored in a client-side draft and how do you secure payment fields?</li><li>How do you validate on the server as well and reconcile errors?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-87">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-87%3A+Design+a+multi-step+checkout+wizard+with+client-side+form+validation%E2%80%A6&amp;question-id=fe-87&amp;context=Frontend+engineer%2C+Gear+3%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-87.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

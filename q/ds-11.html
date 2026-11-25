@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does k-fold cross-validation work, and when would you use stratified, grouped or time-series variants? | InterviewGearUp</title>
+<meta name="description" content="K-fold cross-validation splits the data into k parts, trains on k minus one and validates on the remaining part, rotating until every part has been the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-11.html">
+<meta property="og:title" content="How does k-fold cross-validation work, and when would you use stratified, grouped or time-series variants? | InterviewGearUp">
+<meta property="og:description" content="K-fold cross-validation splits the data into k parts, trains on k minus one and validates on the remaining part, rotating until every part has been the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-11.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does k-fold cross-validation work, and when would you use stratified, grouped or time-series variants?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 1 (Junior) · Model evaluation · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>K-fold cross-validation splits the data into k parts, trains on k minus one and validates on the remaining part, rotating until every part has been the validation fold, then averages the scores. Use stratified folds for imbalanced classes, grouped folds for repeated entities and time-ordered folds for temporal data.</p></div>
+<h4>Explained in depth</h4>
+<h4>Procedure</h4>
+<ol start="1"><li>Shuffle (when appropriate) and split the data into <strong>k</strong> equal folds.</li><li>For each fold i: train on the other k - 1 folds, evaluate on fold i.</li><li>Report the <strong>mean and standard deviation</strong> of the k scores. The mean estimates expected performance; the spread shows sensitivity to the sample.</li><li>For the final model, <strong>refit on all training data</strong> with the chosen hyperparameters and evaluate once on a held-out test set.</li></ol>
+<pre><code>from sklearn.model_selection import cross_validate, StratifiedKFold
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=0)
+res = cross_validate(make_pipeline(StandardScaler(), LogisticRegression(max_iter=1000)), X, y,
+                     cv=cv, scoring=[&quot;roc_auc&quot;, &quot;average_precision&quot;], return_train_score=True)
+print(res[&quot;test_roc_auc&quot;].mean(), res[&quot;test_roc_auc&quot;].std())</code></pre>
+<h4>Choosing k</h4>
+<ul><li><strong>k = 5 or 10</strong> are common defaults. Larger k means training sets closer to the full data (less pessimistic bias) but more computation and highly correlated folds.</li><li><strong>Leave-one-out</strong> (k = n) has low bias, high variance and high cost; use only for tiny datasets.</li><li>Small k (2 or 3) is cheap but the training sets are much smaller than the final one, so estimates are pessimistic.</li><li><strong>Repeated k-fold</strong> (several random partitions) reduces variance of the estimate.</li></ul>
+<h4>Variants</h4>
+<div class="md-table"><table><thead><tr><th>Variant</th><th>Use when</th><th>Why</th></tr></thead><tbody><tr><td><strong>Stratified K-Fold</strong></td><td>classification, especially imbalanced</td><td>each fold keeps the class proportions, so rare classes appear in every fold</td></tr><tr><td><strong>Group K-Fold</strong></td><td>several rows per customer, patient, session, device</td><td>an entity must not appear in both train and validation, otherwise the model memorises the entity</td></tr><tr><td><strong>Time-series split</strong> (expanding or rolling window)</td><td>forecasting or any temporally ordered problem</td><td>always train on the past and validate on the future</td></tr><tr><td><strong>Stratified Group K-Fold</strong></td><td>imbalance and groups together</td><td>both constraints</td></tr><tr><td><strong>Nested cross-validation</strong></td><td>small data when you tune hyperparameters and also need an unbiased performance estimate</td><td>inner loop tunes, outer loop evaluates; avoids optimistic bias from tuning on the evaluation folds</td></tr></tbody></table></div>
+<h4>Pitfalls and good practice</h4>
+<ul><li><strong>Leakage</strong>: scaling, imputation, feature selection, target encoding and resampling (SMOTE) must be fitted <strong>inside</strong> each training fold, so use a Pipeline. Otherwise the scores are optimistic.</li><li>Do not shuffle time-ordered data. Do not oversample before splitting.</li><li>Using the same CV folds to tune dozens of models and then reporting that score overfits to CV; keep a <strong>final test set</strong>.</li><li>Pick the <strong>scoring metric</strong> that reflects the business objective, and check variance across folds.</li><li>Use the same fold assignments (fixed seeds) when comparing models, and use paired comparisons.</li></ul>
+<h4>When not to use it</h4>
+<p>Very large data where a single hold-out is reliable and cheaper, or deep learning with long training times (use one validation split or a few seeds).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How many folds should you use and what are the bias and variance trade-offs of k?</li><li>What is nested cross-validation and when is it needed?</li><li>Why must preprocessing happen inside each fold?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-11">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-11%3A+How+does+k-fold+cross-validation+work%2C+and+when+would+you+use%E2%80%A6&amp;question-id=ds-11&amp;context=Data+scientist%2C+Gear+1%2C+topic%3A+Model+evaluation%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-11.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

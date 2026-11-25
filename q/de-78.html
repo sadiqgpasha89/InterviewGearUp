@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you configure Airflow SLA (Service Level Agreement) callbacks and alerts on delayed pipelines? | InterviewGearUp</title>
+<meta name="description" content="Set an sla (timedelta) on tasks or default_args, and a sla_miss_callback on the DAG that runs when a task has not finished within the SLA relative to the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-78.html">
+<meta property="og:title" content="How do you configure Airflow SLA (Service Level Agreement) callbacks and alerts on delayed pipelines? | InterviewGearUp">
+<meta property="og:description" content="Set an sla (timedelta) on tasks or default_args, and a sla_miss_callback on the DAG that runs when a task has not finished within the SLA relative to the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-78.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you configure Airflow SLA (Service Level Agreement) callbacks and alerts on delayed pipelines?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 2 (Mid-level) · Orchestration · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Set an sla (timedelta) on tasks or default_args, and a sla_miss_callback on the DAG that runs when a task has not finished within the SLA relative to the scheduled data interval end. In Airflow 2.x this works, but SLAs are limited and have been deprecated. Airflow 3 replaces them with Deadline Alerts, and many teams use callbacks, execution timeouts and external monitoring.</p></div>
+<h4>Explained in depth</h4>
+<h4>What an SLA means in Airflow</h4>
+<p>An <strong>SLA</strong> is a deadline by which a task (or DAG) should have <strong>completed</strong>, measured relative to the <strong>logical schedule</strong> of the run (the end of the data interval), not the actual start time. If a task is not finished by <code>schedule time + sla</code>, an SLA miss is recorded and <code>sla_miss_callback</code> fires. The task is <strong>not stopped</strong>: SLA only notifies. (<code>execution_timeout</code> kills the task; they solve different problems.)</p>
+<h4>Configuration (Airflow 2.x)</h4>
+<pre><code>from datetime import timedelta
+def notify_sla(dag, task_list, blocking_task_list, slas, blocking_tis):
+    msg = f&quot;SLA missed in {dag.dag_id}: {task_list}&quot;
+    slack_alert(msg)                                   # your Slack or PagerDuty function
+
+default_args = {
+    &quot;owner&quot;: &quot;data-platform&quot;,
+    &quot;retries&quot;: 2,
+    &quot;sla&quot;: timedelta(hours=1),              # applies to every task unless overridden
+    &quot;email&quot;: [&quot;data-oncall@corp.com&quot;], &quot;email_on_failure&quot;: True,
+}
+with DAG(&quot;daily_sales&quot;, start_date=datetime(2026, 1, 1), schedule=&quot;0 2 * * *&quot;,
+         default_args=default_args, sla_miss_callback=notify_sla, catchup=False) as dag:
+    load = PythonOperator(task_id=&quot;load&quot;, python_callable=load_fn, sla=timedelta(minutes=45),
+                          execution_timeout=timedelta(hours=2))</code></pre>
+<p>Flow: the scheduler checks SLAs when processing DAG runs (every scheduler loop), records misses in the <code>sla_miss</code> table, shows them under <strong>Browse &gt; SLA Misses</strong>, and calls the DAG-level callback with the list of late tasks (and tasks blocking them).</p>
+<h4>Limitations of classic SLAs</h4>
+<ul><li>Evaluated only if a DAG run exists and the scheduler processes it; a DAG that <strong>never starts</strong> (upstream outage, paused, scheduler down) does not report a miss.</li><li>SLA on a task depends on the schedule time, so catch-up and manual runs behave strangely.</li><li>Not supported for dataset-triggered DAGs and some modes; accuracy problems; callback granularity at DAG level; known bugs. <strong>SLAs are deprecated</strong> in Airflow 2.x documentation and <strong>removed in Airflow 3</strong>.</li></ul>
+<h4>Modern alternatives</h4>
+<ol start="1"><li><strong>Deadline Alerts</strong> (Airflow 3): define a deadline for a DAG run relative to a reference such as queued time, logical date or a fixed time, with a callback (notifier) triggered when exceeded, and options to proceed or interrupt.</li><li><strong>Task and DAG callbacks</strong>: <code>on_failure_callback</code>, <code>on_retry_callback</code>, <code>on_success_callback</code>, <code>dagrun_timeout</code> with <code>on_failure_callback</code>, plus <code>execution_timeout</code>, to detect hung tasks.</li><li><strong>Notifiers</strong>: <code>SlackNotifier</code>, <code>PagerdutyNotifier</code>, <code>EmailNotifier</code> classes.</li><li><strong>Freshness monitoring outside Airflow</strong>: query the destination table&#39;s max timestamp in a scheduled check (dbt source freshness, Monte Carlo, Soda, Elementary) and alert if stale. This catches the &quot;DAG never ran&quot; case.</li><li><strong>Metrics and alerts</strong>: export <code>dagrun.duration</code> and <code>ti.finish</code> metrics (StatsD, OpenTelemetry, Prometheus) and alert in Grafana, Datadog or CloudWatch; heartbeat alert for scheduler health.</li><li><strong>A watcher task</strong>: a final sensor or short-circuit that checks time of day and fails or alerts if data not ready by 7 AM.</li></ol>
+<h4>Design practices</h4>
+<p>Alert to on-call rotations with clear ownership and runbooks, distinguish warning (approaching SLA) from critical, avoid alert fatigue by routing by criticality, include run id and logs link in messages, and test callbacks. Define business SLOs (data ready by 7 AM) and measure them end to end, not only inside Airflow.</p>
+<h4>Pitfalls</h4>
+<p>Assuming SLA kills long tasks, relying on SLA when the scheduler is down, alert storms during catch-up, and callbacks that throw exceptions or block.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why are Airflow SLAs measured from the schedule time instead of task start?</li><li>How do execution_timeout and sla differ?</li><li>How do you alert on missing data freshness independent of Airflow?</li></ul>
+<p><a class="btn primary" href="../#/q/de-78">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-78%3A+How+do+you+configure+Airflow+SLA+%28Service+Level+Agreement%29+callbacks%E2%80%A6&amp;question-id=de-78&amp;context=Data+engineer%2C+Gear+2%2C+topic%3A+Orchestration%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-78.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

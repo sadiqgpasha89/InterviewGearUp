@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you tune Linux kernel parameters via `sysctl` to harden network stacks against SYN flood attacks? | InterviewGearUp</title>
+<meta name="description" content="A SYN flood fills the server&#39;s half-open connection queue with spoofed SYNs so legitimate clients cannot connect. Linux hardening enables SYN cookies…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-91.html">
+<meta property="og:title" content="How do you tune Linux kernel parameters via `sysctl` to harden network stacks against SYN flood attacks? | InterviewGearUp">
+<meta property="og:description" content="A SYN flood fills the server&#39;s half-open connection queue with spoofed SYNs so legitimate clients cannot connect. Linux hardening enables SYN cookies…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-91.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you tune Linux kernel parameters via `sysctl` to harden network stacks against SYN flood attacks?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · Systems · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A SYN flood fills the server&#39;s half-open connection queue with spoofed SYNs so legitimate clients cannot connect. Linux hardening enables SYN cookies (net.ipv4.tcp_syncookies=1), enlarges tcp_max_syn_backlog and somaxconn, lowers tcp_synack_retries, and enables reverse path filtering, but kernel tuning only absorbs small floods and must be paired with upstream filtering and DDoS protection.</p></div>
+<h4>Explained in depth</h4>
+<h4>How a SYN flood works</h4>
+<p>TCP&#39;s three-way handshake: client <code>SYN</code>, server <code>SYN-ACK</code> (allocates a <strong>half-open entry</strong> in the SYN queue and waits), client <code>ACK</code> (connection moves to the accept queue). An attacker sends a flood of <code>SYN</code> packets, often with <strong>spoofed source addresses</strong>, never completing the handshake. The server&#39;s SYN backlog fills, retransmits <code>SYN-ACK</code>s to nonexistent hosts, and <strong>new legitimate connections are dropped</strong>. It costs the attacker little bandwidth and exhausts connection state, not link capacity.</p>
+<h4>Key sysctl settings</h4>
+<p>Put in <code>/etc/sysctl.d/99-hardening.conf</code>, then <code>sysctl --system</code>.</p>
+<pre><code># SYN cookies: respond without keeping state when the SYN queue overflows
+net.ipv4.tcp_syncookies = 1
+
+# Queue sizes (tune with application backlog and listen() argument)
+net.ipv4.tcp_max_syn_backlog = 4096
+net.core.somaxconn = 4096
+net.core.netdev_max_backlog = 5000
+
+# Retry behaviour for half-open connections (default 5 retries is about 63 seconds)
+net.ipv4.tcp_synack_retries = 2
+net.ipv4.tcp_syn_retries = 3
+
+# Anti-spoofing: strict reverse path filtering
+net.ipv4.conf.all.rp_filter = 1
+net.ipv4.conf.default.rp_filter = 1
+
+# Ignore redirects and source routing, reduce spoofing and MITM vectors
+net.ipv4.conf.all.accept_redirects = 0
+net.ipv4.conf.all.accept_source_route = 0
+net.ipv4.icmp_echo_ignore_broadcasts = 1
+
+# Reclaim resources faster
+net.ipv4.tcp_fin_timeout = 15
+net.ipv4.tcp_tw_reuse = 1
+net.netfilter.nf_conntrack_max = 262144   # if conntrack is used; also tune conntrack timeouts</code></pre>
+<ul><li><strong><code>tcp_syncookies</code></strong>: when the SYN queue overflows (or always if set to 2), the kernel encodes connection parameters into the <strong>initial sequence number</strong> of the SYN-ACK (a keyed hash of addresses, ports, timestamp, MSS index) and <strong>stores nothing</strong>. A legitimate client&#39;s final <code>ACK</code> carries the cookie plus one, so the server reconstructs the connection. Spoofed SYNs never reply, so they consume no memory. Trade-offs: limited TCP options (window scaling, SACK, ECN unless TCP timestamps carry them), and slightly higher CPU.</li><li><strong><code>tcp_max_syn_backlog</code></strong> and the application&#39;s <code>listen(fd, backlog)</code> argument, capped by <strong><code>somaxconn</code></strong>, determine how many pending connections are held. Increase them for busy servers (web proxies, load balancers). Web servers have their own backlog setting (<code>listen 80 backlog=4096</code> in nginx).</li><li><strong><code>tcp_synack_retries</code></strong> lowers how long half-open entries linger, reducing queue occupancy during an attack.</li><li><strong><code>rp_filter</code></strong> drops packets whose source address would not be routed back through the arriving interface, blocking many spoofed sources. Use loose mode (2) with asymmetric routing.</li><li>Monitor with <code>ss -s</code>, <code>netstat -s | grep -i &quot;SYNs to LISTEN&quot;</code>, <code>nstat -az TcpExtTCPReqQFullDoCookies TcpExtListenOverflows TcpExtListenDrops</code>, and kernel log messages such as <code>TCP: request_sock_TCP: Possible SYN flooding on port 443. Sending cookies.</code></li></ul>
+<h4>Beyond sysctl (layers)</h4>
+<ol start="1"><li><strong>Firewall rate limiting and connlimit</strong> (nftables or iptables): <code>nft add rule inet filter input tcp dport 443 ct state new limit rate over 200/second burst 400 packets drop</code>, <code>hashlimit</code> per source, and the <strong><code>SYNPROXY</code> target</strong> (<code>iptables -t raw -A PREROUTING -p tcp --syn -j CT --notrack</code> plus <code>-j SYNPROXY</code>) which completes the handshake in the kernel before passing the connection to the application. eBPF/XDP programs (Cloudflare&#39;s, Cilium, Katran) drop floods at the NIC driver at millions of packets per second.</li><li><strong>Upstream protection</strong> since a host cannot absorb volumetric floods: cloud DDoS services (AWS Shield, Cloudflare, Akamai, Azure DDoS Protection, Google Cloud Armor), <strong>anycast</strong>, scrubbing centres, <strong>BGP blackholing and FlowSpec</strong> from the ISP, load balancers that terminate TCP (ALB, Envoy, HAProxy with SYN cookies and stick tables), and CDNs that hide origin IPs.</li><li><strong>Network hygiene</strong>: <strong>BCP 38 / ingress filtering</strong> at provider edges to block spoofed sources, and restricting origin servers to accept traffic only from the CDN or load balancer.</li><li><strong>Application level</strong>: limit connections per client, timeouts for idle and slow connections (Slowloris is a related attack), keep-alive tuning.</li><li><strong>Capacity and monitoring</strong>: alert on SYN-RECV counts, listen queue overflows and packet rate anomalies; runbooks for activating mitigations; load tests (<code>hping3</code> in a lab) to validate settings.</li></ol>
+<h4>Pitfalls</h4>
+<p>Setting <code>tcp_syncookies=0</code>, huge backlogs that exhaust memory without cookies, copying sysctl blogs blindly (<code>tcp_tw_recycle</code> was removed because it broke NAT clients), assuming kernel tuning handles bandwidth-saturating DDoS, and enabling strict <code>rp_filter</code> on asymmetric routing paths.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do SYN cookies let the kernel avoid storing state for half-open connections and what features do they sacrifice?</li><li>Which sysctl settings control the SYN backlog and accept queue and how do you size them?</li><li>Why is host tuning insufficient against volumetric attacks and what upstream controls are needed?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-91">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-91%3A+How+do+you+tune+Linux+kernel+parameters+via+%60sysctl%60+to+harden%E2%80%A6&amp;question-id=sec-91&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+Systems%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-91.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

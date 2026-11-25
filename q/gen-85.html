@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain Reader-Writer locks: Reader-preference versus writer-preference starvation issues. | InterviewGearUp</title>
+<meta name="description" content="A reader-writer lock allows many concurrent readers or one exclusive writer. Reader preference maximises read throughput but can starve writers under…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-85.html">
+<meta property="og:title" content="Explain Reader-Writer locks: Reader-preference versus writer-preference starvation issues. | InterviewGearUp">
+<meta property="og:description" content="A reader-writer lock allows many concurrent readers or one exclusive writer. Reader preference maximises read throughput but can starve writers under…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-85.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain Reader-Writer locks: Reader-preference versus writer-preference starvation issues.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 3 (Senior) · Systems · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A reader-writer lock allows many concurrent readers or one exclusive writer. Reader preference maximises read throughput but can starve writers under constant reads; writer preference blocks new readers once a writer waits, preventing writer starvation but potentially starving readers. Fair locks queue requests in arrival order.</p></div>
+<h4>Explained in depth</h4>
+<h4>Problem</h4>
+<p>Many threads read a shared structure (a configuration or a cache) and few write. A plain mutex serialises readers needlessly. A <strong>read-write lock</strong> (RWLock) allows:</p>
+<ul><li>any number of threads in <strong>read mode</strong> simultaneously, or</li><li>exactly <strong>one thread in write mode</strong>, with no readers.</li></ul>
+<pre><code>ReadWriteLock rw = new ReentrantReadWriteLock();
+
+String get(String k) {
+    rw.readLock().lock();
+    try { return map.get(k); } finally { rw.readLock().unlock(); }
+}
+void put(String k, String v) {
+    rw.writeLock().lock();
+    try { map.put(k, v); } finally { rw.writeLock().unlock(); }
+}</code></pre>
+<h4>Reader preference</h4>
+<p>A new reader may enter whenever other readers are active, even if a writer is waiting. Throughput for reads is the best, but with a continuous stream of overlapping readers the reader count never reaches zero, so a <strong>writer waits indefinitely (writer starvation)</strong>.</p>
+<h4>Writer preference</h4>
+<p>As soon as a writer is waiting, new readers must queue behind it. Active readers finish, the writer runs, then readers resume. Writers no longer starve, but a stream of writers can <strong>starve readers</strong>, and reads lose some concurrency.</p>
+<h4>Fair (FIFO) policy</h4>
+<p>Requests are served in arrival order, with consecutive readers batched together. Nobody starves; the price is lower throughput and more context switches. Java&#39;s <code>new ReentrantReadWriteLock(true)</code> is the fair mode.</p>
+<div class="md-table"><table><thead><tr><th>Policy</th><th>Read throughput</th><th>Starves</th></tr></thead><tbody><tr><td>Reader preference</td><td>highest</td><td>writers</td></tr><tr><td>Writer preference</td><td>medium</td><td>readers (if many writers)</td></tr><tr><td>Fair queue</td><td>lowest</td><td>nobody</td></tr></tbody></table></div>
+<h4>Subtle points</h4>
+<ul><li><strong>Upgrading</strong> a read lock to a write lock (hold read, request write) deadlocks if two readers try it at once. Release the read lock, take the write lock, then re-validate.</li><li><strong>Downgrading</strong> (write to read) is safe if you acquire the read lock before releasing the write lock.</li><li>RWLocks have more bookkeeping than a mutex; for short critical sections or low read ratios a plain mutex can be <strong>faster</strong>. Measure first.</li><li>Readers contend on the lock&#39;s internal counter (cache line bouncing), which limits scaling on many cores.</li></ul>
+<h4>Better options for read-mostly data</h4>
+<ul><li><strong>Copy-on-write</strong> or immutable snapshots swapped atomically (RCU in the Linux kernel, <code>CopyOnWriteArrayList</code>).</li><li><strong>Optimistic reads</strong>: Java <code>StampedLock</code>, seqlocks validate that no write occurred during the read.</li><li>Sharded or concurrent maps with fine-grained locking.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How does a fair or queued policy prevent both kinds of starvation, and what does it cost?</li><li>When is a read-write lock slower than a plain mutex?</li><li>How do StampedLock, seqlocks or RCU improve on it for read-heavy data?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-85">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-85%3A+Explain+Reader-Writer+locks%3A+Reader-preference+versus%E2%80%A6&amp;question-id=gen-85&amp;context=Software+engineer+%28core%29%2C+Gear+3%2C+topic%3A+Systems%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-85.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

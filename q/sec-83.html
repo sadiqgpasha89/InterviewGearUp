@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do phishing-resistant MFA credentials (FIDO2/WebAuthn) defeat advanced adversary-in-the-middle phishing? | InterviewGearUp</title>
+<meta name="description" content="FIDO2/WebAuthn credentials are public-key pairs bound to the exact website origin. The authenticator signs a server challenge only for the registered…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-83.html">
+<meta property="og:title" content="How do phishing-resistant MFA credentials (FIDO2/WebAuthn) defeat advanced adversary-in-the-middle phishing? | InterviewGearUp">
+<meta property="og:description" content="FIDO2/WebAuthn credentials are public-key pairs bound to the exact website origin. The authenticator signs a server challenge only for the registered…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-83.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do phishing-resistant MFA credentials (FIDO2/WebAuthn) defeat advanced adversary-in-the-middle phishing?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 2 (Mid-level) · Operations · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>FIDO2/WebAuthn credentials are public-key pairs bound to the exact website origin. The authenticator signs a server challenge only for the registered relying party domain, and the private key never leaves the device. An adversary-in-the-middle phishing proxy on a lookalike domain cannot obtain a valid assertion for the real site, and there is no shared secret or code to relay.</p></div>
+<h4>Explained in depth</h4>
+<h4>The attack: adversary-in-the-middle (AiTM) phishing</h4>
+<p>Kits such as <strong>Evilginx, Modlishka, Muraena and phishing-as-a-service platforms</strong> place a <strong>reverse proxy</strong> between the victim and the real site (<code>login-example.co</code>). The victim sees the genuine login page proxied in real time, types their password and enters the <strong>one-time code or approves the push</strong>; the proxy forwards these to the real service and then <strong>steals the authenticated session cookie</strong>. MFA was &quot;used&quot; and still bypassed, so the attacker is logged in. This defeats <strong>SMS, email OTP, TOTP, push notifications and number matching</strong> because the user supplies a *replayable secret* to a page they believe is legitimate.</p>
+<h4>How FIDO2 / WebAuthn works</h4>
+<p>FIDO2 = <strong>WebAuthn</strong> (W3C browser API) + <strong>CTAP2</strong> (protocol between browser/OS and authenticator). Authenticators: roaming <strong>security keys</strong> (YubiKey, Titan), platform authenticators (Windows Hello, Touch ID or Face ID, Android biometrics), and <strong>passkeys</strong>.</p>
+<ol start="1"><li><strong>Registration</strong>: the server (relying party, <code>rpId = example.com</code>) sends a random <strong>challenge</strong>; the authenticator creates a <strong>new public/private key pair scoped to that rpId</strong>, stores the private key (in secure hardware, protected by PIN or biometric), and returns the public key and attestation; server stores the public key and credential ID.</li><li><strong>Authentication</strong>: server sends a new challenge; the browser tells the authenticator the <strong>origin</strong> it is on; the authenticator checks the origin matches the stored <strong>rpId</strong>, requires <strong>user verification</strong> (touch plus PIN or biometric), and <strong>signs</strong> <code>clientData</code> (containing challenge and origin) with the private key; the server verifies the signature, the challenge, the origin, rpId hash, counter and flags.</li></ol>
+<pre><code>const cred = await navigator.credentials.get({ publicKey: {
+  challenge, rpId: &#39;example.com&#39;, userVerification: &#39;required&#39;, allowCredentials: [...], timeout: 60000 } });
+// server verifies: signature(publicKey, authenticatorData || SHA256(clientDataJSON)), origin === &#39;https://example.com&#39;, challenge match</code></pre>
+<h4>Why AiTM fails</h4>
+<ul><li><strong>Origin binding</strong>: on the phishing domain the browser reports the origin <code>https://login-example.co</code>; the authenticator will <strong>not find a credential for that rpId</strong> (or the signature contains the wrong origin), so no valid assertion exists for <code>example.com</code>. The proxy cannot forge it, and the user cannot be tricked into approving, because there is no code to read out or push to accept.</li><li><strong>No shared secret</strong>: private keys never leave the authenticator and are unique per site, so a breached server only leaks public keys, and credentials cannot be phished or reused across sites.</li><li><strong>Challenge freshness</strong> prevents replay; signature counters detect cloned authenticators.</li><li><strong>User presence and verification</strong> prevent remote malware silently signing.</li><li>Also resists <strong>credential stuffing, password spraying, SIM swapping and MFA fatigue (push bombing)</strong>.</li></ul>
+<p>Residual risks: <strong>session cookie theft by malware</strong> on the endpoint (use token binding and device-bound sessions such as DBSC, short sessions, EDR), compromised recovery flows, social engineering of help desks, OAuth consent phishing, and malicious browser extensions.</p>
+<h4>Passkeys vs hardware security keys</h4>
+<ul><li><strong>Device-bound credentials (security keys, platform keys)</strong>: private key stays on one device or key; highest assurance (AAL3 with attestation); backup requires registering multiple authenticators.</li><li><strong>Synced passkeys</strong> (iCloud Keychain, Google Password Manager, 1Password): private key synchronised across the user&#39;s devices via an encrypted cloud account; still <strong>phishing resistant</strong> because of origin binding; better usability and recovery, but security depends on the sync provider account protection.</li></ul>
+<h4>Rollout plan</h4>
+<ol start="1"><li><strong>Prioritise</strong>: administrators, finance, developers, executives, remote access, email and SSO IdP; then everyone.</li><li>Support <strong>multiple authenticators per user</strong> (two keys, or key plus platform passkey) and enrol with identity proofing.</li><li>Enforce through <strong>conditional access / authentication strength policies</strong> (Entra ID Authentication Strengths, Okta FastPass and phishing-resistant policies, Google Advanced Protection, Cloudflare Access, AWS IAM Identity Center with FIDO2); restrict allowed authenticators by AAGUID and require attestation for high-assurance groups.</li><li><strong>Retire weak factors</strong> for protected populations; keep a controlled fallback (for example a second security key or high-assurance recovery with video proofing and manager approval) rather than SMS; <strong>remove legacy auth protocols</strong> (IMAP, basic auth) that bypass MFA.</li><li><strong>Account recovery</strong> is the weakest link: avoid email or SMS resets for privileged accounts; use recovery codes stored offline, in-person verification, and cooling-off periods with alerts.</li><li>Educate users on passkeys, lost key procedure, and verify the <strong>domain</strong> hygiene (keep rpId stable and subdomains in scope).</li><li>Measure adoption, sign-in failures, help desk volume, and attempted AiTM events blocked.</li></ol>
+<h4>Pitfalls</h4>
+<p>Leaving SMS or TOTP as an alternative on the same account (attackers downgrade to it), permissive recovery flows, single authenticator enrolments, ignoring session token theft, and applying WebAuthn only on the web while leaving legacy protocols open.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why can attackers using Evilginx-style reverse proxies defeat SMS, TOTP and push approvals but not WebAuthn?</li><li>What is the difference between device-bound security keys and synced passkeys in terms of phishing resistance and recovery?</li><li>How do you roll out phishing-resistant MFA and handle fallback and account recovery without reintroducing weak paths?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-83">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-83%3A+How+do+phishing-resistant+MFA+credentials+%28FIDO2%2FWebAuthn%29+defeat%E2%80%A6&amp;question-id=sec-83&amp;context=Security+engineer%2C+Gear+2%2C+topic%3A+Operations%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-83.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

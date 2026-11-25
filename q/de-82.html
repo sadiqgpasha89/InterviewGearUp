@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do Kafka log retention policies balance disk space with consumer replay requirements? | InterviewGearUp</title>
+<meta name="description" content="Kafka deletes old log segments by time (retention.ms) or size (retention.bytes), or keeps the latest value per key with log compaction. Longer retention…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-82.html">
+<meta property="og:title" content="How do Kafka log retention policies balance disk space with consumer replay requirements? | InterviewGearUp">
+<meta property="og:description" content="Kafka deletes old log segments by time (retention.ms) or size (retention.bytes), or keeps the latest value per key with log compaction. Longer retention…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-82.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do Kafka log retention policies balance disk space with consumer replay requirements?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 2 (Mid-level) · Streaming · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Kafka deletes old log segments by time (retention.ms) or size (retention.bytes), or keeps the latest value per key with log compaction. Longer retention allows consumers to replay, recover from outages and bootstrap new applications but needs more disk (rate times retention times replication). Size retention to the longest realistic consumer downtime and reprocessing window.</p></div>
+<h4>Explained in depth</h4>
+<h4>Retention basics</h4>
+<p>A topic partition is an append-only log split into <strong>segments</strong>. Kafka deletes whole <strong>closed</strong> segments, never single messages, when a policy says so:</p>
+<ul><li><code>retention.ms</code> (default 7 days) deletes segments older than this (based on the largest record timestamp in the segment).</li><li><code>retention.bytes</code> (per partition, default unlimited) deletes the oldest segments when the log exceeds the size.</li><li><code>segment.bytes</code> (default 1 GB) and <code>segment.ms</code> control segment roll size and time; because deletion operates at segment granularity, data can live longer than the configured retention until the segment closes.</li><li><code>cleanup.policy=delete</code> (default), <code>compact</code>, or <code>compact,delete</code>.</li></ul>
+<pre><code>kafka-configs.sh --bootstrap-server b:9092 --alter --entity-type topics --entity-name orders \
+  --add-config retention.ms=1209600000,retention.bytes=107374182400,segment.bytes=536870912</code></pre>
+<h4>Balancing disk and replay</h4>
+<p><strong>Longer retention</strong> gives:</p>
+<ul><li><strong>Consumer resilience</strong>: a consumer down for a weekend resumes from its committed offset; if the data was already deleted it hits <code>OffsetOutOfRange</code> and resets (<code>auto.offset.reset</code>), losing or reprocessing everything.</li><li><strong>Replay and recovery</strong>: rebuild a downstream store, fix a buggy consumer and reprocess history, backfill new consumers, or support debugging and audits.</li><li><strong>Decoupling</strong>: slow batch consumers can read at their own pace.</li></ul>
+<p>Cost: disk, replication traffic, longer recovery after broker failure (more data to replicate), slower broker startup (more segments and index files), more partition reassignment effort. <strong>Shorter retention</strong> reduces cost but narrows the safety window.</p>
+<h4>Capacity planning</h4>
+<p><code>disk per broker ≈ (ingress MB/s × retention seconds × replication factor) ÷ number of brokers</code> plus headroom (30 to 40 percent) for compaction, rebalancing and growth. Example: 50 MB/s × 7 days (604,800 s) × RF 3 ≈ 90 TB across the cluster; on 12 brokers about 7.6 TB each before headroom. Compression (lz4, zstd) lowers this considerably.</p>
+<h4>Choosing values</h4>
+<ol start="1"><li>Define <strong>the longest acceptable consumer outage</strong> and <strong>reprocessing needs</strong> (a 3-day weekend plus buffer means 7 days minimum).</li><li>Consider <strong>compliance</strong>: some topics need short retention (privacy) or long retention (audit trails).</li><li>Set per-topic policies rather than one global default: clickstream 3 days, CDC 7 to 14 days, audit log 90 days.</li><li>Use <strong>log compaction</strong> for changelog and state topics (customer profile by key): keeps at least the latest record per key, with tombstones for deletion (<code>delete.retention.ms</code>), so you bound size by key cardinality instead of time.</li><li>For long-term history, <strong>sink to object storage</strong> (Kafka Connect S3 or Iceberg sink) and keep Kafka retention short; replay from the lake when needed.</li><li><strong>Tiered storage</strong> (KIP-405, Confluent, MSK, Redpanda) keeps recent hot data on local disks and offloads older segments to object storage (<code>remote.storage.enable</code>, <code>local.retention.ms</code>), enabling very long retention at low cost while consumers read transparently.</li></ol>
+<h4>Monitoring</h4>
+<p>Track log size per topic, oldest offset versus consumer committed offset (<strong>consumer lag versus retention</strong>: alert when lag time approaches retention), disk utilisation, under-replicated partitions, and segment deletion rate.</p>
+<h4>Pitfalls</h4>
+<p>Assuming time-based retention is exact, consumer lag exceeding retention causing data loss, enabling compaction on topics without keys, huge segments delaying deletion, and forgetting that disk is also used by replication and reassignment bursts.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you calculate broker disk needs from throughput and retention?</li><li>What does log compaction guarantee and when would you use it?</li><li>How does tiered storage change the trade-off?</li></ul>
+<p><a class="btn primary" href="../#/q/de-82">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-82%3A+How+do+Kafka+log+retention+policies+balance+disk+space+with+consumer%E2%80%A6&amp;question-id=de-82&amp;context=Data+engineer%2C+Gear+2%2C+topic%3A+Streaming%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-82.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

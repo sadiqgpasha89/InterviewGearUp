@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare BigQuery slot reservations with on-demand pricing for high-volume enterprise workloads. | InterviewGearUp</title>
+<meta name="description" content="BigQuery on-demand charges per terabyte of data scanned with shared slot capacity, which is flexible and cheap for spiky or light use. Capacity pricing…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-90.html">
+<meta property="og:title" content="Compare BigQuery slot reservations with on-demand pricing for high-volume enterprise workloads. | InterviewGearUp">
+<meta property="og:description" content="BigQuery on-demand charges per terabyte of data scanned with shared slot capacity, which is flexible and cheap for spiky or light use. Capacity pricing…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-90.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare BigQuery slot reservations with on-demand pricing for high-volume enterprise workloads.</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · FinOps · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>BigQuery on-demand charges per terabyte of data scanned with shared slot capacity, which is flexible and cheap for spiky or light use. Capacity pricing (Editions with slot reservations) charges for slots per hour regardless of bytes scanned, giving predictable cost, workload isolation and autoscaling for heavy, steady enterprise workloads. Choose by usage pattern and compare with real job history.</p></div>
+<h4>Explained in depth</h4>
+<h4>Two pricing models</h4>
+<p><strong>On-demand (analysis pricing)</strong>: pay per TB processed (billed on bytes read, with a monthly free tier). Compute comes from a shared pool: each project gets up to about <strong>2,000 concurrent slots</strong> on a best-effort basis, with no guarantee or isolation. <strong>Capacity pricing (BigQuery Editions: Standard, Enterprise, Enterprise Plus)</strong>: pay for <strong>slots (virtual CPUs) per slot-hour</strong>, regardless of bytes scanned. You create <strong>reservations</strong> of slots, assign projects, folders or organisations to them via <strong>assignments</strong>, and queries use that capacity. Options: <strong>autoscaling</strong> (pay for slots in use up to a maximum), <strong>baseline</strong> slots (always provisioned, can use commitments for discounts: one or three years), and idle slot sharing across reservations.</p>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th></th><th>On-demand</th><th>Capacity (slots)</th></tr></thead><tbody><tr><td>Cost driver</td><td>bytes scanned</td><td>slot-hours</td></tr><tr><td>Predictability</td><td>variable</td><td>predictable (baseline) or capped (max slots)</td></tr><tr><td>Performance</td><td>shared, variable</td><td>dedicated, consistent</td></tr><tr><td>Isolation</td><td>none</td><td>by reservation (ETL versus BI)</td></tr><tr><td>Cost of an inefficient query</td><td>high (full scan = TB cost)</td><td>consumes slot time, bounded by capacity</td></tr><tr><td>Ideal for</td><td>low or bursty usage, small teams, experiments</td><td>high-volume, steady, many users, SLA workloads</td></tr><tr><td>Commitments</td><td>none</td><td>optional, discounted</td></tr></tbody></table></div>
+<h4>Decision method</h4>
+<ol start="1"><li>Pull usage from <code>INFORMATION_SCHEMA.JOBS_BY_ORGANIZATION</code> and compute <strong>monthly bytes billed</strong> and <strong>slot-milliseconds consumed</strong> per project and hour.</li></ol>
+<pre><code>SELECT DATE_TRUNC(creation_time, MONTH) m, SUM(total_bytes_billed)/POW(1024,4) AS tb_billed,
+       SUM(total_slot_ms)/1000/3600 AS slot_hours
+FROM `region-us`.INFORMATION_SCHEMA.JOBS_BY_PROJECT WHERE job_type = &#39;QUERY&#39; GROUP BY m ORDER BY m;</code></pre>
+<ol start="2"><li>Estimate on-demand cost: <code>TB × price per TB</code>. Estimate capacity cost: needed average and peak slots × price per slot-hour × hours (use autoscale for peaks, baseline for steady load).</li><li><strong>Break-even</strong>: if sustained on-demand spend exceeds roughly the cost of the baseline slots that would handle your steady load, move to capacity. Typically organisations with tens of thousands of dollars per month of scan charges benefit.</li><li>Consider <strong>performance and isolation</strong>: when dashboards slow down because ETL jobs hog shared slots, use separate reservations; the Editions model also provides features (BI Engine, governance, CMEK, multi-region) by edition.</li><li>Mix: keep exploratory projects on on-demand with <code>maximum_bytes_billed</code> and custom quotas, while production workloads run on reservations. Slot-based billing also removes the penalty for scanning more data, but inefficient queries still compete for slots and cause queueing.</li></ol>
+<h4>Operational tips</h4>
+<ul><li>Start with <strong>autoscaling</strong> and a small baseline, observe <code>INFORMATION_SCHEMA.RESERVATION_TIMELINE</code> and slot utilisation, then add commitments for the stable portion.</li><li>Use workload management: separate reservations for ETL, BI and data science with <strong>priorities</strong>, and allow idle slot sharing.</li><li>Control cost under both models: partitioning and clustering, avoid <code>SELECT *</code>, materialised views, BI Engine, query result cache, dry runs, <code>maximum_bytes_billed</code>, per-user custom quotas, budgets and alerts.</li><li>Chargeback with labels and reservation assignments.</li></ul>
+<h4>Pitfalls</h4>
+<p>Buying commitments before measuring, one reservation for everything, forgetting that storage is separate, under-provisioning causing queued queries at peak, and assuming slots make inefficient SQL free.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you compute the break-even point between on-demand and slots?</li><li>How do reservations, assignments and baseline versus autoscale slots work?</li><li>How do you protect against runaway on-demand queries?</li></ul>
+<p><a class="btn primary" href="../#/q/de-90">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-90%3A+Compare+BigQuery+slot+reservations+with+on-demand+pricing+for%E2%80%A6&amp;question-id=de-90&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+FinOps%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-90.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What common problems invalidate an A/B test, such as sample ratio mismatch, novelty effects, and network interference, and how do you detect them? | InterviewGearUp</title>
+<meta name="description" content="Validity threats include sample ratio mismatch from broken assignment or logging, novelty and primacy effects that fade, interference where treated users…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-43.html">
+<meta property="og:title" content="What common problems invalidate an A/B test, such as sample ratio mismatch, novelty effects, and network interference, and how do you detect them? | InterviewGearUp">
+<meta property="og:description" content="Validity threats include sample ratio mismatch from broken assignment or logging, novelty and primacy effects that fade, interference where treated users…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-43.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What common problems invalidate an A/B test, such as sample ratio mismatch, novelty effects, and network interference, and how do you detect them?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 3 (Senior) · Experimentation · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Validity threats include sample ratio mismatch from broken assignment or logging, novelty and primacy effects that fade, interference where treated users affect controls, selection from triggering errors, peeking, and Simpson&#39;s paradox across segments. Detect them with SRM chi-square checks, A/A tests, time-sliced effects, guardrail metrics, and designs such as cluster or switchback randomisation.</p></div>
+<h4>Explained in depth</h4>
+<h4>1. Sample ratio mismatch (SRM)</h4>
+<p>If you planned a 50/50 split but observed 50,500 versus 49,500 users, a <strong>chi-square goodness-of-fit test</strong> may say this is highly unlikely by chance. SRM means assignment or data collection is biased: redirects dropping users in one arm, bot filtering that differs by arm, a variant that crashes before logging, a rollout bug, or users deduplicated differently. <strong>Results from an experiment with SRM are untrustworthy</strong> because the groups are no longer comparable. Always run the check automatically (p below 0.001 triggers an alert) and investigate before interpreting.</p>
+<pre><code>from scipy.stats import chisquare
+obs, exp = [50500, 49500], [50000, 50000]
+print(chisquare(obs, exp).pvalue)</code></pre>
+<h4>2. Novelty and primacy effects</h4>
+<p>Users click new things because they are new (novelty), or resist change at first (primacy). Initial effects then drift. Detect by plotting <strong>effect by day or by exposure cohort</strong> (new versus returning users), running long enough for the effect to stabilise, and using a <strong>holdback</strong> (a small long-term control) for lasting impact.</p>
+<h4>3. Interference (SUTVA violations)</h4>
+<p>Treated users influence controls: <strong>social networks</strong> (sharing, messaging), <strong>marketplaces</strong> (a better ranking for buyers in treatment consumes inventory that control buyers would have bought), <strong>shared resources</strong> (ads budgets, driver supply, cache), <strong>learning algorithms</strong> trained on pooled data. Naive estimates are biased, usually overstating the effect. Remedies: <strong>cluster randomisation</strong> (by community, city, market), <strong>switchback or time-based randomisation</strong> (alternate treatment over time blocks within a region), geo experiments, ego-cluster designs, budget-split ads experiments, and modelling spillovers.</p>
+<h4>4. Selection and triggering errors</h4>
+<p>Analysing only users who &quot;saw&quot; a feature is valid only if the trigger condition is symmetric across arms and logged independent of treatment. Otherwise you introduce bias. Intent-to-treat analysis on all assigned users is the safe baseline.</p>
+<h4>5. Statistical issues</h4>
+<ul><li><strong>Peeking</strong> and optional stopping inflate false positives.</li><li><strong>Multiple comparisons</strong> across metrics, segments and variants.</li><li><strong>Variance underestimation</strong> from analysing at the wrong unit (sessions vs users) or heavy tails.</li><li><strong>Underpowered tests</strong> leading to overinterpretation of noise; winner&#39;s curse.</li><li><strong>Simpson&#39;s paradox</strong>: pooled results contradict segment results because of uneven assignment across strata; ensure randomisation balance and analyse stratified.</li></ul>
+<h4>6. Data and implementation problems</h4>
+<p>Logging differences between arms, bots and internal traffic, cookie churn and cross-device users counted twice, time zones, experiment overlap and interactions with other tests, caching and CDNs serving the wrong variant, ramp changes mid-test (changing allocation over time creates Simpson&#39;s issues), and metric definition changes.</p>
+<h4>Defences</h4>
+<ul><li><strong>A/A tests</strong> (no difference) to validate the platform, variance estimates, and false-positive rates.</li><li><strong>Pre-registration</strong> of hypothesis, metric, duration and decision rule.</li><li><strong>Guardrail metrics</strong> (latency, errors, unsubscribe, revenue) and segment checks for harm.</li><li><strong>Balance checks</strong> on pre-experiment covariates.</li><li>Consistent <strong>ramp plans</strong> and exposure logging; keep experiments&#39; analysis code reproducible.</li><li>Replicate surprising results; be sceptical of twice-too-good effects (Twyman&#39;s law).</li></ul>
+<h4>Pitfalls</h4>
+<p>Ignoring SRM because &quot;it&#39;s only 1 percent off&quot;, trusting results on a marketplace with user-level randomisation, calling a result after the first big day, and slicing into many segments until one wins.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What does a failed SRM check imply and why should you not trust the results of that experiment?</li><li>How would you design an experiment on a two-sided marketplace where treatment affects supply and demand?</li><li>How do you distinguish a novelty effect from a real long-term lift?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-43">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-43%3A+What+common+problems+invalidate+an+A%2FB+test%2C+such+as+sample+ratio%E2%80%A6&amp;question-id=ds-43&amp;context=Data+scientist%2C+Gear+3%2C+topic%3A+Experimentation%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-43.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

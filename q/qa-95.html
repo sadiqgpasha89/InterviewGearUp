@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you design a smoke testing suite for Continuous Deployment (CD) that gates production rollouts? | InterviewGearUp</title>
+<meta name="description" content="A CD smoke suite runs automatically after each deployment, against the live target, with a short list of read-only or self-cleaning checks: health and…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-95.html">
+<meta property="og:title" content="How do you design a smoke testing suite for Continuous Deployment (CD) that gates production rollouts? | InterviewGearUp">
+<meta property="og:description" content="A CD smoke suite runs automatically after each deployment, against the live target, with a short list of read-only or self-cleaning checks: health and…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-95.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you design a smoke testing suite for Continuous Deployment (CD) that gates production rollouts?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 2 (Mid-level) · CI/CD · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A CD smoke suite runs automatically after each deployment, against the live target, with a short list of read-only or self-cleaning checks: health and version endpoints, dependency connectivity, key journeys with synthetic users, and critical API contracts. Run it per stage (canary, then percentage rollout), compare metrics to baseline, and trigger automatic rollback or halt the rollout on failure.</p></div>
+<h4>Explained in depth</h4>
+<h4>Role in continuous deployment</h4>
+<p>Pre-merge tests tell you the code is good; a <strong>post-deployment smoke suite</strong> tells you the <strong>release in this environment</strong> works: correct config, secrets, networking, database migrations, feature flags, third-party credentials, and infrastructure. It is the final gate that decides whether to <strong>promote, pause or roll back</strong> a production rollout.</p>
+<h4>Design</h4>
+<ol start="1"><li><strong>Scope (minutes, not hours)</strong>: 10 to 30 checks total, ordered by criticality.</li></ol>
+<ul><li><strong>Deployment identity</strong>: <code>/version</code> or build-info endpoint returns the expected commit SHA and config version on every instance (no mixed fleet).</li><li><strong>Health and readiness</strong>: <code>/health</code> deep checks (database, cache, queue, key external APIs) but avoid cascading failures from dependency flaps.</li><li><strong>Critical journeys using synthetic users</strong>: login, search or browse, add to cart and checkout up to a safe point, API happy paths, and permissions (a user cannot access admin).</li><li><strong>Contracts and migrations</strong>: schema version, backwards compatibility with the previous version running side by side during rollout, feature flag defaults.</li><li><strong>Non-functional guardrails</strong>: latency of key endpoints within budget, TLS certificate validity, security headers.</li></ul>
+<ol start="2"><li><strong>Safe in production</strong>:</li></ol>
+<ul><li>Use <strong>dedicated synthetic accounts and test tenants</strong> flagged in data and excluded from analytics, revenue and notifications.</li><li>Prefer <strong>read-only</strong> operations; for writes, use sandbox payment instruments, zero-value or cancelled orders, and <strong>self-cleaning</strong> flows (create then delete or expire), with idempotency keys.</li><li>Route through the real entry point (CDN and load balancer) as well as directly to the new instances (a header or test route to target the canary pods).</li><li>Rate limit smoke traffic; avoid destructive tests; no shared mutable fixtures.</li></ul>
+<ol start="3"><li><strong>Reliability</strong>: deterministic assertions, limited retries with visibility, timeouts, no UI-heavy flakiness (favour API and a few Playwright journeys), clear failure output with trace IDs and screenshots.</li></ol>
+<h4>Pipeline integration</h4>
+<pre><code># progressive delivery sketch (Argo Rollouts / GitHub Actions)
+deploy-canary:  { steps: [ &quot;deploy 5% of traffic&quot; ] }
+smoke-canary:   { needs: deploy-canary, run: &quot;npx playwright test --grep @prod-smoke --project=canary&quot; }
+analyse:        { needs: smoke-canary, run: &quot;compare error rate, p95 latency, saturation vs baseline for 10 min&quot; }
+promote-25:     { needs: analyse }
+smoke-25:       { needs: promote-25 }
+promote-100:    { needs: smoke-25 }
+rollback:       { if: failure(), run: &quot;kubectl argo rollouts abort checkout &amp;&amp; notify-oncall&quot; }</code></pre>
+<ul><li><strong>Gates per stage</strong>: smoke pass <strong>and</strong> metric analysis (error rate, latency, saturation, business KPIs like checkout success, plus logs and traces) vs the previous version (automated canary analysis: Kayenta, Argo Rollouts AnalysisTemplates, Flagger, Spinnaker, Datadog or Prometheus queries).</li><li><strong>Automatic rollback or halt</strong> on failure, with notification, link to evidence, and a documented manual override; keep the previous version ready (blue/green or immutable images; database migrations backwards compatible using expand and contract so rollback is safe).</li><li><strong>Feature flags</strong>: deploy dark, then enable gradually; smoke tests run with flags on and off for new features; kill switches tested.</li><li><strong>Schedule continuous synthetic monitoring</strong> with the same checks (every minute or five), so the suite doubles as production monitoring and alerting.</li></ul>
+<h4>Metrics</h4>
+<p>Time from deploy to verified (target minutes), smoke pass rate, rollbacks triggered and correctness (true versus false alarms), escaped defects post-rollout, flake rate, change failure rate and MTTR (DORA).</p>
+<h4>Pitfalls</h4>
+<p>Smoke tests that mutate real customer data, suites that grow into slow regression packs, no version check (testing the old release by mistake), ignoring database migration compatibility on rollback, treating a green smoke result as enough without metric comparison, and manual approvals that bypass the gate.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you make production smoke tests safe, with no real customer impact and no data pollution?</li><li>How do smoke tests combine with canary analysis and automated rollback?</li><li>How do you keep post-deploy checks fast and trustworthy?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-95">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-95%3A+How+do+you+design+a+smoke+testing+suite+for+Continuous+Deployment%E2%80%A6&amp;question-id=qa-95&amp;context=QA+%2F+SDET%2C+Gear+2%2C+topic%3A+CI%2FCD%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-95.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

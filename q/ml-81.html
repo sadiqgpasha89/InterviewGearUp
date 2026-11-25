@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is Data Leakage in machine learning and how do you ensure preprocessing occurs strictly inside cross-validation folds? | InterviewGearUp</title>
+<meta name="description" content="Data leakage happens when information from outside the training data, such as test labels, future data or full-dataset statistics, influences fitting,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-81.html">
+<meta property="og:title" content="What is Data Leakage in machine learning and how do you ensure preprocessing occurs strictly inside cross-validation folds? | InterviewGearUp">
+<meta property="og:description" content="Data leakage happens when information from outside the training data, such as test labels, future data or full-dataset statistics, influences fitting,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-81.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is Data Leakage in machine learning and how do you ensure preprocessing occurs strictly inside cross-validation folds?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 2 (Mid-level) · Data · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Data leakage happens when information from outside the training data, such as test labels, future data or full-dataset statistics, influences fitting, inflating validation scores that vanish in production. Split first and fit every preprocessing step, including scaling, imputation, encoding and feature selection, only on training folds via a Pipeline inside cross-validation.</p></div>
+<h4>Explained in depth</h4>
+<h4>What leakage is</h4>
+<p>A model &quot;cheats&quot; using information it would not have at prediction time. Cross-validation scores look excellent (AUC 0.99), then performance collapses after deployment. It is one of the most common causes of failed ML projects.</p>
+<h4>Main types</h4>
+<ol start="1"><li><strong>Train-test contamination (preprocessing leakage)</strong>: fitting normalisation, imputation values, PCA, target encoding, vocabulary or feature selection on the <strong>entire dataset</strong> before splitting. Test statistics (mean, variance, selected features that correlate with the test labels) leak into training.</li><li><strong>Target leakage</strong>: a feature that is a consequence of, or proxy for, the label: &quot;claim_paid_amount&quot; when predicting fraud, &quot;treatment_received&quot; for diagnosing disease, an account closure flag for predicting churn, post-outcome timestamps.</li><li><strong>Temporal leakage</strong>: random splits on time-dependent data let the model train on the future to predict the past; features aggregated over windows that include the prediction date.</li><li><strong>Group and duplicate leakage</strong>: rows from the same user, patient, device, image series or near-duplicate documents appear in both train and test, so the model memorises entities.</li><li><strong>Label leakage via IDs or ordering</strong>: row index, file names, data collection artefacts that encode the class.</li><li><strong>Hyperparameter overfitting</strong>: repeatedly tuning on the test set, effectively leaking it.</li><li><strong>Feature selection before CV</strong>: choosing the top features using all labels is a classic mistake that produces spectacular, false results on high-dimensional data.</li></ol>
+<h4>Doing it right: pipelines inside cross-validation</h4>
+<p>The rule: <strong>split first, then fit every data-dependent step on the training portion only</strong>, and apply (transform) the fitted steps to validation data.</p>
+<pre><code>from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.impute import SimpleImputer
+from sklearn.feature_selection import SelectKBest
+from sklearn.model_selection import cross_val_score, StratifiedKFold
+from sklearn.ensemble import GradientBoostingClassifier
+
+pre = ColumnTransformer([
+    (&quot;num&quot;, Pipeline([(&quot;imp&quot;, SimpleImputer(strategy=&quot;median&quot;)), (&quot;sc&quot;, StandardScaler())]), num_cols),
+    (&quot;cat&quot;, OneHotEncoder(handle_unknown=&quot;ignore&quot;), cat_cols)])
+pipe = Pipeline([(&quot;pre&quot;, pre), (&quot;select&quot;, SelectKBest(k=50)), (&quot;clf&quot;, GradientBoostingClassifier())])
+scores = cross_val_score(pipe, X, y, cv=StratifiedKFold(5, shuffle=True, random_state=0), scoring=&quot;roc_auc&quot;)</code></pre>
+<p>In each fold, <code>cross_val_score</code> refits the entire pipeline on that fold&#39;s training data, so imputation values, scaling parameters, selected features and encoders are learned without seeing the validation fold. The <strong>wrong</strong> way: <code>X_scaled = StandardScaler().fit_transform(X)</code> then <code>cross_val_score(model, X_scaled, y)</code>. Also: <strong>nested cross-validation</strong> (inner loop for tuning, outer for evaluation) for unbiased estimates when tuning hyperparameters, and a final untouched <strong>test set</strong> used once.</p>
+<h4>Correct split strategies</h4>
+<ul><li><strong>Time series</strong>: forward chaining (<code>TimeSeriesSplit</code>), train on the past and validate on later periods, with a <strong>gap</strong> to avoid overlapping windows; build features using only data available at prediction time (point-in-time joins).</li><li><strong>Grouped data</strong>: <code>GroupKFold</code> or <code>StratifiedGroupKFold</code> by user, patient or device.</li><li><strong>Deduplicate</strong> before splitting, and check near duplicates in text and images.</li><li><strong>Target encoding and embeddings</strong>: compute within folds (out-of-fold encoding).</li><li><strong>Resampling</strong> (SMOTE, undersampling): apply only to the training fold, never before the split.</li></ul>
+<h4>Detection</h4>
+<p>Suspiciously high scores, a single feature with extreme importance (check SHAP), performance dropping sharply on a time-based holdout or in production, features unavailable at inference time, and train versus serving feature differences. Review each feature with the question &quot;Would I know this at the moment of prediction?&quot; and keep a data timeline diagram.</p>
+<h4>Pitfalls</h4>
+<p>Imputing or scaling before splitting, selecting features with all labels, random splits on temporal or grouped data, leaking through duplicates, and tuning repeatedly on the test set.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What are common sources of target leakage and temporal leakage?</li><li>Why is fitting a scaler on the full dataset before cross-validation a leak?</li><li>How do you split time series and grouped data correctly?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-81">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-81%3A+What+is+Data+Leakage+in+machine+learning+and+how+do+you+ensure%E2%80%A6&amp;question-id=ml-81&amp;context=ML+%2F+AI+engineer%2C+Gear+2%2C+topic%3A+Data%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-81.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

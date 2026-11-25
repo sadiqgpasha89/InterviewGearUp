@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does the Web Clipboard API read and write text and images securely? | InterviewGearUp</title>
+<meta name="description" content="The asynchronous Clipboard API lets pages read and write text and images with navigator.clipboard, requiring a secure context and, for reading, user…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-79.html">
+<meta property="og:title" content="How does the Web Clipboard API read and write text and images securely? | InterviewGearUp">
+<meta property="og:description" content="The asynchronous Clipboard API lets pages read and write text and images with navigator.clipboard, requiring a secure context and, for reading, user…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-79.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does the Web Clipboard API read and write text and images securely?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · Browser APIs · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>The asynchronous Clipboard API lets pages read and write text and images with navigator.clipboard, requiring a secure context and, for reading, user permission and a user gesture. Writing is allowed after a user action; reading can expose sensitive data, so browsers gate it behind prompts.</p></div>
+<h4>Explained in depth</h4>
+<h4>The modern API</h4>
+<p><code>navigator.clipboard</code> is <strong>promise-based</strong>, works in secure contexts (HTTPS or localhost), and does not rely on selecting text in the DOM.</p>
+<pre><code>// Copy text (call from a click handler)
+async function copy(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    toast(&#39;Copied&#39;);
+  } catch (err) {
+    fallbackCopy(text);                 // permission denied or not supported
+  }
+}
+
+// Paste text
+const text = await navigator.clipboard.readText();</code></pre>
+<h4>Rich data and images</h4>
+<pre><code>const blob = await (await fetch(&#39;/chart.png&#39;)).blob();
+await navigator.clipboard.write([
+  new ClipboardItem({
+    &#39;image/png&#39;: blob,
+    &#39;text/plain&#39;: new Blob([&#39;Chart Q3&#39;], { type: &#39;text/plain&#39; }),
+  }),
+]);
+
+const items = await navigator.clipboard.read();
+for (const item of items) {
+  if (item.types.includes(&#39;image/png&#39;)) preview(await item.getType(&#39;image/png&#39;));
+}</code></pre>
+<p>Supported types are limited (<code>text/plain</code>, <code>text/html</code>, <code>image/png</code>; <code>image/svg+xml</code> and others in newer browsers). Browsers sanitise HTML on read and reject arbitrary types unless using the &quot;web custom formats&quot; extension.</p>
+<h4>Security model</h4>
+<ul><li><strong>Write</strong>: usually allowed during <strong>transient user activation</strong> (a click or keypress) and for the focused document. Chrome grants <code>clipboard-write</code> automatically to active pages.</li><li><strong>Read</strong>: sensitive because the clipboard may hold passwords or private text. Chrome requires the <code>clipboard-read</code> permission (prompt), a focused document and a user gesture; Firefox and Safari show a small paste prompt or only allow reads from user-initiated paste events.</li><li>Cross-origin iframes need <code>Permissions-Policy: clipboard-read=(self)</code>, <code>clipboard-write</code> and the iframe <code>allow</code> attribute.</li><li>Do not read the clipboard silently; explain why and offer a visible &quot;Paste&quot; button.</li></ul>
+<h4>Events as the alternative</h4>
+<p>The <code>copy</code>, <code>cut</code> and <code>paste</code> events give synchronous access to <code>event.clipboardData</code> for the user&#39;s own action, with no permission prompt:</p>
+<pre><code>input.addEventListener(&#39;paste&#39;, (e) =&gt; { const t = e.clipboardData.getData(&#39;text/plain&#39;); e.preventDefault(); insert(sanitize(t)); });</code></pre>
+<p><code>document.execCommand(&#39;copy&#39;)</code> with a temporary <code>textarea</code> is deprecated but remains a fallback for old browsers.</p>
+<h4>Best practices</h4>
+<p>Feature-detect (<code>navigator.clipboard?.writeText</code>), handle rejections, sanitise pasted HTML (strip scripts and styles, or accept only plain text), limit size, and never auto-copy on page load. For accessibility, announce success with an <code>aria-live</code> region.</p>
+<h4>Pitfalls</h4>
+<p>Calling outside a user gesture (rejects with <code>NotAllowedError</code>), non-HTTPS pages, insecure iframes, assuming image formats like JPEG are accepted, and trusting pasted content (XSS if inserted as HTML).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you write rich content such as HTML and images with ClipboardItem?</li><li>Why does readText fail in some browsers or iframes, and how do you handle denial gracefully?</li><li>How does this differ from the older document.execCommand copy approach?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-79">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-79%3A+How+does+the+Web+Clipboard+API+read+and+write+text+and+images%E2%80%A6&amp;question-id=fe-79&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+Browser+APIs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-79.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

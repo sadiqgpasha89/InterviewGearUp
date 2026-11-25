@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do Helm charts parameterize Kubernetes manifests, and how do you manage versioned releases? | InterviewGearUp</title>
+<meta name="description" content="Helm is the package manager for Kubernetes. A chart bundles templated manifests and default values; users override values per environment, and Helm…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-40.html">
+<meta property="og:title" content="How do Helm charts parameterize Kubernetes manifests, and how do you manage versioned releases? | InterviewGearUp">
+<meta property="og:description" content="Helm is the package manager for Kubernetes. A chart bundles templated manifests and default values; users override values per environment, and Helm…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-40.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do Helm charts parameterize Kubernetes manifests, and how do you manage versioned releases?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 2 (Mid-level) · Kubernetes · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Helm is the package manager for Kubernetes. A chart bundles templated manifests and default values; users override values per environment, and Helm renders the templates, installs them as a versioned release stored in the cluster, and supports upgrades, rollbacks and history. Charts are published to repositories or OCI registries.</p></div>
+<h4>Explained in depth</h4>
+<h4>Chart structure</h4>
+<pre><code>mychart/
+  Chart.yaml          # name, version (chart), appVersion, dependencies
+  values.yaml         # default configuration
+  values.schema.json  # optional JSON Schema validation of values
+  templates/          # Go-templated manifests: deployment.yaml, service.yaml, _helpers.tpl, NOTES.txt
+  charts/             # packaged dependencies</code></pre>
+<h4>Parameterisation</h4>
+<p>Templates use Go templating with built-in objects (<code>.Values</code>, <code>.Release</code>, <code>.Chart</code>) and the Sprig function library.</p>
+<pre><code># templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include &quot;mychart.fullname&quot; . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    spec:
+      containers:
+      - name: app
+        image: &quot;{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}&quot;
+        resources: {{- toYaml .Values.resources | nindent 10 }}
+        {{- if .Values.ingress.enabled }}
+        {{- end }}</code></pre>
+<pre><code># values-prod.yaml overrides defaults
+replicaCount: 6
+image: { tag: &quot;1.8.2&quot; }
+resources: { requests: { cpu: 500m, memory: 512Mi }, limits: { memory: 1Gi } }</code></pre>
+<p>Value precedence (lowest to highest): chart <code>values.yaml</code>, parent chart values, <code>-f file.yaml</code> (later files win), <code>--set key=value</code>.</p>
+<h4>Releases and versioning</h4>
+<pre><code>helm install shop ./mychart -n shop --create-namespace -f values-prod.yaml
+helm upgrade --install shop ./mychart -n shop -f values-prod.yaml --atomic --timeout 5m
+helm list -n shop
+helm history shop -n shop
+helm rollback shop 3 -n shop          # roll back to revision 3
+helm uninstall shop -n shop</code></pre>
+<p>Helm 3 stores each release revision as a <strong>Secret</strong> (<code>sh.helm.release.v1.&lt;name&gt;.vN</code>) in the namespace; there is no Tiller. <code>--atomic</code> rolls back automatically if the upgrade fails, <code>--wait</code> waits for readiness. Two versions exist: <strong><code>version</code></strong> (chart package version, SemVer, bump on any chart change) and <strong><code>appVersion</code></strong> (the application version).</p>
+<h4>Hooks and tests</h4>
+<p>Annotations such as <code>helm.sh/hook: pre-install,pre-upgrade</code> run Jobs for migrations or checks, with <code>hook-delete-policy</code>. <code>helm test</code> runs test pods (<code>helm.sh/hook: test</code>).</p>
+<h4>Dependencies and repositories</h4>
+<p><code>dependencies:</code> in <code>Chart.yaml</code> (subcharts such as postgresql), <code>helm dependency update</code>, conditions and aliases. Distribute charts through HTTP repos or <strong>OCI registries</strong> (<code>helm push chart.tgz oci://registry/charts</code>). Sign and verify with provenance or cosign.</p>
+<h4>Debugging and CI</h4>
+<p><code>helm lint</code>, <code>helm template . -f values.yaml | kubeconform</code> (render offline and validate), <code>helm diff upgrade</code> (plugin) for previews, <code>--dry-run --debug</code>. In GitOps, ArgoCD or Flux render charts themselves and treat Git values as the source of truth, instead of running <code>helm install</code> from CI.</p>
+<h4>Pitfalls</h4>
+<p>Secrets in values files (use External Secrets, SOPS), unpinned chart versions, templates that are hard to read (excess logic), CRDs in <code>crds/</code> not being upgraded by Helm (manage separately), and drift from <code>kubectl edit</code> changes that the next upgrade overwrites.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do Helm hooks and tests work?</li><li>What is the difference between helm template and helm install and how does that fit GitOps?</li><li>How do you manage chart dependencies and values schemas?</li></ul>
+<p><a class="btn primary" href="../#/q/do-40">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-40%3A+How+do+Helm+charts+parameterize+Kubernetes+manifests%2C+and+how+do+you%E2%80%A6&amp;question-id=do-40&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+2%2C+topic%3A+Kubernetes%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-40.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

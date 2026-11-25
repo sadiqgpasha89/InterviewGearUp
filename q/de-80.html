@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is the dbt Semantic Layer and how does it define consistent business metrics across BI tools? | InterviewGearUp</title>
+<meta name="description" content="The dbt Semantic Layer (MetricFlow) lets you define semantic models, entities, dimensions and metrics once in YAML alongside your models. BI tools,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-80.html">
+<meta property="og:title" content="What is the dbt Semantic Layer and how does it define consistent business metrics across BI tools? | InterviewGearUp">
+<meta property="og:description" content="The dbt Semantic Layer (MetricFlow) lets you define semantic models, entities, dimensions and metrics once in YAML alongside your models. BI tools,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-80.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is the dbt Semantic Layer and how does it define consistent business metrics across BI tools?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Transformation · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>The dbt Semantic Layer (MetricFlow) lets you define semantic models, entities, dimensions and metrics once in YAML alongside your models. BI tools, notebooks and APIs query metrics by name through the Semantic Layer, and MetricFlow generates the correct SQL, joins and aggregation, so revenue, active users and conversion mean the same everywhere.</p></div>
+<h4>Explained in depth</h4>
+<h4>The problem</h4>
+<p>Every dashboard re-implements metric logic in its own SQL or BI formula. &quot;Revenue&quot; differs between finance and marketing (gross versus net, refunds, time zones). Definitions drift, numbers disagree, and nobody trusts the data. A semantic layer centralises <strong>business definitions</strong> between the warehouse and consumers.</p>
+<h4>Building blocks (MetricFlow)</h4>
+<ul><li><strong>Semantic model</strong>: wraps a dbt model with meaning.</li><li><strong>Entities</strong>: join keys (<code>primary</code>, <code>foreign</code>, <code>unique</code>, <code>natural</code>) that let MetricFlow link models.</li><li><strong>Dimensions</strong>: attributes to group or filter by (categorical, time with granularity).</li><li><strong>Measures</strong> (inside models): aggregatable columns (<code>sum</code>, <code>count_distinct</code>, <code>average</code>).</li><li><strong>Metrics</strong>: business calculations built from measures:</li><li><strong>Simple</strong>: a measure, optionally with a filter.</li><li><strong>Ratio</strong>: numerator over denominator (conversion rate).</li><li><strong>Cumulative</strong>: running totals and rolling windows (weekly active users).</li><li><strong>Derived</strong>: expressions across metrics (profit = revenue minus cost).</li><li><strong>Conversion</strong>: events within a time window.</li></ul>
+<pre><code>semantic_models:
+  - name: orders
+    model: ref(&#39;fct_orders&#39;)
+    defaults: {agg_time_dimension: ordered_at}
+    entities:
+      - {name: order_id, type: primary}
+      - {name: customer, type: foreign, expr: customer_id}
+    dimensions:
+      - {name: ordered_at, type: time, type_params: {time_granularity: day}}
+      - {name: channel, type: categorical}
+    measures:
+      - {name: order_total, agg: sum, expr: amount}
+metrics:
+  - name: revenue
+    label: Net revenue
+    type: simple
+    type_params: {measure: order_total}
+    filter: &quot;{{ Dimension(&#39;order_id__status&#39;) }} != &#39;cancelled&#39;&quot;
+  - name: avg_order_value
+    type: ratio
+    type_params: {numerator: revenue, denominator: order_count}</code></pre>
+<h4>Querying</h4>
+<pre><code>mf query --metrics revenue --group-by metric_time__month,customer__region --where &quot;channel = &#39;web&#39;&quot;</code></pre>
+<p>MetricFlow compiles the request to optimised SQL: it identifies required semantic models, <strong>joins them through entities</strong>, handles time spine joins (for gaps and cumulative metrics), applies filters at the right grain, avoids fan-out issues, and runs it against the warehouse. The same definition returns the same value from any entry point.</p>
+<h4>Delivery</h4>
+<p>dbt Cloud exposes the Semantic Layer through <strong>GraphQL, JDBC and the Python SDK</strong>, with integrations for Tableau, Power BI, Hex, Mode, Google Sheets, Excel and others. LLM and agent tools can use it as a governed interface (natural language to metrics rather than to raw SQL), improving accuracy. Alternatives: Cube, LookML (Looker), AtScale, Power BI semantic models, Snowflake semantic views, and open standards like the Open Semantic Interchange.</p>
+<h4>Benefits</h4>
+<p>Consistency (one definition), governance (versioned in Git, reviewed, tested), self-service (analysts pick metrics, not tables), performance (caching and pre-aggregations in some tools), and reuse across tools.</p>
+<h4>Practices</h4>
+<p>Start with a handful of important metrics, align names and definitions with stakeholders, document owners, test metrics against known values, keep dimensions conformed across models, and plan changes with versioning and deprecation.</p>
+<h4>Pitfalls</h4>
+<p>Defining metrics inconsistently in BI tools anyway, over-modelling before demand exists, many-to-many join fan-out due to wrong entity types, and treating the layer as a replacement for good dimensional models.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does MetricFlow generate joins across semantic models using entities?</li><li>What is the difference between simple, ratio, cumulative and derived metrics?</li><li>How do BI tools connect to the Semantic Layer?</li></ul>
+<p><a class="btn primary" href="../#/q/de-80">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-80%3A+What+is+the+dbt+Semantic+Layer+and+how+does+it+define+consistent%E2%80%A6&amp;question-id=de-80&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Transformation%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-80.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

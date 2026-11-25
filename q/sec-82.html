@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do immutable backups and air-gapped storage protect organizations against ransomware extortion? | InterviewGearUp</title>
+<meta name="description" content="Ransomware operators encrypt data and also destroy or encrypt backups to force payment. Immutable backups use write-once object lock or WORM storage so…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-82.html">
+<meta property="og:title" content="How do immutable backups and air-gapped storage protect organizations against ransomware extortion? | InterviewGearUp">
+<meta property="og:description" content="Ransomware operators encrypt data and also destroy or encrypt backups to force payment. Immutable backups use write-once object lock or WORM storage so…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-82.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do immutable backups and air-gapped storage protect organizations against ransomware extortion?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · Operations · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Ransomware operators encrypt data and also destroy or encrypt backups to force payment. Immutable backups use write-once object lock or WORM storage so even an admin or attacker with stolen credentials cannot delete or alter them during retention, and air-gapped copies are logically or physically isolated. Combined with the 3-2-1-1-0 rule and tested restores they enable recovery without paying.</p></div>
+<h4>Explained in depth</h4>
+<h4>Threat model</h4>
+<p>Modern ransomware (double and triple extortion) follows a pattern: gain access, escalate to domain or cloud admin, <strong>locate and destroy backups</strong> (delete snapshots, wipe backup servers, encrypt repositories, stop services), exfiltrate data, then encrypt production and demand payment. Backups that the production admin account can delete are not a defence. Recovery capability removes the attacker&#39;s leverage for the encryption part (extortion for stolen data remains a separate risk).</p>
+<h4>Key concepts</h4>
+<ul><li><strong>Immutable backup</strong>: once written, data <strong>cannot be modified or deleted until the retention period expires</strong>, enforced by the storage platform, even for privileged users. Implementations: <strong>S3 Object Lock</strong> (governance or <strong>compliance</strong> mode), Azure Blob <strong>immutable storage (time-based retention, legal hold)</strong>, Google Cloud Storage <strong>Bucket Lock</strong> and retention policies, hardened Linux repositories (Veeam immutable repo with XFS reflink and <code>chattr +i</code>), NetApp SnapLock, Dell PowerProtect cyber vault, Rubrik and Cohesity immutable file systems.</li><li><strong>Offline / air-gapped backup</strong>: a copy <strong>disconnected</strong> from the network (tape in a vault, removable media rotation) or <strong>logically air-gapped</strong> (separate account, no standing network path, access only during a backup window, one-way replication, separate credentials and identity provider). Physical air gaps defeat network-borne attackers but are slow; logical gaps (cloud vaults like AWS Backup Logically Air-gapped Vault) provide faster recovery.</li><li><strong>3-2-1-1-0 rule</strong>: <strong>3</strong> copies of data, on <strong>2</strong> different media types, <strong>1</strong> off-site, <strong>1</strong> offline or immutable, <strong>0</strong> errors after verified restore tests.</li></ul>
+<h4>Implementation example (AWS)</h4>
+<ol start="1"><li><strong>Separate backup account</strong> in the AWS Organization, with no workload admin access; strict IAM with MFA and approval for changes; SCPs deny deleting vaults, disabling Object Lock, or leaving the organisation.</li><li><strong>S3 bucket with Object Lock enabled at creation</strong> (requires versioning):</li></ol>
+<pre><code>aws s3api create-bucket --bucket acme-backup-vault --object-lock-enabled-for-bucket
+aws s3api put-object-lock-configuration --bucket acme-backup-vault \
+  --object-lock-configuration &#39;{&quot;ObjectLockEnabled&quot;:&quot;Enabled&quot;,&quot;Rule&quot;:{&quot;DefaultRetention&quot;:{&quot;Mode&quot;:&quot;COMPLIANCE&quot;,&quot;Days&quot;:35}}}&#39;</code></pre>
+<p>   <strong>Compliance mode</strong> prevents anyone, including the root user, from shortening retention or deleting versions until expiry (governance mode can be overridden by privileged users). Use <strong>AWS Backup Vault Lock</strong> (compliance mode) for EBS, RDS, EFS, DynamoDB backups, and cross-account, cross-region copies.</p>
+<ol start="3"><li><strong>Protect keys</strong>: backups encrypted with KMS keys in the backup account with key policies preventing deletion by workload accounts and scheduled deletion alerts.</li><li><strong>One-way data flow</strong>: production writes to the vault using a role that can only <code>PutObject</code> (no delete, no list-all), or a pull model where the vault account fetches data.</li><li><strong>Monitoring</strong>: alerts on vault policy changes, failed backups, unusual deletion attempts (CloudTrail), restore tests failing; backups of identity systems and configuration (Active Directory, IaC state).</li></ol>
+<h4>Design practices</h4>
+<ul><li><strong>Segregate credentials and identity</strong>: backup systems must not rely on production Active Directory domain admin accounts; use separate administrators with phishing-resistant MFA, dedicated management network, hardened backup servers (not domain-joined, patched, minimal exposure), immutable operating system images.</li><li><strong>Multiple restore points</strong> and retention long enough for dwell time (attackers may sit for weeks; keep daily for 30+ days, weekly, monthly), include <strong>versioned snapshots</strong> and clean-room validation, scan backups for malware or encrypted data before restore (entropy checks, YARA, anomaly detection on backup change rates).</li><li><strong>Cover everything needed to rebuild</strong>: databases, file shares, SaaS data (M365, Google Workspace, Salesforce via third-party backup), Kubernetes etcd and manifests, configuration, secrets (escrowed), source code repositories, IaC state, DNS, certificates and <strong>identity infrastructure</strong>.</li><li><strong>Recovery architecture</strong>: pre-built <strong>clean rooms or isolated recovery environments</strong>, infrastructure as code to rebuild quickly, documented dependencies and restore order (identity, network, databases, applications), vendor contacts and out-of-band communications.</li><li><strong>RTO and RPO</strong>: define per application (business impact analysis); immutable backups add recovery time at scale (restoring terabytes takes hours to days), so size bandwidth, use instant-recovery features and prioritise critical systems; consider <strong>cyber recovery vaults</strong> with replication and Veeam, Rubrik, Cohesity orchestration.</li><li><strong>Test regularly</strong>: automated restore verification, full-scale annual DR exercises that assume production and standard backups are lost, tabletop ransomware simulations, measure actual RTO.</li><li><strong>Governance</strong>: board-approved recovery objectives, insurance requirements, immutable audit logs, separation of duties (two-person approval for retention changes), and incident response plan integrating backup restoration.</li></ul>
+<h4>Pitfalls</h4>
+<p>Backups reachable with the same domain admin credentials, governance-mode locks that admins can bypass, untested restores, no backup of identity systems, retention shorter than attacker dwell time, and the false belief that backups alone solve data exfiltration extortion.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the difference between immutable, offline and air-gapped backups and which threats does each stop?</li><li>How do you configure S3 Object Lock in compliance mode and protect the backup account and keys?</li><li>How do you test recoverability and set RTO and RPO to survive a ransomware event?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-82">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-82%3A+How+do+immutable+backups+and+air-gapped+storage+protect%E2%80%A6&amp;question-id=sec-82&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+Operations%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-82.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

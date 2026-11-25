@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does `requestAnimationFrame` synchronize animations with the browser refresh rate? | InterviewGearUp</title>
+<meta name="description" content="requestAnimationFrame schedules a callback just before the browser&#39;s next repaint, normally 60 or more times per second in step with the display. Doing…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-59.html">
+<meta property="og:title" content="How does `requestAnimationFrame` synchronize animations with the browser refresh rate? | InterviewGearUp">
+<meta property="og:description" content="requestAnimationFrame schedules a callback just before the browser&#39;s next repaint, normally 60 or more times per second in step with the display. Doing…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-59.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does `requestAnimationFrame` synchronize animations with the browser refresh rate?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · DOM · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>requestAnimationFrame schedules a callback just before the browser&#39;s next repaint, normally 60 or more times per second in step with the display. Doing visual updates there avoids wasted work, tearing and jank that setTimeout or setInterval cause, and it pauses automatically in background tabs.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why not timers</h4>
+<p><code>setTimeout(fn, 16)</code> is not aligned with the display refresh. The callback may run mid-frame, twice before one paint (wasted work), or miss a frame (visible stutter). Timers keep firing in hidden tabs and drain battery.</p>
+<h4>rAF behaviour</h4>
+<p>The browser&#39;s frame pipeline is: input events, timers, <strong>rAF callbacks</strong>, style, layout, paint, composite. Callbacks queued with <code>requestAnimationFrame</code> run right before style and layout for that frame, so all changes made there are rendered together in one pass. It receives a high resolution timestamp.</p>
+<pre><code>let start = null;
+function tick(now) {
+  if (start === null) start = now;
+  const t = Math.min((now - start) / 1000, 1);            // 1 second animation, time based
+  box.style.transform = `translateX(${easeOut(t) * 300}px)`;
+  if (t &lt; 1) id = requestAnimationFrame(tick);            // schedule the next frame
+}
+let id = requestAnimationFrame(tick);
+// cancelAnimationFrame(id) to stop</code></pre>
+<p>Using elapsed time (not &quot;add 5px per frame&quot;) makes speed independent of the refresh rate (60, 120, 144 Hz) and of dropped frames.</p>
+<h4>Good practice</h4>
+<ul><li>Animate <strong><code>transform</code> and <code>opacity</code></strong>, which the compositor can handle without layout or paint.</li><li>Batch <strong>reads before writes</strong>: reading <code>offsetWidth</code> after writing styles forces synchronous layout (layout thrashing). Pattern: measure in one callback, mutate in the next.</li><li>Use it to throttle high frequency events: record the latest mouse or scroll position in the event handler and process once per frame in rAF.</li><li>Cancel on unmount (<code>cancelAnimationFrame</code>) to avoid leaks; in React, store the id in a ref.</li><li>Do not run heavy computation inside; a callback longer than about 16 ms drops frames. Move work to a Web Worker or chunk it.</li><li>Hidden tabs pause rAF, which helps battery; do not rely on it for logic that must continue (use timers or workers).</li></ul>
+<h4>Alternatives</h4>
+<p>CSS transitions and keyframe animations and the <strong>Web Animations API</strong> (<code>element.animate</code>) run off the main thread when properties are compositor friendly and are simpler for declarative effects. Use rAF for canvas and WebGL drawing, physics, scroll-linked custom effects and games.</p>
+<h4>Pitfalls</h4>
+<p>Scheduling a new rAF when nothing changes (a permanent loop), forgetting that the callback time is a frame-start timestamp (compare with <code>performance.now()</code> only consistently), and animating layout properties (<code>top</code>, <code>width</code>), which triggers layout every frame.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why should you read layout in one phase and write in another inside rAF callbacks?</li><li>How do you make an animation frame-rate independent using timestamps?</li><li>When would you prefer CSS animations or the Web Animations API over rAF?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-59">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-59%3A+How+does+%60requestAnimationFrame%60+synchronize+animations+with+the%E2%80%A6&amp;question-id=fe-59&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+DOM%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-59.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

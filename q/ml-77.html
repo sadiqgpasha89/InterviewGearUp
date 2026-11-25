@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What causes hallucinations in generative LLMs and what architectural mitigations reduce their frequency? | InterviewGearUp</title>
+<meta name="description" content="LLMs hallucinate because they are trained to predict plausible next tokens, not verify truth. Causes include gaps and errors in training data, no…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-77.html">
+<meta property="og:title" content="What causes hallucinations in generative LLMs and what architectural mitigations reduce their frequency? | InterviewGearUp">
+<meta property="og:description" content="LLMs hallucinate because they are trained to predict plausible next tokens, not verify truth. Causes include gaps and errors in training data, no…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-77.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What causes hallucinations in generative LLMs and what architectural mitigations reduce their frequency?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · LLMs · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>LLMs hallucinate because they are trained to predict plausible next tokens, not verify truth. Causes include gaps and errors in training data, no grounding in sources, uncertain long-tail facts, fluent-biased decoding, and rewards that discourage saying I do not know. Mitigations combine retrieval grounding, better training and calibration, constrained decoding, verification and guardrails.</p></div>
+<h4>Explained in depth</h4>
+<h4>What hallucination is</h4>
+<p>A hallucination is generated content that is <strong>fluent but false, unsupported or fabricated</strong>: invented citations, wrong dates, nonexistent API functions, fake legal cases.</p>
+<ul><li><strong>Intrinsic</strong> hallucination contradicts the provided source or prompt (summary says the opposite of the document).</li><li><strong>Extrinsic</strong> hallucination adds claims that cannot be verified from the source (or the world).</li><li><strong>Factuality</strong> versus <strong>faithfulness</strong>: correctness with respect to world knowledge versus fidelity to the given context.</li></ul>
+<h4>Why it happens</h4>
+<ol start="1"><li><strong>Training objective</strong>: next-token prediction maximises likelihood of plausible text, not truth. The model learns a statistical distribution; fluent fabrications have high probability when facts are uncertain.</li><li><strong>Data issues</strong>: noisy, outdated or contradictory web data; long-tail facts seen rarely (the model memorises poorly and guesses); biases; duplication.</li><li><strong>Knowledge boundaries</strong>: parametric memory is lossy and fixed at the cutoff; the model does not know what it does not know and is <strong>overconfident</strong> (poor calibration after RLHF).</li><li><strong>Alignment pressure</strong>: reward models and human raters may favour confident, complete answers over abstention, <strong>sycophancy</strong> (agreeing with false premises).</li><li><strong>Decoding</strong>: sampling with high temperature increases errors; greedy decoding can still produce confident mistakes; <strong>exposure bias</strong> compounds errors over long outputs (snowballing).</li><li><strong>Context problems</strong>: long prompts with the answer buried (&quot;lost in the middle&quot;), conflicting retrieved passages, ambiguous or underspecified questions, tool outputs ignored.</li><li><strong>Reasoning limits</strong>: multi-step reasoning errors, arithmetic, and compositional generalisation failures.</li></ol>
+<h4>Mitigations (architecture and system level)</h4>
+<ul><li><strong>Retrieval-augmented generation (RAG)</strong>: ground answers in retrieved documents from trusted corpora; instruct the model to answer only from context, cite passages, and say &quot;not found&quot;. Improve retrieval quality (hybrid search, reranking, chunking). RAG still hallucinates when retrieval fails or the model ignores context, so evaluate <strong>faithfulness</strong>.</li><li><strong>Tool use</strong>: calculators, code execution, search, databases and APIs for facts and computation instead of recall.</li><li><strong>Better training</strong>: high-quality data curation and deduplication, factuality-focused fine-tuning, <strong>RLHF or DPO with truthfulness rewards</strong>, training to <strong>abstain</strong> and express uncertainty, knowledge editing, domain fine-tuning, and process supervision for reasoning.</li><li><strong>Prompting and decoding</strong>: lower temperature, clear instructions, step-by-step reasoning (chain-of-thought) with verification, <strong>self-consistency</strong> (sample multiple answers, take the majority), <strong>chain-of-verification</strong> (generate verification questions and answer them independently), constrained or structured decoding (JSON schemas, grammar), contrastive decoding (DoLa).</li><li><strong>Verification and post-processing</strong>: <strong>NLI or entailment checks</strong> of claims against sources, citation verification, fact-checking with retrieval, LLM-as-judge, SelfCheckGPT (consistency across samples), confidence thresholds using token log-probs or semantic entropy, and fallback to &quot;I do not know&quot; or human escalation.</li><li><strong>Product design</strong>: show sources, highlight uncertainty, restrict scope, keep humans in the loop for high-stakes outputs, log and review failures.</li><li><strong>Guardrails</strong>: policy checks on inputs and outputs (see guardrail frameworks).</li></ul>
+<h4>Evaluation</h4>
+<p>TruthfulQA, HaluEval, FActScore, RAGAS faithfulness, domain-specific test sets with known answers; measure hallucination rate, abstention accuracy, and citation precision.</p>
+<h4>Realistic expectations</h4>
+<p>Hallucination can be <strong>reduced, not eliminated</strong>, with current architectures; defence in depth (grounding, verification, abstention, monitoring) is the standard approach.</p>
+<h4>Pitfalls</h4>
+<p>Assuming RAG removes hallucination, trusting model-stated confidence, evaluating only on easy questions, and optimising for fluency or user satisfaction scores that reward confident wrong answers.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the difference between intrinsic and extrinsic hallucination?</li><li>How does retrieval-augmented generation reduce but not eliminate hallucination?</li><li>How can uncertainty estimation or self-consistency detect hallucinated claims?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-77">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-77%3A+What+causes+hallucinations+in+generative+LLMs+and+what+architectural%E2%80%A6&amp;question-id=ml-77&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+LLMs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-77.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

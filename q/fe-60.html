@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is passive event listening (`{ passive: true }`) and why does it improve scroll performance? | InterviewGearUp</title>
+<meta name="description" content="A passive event listener promises not to call preventDefault, so the browser can start scrolling immediately instead of waiting for the handler to…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-60.html">
+<meta property="og:title" content="What is passive event listening (`{ passive: true }`) and why does it improve scroll performance? | InterviewGearUp">
+<meta property="og:description" content="A passive event listener promises not to call preventDefault, so the browser can start scrolling immediately instead of waiting for the handler to…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-60.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is passive event listening (`{ passive: true }`) and why does it improve scroll performance?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · DOM · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A passive event listener promises not to call preventDefault, so the browser can start scrolling immediately instead of waiting for the handler to finish. For touch and wheel events this removes input latency and jank on the main thread. Chrome, Firefox and Safari treat these listeners on the window, document and body as passive by default.</p></div>
+<h4>Explained in depth</h4>
+<h4>The problem</h4>
+<p>Scrolling is normally handled on the <strong>compositor thread</strong>, which can scroll smoothly even while the main thread is busy. But a <code>touchstart</code>, <code>touchmove</code> or <code>wheel</code> handler could call <code>event.preventDefault()</code> to cancel the scroll. So before scrolling, the browser must <strong>wait for the main thread to run the handler</strong> and see whether it cancels. If JavaScript is slow or the thread is busy, scrolling stalls: visible jank and poor INP.</p>
+<h4>The fix</h4>
+<p>Declare the listener passive:</p>
+<pre><code>window.addEventListener(&#39;touchmove&#39;, onMove, { passive: true });
+document.addEventListener(&#39;wheel&#39;, onWheel, { passive: true });</code></pre>
+<p><code>passive: true</code> is a <strong>contract</strong>: the handler will never call <code>preventDefault()</code>. The browser can scroll without waiting. If the handler tries anyway, it is ignored and the console warns (&quot;Unable to preventDefault inside passive event listener&quot;).</p>
+<h4>Defaults</h4>
+<p>Since Chrome 56 and similar changes in Firefox and Safari, <code>touchstart</code>, <code>touchmove</code> and <code>wheel</code> listeners registered on <code>window</code>, <code>document</code> or <code>body</code> are <strong>passive by default</strong>. Listeners attached to inner elements are not, unless you opt in.</p>
+<h4>When you must prevent default</h4>
+<p>Custom gestures (pinch zoom canvas, draggable sliders, swipe carousels, pull to refresh) need <code>{ passive: false }</code> on a <strong>specific element</strong>, plus CSS to hint the browser:</p>
+<pre><code>.slider { touch-action: pan-y; }   /* the browser handles vertical scroll, JS handles horizontal drags */
+.canvas { touch-action: none; }</code></pre>
+<p><code>touch-action</code> lets the browser decide the allowed gestures up front, so you often avoid <code>preventDefault</code> altogether. Pointer events plus <code>touch-action</code> are the modern approach to custom gestures. For modal scroll locking prefer <code>overscroll-behavior: contain</code> or <code>overflow: hidden</code> on the body over listener tricks.</p>
+<h4>Feature detection</h4>
+<pre><code>let passiveSupported = false;
+try { window.addEventListener(&#39;t&#39;, null, { get passive() { passiveSupported = true; return false; } }); } catch (e) {}</code></pre>
+<p>Modern browsers all support the options object, so this is rarely needed now.</p>
+<h4>Measuring</h4>
+<p>Chrome DevTools Performance panel flags &quot;non-passive event listener&quot; in Lighthouse (<code>uses-passive-event-listeners</code> audit in older versions). Check scroll jank with the Performance panel while scrolling.</p>
+<h4>Pitfalls</h4>
+<p>Registering heavy handlers, even if passive, still costs main-thread time (they run on every event; throttle or use <code>IntersectionObserver</code> or <code>scroll-timeline</code> instead); <code>removeEventListener</code> must use the same capture value; and frameworks (React) attach touch listeners at the root as passive, so <code>onTouchMove</code> handlers cannot prevent default without a native listener.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What happens if you call preventDefault inside a passive listener?</li><li>How do you block scrolling deliberately when you need to, for example in a custom slider or modal?</li><li>What does CSS touch-action do and how does it relate?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-60">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-60%3A+What+is+passive+event+listening+%28%60%7B+passive%3A+true+%7D%60%29+and+why+does%E2%80%A6&amp;question-id=fe-60&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+DOM%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-60.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

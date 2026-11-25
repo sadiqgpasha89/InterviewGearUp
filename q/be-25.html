@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare Redis data structures: Hashes, Sets, Sorted Sets, and Bitmaps with practical use cases. | InterviewGearUp</title>
+<meta name="description" content="Redis hashes store field-value maps for objects, sets keep unique unordered members for membership and set algebra, sorted sets keep members ordered by a…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-25.html">
+<meta property="og:title" content="Compare Redis data structures: Hashes, Sets, Sorted Sets, and Bitmaps with practical use cases. | InterviewGearUp">
+<meta property="og:description" content="Redis hashes store field-value maps for objects, sets keep unique unordered members for membership and set algebra, sorted sets keep members ordered by a…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-25.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare Redis data structures: Hashes, Sets, Sorted Sets, and Bitmaps with practical use cases.</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 2 (Mid-level) · Caching · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Redis hashes store field-value maps for objects, sets keep unique unordered members for membership and set algebra, sorted sets keep members ordered by a score for leaderboards and range queries, and bitmaps store one bit per id for compact flags and counting. Pick the structure that matches the access pattern and its time complexity.</p></div>
+<h4>Explained in depth</h4>
+<h4>Hashes</h4>
+<p>A map of field to value under one key; memory-efficient for small objects (listpack encoding).</p>
+<pre><code>HSET user:42 name &quot;Ada&quot; plan &quot;pro&quot; logins 7
+HGET user:42 plan
+HINCRBY user:42 logins 1
+HGETALL user:42</code></pre>
+<p>Use for: user profiles, sessions, shopping carts (<code>cart:42</code> with <code>sku -&gt; qty</code>), counters per object. Update single fields without rewriting a whole serialised blob. Limitation: no per-field TTL in older versions (recent versions added hash-field expiration).</p>
+<h4>Sets</h4>
+<p>Unordered unique members, O(1) add, remove and membership.</p>
+<pre><code>SADD tags:post:7 redis cache
+SISMEMBER online_users 42
+SINTER followers:1 followers:2        # mutual followers
+SUNION / SDIFF
+SRANDMEMBER / SPOP                    # random draws, lotteries</code></pre>
+<p>Use for: unique visitors, tagging, friend graph, deduplication (&quot;have I processed this id&quot;), feature flag audiences.</p>
+<h4>Sorted sets (ZSET)</h4>
+<p>Members ordered by a floating-point score; backed by a skip list plus hash table, so add and rank queries are O(log n).</p>
+<pre><code>ZADD leaderboard 2500 &quot;alice&quot; 1800 &quot;bob&quot;
+ZINCRBY leaderboard 50 &quot;bob&quot;
+ZREVRANGE leaderboard 0 9 WITHSCORES   # top 10
+ZRANK leaderboard &quot;bob&quot;
+ZRANGEBYSCORE events 1700000000 1700003600   # time window
+ZREMRANGEBYSCORE events 0 &lt;cutoff&gt;</code></pre>
+<p>Use for: leaderboards, priority queues and delayed job scheduling (score = run time), sliding-window rate limiters, time-ordered feeds, autocomplete by score.</p>
+<h4>Bitmaps</h4>
+<p>Strings treated as bit arrays; <code>SETBIT</code>, <code>GETBIT</code>, <code>BITCOUNT</code>, <code>BITOP AND/OR</code>.</p>
+<pre><code>SETBIT active:2026-11-25 42 1          # user id 42 was active today
+BITCOUNT active:2026-11-25             # daily active users
+BITOP AND retained active:2026-11-24 active:2026-11-25</code></pre>
+<p>One bit per user means 100 million ids fit in about 12.5 MB. Use for: daily active users, retention cohorts, feature flags, bloom filter-like checks. Ids must be dense integers.</p>
+<h4>Choosing</h4>
+<div class="md-table"><table><thead><tr><th>Need</th><th>Structure</th></tr></thead><tbody><tr><td>Object with fields</td><td>Hash</td></tr><tr><td>Membership, uniqueness, intersections</td><td>Set</td></tr><tr><td>Ranking, ranges, ordered by time or score</td><td>Sorted set</td></tr><tr><td>Boolean per integer id, counting</td><td>Bitmap</td></tr><tr><td>Approximate unique counts</td><td>HyperLogLog (12 KB)</td></tr></tbody></table></div>
+<p>Also consider Streams for logs and consumer groups, and Lists for simple queues.</p>
+<h4>Pitfalls</h4>
+<p>Huge keys (millions of members) that block the single thread on <code>SMEMBERS</code> or <code>HGETALL</code> (use <code>SSCAN</code>, <code>HSCAN</code>, <code>ZRANGE</code> with limits), no TTL on keys, and unbounded sorted sets. Shard big structures across keys.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the difference between a Bitmap and a HyperLogLog for counting users?</li><li>How do sorted sets implement range queries in O(log n)?</li><li>When should you store JSON as a string versus a hash?</li></ul>
+<p><a class="btn primary" href="../#/q/be-25">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-25%3A+Compare+Redis+data+structures%3A+Hashes%2C+Sets%2C+Sorted+Sets%2C+and%E2%80%A6&amp;question-id=be-25&amp;context=Backend+engineer%2C+Gear+2%2C+topic%3A+Caching%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-25.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

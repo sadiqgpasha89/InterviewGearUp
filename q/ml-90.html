@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain Generative Adversarial Networks (GANs): Minimax game between Generator and Discriminator. | InterviewGearUp</title>
+<meta name="description" content="A GAN pits a generator that maps noise to fake samples against a discriminator that classifies real versus fake. They play a minimax game: the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-90.html">
+<meta property="og:title" content="Explain Generative Adversarial Networks (GANs): Minimax game between Generator and Discriminator. | InterviewGearUp">
+<meta property="og:description" content="A GAN pits a generator that maps noise to fake samples against a discriminator that classifies real versus fake. They play a minimax game: the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-90.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain Generative Adversarial Networks (GANs): Minimax game between Generator and Discriminator.</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · Generative · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A GAN pits a generator that maps noise to fake samples against a discriminator that classifies real versus fake. They play a minimax game: the discriminator maximises its classification accuracy and the generator minimises it, so each improves. At equilibrium the generator matches the data distribution. Training is unstable, with mode collapse and vanishing gradients, mitigated by variants such as WGAN.</p></div>
+<h4>Explained in depth</h4>
+<h4>Setup</h4>
+<ul><li><strong>Generator G(z; θ_g)</strong>: takes noise <code>z ~ p_z</code> (Gaussian) and outputs a synthetic sample <code>G(z)</code> (an image).</li><li><strong>Discriminator D(x; θ_d)</strong>: outputs the probability that x came from the <strong>real data</strong> distribution <code>p_data</code> rather than from G.</li></ul>
+<h4>Minimax objective (Goodfellow et al., 2014)</h4>
+<p><code>min_G max_D  V(D, G) = E_{x ~ p_data}[ log D(x) ] + E_{z ~ p_z}[ log(1 − D(G(z))) ]</code></p>
+<ul><li>D wants to maximise V: output near 1 on real data, near 0 on fakes.</li><li>G wants to minimise V: make <code>D(G(z))</code> close to 1 (fool D).</li></ul>
+<p>For a fixed G, the optimal discriminator is <code>D*(x) = p_data(x) / (p_data(x) + p_g(x))</code>. Plugging in, G minimises the <strong>Jensen-Shannon divergence</strong> between <code>p_data</code> and <code>p_g</code>; the global optimum is <code>p_g = p_data</code> with <code>D* = 0.5</code> everywhere (D cannot tell them apart).</p>
+<h4>Training loop</h4>
+<p>Alternate:</p>
+<ol start="1"><li>Update <strong>D</strong> for k steps: sample real and fake batches, ascend <code>log D(x) + log(1 − D(G(z)))</code>.</li><li>Update <strong>G</strong>: sample noise, descend <code>log(1 − D(G(z)))</code>. In practice use the <strong>non-saturating loss</strong> <code>max log D(G(z))</code> because early on D easily rejects fakes, making <code>log(1 − D(G(z)))</code> saturate with vanishing gradients.</li></ol>
+<pre><code>for real in loader:
+    z = torch.randn(len(real), 128)
+    fake = G(z)
+    d_loss = bce(D(real), ones) + bce(D(fake.detach()), zeros)          # discriminator step
+    d_opt.zero_grad(); d_loss.backward(); d_opt.step()
+    g_loss = bce(D(fake), ones)                                         # non-saturating generator loss
+    g_opt.zero_grad(); g_loss.backward(); g_opt.step()</code></pre>
+<h4>Why GANs are hard to train</h4>
+<ul><li><strong>Non-convergence and oscillation</strong>: simultaneous gradient descent on a min-max game need not converge (cycling).</li><li><strong>Vanishing gradients</strong>: if D becomes too strong, G receives little gradient; the JS divergence is constant when distributions have disjoint supports.</li><li><strong>Mode collapse</strong>: G produces a limited variety of outputs (a few faces), since fooling D with a single good mode is enough.</li><li><strong>Sensitivity</strong> to architecture, learning rates, batch size, normalisation; no loss curve that reliably indicates sample quality.</li><li><strong>Evaluation difficulty</strong>: use FID (Fréchet Inception Distance), Inception Score, precision and recall for distributions, human evaluation.</li></ul>
+<h4>Stabilisation techniques and variants</h4>
+<ul><li><strong>DCGAN</strong> guidelines (strided convolutions, batch norm, LeakyReLU), <strong>label smoothing</strong>, instance noise, two time-scale update rule (TTUR), spectral normalisation, <strong>minibatch discrimination</strong>, feature matching.</li><li><strong>WGAN / WGAN-GP</strong>: replace JS with the <strong>Wasserstein-1 (earth mover) distance</strong>; the discriminator becomes a <strong>critic</strong> with Lipschitz constraint (weight clipping or <strong>gradient penalty</strong>), providing meaningful gradients even for disjoint supports and a loss that correlates with quality.</li><li><strong>LSGAN</strong> (least squares loss), <strong>Hinge loss</strong> (BigGAN), <strong>R1 regularisation</strong>.</li><li><strong>Conditional GANs</strong> (cGAN, Pix2Pix, CycleGAN for unpaired image translation), <strong>Progressive GAN, StyleGAN 1/2/3</strong> (high-resolution faces with style-based control), <strong>BigGAN</strong>, GigaGAN.</li></ul>
+<h4>Position today</h4>
+<p>GANs produce sharp images quickly (single forward pass), good for real-time upscaling, super-resolution, domain translation, data augmentation, and synthetic data. <strong>Diffusion models</strong> now dominate image generation because they train stably, cover modes better and scale with text conditioning, but they are slower to sample; <strong>VAEs</strong> give explicit latent spaces and likelihood bounds but blurrier samples; autoregressive and flow models offer exact likelihoods. Adversarial losses are still used as components (VQGAN decoders, latent diffusion autoencoders, perceptual and adversarial losses in video and speech codecs).</p>
+<h4>Pitfalls</h4>
+<p>Over-training the discriminator, evaluating only by eye, ignoring mode coverage, leaking training samples (memorisation) and ethical misuse (deepfakes).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is mode collapse and how do you detect and reduce it?</li><li>How does the Wasserstein loss with gradient penalty improve stability?</li><li>How do GANs compare with VAEs and diffusion models today?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-90">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-90%3A+Explain+Generative+Adversarial+Networks+%28GANs%29%3A+Minimax+game+between%E2%80%A6&amp;question-id=ml-90&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+Generative%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-90.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

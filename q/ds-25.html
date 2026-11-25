@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is probability calibration, how do you measure it, and how do you fix a poorly calibrated model? | InterviewGearUp</title>
+<meta name="description" content="A model is calibrated if among cases predicted at 30 percent risk roughly 30 percent are positive. Measure it with reliability diagrams, expected…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-25.html">
+<meta property="og:title" content="What is probability calibration, how do you measure it, and how do you fix a poorly calibrated model? | InterviewGearUp">
+<meta property="og:description" content="A model is calibrated if among cases predicted at 30 percent risk roughly 30 percent are positive. Measure it with reliability diagrams, expected…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-25.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is probability calibration, how do you measure it, and how do you fix a poorly calibrated model?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 2 (Mid-level) · Model evaluation · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A model is calibrated if among cases predicted at 30 percent risk roughly 30 percent are positive. Measure it with reliability diagrams, expected calibration error and the Brier score, and fix miscalibration with Platt scaling, isotonic regression or temperature scaling fitted on held-out data. Calibration matters whenever you use probabilities for decisions, not only rankings.</p></div>
+<h4>Explained in depth</h4>
+<h4>What calibration means</h4>
+<p>A probabilistic classifier is <strong>well calibrated</strong> if P(y = 1 | predicted p) = p. Out of all examples scored 0.8, about 80 percent should be positive. <strong>Discrimination</strong> (AUC) is about ranking; <strong>calibration</strong> is about the <strong>honesty of the numbers</strong>. A model can rank perfectly and still be badly calibrated (monotone transforms leave AUC unchanged).</p>
+<h4>Why it matters</h4>
+<p>Probabilities feed <strong>decisions and economics</strong>: expected loss = p x amount, thresholds from cost ratios, pricing and underwriting, clinical risk scores, bidding in ad auctions, combining model outputs, and communicating risk to people. Miscalibration leads to wrong expected-value calculations and poor thresholds.</p>
+<h4>Measuring</h4>
+<ul><li><strong>Reliability diagram (calibration curve)</strong>: bin predictions (equal-width or quantile), plot mean predicted probability versus observed frequency; the diagonal is perfect.</li><li><strong>Brier score</strong>: mean squared error between predicted probability and outcome (lower is better); decomposes into calibration, refinement and uncertainty.</li><li><strong>Log loss</strong>: strictly proper scoring rule, punishes confident errors.</li><li><strong>Expected calibration error (ECE)</strong> and max calibration error: weighted average gap across bins (sensitive to binning).</li><li>Calibration slope and intercept (logistic recalibration) for clinical models; calibration in the large (mean prediction versus prevalence).</li></ul>
+<pre><code>from sklearn.calibration import calibration_curve, CalibratedClassifierCV
+frac_pos, mean_pred = calibration_curve(y_te, p_te, n_bins=10, strategy=&quot;quantile&quot;)
+from sklearn.metrics import brier_score_loss
+print(brier_score_loss(y_te, p_te))</code></pre>
+<h4>Typical patterns</h4>
+<ul><li><strong>Logistic regression</strong>: usually well calibrated if the model is correctly specified.</li><li><strong>Random forests</strong>: probabilities pulled <strong>towards the middle</strong> (underconfident), because averaging trees rarely gives extreme values.</li><li><strong>Boosted trees and SVMs</strong>: sigmoid-shaped distortions; boosting with log loss is often decent, but still check.</li><li><strong>Modern neural networks</strong>: often <strong>overconfident</strong>.</li><li><strong>Naive Bayes</strong>: overconfident (extreme probabilities).</li><li><strong>Class weights, undersampling, SMOTE</strong>: shift the base rate and distort probabilities; the model&#39;s outputs no longer reflect true prevalence.</li><li><strong>Dataset shift</strong>: calibration degrades when prevalence or distributions change.</li></ul>
+<h4>Fixing it</h4>
+<p>Fit a calibrator on <strong>held-out data</strong> (not the training data the model fit; use cross-validation inside <code>CalibratedClassifierCV</code>) that maps raw scores to probabilities:</p>
+<div class="md-table"><table><thead><tr><th>Method</th><th>Description</th><th>Use when</th></tr></thead><tbody><tr><td><strong>Platt scaling</strong></td><td>logistic regression on the score</td><td>small data, sigmoid-shaped distortion</td></tr><tr><td><strong>Isotonic regression</strong></td><td>non-parametric monotone mapping</td><td>enough data (thousands), arbitrary shapes; can overfit small samples</td></tr><tr><td><strong>Temperature scaling</strong></td><td>divide logits by a learned T</td><td>neural networks, multi-class</td></tr><tr><td><strong>Beta calibration</strong>, <strong>Venn-Abers</strong></td><td>alternatives with validity guarantees</td><td></td></tr><tr><td><strong>Prior-shift correction</strong></td><td>adjust odds for known change in prevalence</td><td>resampled training data or new population</td></tr></tbody></table></div>
+<p>After calibrating, re-check the reliability diagram on a <strong>fresh</strong> test set. Calibrate per important subgroup when needed, as overall calibration can hide subgroup miscalibration (a fairness issue).</p>
+<h4>Workflow</h4>
+<p>Train for ranking quality, calibrate afterwards on a representative holdout, choose thresholds from calibrated probabilities and costs, and monitor calibration drift in production.</p>
+<h4>Pitfalls</h4>
+<p>Calibrating on the training set, using isotonic with tiny data, assuming AUC implies calibration, and forgetting to recalibrate after the base rate changes.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why are random forests, boosted trees and neural networks often miscalibrated in different directions?</li><li>Can a model have high AUC and poor calibration, and why does that matter?</li><li>How do class weighting and resampling affect predicted probabilities?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-25">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-25%3A+What+is+probability+calibration%2C+how+do+you+measure+it%2C+and+how+do%E2%80%A6&amp;question-id=ds-25&amp;context=Data+scientist%2C+Gear+2%2C+topic%3A+Model+evaluation%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-25.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

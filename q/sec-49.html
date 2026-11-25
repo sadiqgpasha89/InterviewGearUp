@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do Admission Controllers (OPA Gatekeeper, Kyverno) enforce security guardrails on Kubernetes manifests? | InterviewGearUp</title>
+<meta name="description" content="Kubernetes admission controllers intercept API requests after authentication and authorisation but before persistence. Mutating webhooks can set…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-49.html">
+<meta property="og:title" content="How do Admission Controllers (OPA Gatekeeper, Kyverno) enforce security guardrails on Kubernetes manifests? | InterviewGearUp">
+<meta property="og:description" content="Kubernetes admission controllers intercept API requests after authentication and authorisation but before persistence. Mutating webhooks can set…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-49.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do Admission Controllers (OPA Gatekeeper, Kyverno) enforce security guardrails on Kubernetes manifests?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · Kubernetes · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Kubernetes admission controllers intercept API requests after authentication and authorisation but before persistence. Mutating webhooks can set defaults, validating webhooks can reject non-compliant objects. OPA Gatekeeper uses Rego constraint templates and Kyverno uses YAML policies to enforce guardrails such as no privileged pods, trusted registries, required labels and signed images.</p></div>
+<h4>Explained in depth</h4>
+<h4>Where admission fits</h4>
+<p>The API server request path is: <strong>authentication → authorisation (RBAC) → mutating admission → schema validation → validating admission → persist to etcd</strong>. RBAC controls *who* may act; admission controllers decide *whether the object itself is acceptable*, so they can enforce guardrails that RBAC cannot express (&quot;pods must not run as root&quot;, &quot;images must come from our registry&quot;).</p>
+<p>Types:</p>
+<ul><li><strong>Built-in controllers</strong>: <code>PodSecurity</code> (enforces Pod Security Standards: privileged, baseline, restricted), <code>LimitRanger</code>, <code>ResourceQuota</code>, <code>ServiceAccount</code>, <code>NodeRestriction</code>.</li><li><strong>Dynamic admission webhooks</strong>: <code>MutatingAdmissionWebhook</code> (change the object, for example inject sidecars or default labels) and <code>ValidatingAdmissionWebhook</code> (allow or deny).</li><li><strong>ValidatingAdmissionPolicy</strong> (CEL expressions, built into the API server, GA in 1.30) which needs no webhook and has low latency.</li></ul>
+<h4>OPA Gatekeeper</h4>
+<p>Gatekeeper integrates <strong>Open Policy Agent</strong> using CRDs:</p>
+<ul><li><strong>ConstraintTemplate</strong>: defines a policy in <strong>Rego</strong> and the parameter schema.</li><li><strong>Constraint</strong>: an instance that applies the template to selected kinds and namespaces with parameters.</li></ul>
+<pre><code>apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata: { name: k8sallowedrepos }
+spec:
+  crd: { spec: { names: { kind: K8sAllowedRepos }, validation: { openAPIV3Schema: { properties: { repos: { type: array, items: { type: string } } } } } } }
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8sallowedrepos
+        violation[{&quot;msg&quot;: msg}] {
+          container := input.review.object.spec.containers[_]
+          not startswith(container.image, input.parameters.repos[_])
+          msg := sprintf(&quot;image &#39;%v&#39; is not from an approved registry&quot;, [container.image])
+        }
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sAllowedRepos
+metadata: { name: prod-approved-registries }
+spec:
+  enforcementAction: deny          # or warn / dryrun
+  match: { kinds: [{ apiGroups: [&quot;&quot;], kinds: [&quot;Pod&quot;] }], namespaces: [&quot;prod&quot;] }
+  parameters: { repos: [&quot;registry.example.com/&quot;] }</code></pre>
+<p>Gatekeeper also runs <strong>audit</strong> that scans existing resources and reports violations, supports <strong>external data</strong> and mutation (<code>Assign</code>, <code>AssignMetadata</code>). Rego is powerful but has a learning curve.</p>
+<h4>Kyverno</h4>
+<p>Kubernetes-native policy engine whose policies are <strong>YAML</strong> (no new language), with validate, mutate, generate, verifyImages and cleanup rules.</p>
+<pre><code>apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata: { name: disallow-privileged-and-require-labels }
+spec:
+  validationFailureAction: Enforce        # Audit to observe only
+  background: true
+  rules:
+    - name: no-privileged
+      match: { any: [{ resources: { kinds: [&quot;Pod&quot;] } }] }
+      validate:
+        message: &quot;Privileged containers are not allowed.&quot;
+        pattern: { spec: { containers: [ { =(securityContext): { =(privileged): &quot;false&quot; } } ] } }
+    - name: require-team-label
+      match: { any: [{ resources: { kinds: [&quot;Deployment&quot;] } }] }
+      validate: { message: &quot;label &#39;team&#39; is required&quot;, pattern: { metadata: { labels: { team: &quot;?*&quot; } } } }
+    - name: verify-signature
+      match: { any: [{ resources: { kinds: [&quot;Pod&quot;] } }] }
+      verifyImages:
+        - imageReferences: [&quot;registry.example.com/*&quot;]
+          attestors: [{ entries: [{ keyless: { issuer: &quot;https://token.actions.githubusercontent.com&quot;, subject: &quot;https://github.com/acme/*&quot; } }] }]</code></pre>
+<p>Kyverno can <strong>generate</strong> resources (default NetworkPolicy per namespace) and mutate (add <code>securityContext</code>).</p>
+<h4>Typical guardrails</h4>
+<ul><li>Block <strong>privileged</strong>, <code>hostPath</code>, <code>hostNetwork</code>, host PID or IPC, and dangerous capabilities; require <code>runAsNonRoot</code>, <code>readOnlyRootFilesystem</code>, <code>seccompProfile</code>.</li><li><strong>Approved registries</strong>, no <code>latest</code> tags, <strong>signed and attested images</strong> (Cosign, SLSA provenance), SBOM presence.</li><li>Resource requests and limits; required labels and annotations (owner, cost centre); <code>Ingress</code> restrictions (TLS required, allowed hostnames), no <code>LoadBalancer</code> services in sensitive namespaces; NetworkPolicy presence; PodDisruptionBudgets.</li><li>Namespace rules, ServiceAccount token automount, restrictions on <code>ClusterRoleBinding</code> to <code>cluster-admin</code>.</li></ul>
+<h4>Safe rollout and operations</h4>
+<ol start="1"><li>Start in <strong>audit or dryrun/warn</strong> mode, review violations, fix workloads, communicate; then switch to <strong>enforce</strong> namespace by namespace.</li><li><strong>Exemptions</strong> via namespace or label exclusions with documented expiry (system namespaces such as <code>kube-system</code>).</li><li><strong>Test policies</strong> in CI (<code>opa test</code>, <code>kyverno test</code>, <code>kyverno apply</code> against manifests, <code>conftest</code>) and keep them in Git with GitOps (Argo CD or Flux), versioned and reviewed.</li><li><strong>Availability</strong>: webhooks are on the critical path; configure <code>failurePolicy</code> (Ignore vs Fail trade-off), multiple replicas, pod anti-affinity, resource limits, timeouts, and exclude the policy engine&#39;s own namespace to avoid deadlocks.</li><li><strong>Observability</strong>: metrics (admission latency, denials), audit logs, policy reports (<code>PolicyReport</code> CRDs), alert on webhook failures.</li><li>Pair with shift-left (IaC and manifest scanning) so developers see issues before the cluster does.</li></ol>
+<h4>Choosing</h4>
+<p>Gatekeeper suits teams already using OPA and needing complex logic and cross-cutting policy across systems. Kyverno is easier for Kubernetes teams (YAML, generation and image verification built in). <strong>ValidatingAdmissionPolicy (CEL)</strong> covers simple validations without webhooks and can be combined with either.</p>
+<h4>Pitfalls</h4>
+<p>Enforcing immediately and breaking deployments, <code>failurePolicy: Fail</code> without high availability (cluster outage when the webhook is down), policies that deny the controllers&#39; own pods, no exception process, and forgetting that admission applies only to new or updated objects (use audit for existing ones).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the difference between mutating and validating admission and in which order do they run?</li><li>How do you roll out a new policy safely using audit mode before enforcing?</li><li>When would you pick Kyverno over Gatekeeper or the built-in ValidatingAdmissionPolicy?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-49">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-49%3A+How+do+Admission+Controllers+%28OPA+Gatekeeper%2C+Kyverno%29+enforce%E2%80%A6&amp;question-id=sec-49&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+Kubernetes%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-49.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you build team consensus when two respected senior engineers strongly disagree on an architectural approach? | InterviewGearUp</title>
+<meta name="description" content="Build consensus between two respected seniors by turning positions into shared criteria: have each state the problem, constraints and trade-offs, clarify…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/lead-82.html">
+<meta property="og:title" content="How do you build team consensus when two respected senior engineers strongly disagree on an architectural approach? | InterviewGearUp">
+<meta property="og:description" content="Build consensus between two respected seniors by turning positions into shared criteria: have each state the problem, constraints and trade-offs, clarify…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/lead-82.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you build team consensus when two respected senior engineers strongly disagree on an architectural approach?</h1>
+<p class="muted small-text meta-line">Tech lead / Engineering manager · Gear 3 (Senior) · People · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Build consensus between two respected seniors by turning positions into shared criteria: have each state the problem, constraints and trade-offs, clarify what would change their minds, evaluate options against agreed requirements with data or a time-boxed prototype, define the decision maker and deadline in advance, record the outcome in an ADR, and ask everyone to disagree and commit.</p></div>
+<h4>Explained in depth</h4>
+<h4>Understand the conflict</h4>
+<p>Strong disagreement between respected engineers is often healthy, and a sign of caring about quality. It becomes harmful when it turns personal, stalls delivery, or splits the team into camps. First determine whether the disagreement is about <strong>facts</strong> (performance, cost, feasibility), <strong>values and priorities</strong> (speed versus robustness, simplicity versus flexibility), <strong>risk tolerance</strong>, or <strong>ego and ownership</strong>. Different causes need different responses.</p>
+<h4>Step 1: listen separately and then together</h4>
+<p>Talk to each person privately: ask them to explain their position, the problem they are solving, their concerns about the alternative, and what outcomes matter. Look for shared goals. Then convene a <strong>structured discussion</strong> (or an RFC) with ground rules: critique ideas not people, steelman the other side, focus on the problem and constraints.</p>
+<h4>Step 2: define the problem and decision criteria</h4>
+<p>Write down the <strong>problem statement, requirements, constraints and non-goals</strong>, and agree on <strong>evaluation criteria</strong> with weights before comparing options: correctness, scalability targets, latency, cost, operational complexity, team skills, time to deliver, security, reversibility, long-term maintenance, vendor risk. Making criteria explicit moves the debate from &quot;my approach versus yours&quot; to &quot;which option best satisfies the agreed criteria&quot;.</p>
+<h4>Step 3: evidence and experiments</h4>
+<p>Convert opinions into <strong>testable claims</strong>: &quot;Option A handles 10k requests per second with p99 under 200 ms&quot; can be measured with a <strong>time-boxed spike or proof of concept</strong> (a few days), a benchmark, a load test, or a review of reference architectures and incident histories. Ask each engineer: &quot;What evidence would change your mind?&quot; Use a <strong>decision matrix</strong> and a <strong>pre-mortem</strong> for each option (&quot;assume this failed in a year; why?&quot;). Identify <strong>reversibility</strong>: if a decision is a two-way door (cheap to change), decide quickly and learn; one-way doors need more rigor.</p>
+<h4>Step 4: clarify decision rights</h4>
+<p>Before the debate, agree <strong>who decides</strong>: the tech lead, architect, a small group, or by consensus with a deadline. Possible models: <strong>consent-based decision</strong> (no one has a principled, blocking objection), <strong>advice process</strong> (the decider must seek input from affected people and experts, then decide), or escalation to an architecture review board. State the timeline: &quot;We decide by Friday.&quot; Prevent endless debate: consensus is not unanimity, and a good decision made on time beats a perfect one made late.</p>
+<h4>Step 5: decide, document, commit</h4>
+<p>The decider announces the choice and <strong>rationale, trade-offs accepted, and what would trigger revisiting</strong> (metrics or events) in an <strong>ADR</strong>. Acknowledge the valid concerns of the other side and, where possible, <strong>incorporate them</strong> (hybrid solutions, mitigations, guardrails, a checkpoint to review after the pilot). Ask for <strong>&quot;disagree and commit&quot;</strong>: everyone supports the decision wholeheartedly, and the dissenter may record their concern without sabotaging it. Include the dissenter in the implementation in a meaningful role (for example, owning risk mitigation or evaluation metrics), which reduces the sense of loss.</p>
+<h4>Step 6: maintain relationships</h4>
+<p>Thank both people for their rigour. Avoid framing outcomes as winners and losers; recognise what each contributed. Provide private follow-up with the person whose idea was not chosen, emphasising respect for their perspective and the value of their input. Monitor team dynamics, and deal with any lingering resentment. Coach both to give feedback constructively, and model healthy conflict behaviours yourself.</p>
+<h4>When to escalate or decide</h4>
+<p>If the discussion is circular, the timeline is at risk, or personal friction escalates, step in: set a deadline, <strong>make the call or escalate</strong> to a neutral senior leader or architecture board with a clear summary of options and trade-offs. If behaviour crosses into disrespect, address it directly as a conduct issue separate from the technical matter.</p>
+<h4>Example</h4>
+<p>&quot;Two staff engineers disagreed on Kafka versus managed queues. I had each write one page on requirements and risks, we agreed on criteria (operational burden, throughput headroom, ecosystem), ran a one-week spike measuring throughput and failure recovery, and chose the managed queue for now with a documented trigger to revisit if volume exceeds 5x. The Kafka advocate led the benchmark harness and the future review.&quot;</p>
+<h4>Pitfalls</h4>
+<p>Letting the conflict fester, deciding by seniority or loudness, splitting the difference into a poor compromise, no recorded rationale, and forcing agreement without real commitment.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you facilitate the discussion so it stays about the problem and not about status or ego?</li><li>When should you stop seeking consensus and make the call yourself or escalate to an architecture group?</li><li>How do you maintain the relationship and team morale after a decision that one senior engineer opposed?</li></ul>
+<p><a class="btn primary" href="../#/q/lead-82">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+lead-82%3A+How+do+you+build+team+consensus+when+two+respected+senior+engineers%E2%80%A6&amp;question-id=lead-82&amp;context=Tech+lead+%2F+Engineering+manager%2C+Gear+3%2C+topic%3A+People%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Flead-82.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

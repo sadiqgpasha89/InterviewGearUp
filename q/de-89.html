@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you optimize Snowflake compute spend using auto-suspend, warehouse rightsizing, and scaling policies? | InterviewGearUp</title>
+<meta name="description" content="Cut Snowflake compute spend by suspending warehouses quickly when idle (AUTO_SUSPEND around 60 seconds), sizing each warehouse to its workload by testing…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-89.html">
+<meta property="og:title" content="How do you optimize Snowflake compute spend using auto-suspend, warehouse rightsizing, and scaling policies? | InterviewGearUp">
+<meta property="og:description" content="Cut Snowflake compute spend by suspending warehouses quickly when idle (AUTO_SUSPEND around 60 seconds), sizing each warehouse to its workload by testing…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-89.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you optimize Snowflake compute spend using auto-suspend, warehouse rightsizing, and scaling policies?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · FinOps · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Cut Snowflake compute spend by suspending warehouses quickly when idle (AUTO_SUSPEND around 60 seconds), sizing each warehouse to its workload by testing query time versus credits, separating workloads, using multi-cluster economy scaling only for concurrency, applying resource monitors and query timeouts, and fixing expensive queries through pruning, clustering and caching.</p></div>
+<h4>Explained in depth</h4>
+<h4>How compute is billed</h4>
+<p>Virtual warehouses consume <strong>credits per second while running</strong> (minimum 60 seconds each time they resume). Credits per hour double with each size: XS 1, S 2, M 4, L 8, XL 16, and so on. Cost = credits × price per credit (edition and region). Storage and serverless features are billed separately. Idle but running warehouses waste the most money.</p>
+<h4>1. Auto-suspend and auto-resume</h4>
+<pre><code>ALTER WAREHOUSE bi_wh SET AUTO_SUSPEND = 60 AUTO_RESUME = TRUE;</code></pre>
+<ul><li>Suspend after about <strong>60 seconds</strong> for ad hoc and BI warehouses; the cache is lost on suspend (local SSD cache of micro-partitions), so for workloads that repeat similar queries within minutes a longer suspend (5 to 10 minutes) may reduce total cost by keeping the cache warm. Measure rather than guess.</li><li>ETL warehouses that run in batches can suspend immediately after jobs (<code>ALTER WAREHOUSE ... SUSPEND</code> at the end of the DAG) or use serverless tasks.</li></ul>
+<h4>2. Right-sizing</h4>
+<p>Warehouse size affects <strong>how fast</strong> a query runs, with roughly linear speed gains for scan and compute-heavy queries (a query that takes 10 minutes on S might take 5 on M). When scaling is linear, cost stays equal (same credits, less time) while latency improves; when the query does not parallelise (small data, skew, single-threaded steps), a bigger warehouse just burns more credits.</p>
+<ul><li>Test representative queries across sizes; compare <strong>credits consumed versus time</strong>.</li><li>Smaller for light BI queries, larger for heavy transformations; use the <strong>Query Profile</strong> for spilling to local or remote storage (a sign the warehouse is undersized: bytes spilled indicates move up a size) and low parallelism (a sign it is oversized).</li><li><strong>Separate warehouses by workload</strong> (ETL, BI, data science, ad hoc) to size independently, allocate cost by team and avoid heavy jobs queuing light queries.</li></ul>
+<h4>3. Scaling policies</h4>
+<ul><li><strong>Multi-cluster warehouses</strong> (Enterprise) add clusters to handle concurrency, not to speed single queries. <code>MIN_CLUSTER_COUNT=1</code> and <code>MAX_CLUSTER_COUNT=N</code>; <strong>Standard</strong> policy starts clusters quickly to avoid queuing, <strong>Economy</strong> policy only starts one when it can keep busy for about six minutes, saving credits at the cost of queuing.</li><li>Keep min clusters at 1 and rely on max for spikes. Do not set min above 1 unless required.</li><li>Use <strong>Query Acceleration Service</strong> or <strong>Gen2 warehouses</strong> only if testing shows benefits, and consider <strong>serverless</strong> features carefully since they bill separately.</li></ul>
+<h4>4. Governance and guardrails</h4>
+<pre><code>CREATE RESOURCE MONITOR monthly_cap WITH CREDIT_QUOTA = 2000 TRIGGERS ON 80 PERCENT DO NOTIFY ON 100 PERCENT DO SUSPEND;
+ALTER WAREHOUSE adhoc_wh SET RESOURCE_MONITOR = monthly_cap STATEMENT_TIMEOUT_IN_SECONDS = 3600 STATEMENT_QUEUED_TIMEOUT_IN_SECONDS = 600;</code></pre>
+<p>Set timeouts to stop runaway queries, budgets and alerts per team, and tag warehouses for chargeback.</p>
+<h4>5. Query and data optimisation</h4>
+<ul><li>Find expensive queries: <code>SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY</code> (execution time, bytes scanned, partitions scanned versus total, spilled bytes), <code>WAREHOUSE_METERING_HISTORY</code> (credits per hour), <code>QUERY_ATTRIBUTION_HISTORY</code>.</li><li>Improve <strong>pruning</strong> (clustering keys on large tables, filter on partitioned columns), select only needed columns, avoid <code>SELECT *</code> and repeated large scans, use incremental models, and result cache (free for identical queries within 24 hours).</li><li>Replace repeated dashboards&#39; heavy queries with <strong>materialised views or summary tables</strong>.</li><li>Avoid frequent small <code>INSERT</code>s and unneeded full refreshes; schedule jobs off peak.</li></ul>
+<h4>6. Monitoring</h4>
+<p>Track idle credits (warehouse running with little load: <code>WAREHOUSE_LOAD_HISTORY</code>), queued query time, credits per team and per query tag, trends, and anomalies; review monthly. Tools: Snowflake cost management views, Select.dev, Keebo, dbt query tags.</p>
+<h4>Pitfalls</h4>
+<p><code>AUTO_SUSPEND=0</code> or very long values, one oversized shared warehouse, clustering small tables, multi-cluster min greater than 1 by default, and chasing speed with bigger warehouses without measuring credits.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does doubling warehouse size not always double cost?</li><li>How do you find the most expensive queries and idle credits?</li><li>When does a multi-cluster warehouse save money and when does it waste it?</li></ul>
+<p><a class="btn primary" href="../#/q/de-89">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-89%3A+How+do+you+optimize+Snowflake+compute+spend+using+auto-suspend%2C%E2%80%A6&amp;question-id=de-89&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+FinOps%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-89.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

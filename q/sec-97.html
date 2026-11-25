@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What security considerations apply when designing serverless functions (AWS Lambda, Cloud Functions)? | InterviewGearUp</title>
+<meta name="description" content="Serverless shifts infrastructure security to the provider but not application security. Give each function a least-privilege execution role, validate…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-97.html">
+<meta property="og:title" content="What security considerations apply when designing serverless functions (AWS Lambda, Cloud Functions)? | InterviewGearUp">
+<meta property="og:description" content="Serverless shifts infrastructure security to the provider but not application security. Give each function a least-privilege execution role, validate…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-97.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What security considerations apply when designing serverless functions (AWS Lambda, Cloud Functions)?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · Cloud · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Serverless shifts infrastructure security to the provider but not application security. Give each function a least-privilege execution role, validate every event input since many trigger types bypass the API gateway, manage secrets with a secrets manager, patch dependencies, limit network egress, set timeouts and concurrency to bound cost and abuse, and log invocations for detection.</p></div>
+<h4>Explained in depth</h4>
+<h4>Shared responsibility</h4>
+<p>For AWS Lambda, Google Cloud Functions or Cloud Run functions and Azure Functions, the provider secures the <strong>physical infrastructure, hypervisor (Firecracker), OS and runtime patching</strong>. You remain responsible for <strong>application code, dependencies, permissions, configuration, data and event handling</strong>. Characteristics that change the threat model: <strong>many small functions, many event sources, short-lived execution, no server to run agents on, and fine-grained IAM</strong>.</p>
+<h4>Main risks and controls</h4>
+<ol start="1"><li><strong>Over-privileged execution roles</strong>: one broad role shared by all functions makes any compromise a cloud-wide incident.</li></ol>
+<ul><li><strong>One role per function</strong>, with only the actions and <strong>specific resource ARNs</strong> needed (<code>dynamodb:GetItem</code> on one table, not <code>dynamodb:*</code>), conditions where possible, <strong>permission boundaries</strong>, and no <code>iam:*</code>, <code>s3:*</code> or <code>*:*</code>. Generate policies from actual use (IAM Access Analyzer), review in CI, use tools like Cloudsplaining and Checkov.</li><li>Short-lived credentials are injected automatically; <strong>never embed access keys</strong> in code.</li></ul>
+<ol start="2"><li><strong>Injection through event data</strong>: functions are triggered by API Gateway, S3 uploads, SNS and SQS messages, DynamoDB streams, EventBridge, IoT, email (SES), CI and file names. Every field is <strong>untrusted</strong> (a malicious S3 object key or SQS message can contain shell metacharacters, SQL, NoSQL operators, path traversal, deserialisation payloads).</li></ol>
+<ul><li><strong>Validate and sanitise all inputs</strong> with schemas (JSON Schema, Pydantic, Zod, Powertools validation) regardless of trigger; use parameterised queries; avoid <code>eval</code>, <code>exec</code>, <code>child_process</code> with event data and unsafe deserialisation (<code>pickle</code>, <code>yaml.load</code>); sanitise file names and keys; limit payload size.</li></ul>
+<ol start="3"><li><strong>Insecure authentication and authorisation at the edge</strong>: use API Gateway authorisers (Cognito, JWT, Lambda authoriser, IAM), validate tokens in the function if called from other sources, apply per-user authorisation checks (not only authentication), resource policies restricting who can invoke a function (<code>lambda:InvokeFunction</code> permission with <code>SourceArn</code> conditions), and avoid public function URLs without auth (<code>AuthType: AWS_IAM</code> or JWT).</li><li><strong>Secrets</strong>: store in <strong>AWS Secrets Manager, SSM Parameter Store (SecureString), Google Secret Manager or Azure Key Vault</strong>; fetch at cold start and cache; do not put secrets in plain environment variables where they appear in console and configuration (encrypt env vars with a customer-managed KMS key if needed); rotate credentials.</li><li><strong>Dependency and supply chain risk</strong>: functions pull many packages and layers. Use lock files, <strong>SCA scanning</strong> (Dependabot, Snyk, <code>npm audit</code>, <code>pip-audit</code>), pin and verify, minimise packages, scan <strong>container images</strong> for Lambda container support, sign code (<strong>AWS Signer code signing config</strong>), restrict who can publish layers, and use a private registry.</li><li><strong>Network exposure and egress</strong>: attach to a VPC only when needed (private resources), with tight <strong>security groups, VPC endpoints</strong> and egress filtering (NAT with allow-list or Network Firewall) to limit data exfiltration and callbacks; do not make databases publicly reachable for functions&#39; convenience.</li><li><strong>Denial of service and &quot;denial of wallet&quot;</strong>: unbounded invocations create cost and availability issues. Set <strong>timeouts</strong> (shortest workable), <strong>memory</strong>, <strong>reserved concurrency</strong> per function, API Gateway throttling and usage plans, WAF rate rules, SQS dead-letter queues and retry limits to prevent recursion and infinite loops (S3 triggers that write back to the same bucket), budgets and billing alarms.</li><li><strong>Data leakage and persistence</strong>: <code>/tmp</code> and execution environments can be <strong>reused between invocations</strong>, so clean sensitive temporary files and avoid global state that mixes tenants; do not log secrets, tokens or personal data (mask logs); encrypt data at rest and in transit; set log retention; restrict who can read CloudWatch logs.</li><li><strong>Misconfiguration and drift</strong>: define functions with <strong>IaC</strong> (SAM, CDK, Terraform, Serverless Framework) and scan templates (cfn-nag, Checkov, tfsec), enforce guardrails with SCPs and Config rules, separate environments and accounts, and enable versioning and aliases for controlled deploys.</li><li><strong>Monitoring and detection</strong>: CloudTrail data events, CloudWatch metrics and structured logs, X-Ray tracing, GuardDuty Lambda protection (network activity) and runtime monitoring, anomaly alarms on invocation, error and duration spikes, alerts on configuration changes (<code>UpdateFunctionCode</code>, <code>UpdateFunctionConfiguration</code>, <code>AddPermission</code>).</li><li><strong>Runtime protection and testing</strong>: serverless-aware tools (Prisma Cloud, Wiz, Aqua, Datadog, Sysdig, Lumigo), SAST and DAST against API endpoints, and tests with hostile event payloads for each trigger type.</li></ol>
+<h4>Example hardened SAM fragment</h4>
+<pre><code>OrdersFunction:
+  Type: AWS::Serverless::Function
+  Properties:
+    Runtime: python3.12
+    Timeout: 10
+    MemorySize: 256
+    ReservedConcurrentExecutions: 50
+    Policies:
+      - DynamoDBReadPolicy: { TableName: !Ref OrdersTable }       # one table, read only
+    Environment: { Variables: { SECRET_ARN: !Ref DbSecret } }     # reference, not the secret
+    CodeSigningConfigArn: !Ref SigningConfig
+    Events:
+      Api: { Type: Api, Properties: { Path: /orders/{id}, Method: get, Auth: { Authorizer: JwtAuthorizer } } }</code></pre>
+<h4>Pitfalls</h4>
+<p>A single shared admin role, trusting S3 or queue messages because &quot;they come from inside&quot;, secrets in repos or plain env vars, no concurrency limits, vulnerable layers copied from the internet, and logging full event payloads.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is event-data injection a distinct risk in serverless and which triggers besides API Gateway deliver untrusted input?</li><li>How do you scope IAM roles per function and prevent a shared over-privileged role?</li><li>How do you detect and limit denial-of-wallet, dependency compromise and data leakage through function logs and /tmp?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-97">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-97%3A+What+security+considerations+apply+when+designing+serverless%E2%80%A6&amp;question-id=sec-97&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+Cloud%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-97.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you automate accessibility (a11y) testing in CI pipelines using axe-core and Pa11y? | InterviewGearUp</title>
+<meta name="description" content="Automate accessibility checks by running axe-core or Pa11y against pages in CI, failing the build on new violations at agreed impact levels. Axe…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-44.html">
+<meta property="og:title" content="How do you automate accessibility (a11y) testing in CI pipelines using axe-core and Pa11y? | InterviewGearUp">
+<meta property="og:description" content="Automate accessibility checks by running axe-core or Pa11y against pages in CI, failing the build on new violations at agreed impact levels. Axe…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-44.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you automate accessibility (a11y) testing in CI pipelines using axe-core and Pa11y?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 2 (Mid-level) · Accessibility · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Automate accessibility checks by running axe-core or Pa11y against pages in CI, failing the build on new violations at agreed impact levels. Axe integrates into Playwright, Cypress and Selenium tests; Pa11y scans URLs from the command line. Automation finds roughly a third of WCAG issues, so combine it with keyboard, screen reader and manual reviews.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why automate</h4>
+<p>Accessibility defects (missing alt text, low contrast, unlabeled form controls, broken keyboard navigation, wrong ARIA) are cheap to catch automatically and expensive to fix late. Legal requirements (ADA, EN 301 549, European Accessibility Act) and WCAG 2.1/2.2 AA are common targets.</p>
+<h4>axe-core</h4>
+<p>An open-source engine (Deque) that checks the rendered DOM against rules mapped to WCAG success criteria, returning violations with <strong>impact</strong> (minor, moderate, serious, critical), affected nodes, help text and links.</p>
+<pre><code>// Playwright
+import { test, expect } from &#39;@playwright/test&#39;;
+import AxeBuilder from &#39;@axe-core/playwright&#39;;
+test(&#39;home page has no detectable a11y violations&#39;, async ({ page }) =&gt; {
+  await page.goto(&#39;/&#39;);
+  const results = await new AxeBuilder({ page })
+    .withTags([&#39;wcag2a&#39;, &#39;wcag2aa&#39;, &#39;wcag21aa&#39;])
+    .exclude(&#39;#third-party-widget&#39;)
+    .analyze();
+  expect(results.violations).toEqual([]);
+});</code></pre>
+<pre><code>// Cypress: cypress-axe
+cy.visit(&#39;/checkout&#39;); cy.injectAxe(); cy.checkA11y(null, { includedImpacts: [&#39;critical&#39;, &#39;serious&#39;] });</code></pre>
+<p>Selenium has <code>axe-selenium-java</code>/<code>axe-webdriver</code>; Jest has <code>jest-axe</code> for component tests (<code>expect(await axe(container)).toHaveNoViolations()</code>); Storybook has the a11y addon and test runner integration; <code>eslint-plugin-jsx-a11y</code> catches issues at lint time.</p>
+<h4>Pa11y and Pa11y CI</h4>
+<p>Command-line scanner using headless Chrome with HTML CodeSniffer (and axe runner).</p>
+<pre><code>// .pa11yci.json
+{ &quot;defaults&quot;: { &quot;standard&quot;: &quot;WCAG2AA&quot;, &quot;runners&quot;: [&quot;axe&quot;, &quot;htmlcs&quot;], &quot;timeout&quot;: 30000,
+                &quot;chromeLaunchConfig&quot;: { &quot;args&quot;: [&quot;--no-sandbox&quot;] } },
+  &quot;urls&quot;: [&quot;http://localhost:3000/&quot;, &quot;http://localhost:3000/login&quot;,
+           { &quot;url&quot;: &quot;http://localhost:3000/cart&quot;, &quot;actions&quot;: [&quot;click element #add&quot;, &quot;wait for element #cart-count to be visible&quot;] }] }</code></pre>
+<pre><code># GitHub Actions
+- run: npm ci &amp;&amp; npm run build &amp;&amp; npm start &amp;
+- run: npx wait-on http://localhost:3000 &amp;&amp; npx pa11y-ci</code></pre>
+<p>Pa11y supports actions (login, click) before scanning, thresholds, ignore rules, reporters (CLI, JSON, HTML) and sitemap scanning (<code>--sitemap</code>).</p>
+<h4>CI strategy</h4>
+<ol start="1"><li><strong>Scan key templates and states</strong> (home, login, forms with errors, modals open, cart, checkout), not just landing pages; test after interactions because many issues appear in dynamic states.</li><li><strong>Fail the build on new violations</strong> at critical and serious levels; use a <strong>baseline</strong> file of accepted known issues (tracked in a backlog) so teams do not stop work but cannot regress; ratchet down over time.</li><li>Run on PRs against preview deployments, and weekly full-site crawls; upload JSON and HTML reports as artifacts; annotate PRs with violations.</li><li>Test in <strong>multiple viewports</strong> and with <strong>dark mode</strong> or high-contrast settings if supported.</li><li>Shift left: component-level checks in Storybook and unit tests, lint rules in the IDE.</li></ol>
+<h4>Limits of automation</h4>
+<p>Automated tools reliably detect only about <strong>30 to 40 percent</strong> of WCAG issues (contrast, missing labels or alt attributes, duplicate IDs, invalid ARIA roles). They cannot judge whether alt text is meaningful, reading order is logical, focus management is correct, captions are accurate, error messages are understandable, or content is usable with a screen reader. Add:</p>
+<ul><li><strong>Keyboard testing</strong> (tab order, focus visibility, no traps, skip links; automate with Playwright keyboard flows).</li><li><strong>Screen reader checks</strong> (NVDA, JAWS, VoiceOver) in manual or exploratory passes before releases.</li><li><strong>Zoom and reflow</strong> (400 percent), reduced motion, touch target size, colour not sole carrier of meaning.</li><li>Periodic <strong>expert audits</strong> and testing with disabled users.</li></ul>
+<h4>Pitfalls</h4>
+<p>Treating a clean axe run as compliance, scanning only static pages, silencing rules globally, ignoring third-party components, and fixing symptoms (adding <code>aria-label</code> everywhere) instead of using semantic HTML.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Which accessibility issues can automated tools not detect?</li><li>How do you scope axe rules, handle known issues and prevent regressions?</li><li>How do you integrate a11y checks into component tests and Storybook?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-44">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-44%3A+How+do+you+automate+accessibility+%28a11y%29+testing+in+CI+pipelines%E2%80%A6&amp;question-id=qa-44&amp;context=QA+%2F+SDET%2C+Gear+2%2C+topic%3A+Accessibility%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-44.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

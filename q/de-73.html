@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do Delta Lake and Iceberg handle schema evolution when columns are added, renamed, or dropped? | InterviewGearUp</title>
+<meta name="description" content="Delta Lake and Iceberg both evolve schemas through metadata. Adding columns is safe and cheap. Iceberg tracks columns by unique field IDs, so renames and…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-73.html">
+<meta property="og:title" content="How do Delta Lake and Iceberg handle schema evolution when columns are added, renamed, or dropped? | InterviewGearUp">
+<meta property="og:description" content="Delta Lake and Iceberg both evolve schemas through metadata. Adding columns is safe and cheap. Iceberg tracks columns by unique field IDs, so renames and…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-73.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do Delta Lake and Iceberg handle schema evolution when columns are added, renamed, or dropped?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 2 (Mid-level) · Lakehouse · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Delta Lake and Iceberg both evolve schemas through metadata. Adding columns is safe and cheap. Iceberg tracks columns by unique field IDs, so renames and reorders are metadata-only and safe. Delta tracks by name by default and needs column mapping mode to rename or drop without rewriting. Type changes are limited to safe widenings.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why it is hard</h4>
+<p>Data files (Parquet) are immutable and carry their own schema at write time. A table&#39;s evolving schema must still read old files correctly after changes. The mapping from table columns to file columns is the crux: by <strong>name</strong>, by <strong>position</strong>, or by <strong>unique ID</strong>.</p>
+<h4>Apache Iceberg</h4>
+<p>Each column has a permanent <strong>field ID</strong> stored in table metadata and in the Parquet files. Schema operations are metadata-only commits:</p>
+<pre><code>ALTER TABLE lake.orders ADD COLUMN discount DECIMAL(10,2);                 -- old files return NULL
+ALTER TABLE lake.orders RENAME COLUMN cust_id TO customer_id;              -- same field id, no rewrite
+ALTER TABLE lake.orders DROP COLUMN legacy_flag;                           -- hidden, never reused
+ALTER TABLE lake.orders ALTER COLUMN amount TYPE DECIMAL(18,2);            -- safe widening
+ALTER TABLE lake.orders ALTER COLUMN discount AFTER amount;                -- reorder</code></pre>
+<ul><li><strong>Add</strong>: new field ID; old files lack it, so reads fill nulls (or the default).</li><li><strong>Rename</strong>: the ID stays the same, so old files still map correctly.</li><li><strong>Drop</strong>: removes the column from the schema; the ID is never reused, so stale data cannot reappear under a new column with the same name.</li><li><strong>Reorder</strong> and nested struct changes (add or drop fields inside structs, maps, lists) are supported.</li><li><strong>Type promotion</strong> limited to safe widenings: int to long, float to double, decimal precision increase.</li></ul>
+<p>Schema history is kept per snapshot, so <strong>time travel</strong> reads data with the schema in effect then.</p>
+<h4>Delta Lake</h4>
+<ul><li><strong>Add columns</strong>: allowed with <code>ALTER TABLE ... ADD COLUMNS</code> or automatically during writes with <code>.option(&quot;mergeSchema&quot;, &quot;true&quot;)</code> or <code>spark.databricks.delta.schema.autoMerge.enabled</code>. By default Delta <strong>enforces schema on write</strong>, rejecting mismatched data.</li><li><strong>Rename and drop</strong> require <strong>column mapping</strong> (<code>delta.columnMapping.mode = &#39;name&#39;</code>, upgrades reader and writer protocol versions), which maps logical names to physical Parquet column names and IDs; after enabling, <code>RENAME COLUMN</code> and <code>DROP COLUMN</code> are metadata-only.</li></ul>
+<pre><code>ALTER TABLE sales SET TBLPROPERTIES (&#39;delta.columnMapping.mode&#39; = &#39;name&#39;, &#39;delta.minReaderVersion&#39; = &#39;2&#39;, &#39;delta.minWriterVersion&#39; = &#39;5&#39;);
+ALTER TABLE sales RENAME COLUMN cust_id TO customer_id;
+ALTER TABLE sales DROP COLUMN legacy_flag;</code></pre>
+<ul><li><strong>Type changes</strong>: widening via <code>ALTER TABLE ... ALTER COLUMN</code> (type widening feature); other changes require rewriting with <code>overwriteSchema</code>.</li><li><strong>Overwrite schema</strong> (<code>overwriteSchema=true</code>) replaces schema and data together.</li></ul>
+<h4>Practices for safe evolution</h4>
+<ol start="1"><li>Prefer <strong>additive changes</strong> (new optional columns); treat rename and drop as breaking changes for consumers.</li><li><strong>Communicate and version</strong>: use contracts, deprecation windows, view layers (consumers read <code>v_orders</code> that aliases columns), and run both old and new names temporarily.</li><li>Validate in CI: schema compatibility checks against the catalogue; test downstream queries and dbt models.</li><li>Watch <strong>engine and protocol compatibility</strong>: enabling column mapping or new Delta features upgrades protocol versions and can block old readers.</li><li>For streaming jobs reading the table, restart or handle schema change events (Spark <code>schemaTrackingLocation</code> for Delta streaming sources).</li><li>Remember data in files is not rewritten, so storage still holds dropped columns until compaction rewrites files (relevant for PII removal).</li></ol>
+<h4>Pitfalls</h4>
+<p>Positional mapping surprises in formats without IDs, renaming a column in place and breaking BI queries, allowing uncontrolled auto-merge that lets a bad upstream payload widen schemas with junk columns, and incompatible type changes.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why are Iceberg field IDs more robust than Parquet column names?</li><li>How does Delta mergeSchema or autoMerge work during writes?</li><li>What breaks downstream consumers when a column is dropped, and how do you manage it?</li></ul>
+<p><a class="btn primary" href="../#/q/de-73">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-73%3A+How+do+Delta+Lake+and+Iceberg+handle+schema+evolution+when+columns%E2%80%A6&amp;question-id=de-73&amp;context=Data+engineer%2C+Gear+2%2C+topic%3A+Lakehouse%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-73.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

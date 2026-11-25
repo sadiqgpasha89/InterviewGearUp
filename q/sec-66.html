@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is DNSSEC and how does public-key cryptography prevent DNS spoofing and cache poisoning? | InterviewGearUp</title>
+<meta name="description" content="DNSSEC adds digital signatures to DNS data so resolvers can verify that records are authentic and unmodified. Zones sign their record sets with keys…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-66.html">
+<meta property="og:title" content="What is DNSSEC and how does public-key cryptography prevent DNS spoofing and cache poisoning? | InterviewGearUp">
+<meta property="og:description" content="DNSSEC adds digital signatures to DNS data so resolvers can verify that records are authentic and unmodified. Zones sign their record sets with keys…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-66.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is DNSSEC and how does public-key cryptography prevent DNS spoofing and cache poisoning?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · Network · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>DNSSEC adds digital signatures to DNS data so resolvers can verify that records are authentic and unmodified. Zones sign their record sets with keys published in DNSKEY records, and a chain of trust runs from the root through DS records at each parent, so forged answers from spoofing or cache poisoning fail validation. It provides integrity and authenticity, not confidentiality.</p></div>
+<h4>Explained in depth</h4>
+<h4>The problem DNS has</h4>
+<p>Classic DNS has <strong>no authentication</strong>. A resolver sends a query over UDP and accepts the first response that matches the transaction ID and source port. Attackers can:</p>
+<ul><li><strong>Spoof</strong> responses (race the real answer, guess the 16-bit ID).</li><li><strong>Poison the cache</strong> (Kaminsky attack, 2008): inject forged records so every user of the resolver is sent to attacker-controlled servers (phishing, malware, email interception) until the TTL expires.</li></ul>
+<p>Mitigations like source port randomisation and 0x20 case randomisation raise the bar but do not prove authenticity.</p>
+<h4>What DNSSEC provides</h4>
+<ul><li><strong>Origin authentication</strong>: answer came from the zone&#39;s legitimate owner.</li><li><strong>Data integrity</strong>: records were not modified in transit.</li><li><strong>Authenticated denial of existence</strong>: proof that a name or type does not exist.</li></ul>
+<p>It does <strong>not</strong> encrypt queries (use DoT, DoH or DoQ for privacy), does not protect against compromised registrars, and does not stop DDoS.</p>
+<h4>Key records</h4>
+<ul><li><strong>DNSKEY</strong>: public keys of the zone. Typically two keys: the <strong>Zone Signing Key (ZSK)</strong> signs the zone&#39;s record sets, and the <strong>Key Signing Key (KSK)</strong> signs the DNSKEY set (the trust anchor for the zone).</li><li><strong>RRSIG</strong>: digital signature over an RRset (for example all A records for <code>www.example.com</code>), including inception and expiration times and the signer name.</li><li><strong>DS (Delegation Signer)</strong>: a <strong>hash of the child&#39;s KSK</strong> stored in the <strong>parent zone</strong>, linking child to parent. Set at the registrar.</li><li><strong>NSEC / NSEC3</strong>: authenticated denial of existence, listing the next existing name in canonical order (NSEC) or hashed names (NSEC3, which hinders trivial zone walking).</li><li><strong>CDS/CDNSKEY</strong>: automate DS updates between child and parent.</li></ul>
+<h4>Chain of trust</h4>
+<ol start="1"><li>The resolver has the <strong>root zone trust anchor</strong> (root KSK) configured.</li><li>Query <code>www.example.com</code>: resolver obtains the root&#39;s DNSKEY (validated against the trust anchor), then the <strong>DS for <code>com</code></strong> (signed by the root), then <code>com</code>&#39;s DNSKEY (checked against that DS), then <strong>DS for <code>example.com</code></strong> (signed by <code>com</code>), <code>example.com</code>&#39;s DNSKEY, and finally the <strong>A record and its RRSIG</strong>, validated with the ZSK.</li><li>If every link verifies, the answer is marked <strong>authentic (AD bit set)</strong> for validating resolvers. If any signature is invalid or expired, or a DS is missing but expected, the resolver returns <strong>SERVFAIL</strong>; the answer is discarded, so a forged response from a cache poisoning attempt fails because the attacker cannot produce valid signatures without the private keys.</li></ol>
+<pre><code>dig +dnssec example.com A            # shows RRSIG and AD flag from a validating resolver
+dig DS example.com +short; dig DNSKEY example.com +multi
+delv @1.1.1.1 example.com A          # validation walkthrough</code></pre>
+<p>Algorithms: RSA/SHA-256 (8), ECDSA P-256 (13), <strong>Ed25519 (15)</strong> preferred for small signatures; avoid deprecated SHA-1.</p>
+<h4>Deploying DNSSEC</h4>
+<ol start="1"><li><strong>Sign the zone</strong>: authoritative software (BIND, Knot, PowerDNS) or managed DNS (Route 53, Cloudflare, Google Cloud DNS) with automatic key management.</li><li><strong>Publish the DS</strong> record at the registrar/parent (many managed services automate it with CDS/CDNSKEY).</li><li><strong>Enable validation</strong> on recursive resolvers (Unbound, BIND, public resolvers like 1.1.1.1 and 8.8.8.8 validate by default).</li><li><strong>Key management</strong>: ZSK rolled often (weeks to months, pre-publish or double-signature methods), KSK rolled rarely (annually or longer) with <strong>DS coordination</strong>; protect private keys (HSM, offline KSK ceremonies); automate rollovers (RFC 7583, RFC 8901 for multi-signer).</li><li><strong>Monitor</strong>: signature expiry (RRSIG validity usually 1 to 4 weeks, re-signing automatic), DS and DNSKEY consistency, validation failures (DNSViz, Zonemaster, Verisign DNSSEC Debugger), and alert before expirations.</li></ol>
+<h4>Operational risks</h4>
+<ul><li><strong>Misconfiguration causes outage for validating users</strong>: expired signatures, wrong DS after provider migration, removing DNSSEC at the DNS host while the DS remains (domain goes <strong>bogus</strong> and becomes unreachable for validating resolvers), key rollover timing errors, clock skew, NSEC3 parameters, large UDP responses fragmenting (use EDNS0 and TCP fallback; smaller algorithms help), and multi-provider setups.</li><li><strong>Amplification</strong>: larger responses can aid DDoS reflection; mitigate with response rate limiting.</li><li><strong>Adoption</strong> is partial (many TLDs signed; fewer second-level domains), so protections apply only where both sides deploy it.</li><li>Complementary controls: <strong>DNS over TLS/HTTPS</strong>, <strong>DANE</strong> (TLSA records for certificate pinning, requires DNSSEC), <strong>CAA records</strong>, registry lock, registrar MFA, monitoring Certificate Transparency, and <strong>response policy zones</strong> for filtering.</li></ul>
+<h4>Pitfalls</h4>
+<p>Disabling DNSSEC without removing the DS first, letting RRSIGs expire, migrating DNS providers without a multi-signer or careful DS plan, believing DNSSEC encrypts traffic, and ignoring key custody.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do the ZSK, KSK and DS records form a chain of trust from the root zone?</li><li>How does DNSSEC prove that a name does not exist without enabling zone enumeration, and what are NSEC3 and NSEC?</li><li>What operational risks such as key rollover mistakes or signature expiry can cause a DNSSEC outage?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-66">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-66%3A+What+is+DNSSEC+and+how+does+public-key+cryptography+prevent+DNS%E2%80%A6&amp;question-id=sec-66&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+Network%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-66.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

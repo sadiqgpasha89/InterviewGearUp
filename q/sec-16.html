@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are common Security Misconfigurations in cloud infrastructure, and how do you detect exposed S3 buckets? | InterviewGearUp</title>
+<meta name="description" content="Cloud misconfigurations such as public storage, over-permissive IAM, open security groups, disabled logging and unencrypted data cause most breaches.…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-16.html">
+<meta property="og:title" content="What are common Security Misconfigurations in cloud infrastructure, and how do you detect exposed S3 buckets? | InterviewGearUp">
+<meta property="og:description" content="Cloud misconfigurations such as public storage, over-permissive IAM, open security groups, disabled logging and unencrypted data cause most breaches.…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-16.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are common Security Misconfigurations in cloud infrastructure, and how do you detect exposed S3 buckets?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 2 (Mid-level) · AppSec · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Cloud misconfigurations such as public storage, over-permissive IAM, open security groups, disabled logging and unencrypted data cause most breaches. Detect exposed S3 buckets with Block Public Access, bucket policy and ACL analysis, IAM Access Analyzer, AWS Config rules, Security Hub and CSPM tools, and verify externally with authenticated and anonymous probes.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why misconfiguration dominates</h4>
+<p>Cloud providers secure the underlying infrastructure, but <strong>customers configure</strong> identity, networking, storage and logging. Because every resource is an API call away from being public, small mistakes expose large amounts of data. Gartner-style estimates attribute the large majority of cloud security failures to customer misconfiguration, not provider flaws.</p>
+<h4>Common misconfigurations</h4>
+<ol start="1"><li><strong>Public or world-readable storage</strong>: S3 buckets, Azure Blob containers, GCS buckets with <code>AllUsers</code> or <code>AuthenticatedUsers</code> access (the latter means any AWS account holder).</li><li><strong>Over-permissive IAM</strong>: <code>Action: &quot;*&quot;</code> and <code>Resource: &quot;*&quot;</code>, wildcard trust policies (<code>Principal: &quot;*&quot;</code>), unused users and access keys, no MFA on privileged users, long-lived keys in code.</li><li><strong>Network</strong>: security groups open to <code>0.0.0.0/0</code> on SSH (22), RDP (3389) or database ports; public IPs on databases; missing network segmentation.</li><li><strong>Data protection gaps</strong>: unencrypted EBS, RDS and S3, no KMS key policies, public snapshots and AMIs.</li><li><strong>Logging and monitoring disabled</strong>: no CloudTrail in all regions, no S3 access logs, no VPC flow logs, no GuardDuty.</li><li><strong>Metadata and credentials</strong>: IMDSv1 enabled (SSRF theft of role credentials), default passwords, exposed admin consoles, Kubernetes dashboards.</li><li><strong>Excessive exposure of services</strong>: public Elasticsearch or Redis, unauthenticated APIs, open container registries, dangling DNS records (subdomain takeover).</li><li><strong>Weak defaults and drift</strong>: manual console changes that bypass Infrastructure as Code.</li></ol>
+<h4>How S3 access is decided</h4>
+<p>Effective access combines: IAM policies, <strong>bucket policies</strong>, <strong>ACLs</strong>, <strong>Block Public Access</strong> (account and bucket level), access point policies, VPC endpoint policies, SCPs and Object Ownership settings. <strong>Block Public Access</strong> overrides policies and ACLs that would make data public, so enabling it at the <strong>account level</strong> is the strongest guardrail. Modern buckets should use <strong>Object Ownership = Bucket owner enforced</strong> to disable ACLs.</p>
+<h4>Detecting exposed buckets</h4>
+<pre><code># account-level protection status
+aws s3control get-public-access-block --account-id 111122223333
+# per-bucket checks
+aws s3api get-public-access-block --bucket my-bucket
+aws s3api get-bucket-policy-status --bucket my-bucket       # {&quot;PolicyStatus&quot;:{&quot;IsPublic&quot;:true}}
+aws s3api get-bucket-acl --bucket my-bucket                  # look for AllUsers / AuthenticatedUsers grants
+# external, unauthenticated probe
+curl -sI https://my-bucket.s3.amazonaws.com/ ; aws s3 ls s3://my-bucket --no-sign-request</code></pre>
+<p>Managed detection:</p>
+<ul><li><strong>IAM Access Analyzer for S3</strong> and external access findings (shows which buckets are accessible from outside the account or organisation).</li><li><strong>Amazon Macie</strong> (sensitive data discovery in public buckets).</li><li><strong>AWS Config</strong> managed rules <code>s3-bucket-public-read-prohibited</code>, <code>s3-bucket-public-write-prohibited</code>, <code>s3-account-level-public-access-blocks</code>, <code>s3-bucket-ssl-requests-only</code>.</li><li><strong>AWS Security Hub</strong> CSPM controls (CIS AWS Foundations, AWS Foundational Security Best Practices) aggregating findings across accounts.</li><li>Third-party CSPM: Wiz, Prisma Cloud, Orca, Lacework, plus open source <strong>Prowler</strong>, <strong>ScoutSuite</strong>, <strong>CloudSploit</strong>, <strong>Steampipe</strong> for scans in CI.</li><li>IaC scanning (Checkov, tfsec) to catch <code>acl = &quot;public-read&quot;</code> before deployment.</li></ul>
+<h4>Preventing it</h4>
+<ul><li>Enable <strong>S3 Block Public Access at account and organisation level</strong>; use <strong>Service Control Policies</strong> denying <code>s3:PutBucketPublicAccessBlock</code> removal and public ACLs.</li><li>Enforce via IaC modules, policy-as-code (OPA, Sentinel, Cloud Custodian) and <strong>auto-remediation</strong> (Config remediation, EventBridge to Lambda that re-applies the block and alerts).</li><li>Use CloudFront with Origin Access Control instead of public buckets for website content; presigned URLs for temporary access.</li><li>Default encryption with KMS, versioning, MFA delete for critical data, access logging, <strong>tag-based ownership</strong> so findings reach the right team.</li></ul>
+<h4>Investigating exposure</h4>
+<p>Enable <strong>CloudTrail data events</strong> and <strong>S3 server access logs</strong> (before an incident), query with Athena for <code>GetObject</code> calls from unknown principals, IP ranges or anonymous requests; review GuardDuty S3 protection findings; rotate any secrets stored in the bucket; notify according to breach-reporting obligations.</p>
+<h4>Pitfalls</h4>
+<p>Relying on ACL reviews only, forgetting account-level settings, assuming &quot;private&quot; because the name is obscure, scanning only buckets and ignoring snapshots, AMIs and policies, and allowing console changes outside IaC.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the difference between a bucket policy, an ACL and Block Public Access, and which one wins?</li><li>How do you continuously detect drift and prevent new public buckets at creation time?</li><li>How do you investigate whether an exposed bucket was actually accessed by outsiders?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-16">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-16%3A+What+are+common+Security+Misconfigurations+in+cloud+infrastructure%2C%E2%80%A6&amp;question-id=sec-16&amp;context=Security+engineer%2C+Gear+2%2C+topic%3A+AppSec%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-16.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

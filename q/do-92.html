@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What strategies minimize cloud egress costs across availability zones and regions? | InterviewGearUp</title>
+<meta name="description" content="Cloud egress charges apply to data leaving a provider&#39;s network, to the internet, to another region and, in some clouds, between availability zones.…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-92.html">
+<meta property="og:title" content="What strategies minimize cloud egress costs across availability zones and regions? | InterviewGearUp">
+<meta property="og:description" content="Cloud egress charges apply to data leaving a provider&#39;s network, to the internet, to another region and, in some clouds, between availability zones.…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-92.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What strategies minimize cloud egress costs across availability zones and regions?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · Cloud · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Cloud egress charges apply to data leaving a provider&#39;s network, to the internet, to another region and, in some clouds, between availability zones. Reduce them by keeping chatty services in the same zone, using CDNs and caching, compressing, using private endpoints and gateway endpoints, minimising cross-region replication, choosing regions deliberately and analysing flow logs to find the heaviest transfer paths.</p></div>
+<h4>Explained in depth</h4>
+<h4>Where the money goes (AWS as example)</h4>
+<ul><li><strong>Internet egress</strong>: about $0.05 to $0.09 per GB after the free tier.</li><li><strong>Inter-region</strong> transfer: about $0.02 per GB each way.</li><li><strong>Cross-AZ</strong> within a region: about $0.01 per GB in each direction (so $0.02 per GB round trip), which surprises teams running chatty microservices, replication and Kafka across three zones.</li><li><strong>NAT gateway</strong> processing: about $0.045 per GB plus hourly cost, in addition to normal transfer.</li><li>Ingress is generally free, same-AZ private IP traffic is free.</li></ul>
+<p>Other clouds are similar (GCP charges for inter-zone and egress, Azure charges cross-region and internet; some providers like Cloudflare R2 and Oracle have low or zero egress). Check current price sheets.</p>
+<h4>Strategies</h4>
+<ol start="1"><li><strong>Measure first</strong>: enable VPC Flow Logs, Cost Explorer or Cost and Usage Report (usage types like <code>DataTransfer-Regional-Bytes</code>), Kubecost, or tools such as eBPF flow exporters to find top talkers by service pair, AZ and destination.</li><li><strong>Cache and use a CDN</strong>: CloudFront, Cloudflare and Fastly serve content from the edge. CloudFront data transfer is cheaper than direct EC2 or S3 egress and origin fetches from AWS to CloudFront are free. Use high cache hit ratios, compression (Brotli), image optimisation, and <code>Cache-Control</code> headers.</li><li><strong>Reduce bytes</strong>: compress payloads (gzip, zstd), use efficient formats (Protobuf, Avro, Parquet), pagination and field selection (GraphQL, sparse fieldsets), delta updates, dedupe, and avoid shipping logs and metrics at full fidelity (sample, aggregate at the edge).</li><li><strong>Keep traffic local</strong>: co-locate tightly coupled services in the same AZ and region; use <strong>topology-aware routing</strong> in Kubernetes (<code>service.kubernetes.io/topology-mode: Auto</code>, <code>trafficDistribution: PreferClose</code>, Istio locality load balancing, zone-aware gRPC) so pods prefer same-zone endpoints; use Kafka rack awareness and follower fetching (<code>client.rack</code>) to read from replicas in the local zone.</li><li><strong>Private connectivity</strong>: <strong>gateway VPC endpoints</strong> for S3 and DynamoDB are free and avoid NAT gateway processing; interface endpoints for other AWS services cost hourly but can be cheaper than NAT at high volume; a NAT gateway per AZ avoids cross-AZ hops to a single NAT.</li><li><strong>Minimise cross-region replication</strong>: replicate only what is needed, choose async replication and filters, compress, and batch; serve users from the nearest region with data locality designs.</li><li><strong>Right-place data and compute</strong>: run analytics where data lives, pull compute to storage (S3 Select, Athena) instead of moving data out, and avoid multi-cloud designs with heavy cross-cloud chatter.</li><li><strong>Negotiate</strong>: committed use discounts, private pricing and data transfer waivers for migrations, and use Direct Connect or interconnect with cheaper per-GB rates for large steady transfers.</li><li><strong>Architectural tolerance</strong>: accept some AZ cost for availability but eliminate waste (service mesh retries across zones, chatty chat-style APIs, health check traffic, logging to remote regions).</li></ol>
+<h4>Trade-offs</h4>
+<p>Zone affinity reduces cost but can imbalance load and reduce failure tolerance; always keep failover across zones. Caching adds staleness; compression costs CPU.</p>
+<h4>Pitfalls</h4>
+<p>Ignoring NAT gateway costs, serving large downloads straight from origin, replicating databases across regions unnecessarily, and cost views that hide data transfer in &quot;other&quot; categories.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is cross-AZ traffic charged on AWS but often free within a zone?</li><li>How do VPC endpoints and NAT gateways influence data transfer cost?</li><li>How can topology aware routing in Kubernetes lower cross-zone cost?</li></ul>
+<p><a class="btn primary" href="../#/q/do-92">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-92%3A+What+strategies+minimize+cloud+egress+costs+across+availability%E2%80%A6&amp;question-id=do-92&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+Cloud%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-92.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

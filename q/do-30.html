@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain the Pod lifecycle phases (Pending, Running, Succeeded, Failed, Unknown) and container restart policies. | InterviewGearUp</title>
+<meta name="description" content="A pod phase summarises where it is in its lifecycle: Pending (accepted but not running yet), Running (bound to a node with at least one container…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-30.html">
+<meta property="og:title" content="Explain the Pod lifecycle phases (Pending, Running, Succeeded, Failed, Unknown) and container restart policies. | InterviewGearUp">
+<meta property="og:description" content="A pod phase summarises where it is in its lifecycle: Pending (accepted but not running yet), Running (bound to a node with at least one container…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-30.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain the Pod lifecycle phases (Pending, Running, Succeeded, Failed, Unknown) and container restart policies.</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 2 (Mid-level) · Kubernetes · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A pod phase summarises where it is in its lifecycle: Pending (accepted but not running yet), Running (bound to a node with at least one container running), Succeeded (all containers exited 0), Failed (all terminated and at least one failed), Unknown (node unreachable). restartPolicy (Always, OnFailure, Never) decides whether kubelet restarts exited containers.</p></div>
+<h4>Explained in depth</h4>
+<h4>Phases</h4>
+<div class="md-table"><table><thead><tr><th>Phase</th><th>Meaning</th></tr></thead><tbody><tr><td>Pending</td><td>the API server accepted the pod, but it is not running: waiting for scheduling, image pull, volume attach, or init containers</td></tr><tr><td>Running</td><td>bound to a node, all containers created, at least one running or starting/restarting</td></tr><tr><td>Succeeded</td><td>all containers terminated successfully (exit 0) and will not restart (Jobs, restartPolicy OnFailure or Never)</td></tr><tr><td>Failed</td><td>all containers terminated and at least one ended in failure (non-zero exit or killed)</td></tr><tr><td>Unknown</td><td>the state cannot be obtained, usually because the node lost contact with the control plane</td></tr></tbody></table></div>
+<p><code>kubectl get pod</code> also shows friendly <strong>statuses</strong> such as <code>ContainerCreating</code>, <code>CrashLoopBackOff</code>, <code>ImagePullBackOff</code>, <code>OOMKilled</code>, <code>Terminating</code>, which are not phases but derived from container states and conditions.</p>
+<h4>Container states</h4>
+<p>Each container is <code>Waiting</code> (with a reason: <code>ContainerCreating</code>, <code>ImagePullBackOff</code>, <code>CrashLoopBackOff</code>), <code>Running</code> (since time), or <code>Terminated</code> (reason such as <code>Completed</code>, <code>Error</code>, <code>OOMKilled</code>, exit code, signal). Inspect with <code>kubectl describe pod</code> and <code>kubectl get pod -o jsonpath=&#39;{.status.containerStatuses}&#39;</code>.</p>
+<h4>Typical flow</h4>
+<ol start="1"><li>Pod created, scheduler assigns a node (<strong>Pending</strong> until then; unschedulable pods show reasons such as insufficient CPU, taints or unbound PVCs).</li><li>Kubelet pulls images, mounts volumes, runs <strong>init containers</strong> sequentially (each must succeed).</li><li>Main containers start; <strong>postStart</strong> hook runs; probes begin (startup, then liveness and readiness).</li><li>Ready condition becomes true, the pod is added to Service endpoints.</li><li>On deletion: <code>Terminating</code>, pod removed from endpoints, <strong>preStop</strong> hook, SIGTERM, wait <code>terminationGracePeriodSeconds</code>, then SIGKILL.</li></ol>
+<h4>Restart policy</h4>
+<pre><code>spec:
+  restartPolicy: Always     # default for Deployments; also OnFailure | Never (Jobs)</code></pre>
+<ul><li><strong>Always</strong>: restart containers whenever they exit (even with code 0): long-running services.</li><li><strong>OnFailure</strong>: restart only on non-zero exit: batch Jobs that should retry.</li><li><strong>Never</strong>: do not restart: one-shot tasks and debugging.</li></ul>
+<p>Restarts happen on the same node by the kubelet, with <strong>exponential back-off</strong> (10 s, 20 s, 40 s ... capped at 5 minutes, reset after 10 minutes of success). While waiting the status shows <code>CrashLoopBackOff</code>. A pod itself is not rescheduled elsewhere; controllers (ReplicaSet, Job) create replacement pods if a pod is deleted or evicted.</p>
+<h4>Troubleshooting guide</h4>
+<ul><li><code>Pending</code>: <code>kubectl describe pod</code> events (FailedScheduling, PVC unbound, node selector mismatch, quota).</li><li><code>ImagePullBackOff</code>: wrong tag, missing registry credentials (<code>imagePullSecrets</code>), network.</li><li><code>CrashLoopBackOff</code>: <code>kubectl logs --previous</code>, check exit code (137 = SIGKILL/OOM, 143 = SIGTERM, 1 = application error), config and secrets, probes too strict.</li><li><code>Running</code> but not Ready: readiness probe failing, dependencies unavailable.</li><li>Stuck <code>Terminating</code>: finalizers, node down, process ignoring SIGTERM.</li></ul>
+<h4>Practical notes</h4>
+<p>Use controllers (Deployment, StatefulSet, Job) instead of bare pods, set resource requests and limits, readiness and liveness probes, and graceful shutdown handling. Pods are ephemeral and not &quot;healed&quot;: identity changes after recreation.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the difference between pod phase and container state?</li><li>What does CrashLoopBackOff mean and how does the backoff grow?</li><li>How do init containers and probes affect the lifecycle?</li></ul>
+<p><a class="btn primary" href="../#/q/do-30">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-30%3A+Explain+the+Pod+lifecycle+phases+%28Pending%2C+Running%2C+Succeeded%2C%E2%80%A6&amp;question-id=do-30&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+2%2C+topic%3A+Kubernetes%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-30.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

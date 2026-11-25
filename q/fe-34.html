@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Why can React Context trigger unneeded re-renders across consumers, and how do you optimize it? | InterviewGearUp</title>
+<meta name="description" content="When a context value changes, every component that reads it re-renders, even if it only uses a part of the value. Passing a new object literal as the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-34.html">
+<meta property="og:title" content="Why can React Context trigger unneeded re-renders across consumers, and how do you optimize it? | InterviewGearUp">
+<meta property="og:description" content="When a context value changes, every component that reads it re-renders, even if it only uses a part of the value. Passing a new object literal as the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-34.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Why can React Context trigger unneeded re-renders across consumers, and how do you optimize it?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · React · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>When a context value changes, every component that reads it re-renders, even if it only uses a part of the value. Passing a new object literal as the provider value on every render triggers this constantly. Fix it by memoising values, splitting contexts, separating state from dispatch, or using selector-based stores.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why it re-renders</h4>
+<p>React&#39;s Context has no built-in selector. When the provider&#39;s <code>value</code> prop changes by <code>Object.is</code>, React re-renders <strong>all consumers</strong> of that context, ignoring <code>React.memo</code> on them.</p>
+<pre><code>function AppProvider({ children }) {
+  const [user, setUser] = useState(null);
+  const [theme, setTheme] = useState(&#39;light&#39;);
+  return (
+    &lt;AppContext.Provider value={{ user, setUser, theme, setTheme }}&gt;   // new object each render
+      {children}
+    &lt;/AppContext.Provider&gt;
+  );
+}</code></pre>
+<p>Every time the provider re-renders (even for unrelated reasons) the value identity changes and every consumer re-renders. Even with a stable identity, a theme change re-renders components that only read <code>user</code>, because they share the same context.</p>
+<h4>Optimisations</h4>
+<ol start="1"><li><strong>Memoise the value</strong>: <code>const value = useMemo(() =&gt; ({ user, setUser }), [user]);</code>.</li><li><strong>Split by concern and by change rate</strong>: <code>UserContext</code>, <code>ThemeContext</code>, <code>LocaleContext</code>. Consumers subscribe only to what they need.</li><li><strong>Separate state from actions</strong>: dispatch and setters are stable, so put them in their own context (the <code>useReducer</code> pattern). Components that only dispatch never re-render on state changes.</li></ol>
+<pre><code>const StateCtx = createContext(null);
+const DispatchCtx = createContext(null);
+&lt;DispatchCtx.Provider value={dispatch}&gt;&lt;StateCtx.Provider value={state}&gt;{children}&lt;/StateCtx.Provider&gt;&lt;/DispatchCtx.Provider&gt;</code></pre>
+<ol start="4"><li><strong>Push consumers down</strong>: read the context in a small child component and pass primitives into an expensive memoised child.</li><li><strong>Children pass-through</strong>: content passed as <code>children</code> is created by the parent and does not re-render when the provider&#39;s own state changes.</li><li><strong>Selector-based stores</strong>: Zustand, Redux with <code>useSelector</code>, Jotai atoms, or <code>useSyncExternalStore</code> let a component subscribe to a slice and re-render only when that slice changes. The <code>use-context-selector</code> library emulates this for Context.</li></ol>
+<h4>When Context is the right tool</h4>
+<p>Low-frequency global values (theme, locale, auth user, feature flags, dependency injection of services). For high-frequency updates (mouse position, form fields, live data) use local state or a selector store.</p>
+<h4>Diagnosing</h4>
+<p>React DevTools Profiler with &quot;Record why each component rendered&quot; shows &quot;Context changed&quot;. Count renders and look at which provider is above the churn.</p>
+<h4>Pitfalls</h4>
+<p>Putting rapidly changing state in one giant context, creating the value inline, assuming <code>memo</code> blocks context updates (it does not), and placing providers too high so that unrelated parts re-render.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does splitting state and dispatch into two contexts reduce re-renders?</li><li>Why does memo not stop a context consumer from re-rendering?</li><li>When should you move from Context to Zustand, Redux or useSyncExternalStore?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-34">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-34%3A+Why+can+React+Context+trigger+unneeded+re-renders+across+consumers%2C%E2%80%A6&amp;question-id=fe-34&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+React%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-34.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

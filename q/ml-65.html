@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do SHAP (Shapley Additive Explanations) values provide local and global feature attributions? | InterviewGearUp</title>
+<meta name="description" content="SHAP assigns each feature a Shapley value: its average marginal contribution to a prediction across all feature coalitions, derived from cooperative game…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-65.html">
+<meta property="og:title" content="How do SHAP (Shapley Additive Explanations) values provide local and global feature attributions? | InterviewGearUp">
+<meta property="og:description" content="SHAP assigns each feature a Shapley value: its average marginal contribution to a prediction across all feature coalitions, derived from cooperative game…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-65.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do SHAP (Shapley Additive Explanations) values provide local and global feature attributions?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · Explainability · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>SHAP assigns each feature a Shapley value: its average marginal contribution to a prediction across all feature coalitions, derived from cooperative game theory. The values for one prediction sum to the difference between that prediction and the baseline expectation, giving local explanations. Averaging absolute SHAP values over a dataset gives global importance, and plots reveal direction and interactions.</p></div>
+<h4>Explained in depth</h4>
+<h4>Origin</h4>
+<p>In cooperative game theory, players jointly produce a payout, and the <strong>Shapley value</strong> is the unique fair division satisfying efficiency, symmetry, dummy and additivity axioms. SHAP (Lundberg and Lee, 2017) treats <strong>features as players</strong> and the <strong>prediction as the payout</strong>.</p>
+<h4>Definition</h4>
+<p>For model f, instance x, and feature i: <code>φᵢ = Σ over subsets S ⊆ F\{i}  [ |S|! (|F|−|S|−1)! / |F|! ] · ( f_{S∪{i}}(x) − f_S(x) )</code> where <code>f_S</code> is the model&#39;s expected output when only the features in S are known (others marginalised over a <strong>background</strong> distribution). It averages the marginal contribution of feature i over <strong>all orderings</strong> in which features can be added.</p>
+<p><strong>Additive property (local accuracy)</strong>: <code>f(x) = φ₀ + Σ φᵢ</code>, where <code>φ₀ = E[f(X)]</code> is the base value. So each prediction decomposes exactly into feature contributions: positive φ pushes the prediction above the average, negative pushes below.</p>
+<h4>Computation</h4>
+<p>Exact computation needs 2^|F| model evaluations, infeasible for many features. Estimators:</p>
+<ul><li><strong>TreeSHAP</strong>: polynomial-time exact algorithm for tree ensembles (XGBoost, LightGBM, CatBoost, random forests) using the tree structure; very fast.</li><li><strong>KernelSHAP</strong>: model-agnostic weighted linear regression approximation using sampled coalitions; slow, needs background samples.</li><li><strong>DeepSHAP / GradientSHAP / Integrated-gradients-style</strong>: neural networks (DeepLIFT-based).</li><li><strong>LinearSHAP</strong>: closed form for linear models.</li><li><strong>PermutationExplainer</strong> and partition explainers for text and images with structured masking (grouped tokens, superpixels).</li></ul>
+<pre><code>import shap, xgboost
+model = xgboost.XGBClassifier().fit(X_train, y_train)
+explainer = shap.TreeExplainer(model)
+sv = explainer(X_test)                         # shap.Explanation: values, base_values, data
+shap.plots.waterfall(sv[0])                    # local: one prediction
+shap.plots.beeswarm(sv)                        # global: distribution of effects per feature
+shap.plots.bar(sv)                             # global importance = mean(|SHAP|)
+shap.plots.scatter(sv[:, &quot;income&quot;], color=sv)  # dependence with interactions</code></pre>
+<h4>Local versus global</h4>
+<ul><li><strong>Local explanation</strong>: for a loan application, the waterfall shows <code>base 0.12 → +0.18 (debt ratio) +0.07 (recent delinquencies) −0.05 (income) = 0.32</code>. Useful for adverse-action reasons, debugging and customer-facing explanations.</li><li><strong>Global explanation</strong>: aggregate SHAP values across many instances: mean absolute value ranks features by overall impact; <strong>beeswarm</strong> plots show direction (higher feature values increase or decrease the output) and spread; <strong>dependence plots</strong> show nonlinear effects and interactions (SHAP interaction values for trees); clustering of SHAP values finds subpopulations.</li></ul>
+<h4>Practical considerations</h4>
+<ol start="1"><li><strong>Units</strong>: for classifiers, tree SHAP explains the margin (log-odds) by default; use <code>model_output=&quot;probability&quot;</code> where supported. Be explicit about the output scale.</li><li><strong>Background data and conditional versus interventional</strong>: the way missing features are handled (marginal/interventional versus conditional on correlated features) changes attributions. With <strong>correlated features</strong>, credit is split arbitrarily among them, and interventional SHAP can create unrealistic samples.</li><li><strong>Not causal</strong>: SHAP shows how the <strong>model</strong> uses features, not how the real world works; do not claim that changing a feature would change the outcome.</li><li><strong>Stability and cost</strong>: sample-based estimators vary; use enough background rows (50 to 500, or k-means summaries); sample test rows for global plots.</li><li><strong>Fairness and governance</strong>: use for audits, feature selection, drift analysis (SHAP value drift), debugging leakage (a suspicious ID-like feature with huge impact), and regulatory documentation.</li><li>Compare with LIME (local surrogate, less consistent), permutation importance, partial dependence, and counterfactuals.</li></ol>
+<h4>Pitfalls</h4>
+<p>Over-interpreting attributions for correlated features, explaining the wrong output scale, presenting SHAP as causal, slow KernelSHAP on large data, and ignoring that explanations depend on the model, not the data alone.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is exact Shapley computation exponential and how does TreeSHAP avoid it?</li><li>How do you choose a background dataset and what happens with correlated features?</li><li>What are the limits of SHAP for causal claims?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-65">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-65%3A+How+do+SHAP+%28Shapley+Additive+Explanations%29+values+provide+local+and%E2%80%A6&amp;question-id=ml-65&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+Explainability%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-65.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

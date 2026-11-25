@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are the normal forms (1NF, 2NF, 3NF) and when is denormalization preferred? | InterviewGearUp</title>
+<meta name="description" content="Normal forms remove redundancy and update anomalies. 1NF requires atomic values with no repeating groups, 2NF removes partial dependencies on part of a…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-23.html">
+<meta property="og:title" content="What are the normal forms (1NF, 2NF, 3NF) and when is denormalization preferred? | InterviewGearUp">
+<meta property="og:description" content="Normal forms remove redundancy and update anomalies. 1NF requires atomic values with no repeating groups, 2NF removes partial dependencies on part of a…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-23.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are the normal forms (1NF, 2NF, 3NF) and when is denormalization preferred?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 2 (Mid-level) · Databases · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Normal forms remove redundancy and update anomalies. 1NF requires atomic values with no repeating groups, 2NF removes partial dependencies on part of a composite key, and 3NF removes transitive dependencies between non-key columns. Denormalise deliberately for read performance, reporting and distributed data when joins or consistency costs dominate.</p></div>
+<h4>Explained in depth</h4>
+<h4>The anomalies normalisation prevents</h4>
+<p>In one wide table <code>orders(order_id, customer_name, customer_email, product, product_price, ...)</code>:</p>
+<ul><li><strong>Update anomaly</strong>: changing a customer&#39;s email requires editing many rows; missing one leaves inconsistent data.</li><li><strong>Insert anomaly</strong>: you cannot record a new product until someone orders it.</li><li><strong>Delete anomaly</strong>: deleting the last order for a customer also deletes customer information.</li></ul>
+<h4>Normal forms</h4>
+<ul><li><strong>1NF</strong>: each column holds one atomic value, each row is unique, and there are no repeating groups or comma-separated lists (<code>tags = &#39;a,b,c&#39;</code> violates it; use a child table).</li><li><strong>2NF</strong>: in 1NF and every non-key attribute depends on the <strong>whole</strong> composite key. In <code>order_items(order_id, product_id, product_name, qty)</code>, <code>product_name</code> depends only on <code>product_id</code>, so move it to <code>products</code>.</li><li><strong>3NF</strong>: in 2NF and non-key attributes depend only on the key, not on other non-key attributes (no transitive dependency). In <code>employees(id, dept_id, dept_name)</code>, <code>dept_name</code> depends on <code>dept_id</code>; move it to <code>departments</code>.</li><li><strong>BCNF</strong>: stricter 3NF where every determinant is a candidate key. It resolves rare cases with overlapping candidate keys.</li></ul>
+<pre><code>CREATE TABLE customers (id BIGINT PRIMARY KEY, name TEXT, email TEXT UNIQUE);
+CREATE TABLE products  (id BIGINT PRIMARY KEY, name TEXT, price NUMERIC(10,2));
+CREATE TABLE orders    (id BIGINT PRIMARY KEY, customer_id BIGINT REFERENCES customers(id), created_at TIMESTAMPTZ);
+CREATE TABLE order_items (order_id BIGINT REFERENCES orders(id), product_id BIGINT REFERENCES products(id),
+                          qty INT, unit_price NUMERIC(10,2), PRIMARY KEY (order_id, product_id));</code></pre>
+<p>Notice <code>unit_price</code> is stored on the line item on purpose: it is the historical price at purchase time, which is a real, different fact from the current product price (not redundancy).</p>
+<h4>When to denormalise</h4>
+<ul><li><strong>Read-heavy paths</strong> where joins across large tables are too slow (feeds, product listings): store precomputed counts, totals or copies of names.</li><li><strong>Reporting and analytics</strong>: star schemas and wide fact tables.</li><li><strong>Distributed or NoSQL stores</strong> without joins (embed related data).</li><li><strong>Snapshots and history</strong>: invoices must keep the address and price at the time.</li><li>Materialised views, summary tables and caches are denormalisation managed by the database.</li></ul>
+<h4>Costs and safeguards</h4>
+<p>Denormalisation moves complexity into writes: keep copies consistent with triggers, transactional updates, event-driven projections, or periodic rebuilds, and treat the normalised tables as the source of truth. Document which columns are derived.</p>
+<h4>Guidance</h4>
+<p>Start at 3NF, measure real query patterns, and denormalise selectively where evidence shows a need. Normalise OLTP; denormalise analytical models.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is BCNF and when does it differ from 3NF?</li><li>What anomalies does an unnormalised table suffer from?</li><li>How do you keep denormalised copies consistent?</li></ul>
+<p><a class="btn primary" href="../#/q/be-23">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-23%3A+What+are+the+normal+forms+%281NF%2C+2NF%2C+3NF%29+and+when+is%E2%80%A6&amp;question-id=be-23&amp;context=Backend+engineer%2C+Gear+2%2C+topic%3A+Databases%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-23.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does Speculative Decoding accelerate LLM token generation using a small draft model and verification? | InterviewGearUp</title>
+<meta name="description" content="Speculative decoding speeds up generation without changing the output distribution. A small draft model quickly proposes several tokens, then the large…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-99.html">
+<meta property="og:title" content="How does Speculative Decoding accelerate LLM token generation using a small draft model and verification? | InterviewGearUp">
+<meta property="og:description" content="Speculative decoding speeds up generation without changing the output distribution. A small draft model quickly proposes several tokens, then the large…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-99.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does Speculative Decoding accelerate LLM token generation using a small draft model and verification?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · LLMs · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Speculative decoding speeds up generation without changing the output distribution. A small draft model quickly proposes several tokens, then the large target model verifies all of them in one parallel forward pass, accepting the longest valid prefix by a rejection-sampling rule and sampling one correction token. Because decoding is memory-bound, verifying k tokens costs about the same as generating one.</p></div>
+<h4>Explained in depth</h4>
+<h4>The bottleneck</h4>
+<p>Autoregressive decoding generates one token per forward pass of the large model. For each token the GPU must read <strong>all model weights from memory</strong> (hundreds of GB/s needed) while doing relatively little compute: decoding is <strong>memory-bandwidth-bound</strong>, leaving compute units idle. Generating 500 tokens needs 500 sequential passes.</p>
+<h4>Idea</h4>
+<p>Use spare compute: a cheap <strong>draft model</strong> M_q (for example a 1B model, or a smaller variant) proposes <code>γ</code> tokens autoregressively; the expensive <strong>target model</strong> M_p scores <strong>all γ proposals in a single parallel forward pass</strong> (like processing a prompt), which costs only slightly more than one decoding step. Then accept or reject the proposals.</p>
+<h4>Algorithm (Leviathan et al.; Chen et al., 2023)</h4>
+<ol start="1"><li>Draft model generates <code>x_1..x_γ</code> with probabilities <code>q(x_i | prefix)</code>.</li><li>Target model computes <code>p(· | prefix, x_1..x_{i-1})</code> for all positions in one pass.</li><li>For i = 1..γ: accept <code>x_i</code> with probability <code>min(1, p(x_i) / q(x_i))</code>. If rejected, <strong>resample</strong> a replacement token from the <strong>residual distribution</strong> <code>norm(max(0, p − q))</code> and stop; discard later drafts.</li><li>If all γ are accepted, sample one <strong>bonus token</strong> from the target&#39;s distribution at the next position.</li></ol>
+<p>Each iteration yields <strong>at least one</strong> token (the correction or bonus) and up to γ + 1 tokens. <strong>Correctness</strong>: this rejection-sampling scheme guarantees that the emitted tokens follow <strong>exactly the target model&#39;s distribution</strong> (lossless), for any sampling temperature (greedy: accept when the target&#39;s argmax equals the draft token).</p>
+<pre><code># conceptual loop
+while len(out) &lt; max_new:
+    draft = draft_model.generate(prefix, n=gamma, return_probs=True)
+    p = target_model.forward(prefix + draft.tokens)            # one pass gives distributions for all positions
+    n_acc = 0
+    for i, (tok, q) in enumerate(zip(draft.tokens, draft.probs)):
+        if random() &lt; min(1, p[i][tok] / q[tok]): n_acc += 1
+        else: break
+    out += draft.tokens[:n_acc]
+    out.append(sample(p[n_acc]) if n_acc == gamma else sample(residual(p[n_acc], q_at(n_acc))))</code></pre>
+<h4>Speedup</h4>
+<p>Let <code>α</code> be the average acceptance rate and <code>γ</code> the draft length: expected tokens per target pass = <code>(1 − α^(γ+1)) / (1 − α)</code>. With α = 0.8 and γ = 5, about 3.7 tokens per target step. Overall speedup also depends on the <strong>draft cost ratio</strong> <code>c = cost(draft)/cost(target)</code>; typical real-world gains are <strong>2x to 3x</strong> with no quality loss, higher for predictable text (code, structured output, translation) and lower at high temperatures or with mismatched drafts. Acceptance rises when the draft is <strong>well aligned</strong> with the target (same family and tokenizer, distilled from the target).</p>
+<h4>Variants</h4>
+<ul><li><strong>Separate small model</strong>: needs same vocabulary and tokenizer; extra memory and a second model to serve.</li><li><strong>Self-speculation / extra heads</strong>: <strong>Medusa</strong> adds multiple decoding heads to the target that predict future tokens, verified using tree attention; <strong>EAGLE/EAGLE-2/3</strong> predicts features autoregressively with a lightweight head for higher acceptance; <strong>Lookahead decoding</strong> (Jacobi iteration).</li><li><strong>Prompt lookup / n-gram speculation</strong>: copy likely continuations from the prompt (useful for summarisation, editing, RAG), no model needed.</li><li><strong>Tree-based speculation</strong> (SpecInfer, Sequoia) verifies multiple candidate branches at once.</li><li>Layer-skip and early-exit self-speculation (draft = shallow layers of the same model).</li><li>Supported in vLLM, TensorRT-LLM, TGI, llama.cpp, SGLang, Hugging Face (<code>assisted_generation</code>).</li></ul>
+<h4>When it helps and limits</h4>
+<p>Helps latency-sensitive, small-batch serving where the GPU is underutilised. At <strong>large batch sizes</strong>, decoding becomes compute-bound and speculation gives less benefit (and wasted verification compute can hurt throughput). Costs: extra memory for the draft model or heads and KV cache, implementation complexity, tuning γ dynamically, and batching mixed acceptance lengths.</p>
+<h4>Pitfalls</h4>
+<p>Using a draft with a different tokenizer, mismatched domain (low acceptance), choosing γ too large (wasted verification), evaluating speedups only at batch size 1, and assuming speculative sampling changes output quality (it does not, when implemented correctly).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is the output distribution identical to the target model&#39;s?</li><li>What determines the speedup, acceptance rate and draft length?</li><li>How do Medusa, EAGLE and n-gram or prompt-lookup drafting differ?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-99">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-99%3A+How+does+Speculative+Decoding+accelerate+LLM+token+generation+using%E2%80%A6&amp;question-id=ml-99&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+LLMs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-99.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you handle missing values in a dataset, and how does the missingness mechanism affect your choice? | InterviewGearUp</title>
+<meta name="description" content="First understand why data are missing: completely at random, at random given other variables, or not at random. Then choose among dropping rows or…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-5.html">
+<meta property="og:title" content="How do you handle missing values in a dataset, and how does the missingness mechanism affect your choice? | InterviewGearUp">
+<meta property="og:description" content="First understand why data are missing: completely at random, at random given other variables, or not at random. Then choose among dropping rows or…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-5.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you handle missing values in a dataset, and how does the missingness mechanism affect your choice?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 1 (Junior) · Data preparation · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>First understand why data are missing: completely at random, at random given other variables, or not at random. Then choose among dropping rows or columns, simple imputation with median or mode plus a missing indicator, model-based or multiple imputation, or tree models that handle missing values natively, always fitting imputers on training data only.</p></div>
+<h4>Explained in depth</h4>
+<h4>Step 1: quantify and understand</h4>
+<p>Measure missingness per column and row (<code>df.isna().mean()</code>), look for patterns (correlation of missingness between columns, <code>missingno</code> matrix), and ask the business why values are missing (optional form field, sensor outage, data pipeline bug, not applicable).</p>
+<p><strong>Mechanisms (Rubin):</strong></p>
+<ul><li><strong>MCAR</strong> (missing completely at random): missingness is unrelated to any data; dropping rows is unbiased but wasteful.</li><li><strong>MAR</strong> (missing at random): missingness depends on <strong>observed</strong> variables (older users skip an optional field). Imputation using those variables can give unbiased results.</li><li><strong>MNAR</strong> (missing not at random): missingness depends on the <strong>unobserved value itself</strong> (high earners hide income). No imputation fully fixes it; model the mechanism, collect more data, or treat missingness as informative.</li></ul>
+<h4>Step 2: options</h4>
+<div class="md-table"><table><thead><tr><th>Method</th><th>When it fits</th><th>Caveats</th></tr></thead><tbody><tr><td>Drop rows (listwise deletion)</td><td>small share missing, MCAR</td><td>loses data, biases if not MCAR</td></tr><tr><td>Drop columns</td><td>mostly missing and not important</td><td>may discard signal</td></tr><tr><td><strong>Mean or median</strong> imputation</td><td>quick baseline for numeric features; median for skew</td><td>shrinks variance and weakens correlations</td></tr><tr><td><strong>Mode</strong> or a new &quot;Unknown&quot; category</td><td>categorical features</td><td>&quot;Unknown&quot; can be informative</td></tr><tr><td><strong>Missing indicator</strong> column</td><td>missingness itself is predictive</td><td>add alongside imputation</td></tr><tr><td><strong>Forward fill, interpolation</strong></td><td>time series with continuity</td><td>never use future values in a forecast</td></tr><tr><td><strong>KNN or model-based imputation</strong> (IterativeImputer, MICE)</td><td>MAR with correlated features</td><td>more complex, slower, leakage risk</td></tr><tr><td><strong>Multiple imputation</strong></td><td>inference and confidence intervals</td><td>produces several datasets and pools results</td></tr><tr><td><strong>Models that handle NaN natively</strong> (XGBoost, LightGBM, HistGradientBoosting)</td><td>tabular prediction</td><td>still check the pattern</td></tr><tr><td>Domain rules</td><td>zero is a valid fill for &quot;no purchases&quot;</td><td>do not fill with fake zeros that mean &quot;unknown&quot;</td></tr></tbody></table></div>
+<h4>Step 3: do it without leakage</h4>
+<p>Fit the imputer on the <strong>training fold only</strong> and apply it to validation and test data; put it inside a <code>Pipeline</code> so cross-validation refits it per fold.</p>
+<pre><code>from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
+num = Pipeline([(&quot;imp&quot;, SimpleImputer(strategy=&quot;median&quot;, add_indicator=True))])
+cat = Pipeline([(&quot;imp&quot;, SimpleImputer(strategy=&quot;constant&quot;, fill_value=&quot;Unknown&quot;))])
+pre = ColumnTransformer([(&quot;num&quot;, num, num_cols), (&quot;cat&quot;, cat, cat_cols)])
+model = Pipeline([(&quot;pre&quot;, pre), (&quot;clf&quot;, clf)])</code></pre>
+<h4>Practical advice</h4>
+<ul><li>Check whether missing values are <strong>encoded</strong> weirdly (-1, 999, &quot;N/A&quot;, empty string) and standardise first.</li><li>Compare model performance with several strategies; sensitivity analysis shows whether conclusions depend on the choice.</li><li>For production, ensure the <strong>same imputation logic</strong> and defaults run at inference time, and monitor the missing rate for drift.</li><li>Document assumptions; for reporting, state how many records were affected.</li></ul>
+<h4>Pitfalls</h4>
+<p>Imputing before splitting, using global means on time series, ignoring MNAR, and replacing missing values with zero when zero has meaning.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the difference between MCAR, MAR and MNAR and why does it matter?</li><li>Why add a missing-value indicator feature and when can it cause leakage?</li><li>How do you avoid data leakage when imputing inside cross-validation?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-5">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-5%3A+How+do+you+handle+missing+values+in+a+dataset%2C+and+how+does+the%E2%80%A6&amp;question-id=ds-5&amp;context=Data+scientist%2C+Gear+1%2C+topic%3A+Data+preparation%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-5.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

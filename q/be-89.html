@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do temporal tables and bi-temporal modeling track historical entity states over time? | InterviewGearUp</title>
+<meta name="description" content="Temporal tables record how data changes over time. System-versioned (transaction-time) tables automatically keep prior row versions with the period they…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-89.html">
+<meta property="og:title" content="How do temporal tables and bi-temporal modeling track historical entity states over time? | InterviewGearUp">
+<meta property="og:description" content="Temporal tables record how data changes over time. System-versioned (transaction-time) tables automatically keep prior row versions with the period they…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-89.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do temporal tables and bi-temporal modeling track historical entity states over time?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · Databases · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Temporal tables record how data changes over time. System-versioned (transaction-time) tables automatically keep prior row versions with the period they were current in the database, enabling AS OF queries and audits. Bi-temporal models add valid time (when a fact was true in the real world), so you can answer what we believed on one date about another date.</p></div>
+<h4>Explained in depth</h4>
+<h4>Two time dimensions</h4>
+<ul><li><strong>Valid time</strong> (application time): when the fact is true in the real world, for example an employee&#39;s salary of 80,000 from 2026-01-01 to 2026-06-30. Controlled by the application and can be in the past or future.</li><li><strong>Transaction time</strong> (system time): when the database knew about the fact, from insert until superseded. Maintained by the database; cannot be altered retroactively.</li></ul>
+<p>A <strong>uni-temporal</strong> (system-versioned) table tracks transaction time only. A <strong>bi-temporal</strong> table tracks both.</p>
+<h4>System-versioned tables</h4>
+<pre><code>-- SQL Server / MariaDB / SQL:2011 style
+CREATE TABLE employee (
+  id INT PRIMARY KEY, name TEXT, salary DECIMAL(10,2),
+  sys_start DATETIME2 GENERATED ALWAYS AS ROW START,
+  sys_end   DATETIME2 GENERATED ALWAYS AS ROW END,
+  PERIOD FOR SYSTEM_TIME (sys_start, sys_end)
+) WITH SYSTEM VERSIONING;
+
+SELECT * FROM employee FOR SYSTEM_TIME AS OF &#39;2026-03-15&#39;;        -- state as of that moment
+SELECT * FROM employee FOR SYSTEM_TIME BETWEEN &#39;2026-01-01&#39; AND &#39;2026-06-30&#39;;</code></pre>
+<p>On <code>UPDATE</code> or <code>DELETE</code> the old row is moved to a history table with its validity interval. Benefits: automatic audit trail, point-in-time queries, recovery from accidental changes, and slowly-changing dimension handling.</p>
+<h4>Bi-temporal example</h4>
+<p>Facts: on 2026-03-01 HR enters &quot;salary 80,000 effective 2026-01-01&quot;. On 2026-05-10 they discover an error and correct it to 85,000, also effective 2026-01-01.</p>
+<pre><code>salary | valid_from  | valid_to | recorded_from | recorded_to
+80000  | 2026-01-01  | 9999     | 2026-03-01    | 2026-05-10     -- what we believed until the correction
+85000  | 2026-01-01  | 9999     | 2026-05-10    | 9999           -- current belief</code></pre>
+<p>Queries: &quot;salary on Feb 1 as we knew it on April 1&quot; returns 80,000, &quot;as we know it now&quot; returns 85,000. This answers audit and regulatory questions (what was reported at the time) and handles <strong>late-arriving corrections</strong> and retroactive or future-dated changes (insurance policies, payroll, pricing, financial positions).</p>
+<h4>Manual modelling (PostgreSQL)</h4>
+<p>PostgreSQL has no built-in system versioning; use <code>tstzrange</code> columns with exclusion constraints and triggers, or extensions (<code>temporal_tables</code>).</p>
+<pre><code>CREATE TABLE price_history (
+  product_id INT, price NUMERIC, valid tstzrange NOT NULL,
+  EXCLUDE USING gist (product_id WITH =, valid WITH &amp;&amp;)       -- no overlapping validity per product
+);
+SELECT price FROM price_history WHERE product_id = 1 AND valid @&gt; &#39;2026-03-15&#39;::timestamptz;</code></pre>
+<p>Other approaches: audit tables via triggers, change data capture, event sourcing (state derived from events), and slowly changing dimension type 2 in warehouses.</p>
+<h4>Design guidance</h4>
+<p>Use half-open intervals <code>[start, end)</code>, UTC timestamps, a sentinel or NULL for open end, enforce non-overlap, index period columns (GiST for ranges), and decide how updates close old rows and insert new ones in one transaction. Plan retention, archive old history, and mind storage growth. Joins across temporal tables need period intersection logic.</p>
+<h4>Pitfalls</h4>
+<p>Confusing the two time types, allowing overlapping intervals, editing history tables directly, and underestimating query complexity and storage.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you query data as of a past time in SQL Server or MariaDB?</li><li>Why is bi-temporal modelling needed for late-arriving corrections?</li><li>How do you model history manually in PostgreSQL?</li></ul>
+<p><a class="btn primary" href="../#/q/be-89">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-89%3A+How+do+temporal+tables+and+bi-temporal+modeling+track+historical%E2%80%A6&amp;question-id=be-89&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+Databases%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-89.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

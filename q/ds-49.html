@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you evaluate an LLM-powered application, such as a RAG question-answering assistant, before and after launch? | InterviewGearUp</title>
+<meta name="description" content="Build a representative evaluation set with reference answers and failure cases, measure retrieval and generation separately, using metrics such as recall…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-49.html">
+<meta property="og:title" content="How do you evaluate an LLM-powered application, such as a RAG question-answering assistant, before and after launch? | InterviewGearUp">
+<meta property="og:description" content="Build a representative evaluation set with reference answers and failure cases, measure retrieval and generation separately, using metrics such as recall…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-49.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you evaluate an LLM-powered application, such as a RAG question-answering assistant, before and after launch?</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 4 (Lead / Staff) · LLM evaluation · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Build a representative evaluation set with reference answers and failure cases, measure retrieval and generation separately, using metrics such as recall at k, faithfulness, answer relevance and task success, supplemented by calibrated LLM-as-judge and human review. Add regression tests in CI, safety and cost checks, then monitor online with feedback, sampling and A/B tests.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why evaluation is hard</h4>
+<p>Outputs are open-ended text, behaviour changes with prompts, models and data, and failures are subtle (plausible but wrong answers, <strong>hallucination</strong>). Without a measurement harness, teams change prompts blindly and regress.</p>
+<h4>Build the evaluation set</h4>
+<ul><li>Collect <strong>real queries</strong> (logs, support tickets, SME-written questions) covering common intents, edge cases, ambiguous questions, adversarial or out-of-scope inputs, multi-turn conversations, and different user segments.</li><li>Create <strong>reference answers or rubrics</strong> with domain experts: expected facts, source documents, required behaviour (&quot;refuse if not in documents&quot;, &quot;cite the policy&quot;).</li><li>Start with 50 to 200 carefully labelled examples, grow with production failures, and keep a frozen <strong>golden set</strong> plus a rotating fresh set to avoid overfitting prompts to the test set. Synthetic questions generated from documents can augment but need review.</li></ul>
+<h4>Evaluate components separately (RAG)</h4>
+<div class="md-table"><table><thead><tr><th>Stage</th><th>Metrics and checks</th></tr></thead><tbody><tr><td><strong>Retrieval</strong></td><td>recall@k and hit rate of gold passages, MRR, NDCG; context precision (how much retrieved text is relevant); coverage of multi-hop evidence; chunking and embedding comparisons</td></tr><tr><td><strong>Generation given context</strong></td><td><strong>faithfulness / groundedness</strong> (claims supported by retrieved text), answer relevance, completeness, correctness versus reference, citation accuracy, tone, format validity (JSON schema)</td></tr><tr><td><strong>End to end</strong></td><td>task success rate, resolution without escalation, human preference, refusal accuracy, latency, cost per request</td></tr><tr><td><strong>Safety and robustness</strong></td><td>prompt injection, PII leakage, toxic output, jailbreaks, policy compliance, behaviour under noisy or contradictory documents</td></tr></tbody></table></div>
+<p>Diagnose by looking at <strong>where it fails</strong>: gold passage not retrieved (retrieval bug), retrieved but ignored or misused (prompting or model), no answer in corpus (should refuse).</p>
+<h4>Measurement methods</h4>
+<ul><li><strong>Programmatic checks</strong>: exact match for structured outputs, regex, schema validation, tool-call correctness, unit tests for code, string overlap for extractive answers.</li><li><strong>LLM-as-judge</strong>: a strong model scores outputs against a rubric (pairwise comparison reduces scale drift). Calibrate: measure agreement with <strong>human labels</strong> (Cohen&#39;s kappa), randomise order (position bias), control verbosity bias and self-preference, use a fixed judge version, chain-of-thought rubric, and spot-check disagreements.</li><li><strong>Human evaluation</strong>: expert reviews with guidelines and inter-rater agreement for key releases and for calibrating automated metrics.</li><li>Classic metrics (BLEU, ROUGE, BERTScore) correlate weakly with quality for generative tasks; use sparingly.</li></ul>
+<pre><code># minimal regression harness idea
+results = [{&quot;id&quot;: c.id, &quot;faithful&quot;: judge_faithfulness(c.answer, c.context),
+            &quot;correct&quot;: judge_correct(c.answer, c.reference)} for c in run_app(golden_set)]
+assert sum(r[&quot;faithful&quot;] for r in results) / len(results) &gt;= 0.95   # gate in CI</code></pre>
+<h4>Pre-launch and ongoing</h4>
+<ul><li><strong>Experiment tracking</strong>: version prompts, models, retrievers and datasets; compare runs with confidence intervals (small sets are noisy).</li><li><strong>CI gates</strong> for regressions, red-teaming, cost and latency budgets.</li><li><strong>Online</strong>: thumbs up or down, escalation rate, retry or reformulation, task completion, citation clicks; sample production traces for review and add failures to the test set; <strong>A/B test</strong> model or prompt changes; monitor drift in queries and documents, and provider model updates.</li><li><strong>Guardrails</strong> and fallbacks (cite or abstain, human handoff).</li></ul>
+<h4>Pitfalls</h4>
+<p>Evaluating only on a handful of demo prompts, trusting an uncalibrated judge, tuning prompts on the test set, ignoring retrieval quality, and measuring quality without cost, latency and safety.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you check that an LLM judge agrees with human raters and is not biased?</li><li>How do you separate retrieval failures from generation failures in a RAG system?</li><li>How would you evaluate an LLM application when there is no single correct answer?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-49">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-49%3A+How+do+you+evaluate+an+LLM-powered+application%2C+such+as+a+RAG%E2%80%A6&amp;question-id=ds-49&amp;context=Data+scientist%2C+Gear+4%2C+topic%3A+LLM+evaluation%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-49.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

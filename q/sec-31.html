@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you design an automated cryptographic key rotation pipeline without service downtime? | InterviewGearUp</title>
+<meta name="description" content="Design key rotation around envelope encryption and versioned keys: keep data keys wrapped by a KMS-managed master key, rotate the master automatically,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-31.html">
+<meta property="og:title" content="How do you design an automated cryptographic key rotation pipeline without service downtime? | InterviewGearUp">
+<meta property="og:description" content="Design key rotation around envelope encryption and versioned keys: keep data keys wrapped by a KMS-managed master key, rotate the master automatically,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-31.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you design an automated cryptographic key rotation pipeline without service downtime?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · Cryptography · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Design key rotation around envelope encryption and versioned keys: keep data keys wrapped by a KMS-managed master key, rotate the master automatically, let services reference key IDs and versions, and decrypt with old versions while encrypting with the newest. Use dual-read/lazy re-encryption or background rewrap jobs, health checks and rollback, so no service downtime occurs.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why rotate keys</h4>
+<p>Rotation limits the <strong>amount of data exposed by a single key compromise</strong>, enforces cryptoperiods (NIST SP 800-57), supports compliance (PCI-DSS, SOC 2), and rehearses the recovery process so a real emergency rotation is routine. Distinguish <strong>scheduled rotation</strong> from <strong>emergency rotation</strong> after suspected compromise.</p>
+<h4>Core design: envelope encryption</h4>
+<ul><li>A <strong>Key Encryption Key (KEK)</strong> or master key lives in a <strong>KMS or HSM</strong> (AWS KMS, GCP KMS, Azure Key Vault, HashiCorp Vault Transit) and never leaves it.</li><li>A <strong>Data Encryption Key (DEK)</strong> is generated per object, file, record or tenant. Data is encrypted locally with the DEK (AES-256-GCM); the DEK is <strong>wrapped</strong> (encrypted) by the KEK and stored alongside the ciphertext with the <strong>key ID and version</strong>.</li><li>Rotating the KEK requires only <strong>re-wrapping DEKs</strong>, not re-encrypting bulk data. KMS services can rotate backing key material automatically (for example annual in AWS KMS, with the key ID or alias unchanged and old material retained for decryption).</li></ul>
+<pre><code>ciphertext_blob = { &quot;kek_id&quot;: &quot;alias/orders-prod&quot;, &quot;kek_version&quot;: 7, &quot;wrapped_dek&quot;: &quot;...&quot;, &quot;nonce&quot;: &quot;...&quot;, &quot;ciphertext&quot;: &quot;...&quot; }</code></pre>
+<h4>Rotation pipeline (zero downtime)</h4>
+<ol start="1"><li><strong>Generate</strong> the new key version in KMS (automatic schedule or Terraform change), with access policies granting services <code>Encrypt</code> for the new version and <code>Decrypt</code> for all active versions.</li><li><strong>Introduce</strong>: services start <strong>encrypting with the latest version</strong> while <strong>decrypting with any version</strong> found in the ciphertext metadata (read old, write new). Because decryption selects the key by ID and version, there is no flag day.</li><li><strong>Rewrap and migrate old data</strong>:</li></ol>
+<ul><li><strong>Lazy</strong>: re-encrypt on read or update (touch-on-access) for hot data.</li><li><strong>Background job</strong>: iterate in batches, rewrap DEKs or re-encrypt records using the new key, with rate limits, checkpoints, idempotency, retry and metrics (<code>records_remaining</code>, error counts), run during low load; verify decryption of a sample after each batch.</li><li>Database-level: Transparent Data Encryption key rotation, column re-encryption with dual columns (<code>email_enc_v1</code>, <code>email_enc_v2</code>) and expand-contract migrations.</li></ul>
+<ol start="4"><li><strong>Verify</strong>: dashboards show 0 records on old versions; canary reads; integrity checks (AEAD authentication catches corruption).</li><li><strong>Retire</strong>: disable the old version for encryption, keep decrypt-only for a grace period (backups and archives may reference it), then <strong>schedule destruction</strong> (KMS deletion windows of 7 to 30 days) once no references remain; archive restore tests with old backups before destruction.</li></ol>
+<h4>Rotating other key types</h4>
+<ul><li><strong>JWT and token signing keys</strong>: publish a <strong>JWKS</strong> with multiple keys identified by <code>kid</code>; sign with the new key while verifiers still accept the old until all tokens signed with it expire; rotate verifiers&#39; JWKS caches with TTL and refresh-on-unknown-<code>kid</code>.</li><li><strong>TLS certificates and mTLS identities</strong>: automate with ACME, cert-manager, SPIFFE or SPIRE short-lived certificates (hours to days) so rotation is continuous.</li><li><strong>Database credentials and API keys</strong>: dynamic secrets (Vault database engine) with leases, or <strong>dual-secret rotation</strong> (AWS Secrets Manager alternating users): create the new credential, update consumers, verify, then revoke the old one.</li><li><strong>HMAC and webhook secrets</strong>: accept two valid secrets during overlap.</li><li><strong>SSH and signing keys</strong>: short-lived certificates (SSH CA), Sigstore keyless signing for artefacts.</li></ul>
+<h4>Operational controls</h4>
+<ul><li><strong>Automation and IaC</strong>: rotation schedule defined in code, executed by the KMS or a pipeline; drift detection.</li><li><strong>Access control</strong>: separate roles for key administrators and users, least privilege, MFA, approval workflows; audit via CloudTrail and KMS logs; alert on <code>ScheduleKeyDeletion</code>, disabled keys, unusual decrypt volumes.</li><li><strong>Resilience</strong>: multi-region keys, backup and key escrow policies, break-glass procedures, runbooks, game-day tests including <strong>emergency rotation</strong> and revocation of a compromised key.</li><li><strong>Compatibility</strong>: clients cache keys and decrypt results; use key version in the ciphertext header, support N and N-1 versions, avoid hard-coded keys, feature flags to roll back to the previous encrypt key.</li><li><strong>Monitoring</strong>: metrics for decrypt failures by key version, latency, KMS throttling (use data key caching to limit KMS calls), age of oldest key in use.</li></ul>
+<h4>Pitfalls</h4>
+<p>Rotating the key but not re-encrypting or retiring old versions, deleting a key too early (permanent data loss), storing keys beside the data they protect, no version metadata in ciphertext, rotating all services in one deployment, throttling KMS with per-record calls, and never testing emergency rotation.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is envelope encryption and why does it make rotation cheap?</li><li>How do you rotate signing keys such as JWT keys using JWKS with overlapping validity?</li><li>How do you re-encrypt large datasets without downtime and track migration progress?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-31">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-31%3A+How+do+you+design+an+automated+cryptographic+key+rotation+pipeline%E2%80%A6&amp;question-id=sec-31&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+Cryptography%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-31.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

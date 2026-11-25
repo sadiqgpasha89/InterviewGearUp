@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you automate testing for Single Sign-On (SSO) SAML and OIDC enterprise login flows? | InterviewGearUp</title>
+<meta name="description" content="Avoid automating the real identity provider UI in most tests. Use a test IdP such as Keycloak or a mock SAML/OIDC provider in a container, set up…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-72.html">
+<meta property="og:title" content="How do you automate testing for Single Sign-On (SSO) SAML and OIDC enterprise login flows? | InterviewGearUp">
+<meta property="og:description" content="Avoid automating the real identity provider UI in most tests. Use a test IdP such as Keycloak or a mock SAML/OIDC provider in a container, set up…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-72.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you automate testing for Single Sign-On (SSO) SAML and OIDC enterprise login flows?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 3 (Senior) · Security · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Avoid automating the real identity provider UI in most tests. Use a test IdP such as Keycloak or a mock SAML/OIDC provider in a container, set up pre-authenticated sessions via the token endpoint for general tests, and keep a few end-to-end flows through the real IdP in staging. Verify assertions, signatures, audience, expiry, claims mapping, logout and error paths.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why SSO is hard to automate</h4>
+<p>Enterprise login (Okta, Entra ID, Ping, Auth0, Google) uses browser redirects across domains, MFA, device checks, CAPTCHAs and rate limits, and vendors may block automated logins. Tests that drive the real IdP UI for every scenario are slow, flaky, and can lock accounts. The strategy: <strong>test your application&#39;s integration with a controllable IdP</strong>, and verify the real IdP in a thin end-to-end layer.</p>
+<h4>Flows to understand</h4>
+<ul><li><strong>SAML 2.0 Web SSO (SP-initiated)</strong>: app creates <code>AuthnRequest</code> → redirects to IdP → user authenticates → IdP posts a signed <code>SAMLResponse</code> to the app&#39;s <strong>ACS URL</strong> → app validates and creates a session. IdP-initiated flow starts at the IdP.</li><li><strong>OIDC authorization code with PKCE</strong>: app redirects to <code>/authorize</code> with <code>state</code>, <code>nonce</code>, <code>code_challenge</code> → IdP returns <code>code</code> → app exchanges at <code>/token</code> → validates <strong>ID token</strong> (JWT) → optionally calls <code>/userinfo</code>.</li></ul>
+<h4>Test environment options</h4>
+<ol start="1"><li><strong>Local IdP containers</strong>: <strong>Keycloak</strong> (both SAML and OIDC, realm export as code), <strong>Dex</strong>, <strong>Authentik</strong>, <strong>SimpleSAMLphp</strong>, <strong>mock-oauth2-server</strong> (NAV), <strong>node-oidc-provider</strong>, <strong>samltest.id</strong> (public test IdP). Seed users, groups and clients via realm import, so tests are reproducible.</li><li><strong>Programmatic login for general tests</strong>: skip browser SSO by obtaining tokens or sessions directly (OIDC password or client-credentials grant in a test realm, signed test assertions with a test key trusted only in non-production) and injecting the session cookie via <code>storageState</code>.</li><li><strong>Real IdP end-to-end smoke</strong> in staging: dedicated test tenant and users, MFA exempted by policy or TOTP generated from a seed, allow-listed CI IPs, a few runs on schedule.</li></ol>
+<pre><code>// Playwright: login once through Keycloak, reuse state
+setup(&#39;authenticate via OIDC&#39;, async ({ page }) =&gt; {
+  await page.goto(&#39;/login&#39;);                               // app redirects to Keycloak
+  await page.fill(&#39;#username&#39;, process.env.SSO_USER!);
+  await page.fill(&#39;#password&#39;, process.env.SSO_PASS!);
+  await page.click(&#39;#kc-login&#39;);
+  await page.waitForURL(&#39;**/dashboard&#39;);
+  await page.context().storageState({ path: &#39;auth/user.json&#39; });
+});</code></pre>
+<h4>What to verify (service provider side)</h4>
+<ul><li><strong>SAML</strong>: XML <strong>signature</strong> validation (response and/or assertion) with the IdP certificate, rejection of unsigned or tampered assertions, <strong>XML signature wrapping</strong> attempts, <code>Audience</code> matches SP entity ID, <code>Recipient</code> and <code>Destination</code> match ACS URL, <code>NotBefore</code> and <code>NotOnOrAfter</code> with clock skew tolerance, <code>InResponseTo</code> bound to a pending request (replay protection), assertion ID not reused, <code>Issuer</code> correct, certificate rotation (metadata with multiple keys), encrypted assertions.</li><li><strong>OIDC</strong>: <code>state</code> checked (CSRF), <code>nonce</code> matches, PKCE verifier used, ID token signature via JWKS (key rotation), <code>iss</code>, <code>aud</code>, <code>exp</code>, <code>iat</code>, <code>azp</code>, algorithm allow-list (reject <code>none</code> and downgrades), redirect URI exact match, refresh and token expiry handling, scopes, <code>userinfo</code> consistency.</li><li><strong>Claims and attributes mapping</strong>: email, name, groups to roles; missing or unexpected attributes; case sensitivity; users with multiple groups; deprovisioned users blocked; <strong>just-in-time provisioning</strong> creates the account once and updates attributes at later logins; account linking and duplicates when the email changes.</li><li><strong>Session behaviour</strong>: session creation, cookie flags, timeout, idle timeout, re-authentication for sensitive actions (<code>max_age</code>, <code>prompt=login</code>, <code>ForceAuthn</code>), <strong>single logout</strong> (SP and IdP initiated, front and back channel), token revocation, logout redirects.</li><li><strong>Error paths</strong>: IdP unavailable, user cancels, authentication failure, user without app access, expired assertion, wrong tenant, clock skew, invalid certificate; friendly error pages without leaking details.</li><li><strong>Multi-tenant SSO</strong>: tenant discovery by domain, per-tenant IdP configuration, isolation between tenants, admin UI for uploading metadata and testing configuration.</li></ul>
+<h4>Security tests</h4>
+<p>Tamper with assertions and tokens with tools (SAML Raider, jwt_tool), replay captured responses, confusion between tenants, open redirect on <code>RelayState</code> or <code>redirect_uri</code>, and downgrade from SSO to password if SSO is enforced.</p>
+<h4>Pitfalls</h4>
+<p>Using the real IdP for every test, hard-coded real credentials, ignoring clock skew in CI, validating only that &quot;login works&quot;, and forgetting certificate rotation and logout behaviour.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What must the service provider validate in a SAML assertion or OIDC ID token?</li><li>How do you handle MFA and bot protection on the real IdP in automated runs?</li><li>How do you test just-in-time provisioning, role mapping and single logout?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-72">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-72%3A+How+do+you+automate+testing+for+Single+Sign-On+%28SSO%29+SAML+and+OIDC%E2%80%A6&amp;question-id=qa-72&amp;context=QA+%2F+SDET%2C+Gear+3%2C+topic%3A+Security%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-72.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

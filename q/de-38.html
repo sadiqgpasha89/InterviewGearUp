@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain Amazon Redshift distribution styles (KEY, EVEN, ALL) and sort keys (Compound vs Interleaved). | InterviewGearUp</title>
+<meta name="description" content="Redshift distribution styles place rows across slices: KEY co-locates rows with the same key for joins, EVEN spreads them round robin, ALL copies the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-38.html">
+<meta property="og:title" content="Explain Amazon Redshift distribution styles (KEY, EVEN, ALL) and sort keys (Compound vs Interleaved). | InterviewGearUp">
+<meta property="og:description" content="Redshift distribution styles place rows across slices: KEY co-locates rows with the same key for joins, EVEN spreads them round robin, ALL copies the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-38.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain Amazon Redshift distribution styles (KEY, EVEN, ALL) and sort keys (Compound vs Interleaved).</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Warehouses · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Redshift distribution styles place rows across slices: KEY co-locates rows with the same key for joins, EVEN spreads them round robin, ALL copies the table to every node, and AUTO chooses by size. Sort keys order rows on disk (compound by prefix columns, interleaved with equal weight per column). Together they minimise data movement and scanned blocks.</p></div>
+<h4>Explained in depth</h4>
+<h4>Architecture refresher</h4>
+<p>A Redshift cluster has a leader node and compute nodes, each split into <strong>slices</strong> that process data in parallel (MPP). Query speed depends on (1) how evenly data is spread and (2) how much must be <strong>moved between nodes</strong> during joins and aggregations (redistribution or broadcasting), and (3) how many disk blocks are read.</p>
+<h4>Distribution styles</h4>
+<ul><li><strong>KEY</strong>: rows are placed by the hash of one column (<code>DISTKEY(customer_id)</code>). Tables joined on that column are <strong>co-located</strong>, so the join happens locally with no network shuffle. Choose a high-cardinality, evenly distributed column used in large joins; avoid skewed keys (null-heavy, one dominant value), which create a hot slice.</li><li><strong>EVEN</strong>: round-robin across slices, guaranteeing balanced storage; good when the table is not joined with others or has no clear key, but joins require redistribution.</li><li><strong>ALL</strong>: a full copy of the table on every node; use for <strong>small, rarely updated dimension tables</strong> (date, region, product) so joins never shuffle them. Costly for large or frequently updated tables (storage multiplied by node count, slower loads).</li><li><strong>AUTO</strong> (default): starts as ALL for small tables and switches to EVEN or KEY as the table grows, based on workload analysis.</li></ul>
+<pre><code>CREATE TABLE fact_sales (
+  sale_id BIGINT, customer_id BIGINT, product_id INT, sale_date DATE, amount DECIMAL(12,2)
+) DISTSTYLE KEY DISTKEY (customer_id) SORTKEY (sale_date);
+CREATE TABLE dim_product (...) DISTSTYLE ALL;</code></pre>
+<h4>Sort keys</h4>
+<p>Rows are stored in blocks ordered by the sort key, with <strong>zone maps</strong> (min and max per 1 MB block). Filters on sort key columns skip blocks.</p>
+<ul><li><strong>Compound sort key</strong> (default): ordered by the first column, then the second within it, and so on. Effective when queries filter on the <strong>leading column(s)</strong> (date first). Also benefits merge joins, <code>GROUP BY</code> and <code>ORDER BY</code> on the prefix. Choose the most selective, most-filtered column first (usually a timestamp).</li><li><strong>Interleaved sort key</strong>: gives equal weight to each column (up to 8) using a space-filling curve, so filters on any subset benefit. Costs: slower loads, needs frequent <code>VACUUM REINDEX</code>, poor for monotonically increasing columns like dates, and AWS now recommends compound or automatic keys.</li><li><strong>AUTO sort key</strong>: Redshift&#39;s Automatic Table Optimization observes queries and applies keys over time.</li></ul>
+<h4>Detecting problems</h4>
+<pre><code>SELECT &quot;table&quot;, diststyle, sortkey1, skew_rows, pct_used FROM svv_table_info ORDER BY skew_rows DESC;   -- skew_rows near 1.0 is good
+SELECT query, label, step, rows, bytes FROM svl_query_summary WHERE label LIKE &#39;DS_%&#39;;                  -- DS_BCAST_INNER, DS_DIST_BOTH show redistribution
+EXPLAIN SELECT ...;   -- look for DS_DIST_NONE (co-located, best), DS_BCAST_INNER (small table broadcast), DS_DIST_BOTH (expensive double shuffle)</code></pre>
+<p>Also watch unsorted percentage and run <code>VACUUM</code>/<code>ANALYZE</code> (automatic in recent versions).</p>
+<h4>Guidelines</h4>
+<p>Distribute the largest table on the join key shared with the second-largest table; make small dimensions ALL; sort fact tables by date; use consistent compression encodings (AZ64, ZSTD); keep statistics fresh; consider RA3 nodes with managed storage and Redshift Serverless where tuning is partially automatic.</p>
+<h4>Pitfalls</h4>
+<p>Distribution on a low-cardinality or skewed column, ALL on huge tables, sort keys not matching filters, and ignoring redistribution steps in query plans.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you detect a skewed distribution key?</li><li>Why are interleaved sort keys rarely recommended now?</li><li>How does Redshift AUTO distribution and automatic table optimization work?</li></ul>
+<p><a class="btn primary" href="../#/q/de-38">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-38%3A+Explain+Amazon+Redshift+distribution+styles+%28KEY%2C+EVEN%2C+ALL%29+and%E2%80%A6&amp;question-id=de-38&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Warehouses%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-38.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

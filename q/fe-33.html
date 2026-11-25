@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does React `memo` perform shallow prop comparisons, and when does it fail to prevent re-renders? | InterviewGearUp</title>
+<meta name="description" content="React.memo skips re-rendering a component when its props are shallowly equal to the previous props, comparing each prop with Object.is. It fails to help…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-33.html">
+<meta property="og:title" content="How does React `memo` perform shallow prop comparisons, and when does it fail to prevent re-renders? | InterviewGearUp">
+<meta property="og:description" content="React.memo skips re-rendering a component when its props are shallowly equal to the previous props, comparing each prop with Object.is. It fails to help…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-33.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does React `memo` perform shallow prop comparisons, and when does it fail to prevent re-renders?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · React · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>React.memo skips re-rendering a component when its props are shallowly equal to the previous props, comparing each prop with Object.is. It fails to help when parents pass new object, array or function identities on every render, or when the component consumes changing context or its own state.</p></div>
+<h4>Explained in depth</h4>
+<h4>How the comparison works</h4>
+<p><code>React.memo(Component)</code> wraps a component so that React compares the <strong>new props object to the previous one key by key</strong> using <code>Object.is</code>. If every prop is identical, the previous render result is reused and the component function is not called.</p>
+<pre><code>const Row = React.memo(function Row({ item, onSelect }) {
+  return &lt;li onClick={() =&gt; onSelect(item.id)}&gt;{item.name}&lt;/li&gt;;
+});</code></pre>
+<h4>Why it often fails</h4>
+<p>Shallow comparison treats two different object references as different even if their contents are the same.</p>
+<pre><code>function List({ items }) {
+  const [sel, setSel] = useState(null);
+  return items.map(i =&gt; (
+    &lt;Row key={i.id}
+         item={{ ...i, selected: i.id === sel }}      // new object every render
+         onSelect={(id) =&gt; setSel(id)} /&gt;              // new function every render
+  ));
+}</code></pre>
+<p>Both props are new identities each time, so <code>Row</code> re-renders anyway, and memo only added comparison cost.</p>
+<h4>Making memo effective</h4>
+<ul><li>Pass <strong>primitives</strong> (<code>selected={i.id === sel}</code>) instead of freshly built objects.</li><li>Stabilise callbacks with <code>useCallback</code> and derived objects with <code>useMemo</code>.</li><li>Move state down or lift content up (children as props) so the parent re-renders less often.</li><li>Keep data immutable so unchanged items keep the same reference.</li></ul>
+<pre><code>const onSelect = useCallback((id) =&gt; setSel(id), []);
+&lt;Row item={i} selected={i.id === sel} onSelect={onSelect} /&gt;</code></pre>
+<h4>Other cases where memo cannot help</h4>
+<ul><li><strong>Context</strong>: a memoised component that calls <code>useContext</code> re-renders whenever that context value changes.</li><li><strong>Its own state or hooks</strong> changing.</li><li><strong><code>children</code> props</strong> that are JSX elements: <code>&lt;Row&gt;&lt;b&gt;x&lt;/b&gt;&lt;/Row&gt;</code> creates a new element object each time.</li><li>Props that legitimately change.</li></ul>
+<h4>Custom comparator</h4>
+<p><code>React.memo(Comp, (prev, next) =&gt; prev.id === next.id)</code> can skip updates using your own rule. It is risky: ignoring a prop that the component uses produces <strong>stale UI</strong>, and deep comparisons can cost more than rendering.</p>
+<h4>When to use it</h4>
+<p>Measure first with React DevTools Profiler (&quot;Why did this render?&quot;). Memoise components that are expensive to render or rendered in large lists, and whose props are stable. Memoising everything adds memory and comparison overhead and clutters the code. The <strong>React Compiler</strong> (React 19 era) auto-memoises components and values, reducing the need for manual <code>memo</code>, <code>useMemo</code> and <code>useCallback</code>.</p>
+<h4>Pitfalls</h4>
+<p>Mutating objects in place (same reference, no re-render, stale UI), memo plus inline functions, and trusting memo as a correctness mechanism: it is only an optimisation and React may still re-render.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do useMemo and useCallback make memo effective, and when are they overkill?</li><li>What does a custom areEqual comparison do and what are its risks?</li><li>How does the React Compiler change manual memoization?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-33">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-33%3A+How+does+React+%60memo%60+perform+shallow+prop+comparisons%2C+and+when%E2%80%A6&amp;question-id=fe-33&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+React%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-33.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

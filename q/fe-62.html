@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do ES Modules (ESM) differ from CommonJS (CJS) in loading semantics and circular dependencies? | InterviewGearUp</title>
+<meta name="description" content="ES Modules are static, asynchronously loaded and export live bindings that are resolved before execution; CommonJS loads synchronously at runtime with…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-62.html">
+<meta property="og:title" content="How do ES Modules (ESM) differ from CommonJS (CJS) in loading semantics and circular dependencies? | InterviewGearUp">
+<meta property="og:description" content="ES Modules are static, asynchronously loaded and export live bindings that are resolved before execution; CommonJS loads synchronously at runtime with…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-62.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do ES Modules (ESM) differ from CommonJS (CJS) in loading semantics and circular dependencies?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · JavaScript · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>ES Modules are static, asynchronously loaded and export live bindings that are resolved before execution; CommonJS loads synchronously at runtime with require and exports copied values via module.exports. This changes tree shaking, top-level await, strict mode defaults and how circular dependencies resolve.</p></div>
+<h4>Explained in depth</h4>
+<h4>Syntax and loading</h4>
+<div class="md-table"><table><thead><tr><th></th><th>ES Modules (ESM)</th><th>CommonJS (CJS)</th></tr></thead><tbody><tr><td>Syntax</td><td><code>import x from &#39;./a.js&#39;</code>, <code>export</code></td><td><code>const x = require(&#39;./a&#39;)</code>, <code>module.exports</code></td></tr><tr><td>Analysis</td><td>static, at parse time</td><td>dynamic, at runtime</td></tr><tr><td>Loading</td><td>asynchronous, three phases</td><td>synchronous, blocks while reading files</td></tr><tr><td>Bindings</td><td><strong>live</strong> references to exports</td><td>a <strong>copy</strong> of <code>module.exports</code> at require time</td></tr><tr><td><code>this</code> at top level</td><td><code>undefined</code></td><td><code>module.exports</code></td></tr><tr><td>Strict mode</td><td>always</td><td>opt in</td></tr><tr><td>Top-level <code>await</code></td><td>supported</td><td>not supported</td></tr><tr><td>Browsers</td><td>native (<code>&lt;script type=&quot;module&quot;&gt;</code>)</td><td>only via bundlers</td></tr></tbody></table></div>
+<h4>ESM phases</h4>
+<ol start="1"><li><strong>Construction</strong>: parse, find all <code>import</code> specifiers statically, fetch the whole graph.</li><li><strong>Instantiation</strong>: allocate memory for exports and connect imports to them (live bindings), before any code runs.</li><li><strong>Evaluation</strong>: execute module bodies in dependency order.</li></ol>
+<p>Because imports are hoisted and static, tools can tree shake and statically verify missing exports.</p>
+<h4>Live bindings versus copies</h4>
+<pre><code>// counter.mjs
+export let count = 0; export function inc() { count++; }
+// main.mjs
+import { count, inc } from &#39;./counter.mjs&#39;; inc(); console.log(count); // 1  (live view)</code></pre>
+<p>In CJS, <code>const { count } = require(&#39;./counter&#39;)</code> copies the number at that moment, so later changes are not seen.</p>
+<h4>Circular dependencies</h4>
+<ul><li><strong>CJS</strong>: <code>require</code> of a module currently loading returns its <strong>partially filled</strong> <code>module.exports</code> so far, so you may get <code>undefined</code> for functions defined later.</li><li><strong>ESM</strong>: bindings exist from instantiation, so a function declaration is usable even if the other module has not finished evaluating, but accessing a <code>let/const/class</code> export before its evaluation throws a <strong>ReferenceError (temporal dead zone)</strong>.</li></ul>
+<p>Best fix: break the cycle by extracting shared code, or defer access to call time.</p>
+<h4>Interop in Node</h4>
+<ul><li>A <code>.mjs</code> file or <code>&quot;type&quot;: &quot;module&quot;</code> makes files ESM; <code>.cjs</code> or default is CJS.</li><li>ESM can <code>import</code> CJS (default import receives <code>module.exports</code>; named imports depend on static analysis).</li><li>CJS cannot <code>require</code> ESM synchronously (newer Node versions allow <code>require(esm)</code> for modules without top-level await). Use <code>await import()</code>.</li><li>No <code>__dirname</code> or <code>require</code> in ESM: use <code>import.meta.url</code>, <code>createRequire</code>.</li><li>Packages should expose <code>&quot;exports&quot;</code> with <code>import</code> and <code>require</code> conditions, avoiding the <strong>dual package hazard</strong> (two copies of the module loaded with separate state).</li></ul>
+<h4>Pitfalls</h4>
+<p>File extensions are required in ESM specifiers, mixing default and named interop, mutating imported bindings (read-only), and bundlers that transform ESM to CJS and destroy tree shaking.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What does a live binding mean and how does it differ from a CommonJS value copy?</li><li>How does each system behave with circular dependencies?</li><li>How do Node packages ship dual ESM and CJS builds and what are the hazards?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-62">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-62%3A+How+do+ES+Modules+%28ESM%29+differ+from+CommonJS+%28CJS%29+in+loading%E2%80%A6&amp;question-id=fe-62&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+JavaScript%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-62.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

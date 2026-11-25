@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do `tcpdump` and `Wireshark` capture and analyze network packets to diagnose packet drops? | InterviewGearUp</title>
+<meta name="description" content="tcpdump captures packets on a network interface using libpcap and a BPF filter, printing them or saving to a pcap file; Wireshark opens those files with…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-64.html">
+<meta property="og:title" content="How do `tcpdump` and `Wireshark` capture and analyze network packets to diagnose packet drops? | InterviewGearUp">
+<meta property="og:description" content="tcpdump captures packets on a network interface using libpcap and a BPF filter, printing them or saving to a pcap file; Wireshark opens those files with…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-64.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do `tcpdump` and `Wireshark` capture and analyze network packets to diagnose packet drops?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · Linux · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>tcpdump captures packets on a network interface using libpcap and a BPF filter, printing them or saving to a pcap file; Wireshark opens those files with a graphical analyzer and protocol dissectors. To diagnose packet drops, capture on both ends, filter precisely, then look for retransmissions, duplicate ACKs, zero windows, resets and ICMP errors.</p></div>
+<h4>Explained in depth</h4>
+<h4>Capturing with tcpdump</h4>
+<pre><code>sudo tcpdump -i eth0 -nn host 10.0.0.5 and port 443         # no name resolution (-nn), filter by host and port
+sudo tcpdump -i any -nn &#39;tcp port 5432 and (tcp[tcpflags] &amp; (tcp-syn|tcp-rst) != 0)&#39;   # SYNs and RSTs
+sudo tcpdump -i eth0 -s 0 -w /tmp/cap.pcap -C 100 -W 10 port 8080   # full packets, rotate 10 files of 100 MB
+sudo tcpdump -r /tmp/cap.pcap -nn -tttt                              # read a capture with timestamps
+sudo tcpdump -i eth0 icmp                                            # ping, unreachable, fragmentation needed</code></pre>
+<p>Notes: <code>-s 0</code> captures whole packets (default is full on modern versions), <code>-nn</code> avoids slow DNS lookups, capture to a file with a ring buffer on busy systems, and run as short as possible (captures consume CPU and disk, and expose sensitive data). In Kubernetes use <code>kubectl debug</code> with netshoot, <code>ksniff</code> or capture on the node&#39;s veth or CNI interface.</p>
+<h4>Analysing with Wireshark</h4>
+<p>Open the pcap, apply display filters (different syntax from tcpdump&#39;s capture filters):</p>
+<pre><code>tcp.analysis.retransmission || tcp.analysis.fast_retransmission
+tcp.analysis.duplicate_ack || tcp.analysis.lost_segment
+tcp.analysis.zero_window || tcp.analysis.window_full
+tcp.flags.reset == 1
+icmp.type == 3 || icmp.type == 11
+dns.flags.rcode != 0
+ip.addr == 10.0.0.5 &amp;&amp; tcp.port == 443</code></pre>
+<p>Useful features: <strong>Follow TCP Stream</strong>, <strong>Statistics &gt; Conversations / IO Graphs</strong>, <strong>TCP Stream Graphs (time-sequence, throughput, RTT)</strong>, <strong>Expert Information</strong> summarising anomalies, and TLS decryption using <code>SSLKEYLOGFILE</code> pre-master secrets exported by browsers and many clients (or a private RSA key for old non-PFS ciphers).</p>
+<h4>Diagnosing drops</h4>
+<ol start="1"><li>Capture <strong>at both sender and receiver</strong> (or both sides of a firewall or load balancer) and compare: a packet seen leaving A but never arriving at B was lost in between; a packet arriving at B&#39;s interface but not answered points to host or application issues.</li><li><strong>Retransmissions</strong> and duplicate ACKs indicate loss or reordering; patterns of tail loss and timeouts (RTO) show congestion or lossy links.</li><li><strong>SYN without SYN-ACK</strong> suggests a firewall, security group, wrong route or listener down; <strong>RST</strong> shows a refusal or middlebox reset; <strong>ICMP unreachable or fragmentation needed</strong> identifies routing or MTU issues.</li><li><strong>Zero window</strong> means the receiver cannot keep up (application slow reading, socket buffers full).</li><li>Large gaps between request and response with no loss show server or application latency, not the network.</li><li>Correlate with host counters: <code>ip -s link</code> (RX/TX errors, dropped), <code>ethtool -S eth0</code> (ring buffer drops), <code>nstat -az | grep -i drop</code>, <code>netstat -s</code>, <code>ss -ti</code> (retransmits, rtt), <code>conntrack -S</code>, and <code>iptables</code>/NIC queue statistics. Drops before tcpdump see them (NIC ring overflow, XDP, iptables raw table) will not appear in captures.</li><li>Check checksum offload warnings (captures on the sending host show bad checksums because offload computes them later) and capture-drop statistics printed by tcpdump (&quot;packets dropped by kernel&quot;).</li></ol>
+<h4>Safety and privacy</h4>
+<p>Packet captures contain credentials and personal data; get authorisation, limit scope and time, store securely, and delete afterwards. Use encrypted channels to transfer them (<code>ssh host &#39;sudo tcpdump -U -w - port 80&#39; | wireshark -k -i -</code>).</p>
+<h4>Pitfalls</h4>
+<p>Capturing on the wrong interface (lo versus eth0, bridge versus veth), overly broad filters filling disks, ignoring offload effects, and drawing conclusions from one side only.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you capture on a remote server and analyse locally in Wireshark?</li><li>How can you decrypt TLS traffic for debugging?</li><li>How do you differentiate drops by the network from drops by the host?</li></ul>
+<p><a class="btn primary" href="../#/q/do-64">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-64%3A+How+do+%60tcpdump%60+and+%60Wireshark%60+capture+and+analyze+network+packets%E2%80%A6&amp;question-id=do-64&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+Linux%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-64.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does the IEEE 754 floating-point standard represent numbers, and why does `0.1 + 0.2 != 0.3` occur? | InterviewGearUp</title>
+<meta name="description" content="IEEE 754 stores a float as sign, exponent and mantissa in binary, so most decimal fractions such as 0.1 and 0.2 cannot be represented exactly. Their…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-90.html">
+<meta property="og:title" content="How does the IEEE 754 floating-point standard represent numbers, and why does `0.1 + 0.2 != 0.3` occur? | InterviewGearUp">
+<meta property="og:description" content="IEEE 754 stores a float as sign, exponent and mantissa in binary, so most decimal fractions such as 0.1 and 0.2 cannot be represented exactly. Their…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-90.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does the IEEE 754 floating-point standard represent numbers, and why does `0.1 + 0.2 != 0.3` occur?</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 2 (Mid-level) · Systems · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>IEEE 754 stores a float as sign, exponent and mantissa in binary, so most decimal fractions such as 0.1 and 0.2 cannot be represented exactly. Their rounded binary approximations add up to 0.30000000000000004, which is not the nearest double to 0.3, so the equality test fails.</p></div>
+<h4>Explained in depth</h4>
+<h4>Representation</h4>
+<p>A 64 bit double has 1 sign bit, 11 exponent bits (bias 1023) and 52 fraction bits. A normal value is:</p>
+<p><code>(-1)^s * 1.fraction * 2^(exponent - 1023)</code></p>
+<p>A 32 bit float uses 1, 8 and 23 bits. A double provides about 15 to 17 significant decimal digits, a float about 6 to 9.</p>
+<h4>Why 0.1 is inexact</h4>
+<p>Decimal fractions are exact only if their denominator is a power of two. <code>0.1 = 1/10</code> has an infinitely repeating binary expansion (<code>0.0001100110011...</code>), so it is rounded to the nearest 53 bit mantissa:</p>
+<pre><code>0.1 -&gt; 0.1000000000000000055511151231257827...
+0.2 -&gt; 0.2000000000000000111022302462515654...
+sum -&gt; 0.3000000000000000166533453693773481...  rounds to 0.30000000000000004
+0.3 -&gt; 0.2999999999999999888977697537484346...</code></pre>
+<p>The exact sum of the two stored values falls between two representable doubles and rounds to a number different from the one <code>0.3</code> rounds to, so <code>0.1 + 0.2 != 0.3</code>. In Python <code>0.1 + 0.2</code> prints <code>0.30000000000000004</code>.</p>
+<h4>Comparing floats</h4>
+<p>Never rely on <code>==</code> for computed values. Use a tolerance:</p>
+<pre><code>import math
+math.isclose(a, b, rel_tol=1e-9, abs_tol=1e-12)</code></pre>
+<p>Use a relative tolerance for large magnitudes and an absolute tolerance near zero. Test libraries provide <code>assertAlmostEqual</code>, <code>pytest.approx</code>, <code>toBeCloseTo</code>.</p>
+<h4>Other hazards</h4>
+<ul><li><strong>Absorption and cancellation</strong>: <code>1e16 + 1 == 1e16</code>; subtracting nearly equal numbers loses significant digits.</li><li><strong>Non-associativity</strong>: <code>(a + b) + c</code> may differ from <code>a + (b + c)</code>, so parallel reductions give slightly different results; use Kahan summation for accuracy.</li><li><strong>Special values</strong>: <code>NaN</code> (never equal to itself), <code>+/-Infinity</code>, signed zero (<code>-0.0 == 0.0</code> but they differ in sign), <strong>subnormal</strong> numbers near zero with reduced precision.</li><li>Integers above <code>2^53</code> are not all representable as doubles (a JavaScript <code>Number</code> trap for 64 bit ids).</li></ul>
+<h4>Money</h4>
+<p>Use <strong>integer minor units</strong> (cents) or decimal types (<code>BigDecimal</code>, Python <code>decimal</code>, <code>NUMERIC</code> in SQL), with an explicit rounding mode. Store currency alongside the amount.</p>
+<h4>Pitfalls</h4>
+<p>Printing with limited digits hides errors, <code>float</code> vs <code>double</code> mixing causes unexpected widening, and fast-math compiler flags change results. Deterministic simulations or distributed systems should avoid depending on exact floating point results across platforms.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How should you compare floating point numbers for equality in tests?</li><li>Why should money not be stored in binary floating point, and what do you use instead?</li><li>What are NaN, infinity, subnormal numbers and negative zero?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-90">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-90%3A+How+does+the+IEEE+754+floating-point+standard+represent+numbers%2C+and%E2%80%A6&amp;question-id=gen-90&amp;context=Software+engineer+%28core%29%2C+Gear+2%2C+topic%3A+Systems%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-90.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

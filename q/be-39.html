@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are the responsibilities of an API Gateway, and how does it differ from a Reverse Proxy? | InterviewGearUp</title>
+<meta name="description" content="An API gateway is the single entry point for clients that handles cross-cutting concerns: authentication, rate limiting, routing and composition,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-39.html">
+<meta property="og:title" content="What are the responsibilities of an API Gateway, and how does it differ from a Reverse Proxy? | InterviewGearUp">
+<meta property="og:description" content="An API gateway is the single entry point for clients that handles cross-cutting concerns: authentication, rate limiting, routing and composition,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-39.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are the responsibilities of an API Gateway, and how does it differ from a Reverse Proxy?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · Architecture · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>An API gateway is the single entry point for clients that handles cross-cutting concerns: authentication, rate limiting, routing and composition, protocol translation, caching and observability, usually with API-level policy and developer features. A reverse proxy forwards requests to backends and handles TLS, load balancing and caching but typically has no API management logic.</p></div>
+<h4>Explained in depth</h4>
+<h4>Reverse proxy</h4>
+<p>A server in front of backends that accepts client requests and forwards them: <strong>TLS termination</strong>, load balancing, compression, static file and response caching, connection pooling, basic routing by host or path, and hiding backend topology. Examples: NGINX, HAProxy, Envoy, Caddy, Traefik.</p>
+<h4>API gateway</h4>
+<p>A reverse proxy plus API-aware functionality, treated as a product surface for API consumers:</p>
+<ul><li><strong>Authentication and authorisation</strong>: validate JWTs or API keys, OAuth scopes, mTLS, integrate with identity providers.</li><li><strong>Rate limiting, quotas and throttling</strong> per client, plan or route.</li><li><strong>Routing and versioning</strong>: map public paths to internal services, rewrite URLs, canary routes.</li><li><strong>Request and response transformation</strong>, protocol translation (REST to gRPC, WebSocket, GraphQL federation) and <strong>aggregation</strong> of several backend calls into one response.</li><li><strong>Resilience</strong>: timeouts, retries, circuit breakers.</li><li><strong>Observability</strong>: access logs, metrics, tracing headers, analytics.</li><li><strong>Security</strong>: WAF integration, schema validation, CORS, IP allowlists, bot protection.</li><li><strong>Developer experience</strong>: portal, key issuing, documentation, monetisation.</li></ul>
+<p>Examples: Kong, Apigee, AWS API Gateway, Azure API Management, Tyk, Envoy-based gateways (Ambassador, Gloo), Spring Cloud Gateway.</p>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th>Aspect</th><th>Reverse proxy</th><th>API gateway</th></tr></thead><tbody><tr><td>Primary role</td><td>traffic forwarding and balancing</td><td>API management and edge policy</td></tr><tr><td>Awareness</td><td>HTTP level</td><td>API consumers, keys, plans, schemas</td></tr><tr><td>Auth</td><td>basic or none</td><td>OAuth, JWT, API keys, scopes</td></tr><tr><td>Composition</td><td>none</td><td>aggregation, transformation</td></tr><tr><td>Typical position</td><td>in front of any web service</td><td>edge of a microservice system</td></tr></tbody></table></div>
+<p>In practice the line is blurry: many gateways are built on NGINX or Envoy, and a reverse proxy with plugins can act as a gateway.</p>
+<h4>Design guidance</h4>
+<ul><li>Keep gateways <strong>thin</strong>: authentication, coarse authorisation, rate limits, routing. Business logic belongs in services; otherwise the gateway becomes a distributed monolith and a bottleneck.</li><li>Deploy it highly available and horizontally scaled; it is a single point of failure and an added latency hop.</li><li>Use the <strong>BFF pattern</strong> (one gateway per client type: web, mobile) when clients need different shapes of data.</li><li><strong>North-south</strong> traffic (client to cluster) goes through the gateway; <strong>east-west</strong> (service to service) is handled by a service mesh or direct calls with mTLS.</li><li>Version and test gateway configuration as code (GitOps), and avoid putting secrets in route configs.</li></ul>
+<h4>Pitfalls</h4>
+<p>Doing heavy aggregation and orchestration in the gateway, inconsistent auth between gateway and services (trust boundaries: services should still validate tokens or use mTLS), and cascading timeouts without limits.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the Backend for Frontend pattern and how does it relate to a gateway?</li><li>What are the risks of putting too much logic in the gateway?</li><li>How does a gateway differ from a service mesh?</li></ul>
+<p><a class="btn primary" href="../#/q/be-39">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-39%3A+What+are+the+responsibilities+of+an+API+Gateway%2C+and+how+does+it%E2%80%A6&amp;question-id=be-39&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-39.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

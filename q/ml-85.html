@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does ARIMA model autoregression, differencing, and moving averages for time-series forecasting? | InterviewGearUp</title>
+<meta name="description" content="ARIMA(p, d, q) models a time series with autoregression on its own lags (AR p), differencing d times to remove trend and make it stationary (I), and a…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-85.html">
+<meta property="og:title" content="How does ARIMA model autoregression, differencing, and moving averages for time-series forecasting? | InterviewGearUp">
+<meta property="og:description" content="ARIMA(p, d, q) models a time series with autoregression on its own lags (AR p), differencing d times to remove trend and make it stationary (I), and a…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-85.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does ARIMA model autoregression, differencing, and moving averages for time-series forecasting?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 2 (Mid-level) · Time Series · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>ARIMA(p, d, q) models a time series with autoregression on its own lags (AR p), differencing d times to remove trend and make it stationary (I), and a moving average of past forecast errors (MA q). Identify orders with ACF and PACF plots and information criteria, check residuals are white noise, and use SARIMA when seasonality exists.</p></div>
+<h4>Explained in depth</h4>
+<h4>Components</h4>
+<p>ARIMA = <strong>A</strong>uto<strong>R</strong>egressive <strong>I</strong>ntegrated <strong>M</strong>oving <strong>A</strong>verage, parameters <code>(p, d, q)</code>.</p>
+<ul><li><strong>AR(p)</strong>: the value depends linearly on its previous p values: <code>y_t = c + φ₁ y_{t−1} + ... + φ_p y_{t−p} + ε_t</code>.</li><li><strong>I(d)</strong>: <strong>difference</strong> the series d times (<code>y&#39;_t = y_t − y_{t−1}</code>) to remove trend and achieve <strong>stationarity</strong> (constant mean, variance and autocovariance over time). d = 1 handles a linear trend, d = 2 a quadratic one.</li><li><strong>MA(q)</strong>: the value depends on the previous q <strong>forecast errors</strong> (shocks): <code>y_t = c + ε_t + θ₁ ε_{t−1} + ... + θ_q ε_{t−q}</code>.</li></ul>
+<p>Combined (on the differenced series): <code>y&#39;_t = c + Σ φᵢ y&#39;_{t−i} + Σ θⱼ ε_{t−j} + ε_t</code>. <strong>SARIMA(p,d,q)(P,D,Q)_m</strong> adds seasonal AR, differencing and MA terms at period m (12 for monthly data with yearly seasonality). <strong>ARIMAX / SARIMAX</strong> add exogenous regressors.</p>
+<h4>Box-Jenkins workflow</h4>
+<ol start="1"><li><strong>Plot and decompose</strong>: inspect trend, seasonality, outliers, variance changes. Apply a <strong>log or Box-Cox transform</strong> if variance grows with level.</li><li><strong>Make stationary</strong>: difference (regular and seasonal) until stationary. Check with the <strong>Augmented Dickey-Fuller</strong> test (null: unit root, so a small p-value suggests stationary) and <strong>KPSS</strong> (null: stationary). Avoid over-differencing (induces negative autocorrelation and inflates variance).</li><li><strong>Identify orders</strong> from the stationary series:</li></ol>
+<ul><li><strong>PACF</strong> cuts off after lag p for an AR(p); ACF decays gradually.</li><li><strong>ACF</strong> cuts off after lag q for an MA(q); PACF decays gradually.</li><li>Mixed ARMA: both decay; use information criteria.</li></ul>
+<ol start="4"><li><strong>Estimate</strong> parameters by maximum likelihood.</li><li><strong>Select</strong> among candidates by <strong>AIC or BIC</strong> (lower is better), or automatically (<code>auto_arima</code> in pmdarima).</li><li><strong>Diagnose residuals</strong>: they should resemble <strong>white noise</strong>: no autocorrelation (Ljung-Box test, ACF of residuals), roughly normal and constant variance.</li><li><strong>Forecast</strong> with prediction intervals and <strong>evaluate with time-based validation</strong> (rolling-origin backtesting), using MAE, RMSE, MAPE or MASE versus a naive or seasonal-naive baseline.</li></ol>
+<pre><code>from statsmodels.tsa.statespace.sarimax import SARIMAX
+from statsmodels.tsa.stattools import adfuller
+print(adfuller(y.diff().dropna())[1])                        # p-value for stationarity after differencing
+model = SARIMAX(y, order=(1, 1, 1), seasonal_order=(0, 1, 1, 12), enforce_stationarity=False).fit(disp=False)
+print(model.summary()); fc = model.get_forecast(steps=12); ci = fc.conf_int()</code></pre>
+<h4>Intuition for AR and MA</h4>
+<p>AR captures <strong>momentum and persistence</strong> (today resembles yesterday); MA captures <strong>short-lived shocks</strong> that echo for a few periods (a promotion affects today and tomorrow). Differencing models trends as changes. Together they give a parsimonious description of autocorrelation.</p>
+<h4>Strengths and limitations</h4>
+<ul><li>Strong, interpretable baseline for <strong>univariate, short to medium horizon</strong> forecasting with limited data; gives prediction intervals; well-understood theory.</li><li>Assumes <strong>linear</strong> relationships, constant variance (use GARCH for volatility), regular sampling, and a single seasonal period; struggles with multiple seasonalities, holidays, structural breaks, many related series and nonlinear effects; requires manual or search-based order selection; refit as data changes.</li><li>Alternatives: <strong>ETS/Holt-Winters</strong> (exponential smoothing), <strong>Prophet</strong> (trend, multiple seasonalities, holidays), <strong>TBATS</strong>, <strong>state-space models</strong>, <strong>gradient boosting with lag features</strong>, and deep models (N-BEATS, TFT, DeepAR, PatchTST) for many series; <strong>hierarchical forecasting</strong> reconciles levels.</li></ul>
+<h4>Pitfalls</h4>
+<p>Random train-test splits, forecasting before checking stationarity or residuals, over-differencing, ignoring seasonality and calendar effects, and judging accuracy without a baseline.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do ACF and PACF patterns suggest p and q?</li><li>Why must the series be stationary and how do ADF and KPSS tests help?</li><li>When would you choose Prophet, ETS or gradient boosting instead of ARIMA?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-85">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-85%3A+How+does+ARIMA+model+autoregression%2C+differencing%2C+and+moving%E2%80%A6&amp;question-id=ml-85&amp;context=ML+%2F+AI+engineer%2C+Gear+2%2C+topic%3A+Time+Series%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-85.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

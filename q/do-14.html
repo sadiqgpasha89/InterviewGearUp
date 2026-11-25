@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does `systemd` supervise background services, restart failed daemons, and manage unit dependencies? | InterviewGearUp</title>
+<meta name="description" content="systemd is the Linux init system and service manager. A unit file declares how to start a service, its dependencies and ordering, restart policy,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-14.html">
+<meta property="og:title" content="How does `systemd` supervise background services, restart failed daemons, and manage unit dependencies? | InterviewGearUp">
+<meta property="og:description" content="systemd is the Linux init system and service manager. A unit file declares how to start a service, its dependencies and ordering, restart policy,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-14.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does `systemd` supervise background services, restart failed daemons, and manage unit dependencies?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 2 (Mid-level) · Linux · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>systemd is the Linux init system and service manager. A unit file declares how to start a service, its dependencies and ordering, restart policy, resource limits and sandboxing. systemd tracks the process tree through cgroups, restarts failed daemons according to Restart= settings and activates services on demand through sockets, timers and paths.</p></div>
+<h4>Explained in depth</h4>
+<h4>Unit files</h4>
+<p>Located in <code>/etc/systemd/system/</code> (admin) or <code>/usr/lib/systemd/system/</code> (packages). A service example:</p>
+<pre><code>[Unit]
+Description=Orders API
+After=network-online.target postgresql.service
+Wants=network-online.target
+Requires=postgresql.service
+
+[Service]
+Type=simple
+User=orders
+WorkingDirectory=/opt/orders
+EnvironmentFile=/etc/orders/env
+ExecStart=/opt/orders/bin/server --port 8080
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=5
+StartLimitIntervalSec=300
+StartLimitBurst=5
+LimitNOFILE=65535
+MemoryMax=1G
+NoNewPrivileges=yes
+ProtectSystem=strict
+ReadWritePaths=/var/lib/orders
+
+[Install]
+WantedBy=multi-user.target</code></pre>
+<p>Apply with <code>systemctl daemon-reload</code>, <code>systemctl enable --now orders</code>.</p>
+<h4>Supervision and restart</h4>
+<ul><li><code>Restart=</code> values: <code>no</code>, <code>on-failure</code> (non-zero exit, signal, timeout), <code>on-abnormal</code>, <code>on-abort</code>, <code>always</code>. <code>RestartSec</code> adds delay.</li><li><strong>Start limits</strong>: after <code>StartLimitBurst</code> restarts within <code>StartLimitIntervalSec</code>, systemd marks the unit failed and stops restarting (avoids crash loops). Reset with <code>systemctl reset-failed</code>.</li><li><strong>cgroup tracking</strong>: every service runs in its own cgroup, so systemd knows all child processes (even double-forking daemons) and kills the whole group on stop (<code>KillMode=control-group</code>). Resource controls (<code>CPUQuota</code>, <code>MemoryMax</code>, <code>TasksMax</code>) use the same cgroup.</li><li><code>Type=</code> matters: <code>simple</code> (main process is the service), <code>forking</code> (daemon forks), <code>notify</code> (service calls <code>sd_notify(READY=1)</code> when really ready), <code>oneshot</code> (run-to-completion tasks). Watchdog (<code>WatchdogSec</code>) restarts hung services that stop pinging.</li></ul>
+<h4>Dependencies versus ordering</h4>
+<ul><li><strong>Ordering</strong>: <code>After=</code> and <code>Before=</code> only affect the order of start, not whether the other unit starts.</li><li><strong>Requirement</strong>: <code>Wants=</code> (soft, start it but continue if it fails), <code>Requires=</code> (hard, fail if it fails; stops when the dependency stops), <code>BindsTo=</code> (stop if the dependency disappears), <code>PartOf=</code>, <code>Conflicts=</code>.</li><li>Typical pattern: <code>Requires=db.service</code> plus <code>After=db.service</code>. Use <code>network-online.target</code> (not just <code>network.target</code>) when you need an address.</li></ul>
+<h4>Activation beyond services</h4>
+<p><strong>Socket activation</strong> (<code>.socket</code> units) lets systemd listen and start the service on first connection, with zero-downtime restarts since the socket stays open. <strong>Timers</strong> (<code>.timer</code>) replace cron with logging and dependencies. <strong>Path units</strong> trigger on file changes. <code>Type=oneshot</code> plus a timer gives scheduled jobs.</p>
+<h4>Operating and debugging</h4>
+<pre><code>systemctl status orders            # state, recent logs, cgroup tree, exit code
+journalctl -u orders -f --since &quot;10 min ago&quot;   # logs (journald)
+systemctl list-dependencies orders
+systemd-analyze verify /etc/systemd/system/orders.service
+systemd-analyze blame / critical-chain          # boot-time analysis
+systemctl show orders -p Restart,NRestarts,MainPID
+systemctl edit orders                           # drop-in override, not editing packaged files</code></pre>
+<p>Common failures: wrong <code>ExecStart</code> path (absolute paths are required), environment differences from the shell, permission and SELinux denials, dependency cycles, missing <code>User</code> ownership, or start limits reached.</p>
+<h4>Pitfalls</h4>
+<p>Using <code>Restart=always</code> for services that exit successfully on purpose, long <code>ExecStartPre</code> blocking boot, <code>Type=forking</code> without <code>PIDFile</code>, and editing files in <code>/usr/lib</code> (overwritten by package upgrades).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the difference between Requires, Wants, After and BindsTo?</li><li>How do you debug a service that fails to start?</li><li>How does socket activation reduce startup ordering problems?</li></ul>
+<p><a class="btn primary" href="../#/q/do-14">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-14%3A+How+does+%60systemd%60+supervise+background+services%2C+restart+failed%E2%80%A6&amp;question-id=do-14&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+2%2C+topic%3A+Linux%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-14.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you manage test database state: Seeding, transactional rollbacks, and teardowns between tests? | InterviewGearUp</title>
+<meta name="description" content="Keep test data isolated and repeatable: seed a known baseline once, give each test its own data through factories or API setup, and reset state after…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-37.html">
+<meta property="og:title" content="How do you manage test database state: Seeding, transactional rollbacks, and teardowns between tests? | InterviewGearUp">
+<meta property="og:description" content="Keep test data isolated and repeatable: seed a known baseline once, give each test its own data through factories or API setup, and reset state after…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-37.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you manage test database state: Seeding, transactional rollbacks, and teardowns between tests?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 2 (Mid-level) · Database · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Keep test data isolated and repeatable: seed a known baseline once, give each test its own data through factories or API setup, and reset state after each test using transaction rollback, truncation or recreating a template database or container. Choose the technique by speed and fidelity, and design tests for parallel execution without shared mutable rows.</p></div>
+<h4>Explained in depth</h4>
+<h4>Goals</h4>
+<p>Tests must be <strong>independent, repeatable and fast</strong>. Leftover rows from one test breaking another (order dependence), or tests relying on data created by earlier ones, are the main causes of flakiness in database-backed suites.</p>
+<h4>Strategies</h4>
+<ol start="1"><li><strong>Seeding a known baseline</strong>: reference and static data (countries, roles, plans) loaded once via migration or seed scripts (<code>flyway</code>, <code>liquibase</code>, <code>prisma db seed</code>, Django fixtures). Per-test data is created by the test itself using <strong>factories or builders</strong> (<code>UserFactory.create(email=unique())</code>) with unique values (UUIDs, counters) so tests never collide.</li><li><strong>Transactional rollback</strong>: wrap each test in a transaction and roll it back at the end (Spring <code>@Transactional</code> in tests, Django <code>TestCase</code>, Rails transactional fixtures, <code>pytest-django</code>, SQLAlchemy savepoints). Very <strong>fast</strong> (no cleanup queries) and simple.</li></ol>
+<ul><li>Limitations: code that <strong>commits</strong> its own transactions, background workers or separate connections/processes (browser tests hitting a running app, message consumers) cannot see uncommitted data; DDL auto-commits in some databases; behaviour of constraints deferred until commit is not exercised; sequences are not rolled back.</li></ul>
+<ol start="3"><li><strong>Truncate or delete after test</strong>: <code>TRUNCATE ... RESTART IDENTITY CASCADE</code> in teardown (or before each test); reliable for end-to-end tests but slower; keep a list of tables and skip seed tables. Tools: DatabaseCleaner (Rails), <code>testcontainers</code> plus truncation helpers, <code>pytest-django</code> <code>transactional_db</code>.</li><li><strong>Database per test or per worker</strong>: use <strong>template databases</strong> (Postgres <code>CREATE DATABASE test_w1 TEMPLATE base</code>), <code>pg_tmp</code>, or spin up <strong>Testcontainers</strong> instances with migrations applied; snapshot and restore (LVM or container commit, <code>pg_dump</code> restore) for heavier suites. Strong isolation and enables parallelism.</li><li><strong>In-memory or ephemeral DBs</strong> (SQLite, H2) are fast but can differ from production (SQL dialect, types, locking); prefer <strong>the same engine</strong> in a container for integration tests.</li><li><strong>API-based setup and teardown</strong>: create data through the application&#39;s API (more realistic, validates business rules) and delete via API or admin endpoint; use unique tenant or namespace per run for shared environments, then purge by tag.</li></ol>
+<h4>Cleanup patterns</h4>
+<pre><code># pytest: per-test transaction with rollback
+@pytest.fixture
+def db_session(engine):
+    conn = engine.connect(); trans = conn.begin()
+    session = Session(bind=conn, join_transaction_mode=&quot;create_savepoint&quot;)
+    yield session
+    session.close(); trans.rollback(); conn.close()
+
+# pytest: unique data and guaranteed teardown even on failure
+@pytest.fixture
+def customer(api):
+    c = api.post(&quot;/customers&quot;, json={&quot;email&quot;: f&quot;{uuid4()}@test.local&quot;}).json()
+    yield c
+    api.delete(f&quot;/customers/{c[&#39;id&#39;]}&quot;)</code></pre>
+<p>Use fixtures with <code>yield</code> (or <code>finally</code>) so teardown runs after failures; add a <strong>global janitor</strong> that removes stale data older than N hours with a recognisable prefix.</p>
+<h4>Parallel execution</h4>
+<ul><li>Give each worker its <strong>own schema or database</strong> (<code>test_gw0</code>, <code>test_gw1</code>) or unique tenant ids; never share mutable rows.</li><li>Avoid assertions on global counts (<code>count == 5</code>); assert on the entities the test created.</li><li>Use deterministic unique identifiers; reset sequences only in isolated databases.</li></ul>
+<h4>Data management practices</h4>
+<ul><li>Keep <strong>seed data minimal</strong>; large shared fixtures hide dependencies and slow tests.</li><li>Version seed scripts with migrations, and run migrations in CI against an empty database to prove they work.</li><li>Use <strong>anonymised production subsets</strong> for performance or exploratory testing (never raw PII).</li><li>Control time and randomness (freeze clock, seeded random) so data-dependent results are stable.</li><li>Log which strategy each test layer uses: unit tests (mock or in-memory), integration (rollback), end-to-end (API setup plus janitor).</li></ul>
+<h4>Pitfalls</h4>
+<p>Relying on test execution order, auto-increment ids in assertions, shared accounts between parallel tests, rollback strategy hiding commit-related bugs, and teardown that fails silently and pollutes later runs.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>When does transactional rollback not work and what should you use instead?</li><li>How do you run tests in parallel against a database without collisions?</li><li>How do you keep seed data in sync with schema migrations?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-37">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-37%3A+How+do+you+manage+test+database+state%3A+Seeding%2C+transactional%E2%80%A6&amp;question-id=qa-37&amp;context=QA+%2F+SDET%2C+Gear+2%2C+topic%3A+Database%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-37.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

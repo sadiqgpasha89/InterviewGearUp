@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does the Page Visibility API allow pausing background video and polling when tabs are inactive? | InterviewGearUp</title>
+<meta name="description" content="The Page Visibility API exposes document.visibilityState (visible or hidden) and a visibilitychange event, firing when a tab is backgrounded, minimised…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-80.html">
+<meta property="og:title" content="How does the Page Visibility API allow pausing background video and polling when tabs are inactive? | InterviewGearUp">
+<meta property="og:description" content="The Page Visibility API exposes document.visibilityState (visible or hidden) and a visibilitychange event, firing when a tab is backgrounded, minimised…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-80.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does the Page Visibility API allow pausing background video and polling when tabs are inactive?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · Browser APIs · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>The Page Visibility API exposes document.visibilityState (visible or hidden) and a visibilitychange event, firing when a tab is backgrounded, minimised or the screen locks. Use it to pause video, animations, polling and WebSockets in hidden tabs, saving CPU, battery and bandwidth, and to resume or refresh on return.</p></div>
+<h4>Explained in depth</h4>
+<h4>API</h4>
+<pre><code>document.addEventListener(&#39;visibilitychange&#39;, () =&gt; {
+  if (document.visibilityState === &#39;hidden&#39;) pause();
+  else resume();
+});
+// document.hidden is the boolean shorthand (legacy but supported)</code></pre>
+<p><code>visibilityState</code> is <code>visible</code> when the page is the foreground tab of a non-minimised window, and <code>hidden</code> otherwise (tab switch, minimise, screen lock, some OS app switchers). <code>prerender</code> appeared in older versions.</p>
+<h4>Typical use cases</h4>
+<ul><li><strong>Pause media and animation</strong>: stop <code>&lt;video&gt;</code>, canvas loops, carousels.</li><li><strong>Polling and live data</strong>: stop or slow fetches while hidden, and refetch immediately when visible again (stale data fix).</li><li><strong>Analytics</strong>: measure real engaged time, and send final beacons on <code>hidden</code>, which is more reliable than <code>unload</code>.</li><li><strong>Notifications and badges</strong>: update the title only when hidden.</li><li><strong>Realtime connections</strong>: close or throttle WebSockets and Server-Sent Events.</li></ul>
+<pre><code>let timer;
+function start() { poll(); timer = setInterval(poll, 5000); }
+function stop() { clearInterval(timer); }
+document.addEventListener(&#39;visibilitychange&#39;, () =&gt; {
+  if (document.hidden) stop();
+  else { poll(); start(); }              // refresh once at return, then resume
+});
+start();</code></pre>
+<p>React Query and SWR implement this as &quot;refetch on window focus&quot;.</p>
+<h4>What browsers already do</h4>
+<p>Background tabs throttle <code>setTimeout</code> and <code>setInterval</code> (about once per second, and once per minute after several minutes in Chrome&#39;s intensive throttling), pause <code>requestAnimationFrame</code> and may freeze or discard tabs under memory pressure. That is why logic must not depend on exact timer cadence while hidden.</p>
+<h4>Related APIs</h4>
+<ul><li><strong><code>pagehide</code></strong> and the <strong>Page Lifecycle</strong> (<code>freeze</code>, <code>resume</code>) events for bfcache and frozen pages: prefer <code>visibilitychange</code> plus <code>pagehide</code> over <code>unload</code>/<code>beforeunload</code>, which block back-forward cache.</li><li><code>focus</code> and <code>blur</code> track window focus, not visibility (a visible window can lack focus).</li><li><code>navigator.sendBeacon</code> or <code>fetch(..., { keepalive: true })</code> when sending data as the page hides.</li><li>The <strong>Idle Detection</strong> API and <code>requestIdleCallback</code> address user idleness, not tab visibility.</li></ul>
+<h4>Pitfalls</h4>
+<p>Assuming <code>hidden</code> always fires before the page is killed (mobile browsers can discard without events, so persist state early), double handling with both <code>blur</code> and <code>visibilitychange</code>, resuming without refreshing stale data, and forgetting that audio playing tabs may stay active (and should not be paused automatically).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What other signals complement visibility, such as pagehide, focus and the Page Lifecycle states?</li><li>How do timers and rAF behave in background tabs?</li><li>How do you implement polling that backs off when hidden and refreshes on return?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-80">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-80%3A+How+does+the+Page+Visibility+API+allow+pausing+background+video+and%E2%80%A6&amp;question-id=fe-80&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+Browser+APIs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-80.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

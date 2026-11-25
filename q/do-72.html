@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain Kubernetes node drain (`kubectl drain`) and how eviction policies terminate workloads safely. | InterviewGearUp</title>
+<meta name="description" content="kubectl drain safely empties a node for maintenance: it first cordons the node (marks it unschedulable), then evicts pods using the Eviction API, which…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-72.html">
+<meta property="og:title" content="Explain Kubernetes node drain (`kubectl drain`) and how eviction policies terminate workloads safely. | InterviewGearUp">
+<meta property="og:description" content="kubectl drain safely empties a node for maintenance: it first cordons the node (marks it unschedulable), then evicts pods using the Eviction API, which…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-72.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain Kubernetes node drain (`kubectl drain`) and how eviction policies terminate workloads safely.</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · Kubernetes · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>kubectl drain safely empties a node for maintenance: it first cordons the node (marks it unschedulable), then evicts pods using the Eviction API, which respects PodDisruptionBudgets and termination grace periods. Pods owned by controllers are recreated on other nodes, while DaemonSet pods, mirror pods and unmanaged pods need flags or manual handling.</p></div>
+<h4>Explained in depth</h4>
+<h4>Steps</h4>
+<pre><code>kubectl cordon node-7                       # mark unschedulable; existing pods keep running
+kubectl drain node-7 --ignore-daemonsets --delete-emptydir-data --timeout=300s
+# ... perform kernel upgrade, reboot, patching ...
+kubectl uncordon node-7                     # allow scheduling again</code></pre>
+<p><code>drain</code> = cordon + evict every pod on the node.</p>
+<h4>How eviction works</h4>
+<p>Drain calls the <strong>Eviction API</strong> (<code>POST /api/v1/namespaces/&lt;ns&gt;/pods/&lt;pod&gt;/eviction</code>) instead of deleting pods directly. The API server checks any <strong>PodDisruptionBudget</strong> (PDB) matching the pod; if evicting would violate <code>minAvailable</code> or <code>maxUnavailable</code>, it returns 429 and drain retries until it is allowed or times out. On success the pod gets a normal graceful termination: preStop hook, SIGTERM, wait <code>terminationGracePeriodSeconds</code>, SIGKILL. The owning controller (ReplicaSet, StatefulSet, Job) creates a replacement elsewhere, so capacity must exist on other nodes.</p>
+<h4>Flags and special pods</h4>
+<ul><li><code>--ignore-daemonsets</code>: DaemonSet pods are not evicted (they would immediately return); required in practice.</li><li><code>--delete-emptydir-data</code>: allows evicting pods using <code>emptyDir</code>, whose data is lost.</li><li><strong>Unmanaged pods</strong> (no controller) cannot be rescheduled; drain refuses unless <code>--force</code>, which deletes them permanently.</li><li><strong>Mirror (static) pods</strong> are skipped. Pods with local storage need explicit acknowledgement.</li><li><code>--grace-period</code>, <code>--timeout</code>, <code>--pod-selector</code>, <code>--disable-eviction</code> (uses delete and bypasses PDBs, avoid).</li><li>Node-local PVs (local storage) tie pods to the node; they stay Pending until the node returns.</li></ul>
+<h4>PodDisruptionBudgets</h4>
+<pre><code>apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata: { name: web-pdb }
+spec:
+  maxUnavailable: 1               # or minAvailable: 80%
+  selector: { matchLabels: { app: web } }</code></pre>
+<p>PDBs protect only <strong>voluntary</strong> disruptions (drains, cluster autoscaler scale-down, upgrades via eviction API), not crashes, node failures or OOM. A PDB that cannot ever be satisfied (single replica with <code>minAvailable: 1</code>) blocks drains forever: keep replicas greater than the budget requires.</p>
+<h4>Why a drain hangs</h4>
+<ul><li>PDB currently at its limit (not enough healthy replicas, or pods unready).</li><li>Pod stuck in <code>Terminating</code> (finalizers, application ignoring SIGTERM, long grace period, volume detach issues).</li><li>Pods that cannot be rescheduled because no capacity or affinity and taints prevent placement.</li><li>Single-replica Deployments (downtime is inevitable unless scaled up first).</li></ul>
+<p>Investigate with <code>kubectl get pdb -A</code>, <code>kubectl describe pod</code>, events, and <code>kubectl get pods --field-selector spec.nodeName=node-7 -A</code>.</p>
+<h4>Best practices</h4>
+<p>Run at least 2 or 3 replicas spread with topology spread constraints and anti-affinity, set realistic PDBs and <code>terminationGracePeriodSeconds</code>, implement graceful shutdown and readiness, drain one node at a time (or by zone), use surge capacity during upgrades, and rely on managed node group or Karpenter drain automation with the same eviction semantics. Related: <strong>node pressure eviction</strong> by kubelet (memory, disk) ignores PDBs, and spot interruptions give limited notice.</p>
+<h4>Pitfalls</h4>
+<p>Using <code>--force</code> casually, drains on nodes holding local data, forgetting to uncordon, and PDBs set to <code>minAvailable</code> equal to replicas.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do PodDisruptionBudgets protect availability during voluntary disruptions?</li><li>Why might a drain hang and how do you troubleshoot it?</li><li>How does eviction differ from node pressure eviction and involuntary disruption?</li></ul>
+<p><a class="btn primary" href="../#/q/do-72">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-72%3A+Explain+Kubernetes+node+drain+%28%60kubectl+drain%60%29+and+how+eviction%E2%80%A6&amp;question-id=do-72&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+Kubernetes%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-72.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

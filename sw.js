@@ -1,6 +1,6 @@
 /* Offline support. Network first for same-origin files (so a new deploy shows up immediately when online),
    falling back to the cache when offline. Cross-origin requests (GitHub API, LLM providers) are never touched. */
-const CACHE = 'igu-v6';
+const CACHE = 'igu-v7';
 const SHELL = [
   './',
   'index.html',
@@ -31,6 +31,7 @@ const SHELL = [
   'js/starter-paths.js',
   'js/runner-worker.js',
   'data/coding.js',
+  'data/coding-langs.js',
   'js/views2.js',
   'js/views3.js',
   'js/views4.js',
@@ -53,7 +54,17 @@ const SHELL = [
   'data/curated/ml.js',
   'data/curated/qa.js',
   'data/curated/security.js',
-  'data/curated/leadership.js'
+  'data/curated/leadership.js',
+  'data/curated/datascience-full.js',
+  'data/curated/leadership-full.js',
+  'data/curated/security-full.js',
+  'data/curated/qa-full.js',
+  'data/curated/ml-full.js',
+  'data/curated/data-full.js',
+  'data/curated/devops-full.js',
+  'data/curated/backend-full.js',
+  'data/curated/frontend-full.js',
+  'data/curated/general-full.js'
 ];
 
 self.addEventListener('install', function (event) {

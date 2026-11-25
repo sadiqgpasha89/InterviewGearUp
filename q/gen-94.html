@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare error handling strategies: Exceptions versus Result/Option monads in modern languages. | InterviewGearUp</title>
+<meta name="description" content="Exceptions propagate failures implicitly up the stack and keep the happy path clean, but make control flow invisible. Result/Option types encode failure…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-94.html">
+<meta property="og:title" content="Compare error handling strategies: Exceptions versus Result/Option monads in modern languages. | InterviewGearUp">
+<meta property="og:description" content="Exceptions propagate failures implicitly up the stack and keep the happy path clean, but make control flow invisible. Result/Option types encode failure…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-94.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare error handling strategies: Exceptions versus Result/Option monads in modern languages.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 2 (Mid-level) · Engineering · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Exceptions propagate failures implicitly up the stack and keep the happy path clean, but make control flow invisible. Result/Option types encode failure in the return type so the compiler forces callers to handle it, trading verbosity for explicit, composable and predictable error handling.</p></div>
+<h4>Explained in depth</h4>
+<h4>Exceptions</h4>
+<pre><code>def load(path):
+    with open(path) as f:           # raises FileNotFoundError, PermissionError ...
+        return parse(f.read())      # raises ParseError
+try:
+    cfg = load(&quot;app.toml&quot;)
+except (FileNotFoundError, ParseError) as e:
+    log.error(&quot;bad config&quot;, exc_info=e); cfg = defaults()</code></pre>
+<ul><li><strong>Pros</strong>: failure handling separated from the normal flow; automatic propagation through many layers; stack traces for debugging; constructors can fail.</li><li><strong>Cons</strong>: errors are <strong>invisible in signatures</strong> (unchecked), so a caller can forget them; non-local jumps complicate cleanup and invariants; poor performance on hot paths in some runtimes (stack capture); swallowed or overly broad catches hide bugs; exceptions across async or thread boundaries are easy to lose.</li></ul>
+<h4>Result and Option types</h4>
+<pre><code>fn load(path: &amp;str) -&gt; Result&lt;Config, ConfigError&gt; {
+    let text = std::fs::read_to_string(path)?;      // ? returns early with the error
+    let cfg: Config = toml::from_str(&amp;text)?;
+    Ok(cfg)
+}
+match load(&quot;app.toml&quot;) { Ok(c) =&gt; run(c), Err(e) =&gt; eprintln!(&quot;{e}&quot;) }</code></pre>
+<p><code>Option&lt;T&gt;</code> models absence (no <code>null</code>), <code>Result&lt;T, E&gt;</code> models failure with a typed error. Combinators (<code>map</code>, <code>and_then</code>, <code>unwrap_or</code>, <code>?</code>) chain operations without nesting, which is the monad idea (&quot;railway-oriented programming&quot;: success stays on one track, the first failure switches to the error track).</p>
+<ul><li><strong>Pros</strong>: the signature documents failure; the compiler forces handling; errors are plain values (easy to test, pass around and aggregate); no hidden control flow; cheap.</li><li><strong>Cons</strong>: verbose without sugar; error type conversion boilerplate; deep call chains must thread results explicitly; programmer bugs (indexing out of bounds) still use panics.</li></ul>
+<h4>Guidance</h4>
+<div class="md-table"><table><thead><tr><th>Situation</th><th>Prefer</th></tr></thead><tbody><tr><td>Expected, recoverable outcomes (parse failure, not found, validation)</td><td>Result / Option, or checked exceptions</td></tr><tr><td>Programmer errors and broken invariants</td><td>exceptions, panics, assertions</td></tr><tr><td>Truly exceptional infrastructure failure at the edges</td><td>exceptions caught at a boundary (HTTP handler, job runner)</td></tr><tr><td>Languages without a Result convention (Go)</td><td>explicit <code>(value, error)</code> returns, wrapped with context</td></tr></tbody></table></div>
+<h4>Good practice in either style</h4>
+<ul><li>Add <strong>context</strong> when rethrowing (<code>raise X from e</code>, <code>fmt.Errorf(&quot;load config: %w&quot;, err)</code>, <code>anyhow::Context</code>) and keep the cause.</li><li>Do not use exceptions for ordinary control flow, and never swallow with empty catch.</li><li>Define a small, stable error taxonomy (retryable, user error, bug) so callers can decide.</li><li>Clean up with <code>finally</code>, <code>with</code>, <code>defer</code> or RAII.</li><li>Convert errors at <strong>module boundaries</strong> into domain errors and HTTP or gRPC status codes.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>When would you choose checked exceptions, unchecked exceptions or Result types?</li><li>How does the ? operator in Rust or railway-oriented programming reduce Result boilerplate?</li><li>How do you carry error context and avoid swallowing the original cause?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-94">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-94%3A+Compare+error+handling+strategies%3A+Exceptions+versus+Result%2FOption%E2%80%A6&amp;question-id=gen-94&amp;context=Software+engineer+%28core%29%2C+Gear+2%2C+topic%3A+Engineering%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-94.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

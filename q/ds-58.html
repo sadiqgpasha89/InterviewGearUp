@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain Bayesian inference in practice: priors, posteriors, MCMC sampling and how to check a model. | InterviewGearUp</title>
+<meta name="description" content="Bayesian inference combines a prior over parameters with the likelihood of the data to obtain a posterior distribution, usually sampled with MCMC methods…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-58.html">
+<meta property="og:title" content="Explain Bayesian inference in practice: priors, posteriors, MCMC sampling and how to check a model. | InterviewGearUp">
+<meta property="og:description" content="Bayesian inference combines a prior over parameters with the likelihood of the data to obtain a posterior distribution, usually sampled with MCMC methods…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-58.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain Bayesian inference in practice: priors, posteriors, MCMC sampling and how to check a model.</h1>
+<p class="muted small-text meta-line">Data scientist · Gear 4 (Lead / Staff) · Bayesian statistics · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Bayesian inference combines a prior over parameters with the likelihood of the data to obtain a posterior distribution, usually sampled with MCMC methods such as Hamiltonian Monte Carlo. Choose weakly informative priors, check convergence with R-hat, effective sample size and divergences, and validate with posterior predictive checks and sensitivity to the prior before using the posterior for decisions.</p></div>
+<h4>Explained in depth</h4>
+<h4>The framework</h4>
+<p><strong>Bayes&#39; rule</strong>: posterior is proportional to likelihood x prior, p(theta | data) ∝ p(data | theta) p(theta). The <strong>prior</strong> encodes what we know before seeing data, the <strong>likelihood</strong> is the data-generating model, and the <strong>posterior</strong> is the updated belief expressed as a full distribution. Predictions integrate over parameter uncertainty (the <strong>posterior predictive distribution</strong>). Credible intervals have the direct interpretation &quot;given the model and prior, there is a 95 percent probability the parameter lies in this range&quot;. When the prior is <strong>conjugate</strong> (Beta-Binomial, Normal-Normal, Gamma-Poisson) the posterior is analytic; for realistic models we <strong>sample</strong>.</p>
+<h4>Priors</h4>
+<ul><li><strong>Weakly informative priors</strong> regularise without dominating the data (Normal(0, 2.5) on standardised logistic coefficients; half-Normal or exponential for scale parameters).</li><li><strong>Informative priors</strong> encode past experiments or domain knowledge (previous A/B test lifts are usually between -2 and +5 percent).</li><li>Avoid flat &quot;uninformative&quot; priors on unbounded parameters, which can be improper or put mass on absurd values.</li><li>Do <strong>prior predictive checks</strong>: simulate data from the prior alone and see if they look plausible.</li><li>Run <strong>sensitivity analysis</strong>: refit with alternative priors; if conclusions change, say so and collect more data.</li></ul>
+<h4>Computation</h4>
+<p><strong>MCMC</strong> draws samples from the posterior. <strong>Hamiltonian Monte Carlo / NUTS</strong> (Stan, PyMC, NumPyro) uses gradients to explore efficiently in high dimensions. Alternatives: <strong>variational inference</strong> (fast approximations; can underestimate uncertainty), Laplace approximation, and importance sampling or SMC.</p>
+<pre><code>import pymc as pm, arviz as az
+with pm.Model() as m:
+    mu = pm.Normal(&quot;mu&quot;, 0, 1)
+    sigma = pm.HalfNormal(&quot;sigma&quot;, 1)
+    y = pm.Normal(&quot;y&quot;, mu, sigma, observed=data)
+    idata = pm.sample(2000, tune=1000, chains=4, target_accept=0.9)
+print(az.summary(idata, var_names=[&quot;mu&quot;, &quot;sigma&quot;]))       # r_hat, ess_bulk, hdi</code></pre>
+<h4>Diagnostics before trusting results</h4>
+<ul><li><strong>R-hat</strong> close to 1.00 (below 1.01): chains agree.</li><li><strong>Effective sample size</strong> (bulk and tail) large enough (hundreds per parameter).</li><li><strong>Trace plots</strong> well-mixed; no <strong>divergent transitions</strong> (sign of difficult geometry: reparameterise, use non-centred form, tighten priors, raise target_accept).</li><li><strong>Posterior predictive checks</strong>: simulate replicated data from the posterior and compare with observed data (distribution, extremes, group patterns). Misfit means the model is wrong, not that sampling failed.</li><li><strong>Model comparison</strong>: leave-one-out cross-validation (<strong>PSIS-LOO</strong>) or WAIC with <code>az.compare</code>; examine Pareto-k warnings; prefer predictive checks and domain reasoning over chasing small differences.</li><li>Check <strong>identifiability</strong> and parameter correlations; scale predictors.</li></ul>
+<h4>Decisions</h4>
+<p>Because you have a full posterior you can compute <strong>probabilities of events</strong> (P(lift &gt; 1 percent)), expected loss, and optimal actions under a utility function. Communicate uncertainty with intervals and probability statements, not just a point estimate.</p>
+<h4>Frequentist versus Bayesian</h4>
+<p>They often agree with ample data and weak priors. Bayesian methods shine with small data, hierarchical structures, prior knowledge, complex models and decision analysis; costs include computation, modelling choices that need justification, and communication.</p>
+<h4>Pitfalls</h4>
+<p>Ignoring convergence warnings, using default priors blindly, interpreting a posterior from a misspecified model as truth, and confusing credible intervals with confidence intervals.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How would you choose a prior when you have little domain knowledge, and how do you test whether it matters?</li><li>What are divergent transitions in HMC and what do they indicate?</li><li>How do you compare two Bayesian models, and what are WAIC and LOO?</li></ul>
+<p><a class="btn primary" href="../#/q/ds-58">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-58%3A+Explain+Bayesian+inference+in+practice%3A+priors%2C+posteriors%2C+MCMC%E2%80%A6&amp;question-id=ds-58&amp;context=Data+scientist%2C+Gear+4%2C+topic%3A+Bayesian+statistics%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-58.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>
