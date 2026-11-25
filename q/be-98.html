@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does database partition pruning optimize query performance on partitioned tables? | InterviewGearUp</title>
+<meta name="description" content="Partition pruning lets the planner skip partitions that cannot contain matching rows, based on predicates over the partition key. Queries touch only…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-98.html">
+<meta property="og:title" content="How does database partition pruning optimize query performance on partitioned tables? | InterviewGearUp">
+<meta property="og:description" content="Partition pruning lets the planner skip partitions that cannot contain matching rows, based on predicates over the partition key. Queries touch only…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-98.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does database partition pruning optimize query performance on partitioned tables?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · Databases · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Partition pruning lets the planner skip partitions that cannot contain matching rows, based on predicates over the partition key. Queries touch only relevant partitions, reducing I/O, memory and lock overhead, as long as the filter uses the partition key in a form the optimiser can evaluate at plan time or execution time.</p></div>
+<h4>Explained in depth</h4>
+<h4>Partitioning basics</h4>
+<p>A large table is split into smaller physical partitions by a key: <strong>range</strong> (dates), <strong>list</strong> (region), or <strong>hash</strong> (even distribution).</p>
+<pre><code>CREATE TABLE events (
+  id BIGINT, created_at timestamptz NOT NULL, payload jsonb
+) PARTITION BY RANGE (created_at);
+
+CREATE TABLE events_2026_10 PARTITION OF events FOR VALUES FROM (&#39;2026-10-01&#39;) TO (&#39;2026-11-01&#39;);
+CREATE TABLE events_2026_11 PARTITION OF events FOR VALUES FROM (&#39;2026-11-01&#39;) TO (&#39;2026-12-01&#39;);</code></pre>
+<h4>Pruning</h4>
+<pre><code>EXPLAIN SELECT * FROM events WHERE created_at &gt;= &#39;2026-11-10&#39; AND created_at &lt; &#39;2026-11-20&#39;;
+-- Scans only events_2026_11; other partitions are excluded from the plan</code></pre>
+<p>The planner compares predicates with each partition&#39;s bounds and discards partitions that cannot match. Benefits: less data read, smaller indexes to search, better cache usage, fewer locks, faster maintenance, and quick data lifecycle operations (detach or drop an old partition instead of a huge <code>DELETE</code>).</p>
+<h4>When pruning works</h4>
+<ul><li><strong>Plan-time pruning</strong>: predicates use constants or stable expressions (<code>created_at &gt;= &#39;2026-11-10&#39;</code>, <code>now() - interval &#39;7 days&#39;</code> is stable and handled at execution start).</li><li><strong>Run-time (execution-time) pruning</strong>: parameters in prepared statements, subquery results or nested loop join values are used to prune when values become known (shown as &quot;Subplans Removed&quot; in <code>EXPLAIN ANALYZE</code> in PostgreSQL).</li><li>Predicates need to be on the <strong>partition key</strong>, with compatible types and operators. For hash partitions, only equality conditions (<code>user_id = 42</code>) prune.</li></ul>
+<h4>What breaks pruning</h4>
+<ul><li>Functions or casts on the column: <code>WHERE date(created_at) = &#39;2026-11-15&#39;</code> or <code>WHERE created_at::date = ...</code> prevent bounds comparison. Rewrite as a range.</li><li>Filtering only on a non-key column, <code>OR</code> conditions mixing keys, type mismatches, or volatile functions evaluated per row.</li><li>Joins where the partition key is not part of the join condition (partition-wise join and aggregate settings can help).</li><li>Too many partitions: planning time grows with partition count (thousands of partitions slow planning and consume memory), so choose coarser ranges (daily or monthly) and avoid over-partitioning small tables.</li></ul>
+<h4>Design guidance</h4>
+<ul><li>Pick a key that matches the most common filters and data lifecycle (time for logs and events, tenant id for multi-tenant).</li><li>Include the partition key in primary and unique keys (a requirement in PostgreSQL), and create indexes per partition (inherited from the parent definition).</li><li>Automate partition creation and retirement (<code>pg_partman</code>, scheduled jobs), and keep a default partition for unexpected values with monitoring.</li><li>Verify with <code>EXPLAIN</code> that pruning occurs and avoid queries without the key that scan all partitions.</li><li>Other engines: MySQL supports pruning via <code>EXPLAIN PARTITIONS</code>, Oracle and SQL Server have partition elimination, BigQuery and Snowflake prune partitions or micro-partitions through metadata and clustering, Hive and Spark prune on directory partitions.</li></ul>
+<h4>Pitfalls</h4>
+<p>Assuming partitioning always speeds queries (cross-partition queries can be slower), choosing a high-cardinality or skewed key, and forgetting that foreign keys and global unique constraints across partitions are limited.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does wrapping the partition key in a function defeat pruning?</li><li>What is the difference between plan-time and run-time pruning?</li><li>How many partitions are too many?</li></ul>
+<p><a class="btn primary" href="../#/q/be-98">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-98%3A+How+does+database+partition+pruning+optimize+query+performance+on%E2%80%A6&amp;question-id=be-98&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+Databases%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-98.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you implement graceful shutdown in a web server upon receiving a SIGTERM signal? | InterviewGearUp</title>
+<meta name="description" content="On SIGTERM a server should stop accepting new connections, fail readiness so the load balancer stops routing, finish in-flight requests within a…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-71.html">
+<meta property="og:title" content="How do you implement graceful shutdown in a web server upon receiving a SIGTERM signal? | InterviewGearUp">
+<meta property="og:description" content="On SIGTERM a server should stop accepting new connections, fail readiness so the load balancer stops routing, finish in-flight requests within a…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-71.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you implement graceful shutdown in a web server upon receiving a SIGTERM signal?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 2 (Mid-level) · Reliability · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>On SIGTERM a server should stop accepting new connections, fail readiness so the load balancer stops routing, finish in-flight requests within a deadline, flush queues and close resources (database pools, consumers), then exit. A hard timeout forces exit if draining takes too long, and exit codes signal the result.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why it matters</h4>
+<p>Deploys, autoscaling and node drains terminate instances constantly. An abrupt kill drops in-flight requests (502 errors), leaves half-finished work, corrupts partial writes and loses unacked messages. Orchestrators (Kubernetes, ECS, systemd, Docker) send <strong>SIGTERM</strong>, wait a grace period (default 30 s), and then send <strong>SIGKILL</strong>, which cannot be handled.</p>
+<h4>Sequence</h4>
+<ol start="1"><li><strong>Receive SIGTERM</strong>, set a <code>shuttingDown</code> flag.</li><li><strong>Fail readiness</strong> (<code>/ready</code> returns 503) so the load balancer and Service stop sending new requests.</li><li><strong>Wait for propagation</strong>: endpoint removal and LB deregistration are asynchronous; sleep a few seconds (a <code>preStop</code> hook with <code>sleep 10</code>, or in-app delay) while still accepting connections.</li><li><strong>Stop accepting new connections</strong> (<code>server.close()</code>), set <code>Connection: close</code> on keep-alive responses.</li><li><strong>Drain in-flight requests</strong> until complete or a deadline (shorter than the platform&#39;s grace period).</li><li><strong>Stop background work</strong>: stop consumers from polling, finish or requeue current messages, flush buffers (logs, metrics, traces), commit offsets.</li><li><strong>Close resources</strong> in reverse dependency order: HTTP server, worker pools, DB and cache connections.</li><li><strong>Exit with code 0</strong>; if the deadline passes, log and exit non-zero.</li></ol>
+<pre><code>// Node.js (Express)
+const server = app.listen(8080);
+let shuttingDown = false;
+app.get(&#39;/ready&#39;, (_, res) =&gt; res.sendStatus(shuttingDown ? 503 : 200));
+async function shutdown(signal) {
+  if (shuttingDown) return; shuttingDown = true;
+  console.log(`${signal}: draining`);
+  setTimeout(() =&gt; process.exit(1), 25_000).unref();              // hard deadline
+  await new Promise(r =&gt; setTimeout(r, 5_000));                    // let LB notice readiness change
+  server.close(async () =&gt; { await db.end(); await producer.disconnect(); process.exit(0); });
+  server.closeIdleConnections?.();
+}
+process.on(&#39;SIGTERM&#39;, () =&gt; shutdown(&#39;SIGTERM&#39;));
+process.on(&#39;SIGINT&#39;,  () =&gt; shutdown(&#39;SIGINT&#39;));</code></pre>
+<pre><code>ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
+defer stop()
+go srv.ListenAndServe()
+&lt;-ctx.Done()
+shutdownCtx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
+defer cancel()
+srv.Shutdown(shutdownCtx)         // stops listeners, waits for active requests</code></pre>
+<h4>Details and gotchas</h4>
+<ul><li>Containers must receive the signal: use <code>exec</code> form (<code>CMD [&quot;node&quot;, &quot;server.js&quot;]</code>) or an init like <code>tini</code>; shell wrappers swallow SIGTERM and the process gets SIGKILLed after 30 s.</li><li>Set <code>terminationGracePeriodSeconds</code> greater than preStop delay plus drain deadline.</li><li><strong>Long-lived connections</strong>: send a close frame or reconnect hint (WebSocket code 1001, gRPC GOAWAY, SSE retry), and let clients reconnect with jitter to avoid a thundering herd.</li><li><strong>Consumers</strong>: stop fetching, finish current messages, ack or nack, and leave the group cleanly so rebalancing is quick.</li><li>Make operations idempotent; shutdown cannot guarantee everything finishes, especially after SIGKILL.</li><li>Test it: send SIGTERM during a load test and verify zero failed requests, and that exit time is within limits.</li></ul>
+<h4>Pitfalls</h4>
+<p>Calling <code>process.exit()</code> immediately, shutting down the database before the HTTP server drains, ignoring keep-alive connections that keep the server open, and mismatched timeouts between the app, load balancer idle timeout and orchestrator.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why add a delay before closing the listener in Kubernetes?</li><li>How do you drain long-lived connections such as WebSockets or streams?</li><li>How do background workers and message consumers shut down safely?</li></ul>
+<p><a class="btn primary" href="../#/q/be-71">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-71%3A+How+do+you+implement+graceful+shutdown+in+a+web+server+upon%E2%80%A6&amp;question-id=be-71&amp;context=Backend+engineer%2C+Gear+2%2C+topic%3A+Reliability%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-71.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

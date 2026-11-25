@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does Apache Cassandra use LSM trees, SSTables, and tunable consistency quorums? | InterviewGearUp</title>
+<meta name="description" content="Cassandra writes go to a commit log and an in-memory memtable, which flushes to immutable sorted SSTables on disk (an LSM tree design), merged later by…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-76.html">
+<meta property="og:title" content="How does Apache Cassandra use LSM trees, SSTables, and tunable consistency quorums? | InterviewGearUp">
+<meta property="og:description" content="Cassandra writes go to a commit log and an in-memory memtable, which flushes to immutable sorted SSTables on disk (an LSM tree design), merged later by…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-76.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does Apache Cassandra use LSM trees, SSTables, and tunable consistency quorums?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · Databases · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Cassandra writes go to a commit log and an in-memory memtable, which flushes to immutable sorted SSTables on disk (an LSM tree design), merged later by compaction. Reads consult memtable, bloom filters and SSTables. Tunable consistency levels with replication factor N and quorums let each query trade consistency against latency and availability.</p></div>
+<h4>Explained in depth</h4>
+<h4>LSM write path</h4>
+<ol start="1"><li>The mutation is appended to the <strong>commit log</strong> (sequential write on disk for durability).</li><li>It is applied to the in-memory <strong>memtable</strong> (sorted by partition key and clustering columns).</li><li>When the memtable is full, it is flushed as an immutable <strong>SSTable</strong> (Sorted String Table) with a data file, partition index, summary, <strong>bloom filter</strong>, and compression info. The commit log segment can then be discarded.</li></ol>
+<p>Writes are therefore sequential and fast (no read-before-write, no in-place update), which gives high write throughput.</p>
+<h4>Read path</h4>
+<p>Check the memtable and row cache, then for each SSTable use the <strong>bloom filter</strong> to skip files that definitely lack the partition, consult the partition index, and read matching data. Results from several SSTables are merged by timestamp (last write wins). The more SSTables a partition spans, the slower the read (&quot;read amplification&quot;).</p>
+<h4>Compaction</h4>
+<p>Background merges combine SSTables, drop shadowed values and expired tombstones, and reduce read amplification:</p>
+<ul><li><strong>Size-Tiered (STCS)</strong>: merges similarly sized tables; good for write-heavy workloads; needs up to 50 percent free disk space.</li><li><strong>Leveled (LCS)</strong>: tables organised in levels with non-overlapping ranges; excellent read latency, higher write amplification; suited to read-heavy workloads.</li><li><strong>Time-Window (TWCS)</strong>: groups by time buckets for time-series data with TTLs, allowing whole-file expiry.</li></ul>
+<h4>Deletes</h4>
+<p>Deletes write <strong>tombstones</strong> (markers) that persist for <code>gc_grace_seconds</code> (default 10 days) so all replicas learn the delete. Many tombstones in a read range slow queries and can fail them; avoid queue-like or frequently-deleted patterns.</p>
+<h4>Data distribution and replication</h4>
+<p>Partition keys are hashed (Murmur3) onto a token ring with <strong>virtual nodes</strong>; each partition is stored on <strong>N replicas</strong> (replication factor, with NetworkTopologyStrategy per data centre). Any node can coordinate a request.</p>
+<h4>Tunable consistency</h4>
+<p>Per query, choose the number of replicas that must respond: <code>ONE</code>, <code>QUORUM</code> (⌊N/2⌋+1), <code>LOCAL_QUORUM</code>, <code>EACH_QUORUM</code>, <code>ALL</code>.</p>
+<ul><li><strong>Strong consistency</strong> when <code>R + W &gt; N</code>: with N = 3, <code>QUORUM</code> reads and writes (2 + 2 &gt; 3) always overlap on at least one replica holding the latest value.</li><li><code>ONE</code> favours latency and availability (eventually consistent); <code>ALL</code> favours consistency but fails if any replica is down.</li><li>Lightweight transactions (<code>IF NOT EXISTS</code>, Paxos) give linearizable compare-and-set at higher cost.</li></ul>
+<h4>Repairing divergence</h4>
+<p><strong>Hinted handoff</strong> stores writes for a down node temporarily, <strong>read repair</strong> fixes mismatches found during reads, and <strong>anti-entropy repair</strong> (<code>nodetool repair</code>, Merkle trees) must run regularly (within <code>gc_grace_seconds</code>) to prevent resurrected data.</p>
+<h4>Modelling guidance</h4>
+<p>Design tables <strong>per query</strong>: partition key chosen for even distribution and bounded partition size (aim under 100 MB), clustering columns for ordering, denormalise rather than join, avoid secondary indexes on high-cardinality columns, and avoid unbounded partitions (add time buckets).</p>
+<h4>Pitfalls</h4>
+<p>Hot partitions, large partitions, tombstone storms, mixing counters and deletes, skipping repairs, and using <code>ALLOW FILTERING</code> in production queries.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do compaction strategies differ (size-tiered, leveled, time-window)?</li><li>What are tombstones and why can they hurt read performance?</li><li>How do hinted handoff, read repair and anti-entropy repair keep replicas consistent?</li></ul>
+<p><a class="btn primary" href="../#/q/be-76">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-76%3A+How+does+Apache+Cassandra+use+LSM+trees%2C+SSTables%2C+and+tunable%E2%80%A6&amp;question-id=be-76&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+Databases%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-76.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

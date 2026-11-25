@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Design a distributed task scheduler that executes millions of scheduled cron tasks with high availability. | InterviewGearUp</title>
+<meta name="description" content="A distributed cron scheduler stores job definitions and next run times in a durable store, shards or partitions jobs across scheduler nodes, claims due…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-67.html">
+<meta property="og:title" content="Design a distributed task scheduler that executes millions of scheduled cron tasks with high availability. | InterviewGearUp">
+<meta property="og:description" content="A distributed cron scheduler stores job definitions and next run times in a durable store, shards or partitions jobs across scheduler nodes, claims due…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-67.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Design a distributed task scheduler that executes millions of scheduled cron tasks with high availability.</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · Architecture · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A distributed cron scheduler stores job definitions and next run times in a durable store, shards or partitions jobs across scheduler nodes, claims due jobs atomically (leases or leader per shard), enqueues them to workers, and records executions idempotently. Replicas and lease-based failover provide high availability, while timing wheels or indexed polling handle millions of schedules.</p></div>
+<h4>Explained in depth</h4>
+<h4>Requirements</h4>
+<p>Millions of schedules (cron expressions, one-off delays), on-time execution within seconds, at-least-once or effectively-once semantics, high availability with no single point of failure, retries, observability, tenant isolation, and fair handling of the big spike at minute boundaries.</p>
+<h4>Architecture</h4>
+<pre><code>API / UI -&gt; Job store (SQL or DynamoDB: job_id, cron, tz, next_run_at, payload, version, status)
+                      |
+              Scheduler nodes (sharded) -- poll due jobs --&gt; Queue (Kafka, SQS, RabbitMQ) --&gt; Worker fleet
+                      |                                                  |
+              compute next_run_at, claim via lease                  execute, report result -&gt; Run history store</code></pre>
+<ol start="1"><li><strong>Persist</strong> jobs with <code>next_run_at</code> indexed (partition by <code>shard = hash(job_id) % N</code>).</li><li><strong>Scheduler loop</strong> per shard: query <code>WHERE shard = ? AND next_run_at &lt;= now() + lookahead ORDER BY next_run_at LIMIT batch</code>, claim rows, and publish them to the queue.</li><li><strong>Claim atomically</strong>: <code>UPDATE jobs SET next_run_at = &lt;next&gt;, lease_owner = me, version = version + 1 WHERE id = ? AND version = ?</code> (optimistic locking) or <code>SELECT ... FOR UPDATE SKIP LOCKED</code>. Only one scheduler wins each run.</li><li><strong>Execute</strong>: workers pull tasks, run with timeouts, and ack. The task carries a deterministic <strong>run id</strong> (<code>job_id + scheduled_time</code>) so a duplicate delivery is detected by a unique constraint in the run history (idempotency).</li><li>Compute the <strong>next occurrence</strong> from the cron expression in the job&#39;s time zone (handle DST gaps and overlaps), and advance only after enqueue succeeds.</li></ol>
+<h4>High availability</h4>
+<ul><li><strong>Shard ownership</strong> with leases in etcd, ZooKeeper, Consul or the database; if a node dies its lease expires and another node takes the shard (consistent hashing or a coordinator assigns shards).</li><li>Multiple replicas of the job store (quorum database), multi-AZ deployment, and queues with durability.</li><li>Fencing tokens or version checks so a stale scheduler cannot enqueue after losing a lease.</li></ul>
+<h4>Scaling</h4>
+<ul><li><strong>Timing wheel</strong> (hierarchical) in memory for near-term jobs: load the next few minutes of jobs from the store into the wheel for O(1) insertion and tick processing.</li><li><strong>Jitter and spreading</strong> of schedules that all say <code>0 0 * * *</code>; per-tenant rate limits and priority queues, so one tenant cannot starve others.</li><li>Partition the queue by job type, autoscale workers on queue depth, and cap per-job concurrency (skip, queue or kill overlapping runs, depending on policy).</li></ul>
+<h4>Semantics and policies</h4>
+<ul><li><strong>Misfire policy</strong>: after downtime, run once immediately, skip, or run all missed occurrences (configurable).</li><li><strong>Retries</strong> with backoff, timeouts, dead-lettering, max runtime watchdog, and manual rerun.</li><li><strong>Delivery</strong>: at-least-once from the scheduler; make jobs idempotent for effectively-once.</li><li><strong>Clock handling</strong>: use the database or a NTP-synced time, store UTC plus time zone.</li></ul>
+<h4>Observability</h4>
+<p>Metrics: scheduling lag (actual minus intended start), queue depth, success rate, run duration, missed runs; alert on lag. Keep run history with logs and traces.</p>
+<h4>Existing options</h4>
+<p>Quartz clustered, Temporal and Cadence (durable workflows with timers), Airflow, Kubernetes CronJob, AWS EventBridge Scheduler. Build custom only for scale or semantics they do not meet.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you prevent a job from running twice when two schedulers pick it up?</li><li>How do you handle missed runs during downtime (misfire policy)?</li><li>How do you scale to millions of jobs and spiky minute boundaries?</li></ul>
+<p><a class="btn primary" href="../#/q/be-67">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-67%3A+Design+a+distributed+task+scheduler+that+executes+millions+of%E2%80%A6&amp;question-id=be-67&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-67.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

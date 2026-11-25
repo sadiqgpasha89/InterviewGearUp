@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is the difference between Role-Based Access Control (RBAC) and Attribute-Based Access Control (ABAC)? | InterviewGearUp</title>
+<meta name="description" content="RBAC grants permissions to roles and assigns roles to users, which is simple and auditable. ABAC evaluates policies over attributes of the subject,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-61.html">
+<meta property="og:title" content="What is the difference between Role-Based Access Control (RBAC) and Attribute-Based Access Control (ABAC)? | InterviewGearUp">
+<meta property="og:description" content="RBAC grants permissions to roles and assigns roles to users, which is simple and auditable. ABAC evaluates policies over attributes of the subject,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-61.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is the difference between Role-Based Access Control (RBAC) and Attribute-Based Access Control (ABAC)?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · Security · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>RBAC grants permissions to roles and assigns roles to users, which is simple and auditable. ABAC evaluates policies over attributes of the subject, resource, action and environment (department, ownership, sensitivity, time, location), allowing fine-grained, context-aware decisions at the cost of more complexity.</p></div>
+<h4>Explained in depth</h4>
+<h4>RBAC</h4>
+<p>Users get roles (<code>admin</code>, <code>editor</code>, <code>viewer</code>); roles contain permissions (<code>article:update</code>). Access check: does any role of the user include the permission?</p>
+<pre><code>user alice -&gt; role editor -&gt; permissions {article:read, article:update}</code></pre>
+<p>Pros: easy to understand, review and audit, maps to organisational job functions, fast checks, supported everywhere (cloud IAM, Kubernetes RBAC, frameworks). Cons: coarse; cannot express &quot;only edit your own articles&quot;, &quot;only during business hours&quot; or &quot;only for customers in your region&quot; without creating many roles (<strong>role explosion</strong>: <code>editor-eu-draft</code>, <code>editor-us-published</code>...).</p>
+<h4>ABAC</h4>
+<p>Decisions come from rules evaluated over attributes:</p>
+<ul><li><strong>Subject</strong>: role, department, clearance, tenant.</li><li><strong>Resource</strong>: owner, classification, status, region.</li><li><strong>Action</strong>: read, approve, delete.</li><li><strong>Environment</strong>: time, device trust, IP range, risk score.</li></ul>
+<pre><code>permit if subject.department == resource.department
+       and resource.status != &quot;locked&quot;
+       and (action == &quot;read&quot; or subject.id == resource.ownerId)</code></pre>
+<p>Pros: very flexible, fewer roles, supports multi-tenancy, data classification and contextual rules, policies change without redeploying code. Cons: harder to reason about and audit (&quot;who can access X?&quot;), policy sprawl, attribute data must be accurate and available at decision time, and performance needs care.</p>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th></th><th>RBAC</th><th>ABAC</th></tr></thead><tbody><tr><td>Basis</td><td>roles</td><td>attributes and policies</td></tr><tr><td>Granularity</td><td>coarse</td><td>fine</td></tr><tr><td>Complexity</td><td>low</td><td>higher</td></tr><tr><td>Audit</td><td>easy: list of role members</td><td>requires policy analysis or simulation</td></tr><tr><td>Context (time, owner, device)</td><td>no</td><td>yes</td></tr><tr><td>Typical fit</td><td>internal tools, admin consoles</td><td>multi-tenant SaaS, healthcare, finance, data governance</td></tr></tbody></table></div>
+<h4>Practical approach</h4>
+<p>Combine them: roles for broad capabilities plus attribute conditions for ownership and context (sometimes called RBAC with constraints, or relationship-based access control, ReBAC, as in Google Zanzibar, SpiceDB, OpenFGA for sharing models like &quot;viewer of folder implies viewer of document&quot;).</p>
+<h4>Implementation guidance</h4>
+<ul><li>Separate <strong>policy decision</strong> (a policy engine such as OPA with Rego, AWS Cedar, XACML, Casbin) from <strong>policy enforcement</strong> (middleware, gateway, data layer), and keep decisions centralised and testable.</li><li>Default <strong>deny</strong>, least privilege, explicit scopes in tokens, and re-check authorisation on the server for every request (never trust UI hiding).</li><li>Enforce row-level filters in queries (<code>WHERE tenant_id = :t</code>) or database row-level security, and handle object-level checks (IDOR prevention).</li><li>Log decisions with the reason, test policies with unit tests and simulation, and review role assignments regularly.</li><li>Cache decisions carefully with short TTLs and revoke on change.</li></ul>
+<h4>Pitfalls</h4>
+<p>Role explosion, policies embedded in scattered <code>if</code> statements, stale attributes in JWTs (long-lived tokens carrying old roles), and checking only coarse permissions without verifying resource ownership.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is role explosion and how does ABAC or ReBAC avoid it?</li><li>Where should authorization decisions be enforced and where defined?</li><li>What are policy engines such as OPA, Cedar and Zanzibar-style systems?</li></ul>
+<p><a class="btn primary" href="../#/q/be-61">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-61%3A+What+is+the+difference+between+Role-Based+Access+Control+%28RBAC%29+and%E2%80%A6&amp;question-id=be-61&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+Security%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-61.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

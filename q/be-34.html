@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is Kafka log compaction and how does it support stateful stream processing? | InterviewGearUp</title>
+<meta name="description" content="Log compaction keeps at least the latest record for each key in a Kafka topic and removes older values, so the topic acts as a changelog or table…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-34.html">
+<meta property="og:title" content="What is Kafka log compaction and how does it support stateful stream processing? | InterviewGearUp">
+<meta property="og:description" content="Log compaction keeps at least the latest record for each key in a Kafka topic and removes older values, so the topic acts as a changelog or table…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-34.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is Kafka log compaction and how does it support stateful stream processing?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · Messaging · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Log compaction keeps at least the latest record for each key in a Kafka topic and removes older values, so the topic acts as a changelog or table snapshot. Consumers can rebuild state by replaying it, and Kafka Streams state stores and KTables use compacted changelog topics to recover quickly.</p></div>
+<h4>Explained in depth</h4>
+<h4>Retention modes</h4>
+<p>Normal topics use <strong>time or size retention</strong> and delete old segments regardless of key. With <code>cleanup.policy=compact</code> Kafka keeps the <strong>most recent value per key</strong> and discards earlier ones, so the log never grows beyond the number of distinct keys (plus not-yet-cleaned data).</p>
+<pre><code>offset: 0   1   2   3   4   5   6
+key:    A   B   A   C   B   A   C
+value:  1   1   2   1   2   3   null(tombstone)
+
+after compaction: B=2 (off 4), A=3 (off 5), C=null (off 6, deleted after delete.retention.ms)</code></pre>
+<p>Offsets are preserved, so consumers keep their positions; compaction only removes records.</p>
+<h4>How it works</h4>
+<p>The log cleaner thread works on <strong>closed segments</strong>; the active segment is never compacted. A key map records the last offset of each key, then segments are rewritten omitting superseded records. <code>min.cleanable.dirty.ratio</code>, <code>segment.ms</code> and <code>min.compaction.lag.ms</code> control timing; <code>max.compaction.lag.ms</code> bounds how long a record can remain uncompacted.</p>
+<h4>Guarantees and caveats</h4>
+<ul><li>Latest value per key is always retained; consumers reading from the head may still see older values that have not been cleaned yet, so processing must be idempotent and keyed by the latest.</li><li><strong>Tombstone</strong>: a record with a key and a <code>null</code> value marks deletion; it is kept for <code>delete.retention.ms</code> (default 24 h) so slow consumers see the delete, then removed.</li><li>Records need <strong>non-null keys</strong>; ordering is only per partition, so all updates for a key must go to the same partition (default partitioner does this).</li><li>Compaction is not a query system; reading a key still needs a consumer building a local map.</li></ul>
+<h4>Why it supports stateful stream processing</h4>
+<ul><li><strong>Restoring state</strong>: a service that maintains a table (user profiles, inventory, configuration) can start with an empty store, read the compacted topic from the beginning, and rebuild the latest state quickly because it is compact.</li><li><strong>Kafka Streams</strong> stores operator state (KTable, aggregations, joins) in local RocksDB and backs every change up to an internal compacted <strong>changelog topic</strong>. After a crash or rebalance, the new instance restores the store from the changelog, optionally using standby replicas for faster failover.</li><li><strong>Table-stream duality</strong>: a stream of changes is a table&#39;s history; a compacted topic is the table&#39;s current content. This enables joins between streams and tables (enrichment), and <code>GlobalKTable</code> broadcasts reference data.</li><li>Other uses: event-carried state transfer between microservices, <code>__consumer_offsets</code>, configuration distribution, CDC snapshots (Debezium topics).</li></ul>
+<h4>Pitfalls</h4>
+<p>Using compaction for event histories that need every event (use time retention or an event store), huge key cardinality causing large key maps, forgetting tombstone retention for slow consumers, and expecting immediate cleaning.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do tombstones delete keys and how long are they retained?</li><li>What guarantees does compaction give about ordering and the active segment?</li><li>How does Kafka Streams use changelog topics for fault tolerance?</li></ul>
+<p><a class="btn primary" href="../#/q/be-34">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-34%3A+What+is+Kafka+log+compaction+and+how+does+it+support+stateful+stream%E2%80%A6&amp;question-id=be-34&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+Messaging%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-34.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

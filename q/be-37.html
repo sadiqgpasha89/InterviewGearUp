@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you implement backpressure and consumer rate limiting in asynchronous message queues? | InterviewGearUp</title>
+<meta name="description" content="Backpressure lets slow consumers signal producers to slow down instead of overflowing buffers. In message systems implement it with bounded queues,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-37.html">
+<meta property="og:title" content="How do you implement backpressure and consumer rate limiting in asynchronous message queues? | InterviewGearUp">
+<meta property="og:description" content="Backpressure lets slow consumers signal producers to slow down instead of overflowing buffers. In message systems implement it with bounded queues,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-37.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you implement backpressure and consumer rate limiting in asynchronous message queues?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · Messaging · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Backpressure lets slow consumers signal producers to slow down instead of overflowing buffers. In message systems implement it with bounded queues, prefetch limits, pull-based consumption, rate limiters and token buckets, pausing partitions, autoscaling, and load shedding when overload is sustained.</p></div>
+<h4>Explained in depth</h4>
+<h4>The problem</h4>
+<p>If producers outpace consumers, queues grow without bound, causing memory exhaustion, high latency (messages processed long after they were relevant), and cascading failures. Backpressure propagates &quot;slow down&quot; from the bottleneck to the source.</p>
+<h4>Mechanisms</h4>
+<ol start="1"><li><strong>Bounded buffers</strong>: limit queue length or bytes (<code>x-max-length</code>, <code>max-length-bytes</code>, SQS has no hard limit, but you can watch <code>ApproximateNumberOfMessages</code>). Choose an overflow policy: block producers (publisher confirms and flow control), reject new messages, or drop oldest.</li><li><strong>Consumer prefetch (RabbitMQ QoS)</strong>: <code>basic.qos(prefetch_count=N)</code> limits unacknowledged messages per consumer, so the broker stops pushing until the consumer acks. Choose N to cover round-trip latency without hoarding work (10 to 50 for slow tasks, higher for fast ones).</li><li><strong>Pull-based consumption (Kafka, SQS, Pulsar)</strong>: consumers request batches at their own pace (<code>max.poll.records</code>, <code>fetch.max.bytes</code>). If a consumer is slow, lag grows in the durable log instead of overloading the consumer. Use <code>pause()</code> and <code>resume()</code> on partitions when a downstream sink is saturated.</li><li><strong>Rate limiting inside the consumer</strong>: token bucket or semaphore limiting concurrent calls to a database or third-party API.</li><li><strong>Producer-side control</strong>: publisher confirms, in-flight limits, adaptive batching, and credit-based flow (AMQP 1.0 link credit, reactive streams <code>request(n)</code>).</li><li><strong>Autoscaling</strong> consumers on queue depth or lag (KEDA, HPA with custom metrics), within the limits of partitions and downstream capacity.</li><li><strong>Load shedding and prioritisation</strong>: reject low-priority work, use priority queues or separate queues per class, return 429 or 503 to upstream callers, and apply deadlines so stale messages are dropped (TTL).</li></ol>
+<pre><code>sem = asyncio.Semaphore(20)            # at most 20 concurrent downstream calls
+async def handle(msg):
+    async with sem:
+        await call_downstream(msg)
+# Kafka consumer: pause when internal queue is full
+if work_queue.qsize() &gt; HIGH: consumer.pause(consumer.assignment())
+elif work_queue.qsize() &lt; LOW: consumer.resume(consumer.assignment())</code></pre>
+<h4>Design guidance</h4>
+<ul><li>Find the real bottleneck (database, API quota) and apply the limit <strong>there</strong>, so upstream components adapt.</li><li>Use hysteresis (high and low watermarks) to avoid flapping.</li><li>Measure consumer lag, queue depth, age of oldest message, processing latency and error rate; alert on growth trends.</li><li>Keep consumers idempotent because blocked or timed-out messages are redelivered.</li><li>Prefer <strong>bounded</strong> and observable queues; an unbounded queue only hides the problem until memory runs out.</li></ul>
+<h4>Pitfalls</h4>
+<p>Prefetch too high (one consumer hoards, uneven distribution) or too low (poor throughput), unlimited retries amplifying overload, blocking the poll loop long enough to trigger a Kafka rebalance (<code>max.poll.interval.ms</code>), and autoscaling past the number of partitions.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does RabbitMQ prefetch (QoS) bound in-flight messages?</li><li>How does Kafka&#39;s pull model make backpressure natural?</li><li>When should you drop or shed load instead of buffering?</li></ul>
+<p><a class="btn primary" href="../#/q/be-37">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-37%3A+How+do+you+implement+backpressure+and+consumer+rate+limiting+in%E2%80%A6&amp;question-id=be-37&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+Messaging%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-37.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

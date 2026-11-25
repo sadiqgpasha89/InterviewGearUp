@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Design a highly available, globally distributed URL shortener service handling 100k writes/sec. | InterviewGearUp</title>
+<meta name="description" content="A globally available URL shortener generates unique short codes without coordination, stores code to URL mappings in a horizontally sharded, replicated…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-100.html">
+<meta property="og:title" content="Design a highly available, globally distributed URL shortener service handling 100k writes/sec. | InterviewGearUp">
+<meta property="og:description" content="A globally available URL shortener generates unique short codes without coordination, stores code to URL mappings in a horizontally sharded, replicated…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-100.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Design a highly available, globally distributed URL shortener service handling 100k writes/sec.</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · Architecture · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A globally available URL shortener generates unique short codes without coordination, stores code to URL mappings in a horizontally sharded, replicated key-value store, serves reads through caches and a CDN, and scales writes of 100k per second with pre-allocated ID ranges or distributed ID generation, multi-region deployment, and asynchronous analytics.</p></div>
+<h4>Explained in depth</h4>
+<h4>Requirements and estimates</h4>
+<p>Functional: create a short link (optionally custom alias and expiry), redirect to the long URL, basic analytics. Non-functional: 100k writes per second, reads about 10 to 100 times higher (up to millions of redirects per second), p99 redirect latency under about 50 ms, 99.99 percent availability, durability, and abuse protection. Storage: 100k per second is about 8.6 billion per day; at 500 bytes per record that is about 4 TB per day, so use TTLs and tiered storage, and plan partitioning from the start. A 7-character base62 code gives 62^7 ≈ 3.5 trillion codes.</p>
+<h4>API</h4>
+<pre><code>POST /api/links { url, alias?, expiresAt? } -&gt; { shortCode, shortUrl }
+GET  /{code} -&gt; 301 or 302 redirect to the long URL</code></pre>
+<p>Use <strong>302</strong> (temporary) when you need analytics and the ability to change or expire links; 301 is cacheable by browsers and CDNs, so later changes are not seen.</p>
+<h4>Generating codes</h4>
+<ol start="1"><li><strong>Counter-based with ranges</strong>: a coordination service (ZooKeeper, etcd, or a database sequence) hands each app instance a <strong>block of ids</strong> (for example 1 million at a time). The instance increments locally and encodes the number in base62. No per-write coordination, no collisions; sequential codes are guessable, so apply a reversible shuffle (Feistel permutation or multiply by a coprime) or add random bits.</li><li><strong>Snowflake-style ids</strong> (timestamp, region, worker, sequence) encoded in base62 (longer codes, about 11 characters for 64 bits).</li><li><strong>Random codes</strong> (7 to 8 base62 characters) with a conditional insert (<code>IF NOT EXISTS</code>) and retry on collision; collision odds stay low until the keyspace fills.</li><li><strong>Hashing the URL</strong> (MD5 or SHA, truncated) causes collisions and needs resolution; useful for deduplicating identical long URLs.</li></ol>
+<p>Custom aliases need a uniqueness check using conditional writes.</p>
+<h4>Storage</h4>
+<p>A key-value access pattern (<code>code -&gt; record</code>) fits a distributed NoSQL store: <strong>DynamoDB, Cassandra, ScyllaDB or sharded MySQL/Postgres</strong>. Partition by code (hashed), so load spreads evenly; keep records small: <code>{code, longUrl, userId, createdAt, expiresAt, flags}</code>. Replicate across regions (DynamoDB global tables, Cassandra multi-DC with <code>LOCAL_QUORUM</code>). Writes go to the nearest region; unique code allocation per region (ranges or region bits in ids) avoids cross-region conflicts.</p>
+<h4>Read path (redirects)</h4>
+<pre><code>Client -&gt; CDN/edge (cache by code, short TTL, edge compute) -&gt; regional redirect service -&gt; local cache (Redis, in-process LRU) -&gt; database</code></pre>
+<ul><li>Cache hit ratios above 95 percent are typical because popular links dominate (Zipf distribution).</li><li>Protect against hot keys with in-process caches and request coalescing, and negative-cache unknown codes (bloom filter) to resist scanning.</li><li>Stateless, autoscaled redirect services in multiple regions with global anycast or DNS latency routing and health-based failover.</li></ul>
+<h4>Write path at 100k per second</h4>
+<p>Stateless API nodes validate input and write directly to the sharded store; use batching, idempotency keys for client retries, and rate limits per user and IP. Warm cache on creation for new links likely to be hit soon. Keep creation separate from analytics.</p>
+<h4>Analytics and operations</h4>
+<p>Emit click events asynchronously to Kafka (code, timestamp, geo, user agent), then aggregate in a stream processor into counters or an OLAP store (ClickHouse, Druid); never block the redirect. <strong>Expiry</strong>: TTLs in the store plus lazy checks. <strong>Abuse</strong>: URL scanning against malware and phishing lists, domain blocklists, CAPTCHA, auth for creation, rate limiting, and takedown tooling. Security: validate schemes (no <code>javascript:</code>), prevent open redirect chains, and avoid leaking private links.</p>
+<h4>Failure and consistency</h4>
+<p>Redirect reads can tolerate eventual consistency across regions (a new link may take seconds to appear remotely; fall back to the home region on miss). Backups and point-in-time recovery for the store, graceful degradation (serve cached links if the database is slow), chaos testing, and capacity planning with load tests.</p>
+<h4>Trade-offs summary</h4>
+<p>Range-allocated counters give simplicity and no collisions but need obfuscation; random codes give unpredictability but need collision handling; key-value stores give scale but limited queries (analytics and admin queries belong in separate systems).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you generate unique short codes at 100k writes per second without collisions?</li><li>How do you design for multi-region reads with low latency?</li><li>How do you handle abuse, expiry and analytics without slowing redirects?</li></ul>
+<p><a class="btn primary" href="../#/q/be-100">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-100%3A+Design+a+highly+available%2C+globally+distributed+URL+shortener%E2%80%A6&amp;question-id=be-100&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-100.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

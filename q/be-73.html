@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you read a database EXPLAIN ANALYZE output and distinguish index scans from sequential scans? | InterviewGearUp</title>
+<meta name="description" content="EXPLAIN ANALYZE runs the query and reports the chosen plan with estimated and actual rows, timing, loops and buffer use. A Seq Scan reads the whole…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-73.html">
+<meta property="og:title" content="How do you read a database EXPLAIN ANALYZE output and distinguish index scans from sequential scans? | InterviewGearUp">
+<meta property="og:description" content="EXPLAIN ANALYZE runs the query and reports the chosen plan with estimated and actual rows, timing, loops and buffer use. A Seq Scan reads the whole…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-73.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you read a database EXPLAIN ANALYZE output and distinguish index scans from sequential scans?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 2 (Mid-level) · Databases · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>EXPLAIN ANALYZE runs the query and reports the chosen plan with estimated and actual rows, timing, loops and buffer use. A Seq Scan reads the whole table, an Index Scan follows an index to the heap, an Index Only Scan avoids the heap, and a Bitmap scan combines several index hits. Large gaps between estimated and actual rows reveal bad statistics.</p></div>
+<h4>Explained in depth</h4>
+<h4>Running it</h4>
+<pre><code>EXPLAIN (ANALYZE, BUFFERS) SELECT o.id, c.name
+FROM orders o JOIN customers c ON c.id = o.customer_id
+WHERE o.created_at &gt;= now() - interval &#39;7 days&#39;;</code></pre>
+<p><code>EXPLAIN</code> shows the estimated plan only; <code>ANALYZE</code> actually executes it (wrap data-modifying statements in a transaction and roll back). <code>BUFFERS</code> shows cache hits and disk reads.</p>
+<h4>Sample output</h4>
+<pre><code>Hash Join  (cost=1.2..540.3 rows=120 width=36) (actual time=0.9..12.4 rows=118 loops=1)
+  Hash Cond: (o.customer_id = c.id)
+  -&gt;  Index Scan using orders_created_at_idx on orders o  (cost=0.4..420.1 rows=120 width=12) (actual time=0.1..8.2 rows=118 loops=1)
+        Index Cond: (created_at &gt;= (now() - &#39;7 days&#39;::interval))
+  -&gt;  Hash  (cost=1.1..1.1 rows=50 ...) (actual time=0.5..0.5 rows=50 loops=1)
+        -&gt;  Seq Scan on customers c (cost=0.0..1.1 rows=50 ...) (actual time=0.0..0.2 rows=50 loops=1)
+Planning Time: 0.3 ms   Execution Time: 12.9 ms</code></pre>
+<h4>How to read it</h4>
+<ul><li>Read plans <strong>from the innermost indented node outward</strong>; each node&#39;s time includes its children.</li><li><code>cost=start..total</code> is in arbitrary planner units; <code>rows</code> is the <strong>estimate</strong>; <code>actual time=first..last</code> is in milliseconds <strong>per loop</strong>; multiply by <code>loops</code> for the node&#39;s total. <code>width</code> is the average row size in bytes.</li><li>Compare <strong>estimated rows to actual rows</strong>. Differences of 10x or more mean bad statistics, correlated columns, or skew, and often lead to the wrong join or scan strategy.</li></ul>
+<h4>Scan types</h4>
+<ul><li><strong>Seq Scan</strong>: reads every page of the table. Efficient when you need a large fraction of rows or the table is small. Look for it on large tables with selective filters (<code>Rows Removed by Filter</code> is large).</li><li><strong>Index Scan</strong>: finds matching entries in the index and fetches heap rows (random I/O).</li><li><strong>Index Only Scan</strong>: answers from the index alone if the visibility map says pages are all-visible (<code>Heap Fetches: 0</code> is ideal), good with covering indexes (<code>INCLUDE</code>).</li><li><strong>Bitmap Index Scan + Bitmap Heap Scan</strong>: collects row locations from one or more indexes into a bitmap, then reads heap pages in order; used for mid-selectivity or <code>OR</code> combinations.</li></ul>
+<h4>Join methods</h4>
+<p>Nested Loop (good with small outer sets and indexed inner lookups; watch huge <code>loops</code>), Hash Join (equality joins, builds a hash table; check for <code>Batches</code> greater than 1 meaning spill to disk), Merge Join (sorted inputs).</p>
+<h4>Other red flags</h4>
+<p><code>Sort Method: external merge Disk</code> (increase <code>work_mem</code> or add an index), <code>Buffers: read</code> high (cold cache), <code>Filter</code> removing most rows after an index scan (index not selective, or a better composite index exists), <code>Seq Scan</code> inside a nested loop (missing index on the join key), and <code>Planning Time</code> larger than execution for tiny queries.</p>
+<h4>Fixing</h4>
+<p>Add or adjust indexes (composite, partial, covering), rewrite predicates so they can use indexes (avoid functions on columns), run <code>ANALYZE</code>, raise statistics targets or add extended statistics, tune <code>work_mem</code> and <code>random_page_cost</code>, and test with realistic data volumes. Use tools like explain.depesz.com or pev2 to visualise plans.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why can a sequential scan be faster than an index scan?</li><li>What do the loops and actual time values mean in nested loop joins?</li><li>How do you fix a plan that misestimates row counts?</li></ul>
+<p><a class="btn primary" href="../#/q/be-73">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-73%3A+How+do+you+read+a+database+EXPLAIN+ANALYZE+output+and+distinguish%E2%80%A6&amp;question-id=be-73&amp;context=Backend+engineer%2C+Gear+2%2C+topic%3A+Databases%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-73.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

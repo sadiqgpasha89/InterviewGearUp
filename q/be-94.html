@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does the Strangler Fig pattern allow incrementally decomposing a legacy monolith into microservices? | InterviewGearUp</title>
+<meta name="description" content="The Strangler Fig pattern incrementally replaces a legacy system by placing a routing facade in front, building new services for one capability at a…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-94.html">
+<meta property="og:title" content="How does the Strangler Fig pattern allow incrementally decomposing a legacy monolith into microservices? | InterviewGearUp">
+<meta property="og:description" content="The Strangler Fig pattern incrementally replaces a legacy system by placing a routing facade in front, building new services for one capability at a…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-94.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does the Strangler Fig pattern allow incrementally decomposing a legacy monolith into microservices?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · Architecture · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>The Strangler Fig pattern incrementally replaces a legacy system by placing a routing facade in front, building new services for one capability at a time, redirecting that traffic to them, and retiring the old code gradually. Risk stays low because each slice is small, reversible and delivers value, with no big-bang rewrite.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why not a rewrite</h4>
+<p>Big-bang rewrites take years, freeze features, miss moving requirements, rediscover old bugs and often fail. The strangler fig (named after vines that grow around a tree) lets new functionality grow around the old system until the old one can be removed.</p>
+<h4>Steps</h4>
+<ol start="1"><li><strong>Identify seams</strong>: find modules and bounded contexts with clear boundaries and business value (billing, search, notifications). Use domain-driven design, call-graph analysis, change frequency and pain points.</li><li><strong>Introduce a facade</strong>: an API gateway, reverse proxy or routing layer in front of the monolith. Initially it forwards everything unchanged.</li><li><strong>Build the new service</strong> for one slice (a vertical slice of behaviour and its data) behind the facade.</li><li><strong>Route traffic gradually</strong>: by path, feature flag, user cohort or percentage (canary), compare results (shadow traffic or dual-run), then switch fully.</li><li><strong>Remove the old code</strong> for that capability and repeat.</li></ol>
+<pre><code>Client -&gt; Gateway --/billing/*--&gt; Billing service (new)
+                 \--/*---------&gt; Monolith (legacy, shrinking)</code></pre>
+<h4>Data migration</h4>
+<p>The hardest part. Options:</p>
+<ul><li>Start with the <strong>new service reading from the legacy database</strong> through a view or API, to avoid early data splits.</li><li>Use <strong>change data capture</strong> (Debezium) or events to replicate data to the new service&#39;s own database, then make it the system of record and let the monolith call the service or consume its events.</li><li>Run <strong>dual writes</strong> carefully (with reconciliation) or the outbox pattern; avoid distributed transactions, and prefer sagas for cross-service flows.</li><li>Verify with data comparison jobs before cutover.</li></ul>
+<h4>Protecting the new design</h4>
+<p>An <strong>anti-corruption layer</strong> (ACL) translates between legacy models and new domain models so legacy quirks do not leak. Keep contracts stable with consumer-driven tests and versioned APIs. For UI, use micro-frontends or route-level splitting.</p>
+<h4>Order of extraction</h4>
+<p>Prefer slices that are: high business value or high change rate, loosely coupled, with clear data ownership, and with manageable risk (start with an edge capability such as notifications or reports, not core transactions). Postpone deeply entangled core domains until you have practice and tooling.</p>
+<h4>Operational readiness</h4>
+<p>Before the first extraction invest in CI/CD, observability (distributed tracing, centralised logs), service templates, contract testing, and automated rollback. Measure outcomes (deployment frequency, lead time, incident rate) to prove progress.</p>
+<h4>Trade-offs</h4>
+<p>Two systems run in parallel for a long time (more operational overhead), temporary duplication and integration code, consistency challenges at the seams, and the risk of ending with a distributed monolith if boundaries are wrong. Sometimes a <strong>modular monolith</strong> is the right destination, and not every module needs to become a microservice.</p>
+<h4>Pitfalls</h4>
+<p>Extracting by technical layer instead of business capability, sharing the database indefinitely, missing owners, and never finishing the retirement of the legacy code.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you split the database when extracting a service from a monolith?</li><li>How do anti-corruption layers protect the new design?</li><li>How do you decide which capability to extract first?</li></ul>
+<p><a class="btn primary" href="../#/q/be-94">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-94%3A+How+does+the+Strangler+Fig+pattern+allow+incrementally+decomposing+a%E2%80%A6&amp;question-id=be-94&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-94.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

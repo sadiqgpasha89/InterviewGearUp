@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is database replication lag, and how do you ensure read-your-own-writes consistency? | InterviewGearUp</title>
+<meta name="description" content="Replication lag is the delay before a write on the primary becomes visible on a replica. Reads from a lagging replica can miss a user&#39;s own recent write.…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-17.html">
+<meta property="og:title" content="What is database replication lag, and how do you ensure read-your-own-writes consistency? | InterviewGearUp">
+<meta property="og:description" content="Replication lag is the delay before a write on the primary becomes visible on a replica. Reads from a lagging replica can miss a user&#39;s own recent write.…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-17.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is database replication lag, and how do you ensure read-your-own-writes consistency?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 2 (Mid-level) · Databases · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Replication lag is the delay before a write on the primary becomes visible on a replica. Reads from a lagging replica can miss a user&#39;s own recent write. Ensure read-your-own-writes by routing recent writers to the primary, tracking LSN or GTID positions, using sticky sessions, or reading from replicas only once caught up.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why lag happens</h4>
+<p>Asynchronous replication ships the write-ahead log (WAL) or binlog after commit. Heavy write bursts, long-running queries on replicas that block replay, slow disks or network, and single-threaded apply can all increase lag from milliseconds to minutes.</p>
+<h4>The anomaly</h4>
+<p>A user posts a comment (written to primary), the page reloads and reads from a replica that has not applied it, so the comment appears missing. Other anomalies: <strong>monotonic reads</strong> (seeing newer then older data across different replicas) and <strong>consistent prefix</strong> violations.</p>
+<h4>Strategies for read-your-own-writes</h4>
+<ol start="1"><li><strong>Read from the primary</strong> for a short window after a write (for example 5 to 10 seconds, stored in a cookie or session), or for data the user just modified.</li><li><strong>Route by criticality</strong>: profile, checkout and account pages read from the primary; feeds and analytics from replicas.</li><li><strong>Position tracking</strong>: after a write, capture the commit position (PostgreSQL LSN with <code>pg_current_wal_lsn()</code>, MySQL GTID) and store it in the session. For the next read, pick a replica whose replayed position is at or beyond it (<code>pg_last_wal_replay_lsn()</code>), wait briefly (<code>WAIT_FOR_EXECUTED_GTID_SET</code> in MySQL), or fall back to the primary.</li><li><strong>Sticky routing</strong> of a user to one replica plus a per-session version check gives monotonic reads.</li><li><strong>Synchronous or semi-synchronous replication</strong> (<code>synchronous_commit = remote_apply</code>) makes a commit wait for replicas, at the cost of write latency and availability.</li><li><strong>Client-side merge</strong>: keep the new data in the UI (optimistic update) until the replica catches up.</li></ol>
+<pre><code>-- PostgreSQL: lag in bytes and time on a replica
+SELECT now() - pg_last_xact_replay_timestamp() AS lag;
+SELECT pg_wal_lsn_diff(pg_current_wal_lsn(), replay_lsn) FROM pg_stat_replication;</code></pre>
+<h4>Operating it</h4>
+<ul><li>Alert on lag thresholds, and remove replicas from the read pool automatically when lag exceeds a limit (proxy health checks in ProxySQL, PgBouncer, RDS Proxy).</li><li>Cap long queries on replicas (<code>max_standby_streaming_delay</code>), tune apply parallelism (MySQL <code>replica_parallel_workers</code>), and reduce write amplification (big transactions, bulk updates in batches).</li><li>Cloud systems with shared storage (Aurora) reduce lag but do not remove it entirely.</li></ul>
+<h4>Pitfalls</h4>
+<p>Assuming replicas are always fresh, reading and then immediately writing based on replica data (lost updates), using lag in seconds only (a quiet primary shows a false large lag), and failing over to a lagging replica which loses committed transactions.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you measure replication lag in PostgreSQL and MySQL?</li><li>What is the difference between synchronous and asynchronous replication for this problem?</li><li>How does a session token carrying the write position work?</li></ul>
+<p><a class="btn primary" href="../#/q/be-17">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-17%3A+What+is+database+replication+lag%2C+and+how+do+you+ensure%E2%80%A6&amp;question-id=be-17&amp;context=Backend+engineer%2C+Gear+2%2C+topic%3A+Databases%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-17.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

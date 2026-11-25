@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare Memcached multithreaded architecture with Redis single-threaded event loop architecture. | InterviewGearUp</title>
+<meta name="description" content="Memcached is a multithreaded, simple key-value cache using slab allocation and LRU, scaling vertically across cores with no persistence or data…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-97.html">
+<meta property="og:title" content="Compare Memcached multithreaded architecture with Redis single-threaded event loop architecture. | InterviewGearUp">
+<meta property="og:description" content="Memcached is a multithreaded, simple key-value cache using slab allocation and LRU, scaling vertically across cores with no persistence or data…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-97.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare Memcached multithreaded architecture with Redis single-threaded event loop architecture.</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 2 (Mid-level) · Caching · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Memcached is a multithreaded, simple key-value cache using slab allocation and LRU, scaling vertically across cores with no persistence or data structures. Redis executes commands on a single main thread via an event loop (with I/O threads optionally in newer versions), offering rich data types, persistence, replication and clustering, with atomicity from single-threaded execution.</p></div>
+<h4>Explained in depth</h4>
+<h4>Memcached architecture</h4>
+<ul><li><strong>Multithreaded</strong>: a listener thread accepts connections and hands them to worker threads (libevent per thread). Operations on different keys run in parallel across cores, using fine-grained locks.</li><li><strong>Slab allocator</strong>: memory is divided into slab classes of fixed chunk sizes to avoid fragmentation; items go into the smallest fitting class. Different classes have their own LRU lists, and slab rebalancing moves pages between classes.</li><li>Data model: strings (bytes) only, with <code>get</code>, <code>set</code>, <code>add</code>, <code>incr</code>, <code>cas</code> and expiry. Max item size defaults to 1 MB.</li><li>No persistence, no replication in core; clustering is done by the <strong>client</strong> with consistent hashing (ketama).</li><li>Simple, predictable, and scales well vertically on many cores for large values and many connections.</li></ul>
+<h4>Redis architecture</h4>
+<ul><li><strong>Single-threaded command execution</strong> on a main event loop (epoll). All commands run one at a time, so each is <strong>atomic</strong> with no locking overhead, and operations like <code>INCR</code>, Lua scripts and transactions are naturally consistent.</li><li>Speed comes from in-memory data, efficient C data structures, no context switches or lock contention, and pipelining. Typical throughput is 100,000 or more operations per second per core.</li><li>Since Redis 6, <strong>I/O threads</strong> parallelise reading and writing to sockets (network and protocol parsing), but command execution remains on the main thread. Background threads handle lazy freeing, fsync and persistence forks.</li><li>Rich types (hashes, lists, sets, sorted sets, streams, bitmaps, HyperLogLog, geo), pub/sub, scripting, persistence (RDB and AOF), replication, Sentinel and Cluster for sharding and failover.</li><li>Scale-out via sharding: one core per instance, so multiple instances per host or Redis Cluster to use more cores.</li></ul>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th>Aspect</th><th>Memcached</th><th>Redis</th></tr></thead><tbody><tr><td>Threading</td><td>multithreaded workers</td><td>single command thread (+ I/O threads)</td></tr><tr><td>Data types</td><td>string values</td><td>many structures</td></tr><tr><td>Persistence</td><td>none</td><td>RDB, AOF</td></tr><tr><td>Replication, HA</td><td>external or client side</td><td>built-in, Sentinel, Cluster</td></tr><tr><td>Atomic operations</td><td>limited (incr, cas)</td><td>transactions, Lua, many atomic commands</td></tr><tr><td>Memory efficiency for plain strings</td><td>very good (slabs)</td><td>good, higher per-key overhead</td></tr><tr><td>Large multi-core vertical scaling</td><td>strong</td><td>limited per instance</td></tr><tr><td>Max value size</td><td>1 MB default</td><td>512 MB</td></tr></tbody></table></div>
+<h4>Choosing</h4>
+<ul><li><strong>Memcached</strong>: simple, ephemeral object caching (HTML fragments, query results, session blobs), very high concurrency on multi-core hosts, minimal operational features needed.</li><li><strong>Redis</strong>: when you need data structures, atomic counters, leaderboards, queues, pub/sub, persistence or high availability, or when cache and light primary-store roles overlap.</li></ul>
+<h4>Practical notes</h4>
+<p>Avoid slow commands (<code>KEYS</code>, big <code>SMEMBERS</code>, long Lua) in Redis because they block all clients; watch Memcached slab imbalance and evictions; measure with realistic workloads; both need TTLs, eviction policy planning (<code>maxmemory-policy</code>), stampede protection and monitoring of hit ratio and latency.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is single-threaded Redis still very fast?</li><li>When is Memcached the better choice?</li><li>How do the two approaches differ in memory management and eviction?</li></ul>
+<p><a class="btn primary" href="../#/q/be-97">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-97%3A+Compare+Memcached+multithreaded+architecture+with+Redis%E2%80%A6&amp;question-id=be-97&amp;context=Backend+engineer%2C+Gear+2%2C+topic%3A+Caching%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-97.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are unlogged tables in relational databases, and what are the trade-offs of using them? | InterviewGearUp</title>
+<meta name="description" content="Unlogged tables in PostgreSQL skip write-ahead logging, so writes are much faster, but the table is truncated after a crash, is not replicated to…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-75.html">
+<meta property="og:title" content="What are unlogged tables in relational databases, and what are the trade-offs of using them? | InterviewGearUp">
+<meta property="og:description" content="Unlogged tables in PostgreSQL skip write-ahead logging, so writes are much faster, but the table is truncated after a crash, is not replicated to…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-75.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are unlogged tables in relational databases, and what are the trade-offs of using them?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · Databases · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Unlogged tables in PostgreSQL skip write-ahead logging, so writes are much faster, but the table is truncated after a crash, is not replicated to standbys, and is excluded from WAL-based backups and point-in-time recovery. Use them for disposable or rebuildable data such as caches, staging loads and temporary computation.</p></div>
+<h4>Explained in depth</h4>
+<h4>What is skipped</h4>
+<p>Normal tables write every change to the <strong>write-ahead log</strong> (WAL) first for crash recovery, replication and PITR. <code>CREATE UNLOGGED TABLE</code> writes only to the data files (via shared buffers), reducing I/O dramatically and avoiding WAL volume.</p>
+<pre><code>CREATE UNLOGGED TABLE session_cache (key text PRIMARY KEY, value jsonb, expires_at timestamptz);</code></pre>
+<p>Typical speed-up: 2 to 10 times for inserts, bulk updates, and index maintenance (indexes on unlogged tables are also unlogged).</p>
+<h4>Trade-offs</h4>
+<ul><li><strong>Crash safety</strong>: after an unclean shutdown or crash, PostgreSQL <strong>truncates</strong> the table on recovery, since its contents cannot be guaranteed. A clean shutdown preserves data.</li><li><strong>No replication</strong>: not shipped through WAL, so it is empty on physical standbys, and a failover leaves you with an empty table. Logical replication does not publish it.</li><li><strong>Not in point-in-time recovery</strong>; <code>pg_dump</code> still includes data (it reads the table), but base backups plus WAL do not restore it consistently.</li><li>Still ACID within a running session (transactions, rollback and visibility work normally); only durability is relaxed.</li><li>Same locking, MVCC and vacuum behaviour as normal tables.</li></ul>
+<h4>Differences from temporary tables</h4>
+<p>Temporary tables are visible only to one session and dropped at its end. Unlogged tables are shared across sessions, persist across normal restarts, and can have normal names and permissions.</p>
+<h4>Good use cases</h4>
+<ul><li><strong>ETL staging tables</strong>: load raw data, transform and merge into permanent logged tables; if the server crashes, rerun the job.</li><li><strong>Caches and materialised intermediate results</strong> that can be rebuilt (search denormalisations, rate counters, report scratch space).</li><li><strong>Sessions and ephemeral state</strong> in single-node setups where losing data on crash is acceptable.</li><li>Data warehouse load benchmarks and tests.</li></ul>
+<h4>Bad use cases</h4>
+<p>Anything that must survive crashes or failovers: orders, payments, audit logs, user accounts, queues where loss is unacceptable. Do not use them on systems relying on streaming replicas for read scaling of that data.</p>
+<h4>Operations</h4>
+<pre><code>ALTER TABLE staging SET LOGGED;     -- rewrites table and writes it to WAL (slow for big tables)
+ALTER TABLE staging SET UNLOGGED;</code></pre>
+<p>Build processes: create unlogged, bulk load with <code>COPY</code>, create indexes after loading, validate, then <code>INSERT ... SELECT</code> into the logged table or switch with <code>SET LOGGED</code>. Document the behaviour so teammates do not store durable data by mistake, and monitor for unexpected truncation after restarts.</p>
+<h4>Alternatives</h4>
+<p>Redis or other caches for ephemeral data, <code>fsync=off</code> for throwaway test databases (dangerous in production), and tuned <code>synchronous_commit = off</code> (risks losing the last transactions but not corruption).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do unlogged tables differ from temporary tables?</li><li>How do you convert a table between logged and unlogged?</li><li>What are good staging patterns for bulk loads using unlogged tables?</li></ul>
+<p><a class="btn primary" href="../#/q/be-75">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-75%3A+What+are+unlogged+tables+in+relational+databases%2C+and+what+are+the%E2%80%A6&amp;question-id=be-75&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+Databases%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-75.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

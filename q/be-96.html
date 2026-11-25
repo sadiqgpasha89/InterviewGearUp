@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do message consumers achieve idempotency when message brokers only guarantee at-least-once delivery? | InterviewGearUp</title>
+<meta name="description" content="With at-least-once delivery duplicates are inevitable, so consumers must be idempotent: applying the same message twice leaves the same result.…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-96.html">
+<meta property="og:title" content="How do message consumers achieve idempotency when message brokers only guarantee at-least-once delivery? | InterviewGearUp">
+<meta property="og:description" content="With at-least-once delivery duplicates are inevitable, so consumers must be idempotent: applying the same message twice leaves the same result.…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-96.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do message consumers achieve idempotency when message brokers only guarantee at-least-once delivery?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · Messaging · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>With at-least-once delivery duplicates are inevitable, so consumers must be idempotent: applying the same message twice leaves the same result. Techniques include natural idempotent operations (upsert, set), a processed-message table with a unique constraint written in the same transaction as the side effect, versioned updates, and idempotency keys for downstream calls.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why duplicates occur</h4>
+<p>Brokers redeliver when an ack is lost, a consumer crashes after processing but before acknowledging or committing the offset, a visibility timeout expires, a rebalance happens, or a producer retries after a timeout. To avoid <strong>loss</strong>, systems choose at-least-once and accept duplicates. True exactly-once delivery across a network is impossible, but <strong>effectively-once processing</strong> is achievable with idempotency.</p>
+<h4>Techniques</h4>
+<ol start="1"><li><strong>Naturally idempotent operations</strong>: <code>SET status = &#39;shipped&#39;</code>, upsert by primary key, <code>INSERT ... ON CONFLICT DO NOTHING</code>, delete by id. Avoid <code>balance = balance + x</code> without protection.</li><li><strong>Inbox (processed-messages) table</strong>: record the message id in the <strong>same database transaction</strong> as the business change.</li></ol>
+<pre><code>BEGIN;
+INSERT INTO processed_messages (message_id) VALUES ($1);       -- unique constraint; fails if already processed
+UPDATE accounts SET balance = balance + $2 WHERE id = $3;
+COMMIT;
+-- on unique violation: skip, then ack the message</code></pre>
+<p>Because the dedupe record and the effect commit atomically, a crash leaves neither or both.</p>
+<ol start="3"><li><strong>Versioning or sequence checks</strong>: apply an event only if <code>event.version &gt; row.version</code>; ignore stale or repeated events (also handles reordering).</li><li><strong>Conditional state transitions</strong>: <code>UPDATE orders SET status=&#39;paid&#39; WHERE id=? AND status=&#39;pending&#39;</code> and check affected rows.</li><li><strong>Idempotency keys for external calls</strong>: pass a deterministic key (message id) to payment or email providers so repeated calls do not duplicate effects.</li><li><strong>Deterministic ids</strong>: derive ids from the message (UUID v5 over the event id) so repeated inserts collide.</li><li><strong>Distributed cache or Redis dedupe</strong> (<code>SET NX</code> with TTL) for cheap, short-window dedupe when occasional duplicates are tolerable; the database approach is stronger.</li></ol>
+<h4>Ordering of ack and processing</h4>
+<p>Process then acknowledge (at-least-once). Acknowledging first gives at-most-once and risks loss. Commit offsets after the transaction commits, or store offsets in the same database transaction as results (exactly-once-style sink for batch consumers).</p>
+<h4>Kafka specifics</h4>
+<p><strong>Idempotent producer</strong> (<code>enable.idempotence=true</code>) removes duplicates caused by producer retries within a partition. <strong>Transactions</strong> (<code>read_process_write</code>) provide atomic consume-transform-produce between Kafka topics (Kafka Streams <code>exactly_once_v2</code>), but side effects in external systems still need idempotent handling.</p>
+<h4>Operational guidance</h4>
+<ul><li>Retain dedupe records long enough to cover the broker&#39;s maximum redelivery window and retry policy, then expire them.</li><li>Make message ids stable and unique (generated by the producer, not at the consumer).</li><li>Log and count duplicates to detect upstream problems, and design replays and dead-letter reprocessing with the same guarantees.</li><li>Test by delivering each message twice and in a shuffled order.</li></ul>
+<h4>Pitfalls</h4>
+<p>Deduping in memory only (lost on restart), checking existence and then inserting non-atomically, relying on timestamps as ids, and external side effects (emails, charges) outside the dedupe transaction.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is exactly-once delivery impossible but exactly-once processing achievable?</li><li>How does the transactional outbox pair with an inbox table?</li><li>How does Kafka&#39;s idempotent producer and transactions differ from consumer idempotency?</li></ul>
+<p><a class="btn primary" href="../#/q/be-96">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-96%3A+How+do+message+consumers+achieve+idempotency+when+message+brokers%E2%80%A6&amp;question-id=be-96&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+Messaging%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-96.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

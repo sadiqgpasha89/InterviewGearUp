@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do idempotency keys guarantee that network retries do not cause duplicate financial charges? | InterviewGearUp</title>
+<meta name="description" content="An idempotency key is a unique client-generated token sent with a payment request. The server stores the key with the request fingerprint and result in…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-66.html">
+<meta property="og:title" content="How do idempotency keys guarantee that network retries do not cause duplicate financial charges? | InterviewGearUp">
+<meta property="og:description" content="An idempotency key is a unique client-generated token sent with a payment request. The server stores the key with the request fingerprint and result in…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-66.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do idempotency keys guarantee that network retries do not cause duplicate financial charges?</h1>
+<p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · Payments · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>An idempotency key is a unique client-generated token sent with a payment request. The server stores the key with the request fingerprint and result in an atomic step, so a retry with the same key returns the original response instead of charging again. It must handle in-flight duplicates, expiry and key reuse with different payloads.</p></div>
+<h4>Explained in depth</h4>
+<h4>The problem</h4>
+<p>Networks fail ambiguously: the client sends <code>POST /charges</code>, the server charges the card, but the response is lost or times out. A retry without protection charges the customer twice. HTTP <code>POST</code> is not idempotent by default.</p>
+<h4>Contract (as used by Stripe and others)</h4>
+<pre><code>POST /v1/charges
+Idempotency-Key: 9f0c2a5e-7e6b-4a9a-8d54-51d2d7ce2d10
+Content-Type: application/json
+{&quot;amount&quot;: 4999, &quot;currency&quot;: &quot;usd&quot;, &quot;customer&quot;: &quot;cus_123&quot;}</code></pre>
+<p>The client generates the key (UUID v4) once per logical operation and reuses it on every retry of that operation.</p>
+<h4>Server algorithm</h4>
+<ol start="1"><li><strong>Look up</strong> <code>(account_id, key)</code> in an idempotency store.</li><li>If a <strong>completed</strong> record exists and the request fingerprint (hash of method, path, body) matches, return the <strong>stored response</strong> (same status and body), marking it as a replay.</li><li>If it exists with a <strong>different fingerprint</strong>, return <code>422</code> or <code>409</code> (key reuse with different parameters is a client bug).</li><li>If it is <strong>in progress</strong> (a concurrent duplicate), return <code>409</code> with <code>Retry-After</code>, or wait briefly.</li><li>Otherwise <strong>insert</strong> the key with status <code>started</code> using a unique constraint, perform the operation, and save the response with status <code>completed</code>.</li></ol>
+<pre><code>CREATE TABLE idempotency_keys (
+  account_id BIGINT, key TEXT, request_hash TEXT, status TEXT,
+  response_code INT, response_body JSONB, created_at TIMESTAMPTZ DEFAULT now(),
+  PRIMARY KEY (account_id, key));
+-- Step 5: INSERT ... ON CONFLICT DO NOTHING; if no row inserted, another request owns this key</code></pre>
+<p>The unique constraint makes &quot;claim the key&quot; atomic even under concurrency. Perform the local state change and the key completion in <strong>one database transaction</strong>, so a crash cannot leave a charge without a record.</p>
+<h4>Calling external providers</h4>
+<p>If the server itself calls a payment processor, pass <strong>its own derived idempotency key</strong> to the processor so retries inside your service are also safe. Persist the intent before calling (a state machine: <code>created</code>, <code>pending</code>, <code>succeeded</code>, <code>failed</code>) and reconcile unknown outcomes by querying the provider or via webhooks, because a timeout does not tell you whether the charge happened.</p>
+<h4>Details</h4>
+<ul><li>Scope keys per account or tenant to prevent collisions and leaks.</li><li>Retain keys for a limited time (24 hours to 30 days), then expire; document the retention.</li><li>Cache and replay <strong>errors</strong> deterministically (a validation failure replays as the same failure), but do not store results for retryable infrastructure failures that never started the operation, so the client can retry.</li><li>Natural keys can also provide idempotency (a unique <code>order_id</code> plus a unique constraint on payments per order).</li><li>Apply the same idea to message consumers (dedupe by message id) and webhooks.</li></ul>
+<h4>Pitfalls</h4>
+<p>Generating a new key on each retry (defeats the purpose), checking existence and inserting in separate non-atomic steps, using keys only in cache that can be evicted, and not verifying the request fingerprint.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What happens when a retry arrives while the first request is still processing?</li><li>How do you store idempotency records atomically with the charge?</li><li>How long should keys be retained?</li></ul>
+<p><a class="btn primary" href="../#/q/be-66">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-66%3A+How+do+idempotency+keys+guarantee+that+network+retries+do+not+cause%E2%80%A6&amp;question-id=be-66&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+Payments%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-66.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>
