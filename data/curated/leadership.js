@@ -1483,4 +1483,173 @@
       tags: ["self-awareness", "behavioral", "strengths", "growth"]
     })
   ]);
+
+  IGU.add([
+    Object.assign(meta("medium"), {
+      id: "lead-120", role: "leadership", level: 4, topic: "Planning",
+      q: "How would you set key results for a data science team whose work affects both product growth and financial health?",
+      short: "Write one or two objectives tied to company goals, then pair lagging business results (write-offs, days sales outstanding, retention) with leading indicators the team can move within the quarter (adoption of the tool, cycle time, model precision at capacity). Make each key result measurable with a baseline and owner, include a guardrail so one metric is not gamed at the expense of customers, and review monthly.",
+      detail: L(
+        "### Principles",
+        "- Key results describe **outcomes**, not tasks: 'ship the risk model' is a milestone; 'reduce 60+ day overdue balance by 10 percent' is a result.",
+        "- Balance **lagging** results (slow but what the business cares about) with **leading** ones the team sees move within weeks.",
+        "- Every result needs a baseline, a target, a data source and an owner. If you cannot measure it today, the first key result is building the measurement.",
+        "- Add a **guardrail** so improving one metric does not damage another (cash collected up, churn of contacted customers flat).",
+        "",
+        "### Example",
+        "**Objective**: Make collections proactive and less manual through data and automation.",
+        "| Key result | Type |",
+        "| --- | --- |",
+        "| Cut enterprise write-offs by X% year over year versus a holdout | Lagging, financial |",
+        "| Reduce average days to resolve overdue invoices from A to B | Leading, operational |",
+        "| 70% of the finance operations team use the prioritised worklist weekly within 90 days of launch | Adoption |",
+        "| Churn among contacted accounts no higher than the holdout | Guardrail |",
+        "",
+        "### Research work",
+        "- Exploratory work is uncertain, so use learning key results with a clear decision at the end ('by week 8, decide whether usage telemetry adds at least 5 points of recall; ship or stop').",
+        "- Keep a small share of capacity for platform and data quality work and say so explicitly, rather than hiding it.",
+        "",
+        "### Running them",
+        "- Co-write with finance, product and engineering partners so the results are shared, not a data science wish list.",
+        "- Review monthly; a result at 70 percent of an ambitious target can be a good outcome, and changing a key result mid-quarter needs a written reason."
+      ),
+      follow: ["How do you write a key result for exploratory research?", "What guardrail metric would you pair with cash collected?", "How do you handle a key result that depends on another team?"],
+      tags: ["okrs", "planning", "metrics", "data science leadership", "strategy"]
+    }),
+    Object.assign(meta("medium"), {
+      id: "lead-121", role: "leadership", level: 4, topic: "Communication",
+      q: "A finance executive disagrees with your model's recommendation for a major account based on experience. How do you handle it?",
+      short: "Treat it as two sources of evidence, not a contest. Listen for what the executive knows that the model cannot see, show the specific reasons behind the score and the model's track record on similar accounts, and agree a low-risk way to decide: a structured trial with clear tripwires, or their override recorded with a reason so it can be learned from. Accountability for the decision stays with them.",
+      detail: L(
+        "### 1. Listen first",
+        "- Ask what drives their view. Experienced people often know things that are not in the data: a pending acquisition, a conversation with the customer's CFO, a history of disputes handled by email.",
+        "- If they hold information the model lacks, say so and capture it; it may become a feature or an override rule.",
+        "",
+        "### 2. Explain the recommendation concretely",
+        "- Show the main drivers for this account (for example strong usage growth, on-time payment for two years, a temporary dip after a price rise), in business language rather than model terms.",
+        "- Show the model's measured performance on similar accounts, including where it has been wrong, and its uncertainty for this one.",
+        "",
+        "### 3. Find a decision path both can accept",
+        "- A **structured trial**: offer flexible terms in tranches with checkpoints (first payment on time, usage above a threshold) and an agreed exit if a tripwire trips.",
+        "- Or accept the **override**, recorded with the reason, and review overrides quarterly against outcomes. Over time this shows where human judgement adds value and where the model does.",
+        "",
+        "### 4. Keep the relationship",
+        "- Do not frame it as 'the data says you are wrong'. Position the model as decision support; the executive owns the risk decision.",
+        "- Follow up with the outcome either way, and thank them for information that improved the model.",
+        "",
+        "In an interview, give a real example in situation, action, result form and say what you learned."
+      ),
+      follow: ["How would you design an override log that actually improves the model?", "What if the executive is right more often than the model?", "How do you explain a model score without technical terms?"],
+      tags: ["stakeholder management", "influence", "explainability", "communication", "decision making"]
+    }),
+    Object.assign(meta("medium"), {
+      id: "lead-122", role: "leadership", level: 4, topic: "People",
+      q: "How do you mentor junior data scientists to move from notebook models to production-quality work?",
+      short: "Teach through real work with clear standards: design reviews before modelling, code reviews on pipelines and tests, a checklist for leakage and validation, and pairing on deployment and monitoring. Give them ownership of a small production model end to end, coach them on explaining results to non-technical partners, and give specific, regular feedback rather than general advice.",
+      detail: L(
+        "### Set the bar explicitly",
+        "- Write down what 'done' means for a model: reproducible training, versioned data and code, unit tests on feature logic, a leakage review, validation that matches how the model will be used, monitoring and a rollback plan.",
+        "- Share good examples from the team so the standard is concrete.",
+        "",
+        "### Teach through reviews",
+        "- **Design review before modelling**: what decision will this support, what is the baseline, how will we measure success, what could leak? This catches the costliest mistakes early.",
+        "- **Code review** on modularity, tests for data transforms, and avoiding time leakage in cross-validation.",
+        "- Ask questions rather than handing over fixes ('what data would this model have at scoring time?').",
+        "",
+        "### Production mindset",
+        "- Pair on the first deployment: feature store, serving, logging, alerts.",
+        "- Let them own a small model end to end, including on-call for it; nothing teaches monitoring like being paged.",
+        "",
+        "### Communication",
+        "- Coach them to lead with the decision and its impact, then the evidence, then caveats. Rehearse presentations to product and finance.",
+        "",
+        "### Growth",
+        "- Agree individual goals, give frequent specific feedback, and create visibility for their work (they present the result, not you).",
+        "- Measure success by what they can do without you after six months."
+      ),
+      follow: ["What goes on your model-readiness checklist?", "How do you give feedback on a flawed analysis without discouraging someone?", "How do you scale mentoring across a large team?"],
+      tags: ["mentoring", "data science", "mlops", "coaching", "career growth"]
+    }),
+    Object.assign(meta("medium"), {
+      id: "lead-123", role: "leadership", level: 4, topic: "Delivery",
+      q: "Your initiative needs work from billing engineering, UX design and finance, and each team has other priorities. How do you get alignment?",
+      short: "Start from a shared problem with a measurable outcome every team cares about, and show each team what it gets. Co-write a short charter with scope, owners and milestones, get an executive sponsor to resolve priority conflicts, ask for small, sequenced commitments that fit their planning cycles, and keep a regular cadence with visible progress and risks.",
+      detail: L(
+        "### Shared outcome",
+        "- Pick one north-star metric (for example net cash recovered within 30 days, or avoidable churn from payment failures) and translate it per team: fewer manual tickets for finance, better retention for product, fewer billing incidents for engineering.",
+        "",
+        "### Charter and ownership",
+        "- A one-page charter: problem, outcome metric, scope and non-goals, milestones, decision makers.",
+        "- A RACI or similar so each decision and deliverable has one accountable owner.",
+        "- An executive sponsor who can settle priority conflicts across teams.",
+        "",
+        "### Fit into their planning",
+        "- Engage before their quarterly planning, not after. Break the ask into small, independent pieces (an API field, one screen, a policy sign-off) that fit their roadmaps.",
+        "- Remove work for them where you can: your team writes the first draft of the spec, the data contract or the policy wording.",
+        "",
+        "### Operate",
+        "- A short weekly or fortnightly sync, a shared tracker, and a written update with progress, risks and decisions needed.",
+        "- Escalate early and openly when a dependency slips, with options rather than blame.",
+        "- Celebrate shared wins so partner teams get credit.",
+        "",
+        "Bring a real example in an interview: what the competing priorities were and what changed because of your approach."
+      ),
+      follow: ["What do you do when a partner team says no for this quarter?", "How do you use an executive sponsor without damaging relationships?", "What goes in a one-page project charter?"],
+      tags: ["cross-functional", "alignment", "influence", "project management", "stakeholders"]
+    }),
+    Object.assign(meta("medium"), {
+      id: "lead-124", role: "leadership", level: 4, topic: "Technical strategy",
+      q: "Leadership wants an LLM-based recommendation system quickly, but the data pipelines it depends on are brittle and undocumented. What do you do?",
+      short: "Do not stop for a full rewrite, and do not build on sand silently. Name the risk in business terms, then build a clean, tested data layer only for the inputs the new system needs (data contracts, quality checks, a small feature store), next to the legacy pipelines. Migrate other consumers gradually, reserve fixed capacity for hardening, and ship the AI feature in stages.",
+      detail: L(
+        "### 1. Make the risk concrete",
+        "- Show what bad inputs would do: wrong balances in customer messages, recommendations based on stale data, a model silently degrading. Estimate the likelihood from recent incidents.",
+        "- Offer options with timelines and risk: ship fast on legacy data with tight guardrails, or take a few extra weeks to harden the critical inputs.",
+        "",
+        "### 2. Strangler-fig approach",
+        "- Identify the **minimum set of datasets** the new system needs and build clean versions of those: documented schemas, data contracts with the producing teams, freshness and validity checks, lineage.",
+        "- Run the new layer alongside the legacy pipelines; move other consumers over one by one and retire the old jobs when nothing depends on them.",
+        "",
+        "### 3. Ship the AI feature in stages",
+        "- v1 internal only, with humans approving recommendations, while the data quality checks prove themselves.",
+        "- Block or degrade gracefully when checks fail (no recommendation is better than a wrong one).",
+        "",
+        "### 4. Protect capacity",
+        "- Agree a fixed share of each sprint (for example 15 to 20 percent) for data reliability, with visible metrics: incidents, freshness SLA met, tests added.",
+        "",
+        "### 5. Communicate",
+        "- Frame hardening as what makes the AI feature trustworthy and faster to extend, not as a separate cleanup project."
+      ),
+      follow: ["What belongs in a data contract?", "How do you choose which legacy pipeline to fix first?", "What would you show leadership to justify a two-week delay?"],
+      tags: ["technical debt", "data quality", "llm", "strangler fig", "prioritisation"]
+    }),
+    Object.assign(meta("medium"), {
+      id: "lead-125", role: "leadership", level: 4, topic: "Quality",
+      q: "What does a high quality bar mean for data science deliverables at principal level?",
+      short: "Quality is correct, reproducible, decision-ready and clearly communicated. Correct means sound validation, no leakage and honest uncertainty; reproducible means versioned code and data with tests; decision-ready means tied to a business decision with options, trade-offs and risks; clear means a reader can act on it in minutes. A principal also raises the bar for others through reviews, templates and examples.",
+      detail: L(
+        "### Technical rigour",
+        "- Validation that matches use (time-based splits, no leakage), baselines, confidence intervals on metrics, sensitivity checks, and an explicit list of assumptions and limitations.",
+        "- For experiments: a pre-registered metric and analysis plan, power analysis, and checks for sample ratio mismatch.",
+        "",
+        "### Reproducibility",
+        "- Code and configuration in version control, data snapshots or lineage, tracked experiments (MLflow, Weights and Biases or similar), tests on data transforms, and a run that someone else can repeat.",
+        "",
+        "### Decision usefulness",
+        "- Starts from the decision and who makes it. Gives a recommendation, the alternatives, the expected impact with a range, and what would change the recommendation.",
+        "- Includes how to implement and monitor it.",
+        "",
+        "### Communication",
+        "- Lead with the answer, then the evidence; one clear chart beats ten. Plain language, with technical detail in an appendix.",
+        "- Honest about uncertainty and about what the analysis cannot say.",
+        "",
+        "### Raising the bar for others",
+        "- Design and peer review practices, shared templates (analysis memo, model card), and worked examples of good work.",
+        "- Post-mortems on analyses or models that went wrong, without blame, to improve the checklists."
+      ),
+      follow: ["How do you review an analysis you do not have time to reproduce?", "What goes in a model card?", "How do you balance rigour with speed?"],
+      tags: ["quality", "data science", "reproducibility", "communication", "leadership"]
+    })
+  ]);
+
 })();

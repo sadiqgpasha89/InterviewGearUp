@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How would you optimise the length of the grace period before restricting service for an overdue customer? | InterviewGearUp</title>
+<meta name="description" content="Frame it as a policy choice with a delayed, two-sided reward: cash recovered and losses avoided versus churn and goodwill lost. Start with a randomised…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-123.html">
+<meta property="og:title" content="How would you optimise the length of the grace period before restricting service for an overdue customer? | InterviewGearUp">
+<meta property="og:description" content="Frame it as a policy choice with a delayed, two-sided reward: cash recovered and losses avoided versus churn and goodwill lost. Start with a randomised…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-123.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How would you optimise the length of the grace period before restricting service for an overdue customer?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 4 (Lead / Staff) · Experimentation · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Frame it as a policy choice with a delayed, two-sided reward: cash recovered and losses avoided versus churn and goodwill lost. Start with a randomised test of a few grace lengths across risk segments, estimate segment-level effects, then consider a contextual bandit with safety limits. Because rewards arrive weeks later, use batched updates and off-policy evaluation, and keep policy rules a human can approve.</p></div>
+<h4>Explained in depth</h4>
+<h4>Define the objective</h4>
+<ul><li>Reward per account = expected cash recovered - expected write-off - (churn probability x customer lifetime value) - operational cost.</li><li>Rewards arrive late (payment within 60 days, renewal months later), so define a short-term proxy and validate it against the long-term outcome.</li></ul>
+<h4>Step 1: a randomised experiment</h4>
+<ul><li>Test a small set of options (for example 7, 14 and 30 days) with randomisation stratified by risk band, size and tenure.</li><li>Estimate the effect per segment (heterogeneous treatment effects, for example with uplift models or causal forests). This often gives most of the value: long grace for loyal low-risk accounts, short for high-risk new ones.</li></ul>
+<h4>Step 2: a contextual bandit, if it is worth it</h4>
+<ul><li>Context: risk score, payment history, size, tenure, usage trend. Actions: the grace lengths. Algorithms: Thompson sampling or LinUCB.</li><li>Adapt it to the delay: update in batches as outcomes mature, and use the proxy reward.</li><li><strong>Safety</strong>: minimum and maximum grace by contract and law, a cap on exploration share, never explore the harshest action on the largest accounts, and a fixed holdout to measure overall lift.</li><li>Log action probabilities so you can do <strong>off-policy evaluation</strong> (inverse propensity or doubly robust estimators) of new policies before deploying them.</li></ul>
+<h4>Governance</h4>
+<ul><li>Turn the learned policy into readable rules finance and legal can approve, and review them regularly. A fully opaque adaptive policy that restricts service is hard to defend to customers.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you handle a reward that arrives 90 days after the action?</li><li>Why log the probability of each action?</li><li>When is a simple A/B test better than a bandit?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-123">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-123%3A+How+would+you+optimise+the+length+of+the+grace+period+before%E2%80%A6&amp;question-id=ml-123&amp;context=ML+%2F+AI+engineer%2C+Gear+4%2C+topic%3A+Experimentation%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-123.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

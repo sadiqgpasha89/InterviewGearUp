@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How would you design a model that predicts B2B SaaS invoice delinquency before it happens? | InterviewGearUp</title>
+<meta name="description" content="Define the target at a decision point: for each open invoice, will it reach 30 (or 60) days past due within a set window, which matches when collectors…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-112.html">
+<meta property="og:title" content="How would you design a model that predicts B2B SaaS invoice delinquency before it happens? | InterviewGearUp">
+<meta property="og:description" content="Define the target at a decision point: for each open invoice, will it reach 30 (or 60) days past due within a set window, which matches when collectors…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-112.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How would you design a model that predicts B2B SaaS invoice delinquency before it happens?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 4 (Lead / Staff) · Applied ML · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Define the target at a decision point: for each open invoice, will it reach 30 (or 60) days past due within a set window, which matches when collectors can act. Build features only from data available at that moment: payment history, billing events, product usage trends, account and contract data. Split by time, measure precision at the capacity of the team, calibrate, and validate with a holdout.</p></div>
+<h4>Explained in depth</h4>
+<h4>1. Target: tie it to a decision</h4>
+<ul><li>A vague &#39;defaulted yes or no&#39; label mixes very different outcomes. Instead, score each open invoice (or account) at a fixed point, for example on the issue date and again weekly, and predict <strong>&#39;reaches 30+ days past due within the next 30 days&#39;</strong>. Add a second head or model for 60 or 90+ days if actions differ.</li><li>Alternatives worth naming: an ordinal target (current, 1 to 30, 31 to 60, 60+ days past due), a regression on days late, or a <strong>survival model</strong> of time to payment, which handles invoices that are still open (censored) naturally.</li><li>Exclude or label separately: disputed invoices, invoices paid late because of a procurement process (PO missing), and billing errors on the vendor side. Otherwise the model learns your own process failures as customer risk.</li></ul>
+<h4>2. Features (all as of the scoring date)</h4>
+<ul><li><strong>Payment behaviour</strong>: days late on the last N invoices and its trend (paid on day 3, now on day 25), partial payments, failed card charges and retries, payment method changes, dispute count.</li><li><strong>Billing context</strong>: invoice amount relative to the account&#39;s usual amount, a price increase or seat true-up, payment terms, billing frequency, currency.</li><li><strong>Product usage</strong>: active users divided by paid seats, 30-day versus 90-day trend in active users, admin logins, API usage, recent seat reductions or downgrade attempts.</li><li><strong>Relationship signals</strong>: support tickets about billing, a lost champion (key admin deactivated), renewal date proximity, customer success health scores.</li><li><strong>Firmographics</strong>: segment, region, industry, tenure; parent and subsidiary links, because one parent may pay for many instances.</li></ul>
+<h4>3. Avoid leakage</h4>
+<ul><li>Use point-in-time feature values (a feature store with as-of joins). Collection notes, dunning stage or &#39;sent to agency&#39; flags are consequences of delinquency and must not be features.</li><li>Split by time (train on older periods, test on later ones) and keep all invoices of one account in the same fold.</li></ul>
+<h4>4. Model and evaluation</h4>
+<ul><li>Gradient-boosted trees are a strong baseline for this tabular data; a survival model if timing matters.</li><li>Positives are rare, so report PR-AUC, and above all <strong>precision and recall at the number of accounts the team can actually work each week</strong>.</li><li>Calibrate the scores (isotonic or Platt) so 0.3 means about 30 percent, which lets finance compute expected loss = probability x amount and prioritise by money at risk, not just probability.</li><li>Check performance by segment and region, and against seasonality (fiscal year ends, budget freezes).</li></ul>
+<h4>5. From score to impact</h4>
+<ul><li>Map score bands to actions (earlier reminder, CSM call, offer a payment plan, no action) and run a randomized holdout to measure the effect on days sales outstanding and write-offs. Being accurate is not the same as changing outcomes.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>Why might a survival model be better than a binary classifier here?</li><li>Which features would leak the label, and how would you catch them?</li><li>How do you prioritise accounts when the team can only contact 200 per week?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-112">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-112%3A+How+would+you+design+a+model+that+predicts+B2B+SaaS+invoice%E2%80%A6&amp;question-id=ml-112&amp;context=ML+%2F+AI+engineer%2C+Gear+4%2C+topic%3A+Applied+ML%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-112.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

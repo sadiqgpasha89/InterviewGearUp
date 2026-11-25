@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Defaults are under 2% of accounts. How do you keep a risk model useful instead of predicting &#39;no default&#39; for everyone? | InterviewGearUp</title>
+<meta name="description" content="Optimise and report metrics that respect rarity (PR-AUC, recall at a fixed review capacity, expected loss captured), not accuracy. Use class weights or a…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-117.html">
+<meta property="og:title" content="Defaults are under 2% of accounts. How do you keep a risk model useful instead of predicting &#39;no default&#39; for everyone? | InterviewGearUp">
+<meta property="og:description" content="Optimise and report metrics that respect rarity (PR-AUC, recall at a fixed review capacity, expected loss captured), not accuracy. Use class weights or a…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-117.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Defaults are under 2% of accounts. How do you keep a risk model useful instead of predicting &#39;no default&#39; for everyone?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · Metrics · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Optimise and report metrics that respect rarity (PR-AUC, recall at a fixed review capacity, expected loss captured), not accuracy. Use class weights or a focal-style loss before resampling, keep the test set at the true base rate, calibrate probabilities afterwards (weighting and SMOTE distort them), and choose the decision threshold from the cost of each error and team capacity.</p></div>
+<h4>Explained in depth</h4>
+<h4>Metrics</h4>
+<ul><li><strong>Accuracy is useless</strong> here: predicting no default for everyone scores 98 percent.</li><li>Use <strong>PR-AUC</strong> (precision-recall), <strong>precision and recall at k</strong> where k is the number of accounts the team can review, and <strong>dollar-weighted recall</strong> (share of at-risk money captured). ROC-AUC can look good while precision in the top band is poor.</li></ul>
+<h4>Training techniques, in order of preference</h4>
+<ol start="1"><li><strong>Class weights</strong> (<code>scale_pos_weight</code> in XGBoost or LightGBM, <code>class_weight</code> in scikit-learn): simple and keeps all real data.</li><li><strong>Focal or cost-sensitive loss</strong> for neural models, which concentrates on hard examples.</li><li><strong>Resampling</strong>: undersampling the majority class speeds training; SMOTE creates synthetic minority points but can blur boundaries on mixed categorical data and must be applied only inside the training folds.</li></ol>
+<ul><li>Never resample the validation or test set: they must reflect the real base rate.</li></ul>
+<h4>Calibrate after rebalancing</h4>
+<ul><li>Weighting and resampling inflate predicted probabilities. Fix them with isotonic regression or Platt scaling on a held-out set at the true rate, and check a reliability curve.</li><li>Calibrated probabilities let finance compute expected loss (probability x exposure) and rank by money at risk.</li></ul>
+<h4>Choose the threshold deliberately</h4>
+<ul><li>Set it from the cost matrix (cost of a missed default versus cost of an unnecessary contact) or simply from capacity: the top 200 accounts per week.</li><li>Revisit it when the base rate shifts, for example in a downturn.</li></ul>
+<h4>Other options</h4>
+<ul><li>Anomaly detection (isolation forest, autoencoders) helps when labels are very scarce or new fraud-like patterns appear, but usually as an extra signal rather than the main model.</li><li>More positives beat any trick: lengthen the history, use earlier-stage events (30 days past due) as additional labels.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>Why can SMOTE hurt a model on mostly categorical features?</li><li>How does upweighting the minority class affect calibration?</li><li>How do you choose a threshold when the cost of a false negative varies by account size?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-117">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-117%3A+Defaults+are+under+2%25+of+accounts.+How+do+you+keep+a+risk+model%E2%80%A6&amp;question-id=ml-117&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+Metrics%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-117.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

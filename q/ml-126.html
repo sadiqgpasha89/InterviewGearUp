@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does LangGraph support loops and persistent state, and why does that matter for enterprise agents compared with a linear chain or DAG? | InterviewGearUp</title>
+<meta name="description" content="LangGraph models an agent as a state machine: nodes update a typed shared state, and edges (including conditional ones) can loop back, so an agent can…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-126.html">
+<meta property="og:title" content="How does LangGraph support loops and persistent state, and why does that matter for enterprise agents compared with a linear chain or DAG? | InterviewGearUp">
+<meta property="og:description" content="LangGraph models an agent as a state machine: nodes update a typed shared state, and edges (including conditional ones) can loop back, so an agent can…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-126.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does LangGraph support loops and persistent state, and why does that matter for enterprise agents compared with a linear chain or DAG?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · Agents · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>LangGraph models an agent as a state machine: nodes update a typed shared state, and edges (including conditional ones) can loop back, so an agent can call a tool, inspect the result and retry or refine until an exit condition or recursion limit. A checkpointer saves state after each step under a thread id, which gives crash recovery, human approval pauses, inspection of past steps and long-running conversations.</p></div>
+<h4>Explained in depth</h4>
+<h4>Linear chains and DAGs</h4>
+<ul><li>A chain or DAG (a fixed pipeline, an Airflow job) runs each step once in a fixed order. That suits ETL, but agents need to decide the next step from the last result: call a tool, see an error, try again, ask the user, then continue.</li></ul>
+<h4>LangGraph&#39;s model</h4>
+<ul><li><strong>State</strong>: a typed schema (<code>TypedDict</code> or Pydantic). Each node returns a partial update.</li><li><strong>Reducers</strong> decide how updates merge: <code>Annotated[list, add_messages]</code> appends messages, a plain field is overwritten, and you can write custom merge functions.</li><li><strong>Nodes and edges</strong>: nodes are functions (an LLM call, a tool call, validation); conditional edges choose the next node from the state, and an edge can point back to an earlier node to form a loop.</li><li><strong>Limits</strong>: a <code>recursion_limit</code> in the run config stops runaway loops with an error you can handle.</li></ul>
+<pre><code>builder = StateGraph(ClaimState)
+builder.add_node(&#39;extract&#39;, extract)
+builder.add_node(&#39;validate&#39;, validate)
+builder.add_conditional_edges(&#39;validate&#39;, route, {&#39;retry&#39;: &#39;extract&#39;, &#39;ok&#39;: &#39;decide&#39;})
+graph = builder.compile(checkpointer=PostgresSaver(conn))
+graph.invoke(inputs, config={&#39;configurable&#39;: {&#39;thread_id&#39;: claim_id}, &#39;recursion_limit&#39;: 10})</code></pre>
+<h4>What checkpointing gives you</h4>
+<ul><li><strong>Durability</strong>: state is written after every step, so a crashed run resumes from the last completed step instead of repeating paid tool calls.</li><li><strong>Human-in-the-loop</strong>: a run can pause for hours or days waiting for approval and resume with the reviewer&#39;s input.</li><li><strong>Debugging and audit</strong>: you can read the state history of a thread, replay from an earlier checkpoint, or fork it to test a fix.</li><li><strong>Memory per conversation</strong>: the thread id ties a user&#39;s session to its state.</li></ul>
+<h4>Enterprise caveats</h4>
+<ul><li>Loops need explicit exit conditions and attempt counters in state, not just the global limit.</li><li>Checkpoints contain customer data: encrypt them, set retention, and control who can read them.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>What is a reducer and when would you write a custom one?</li><li>What happens to side effects when a run resumes from a checkpoint?</li><li>How would you choose between an in-memory, SQLite and Postgres checkpointer?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-126">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-126%3A+How+does+LangGraph+support+loops+and+persistent+state%2C+and+why+does%E2%80%A6&amp;question-id=ml-126&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+Agents%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-126.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

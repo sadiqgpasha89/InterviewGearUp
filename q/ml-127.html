@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>In LangGraph, how would you require an underwriter or adjuster to approve high-value or high-risk cases before the agent continues? | InterviewGearUp</title>
+<meta name="description" content="Route with a conditional edge (for example coverage above a limit or risk score above a threshold) to a review node that calls interrupt() with a…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-127.html">
+<meta property="og:title" content="In LangGraph, how would you require an underwriter or adjuster to approve high-value or high-risk cases before the agent continues? | InterviewGearUp">
+<meta property="og:description" content="Route with a conditional edge (for example coverage above a limit or risk score above a threshold) to a review node that calls interrupt() with a…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-127.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>In LangGraph, how would you require an underwriter or adjuster to approve high-value or high-risk cases before the agent continues?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · Agents · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Route with a conditional edge (for example coverage above a limit or risk score above a threshold) to a review node that calls interrupt() with a summary. With a persistent checkpointer, the run pauses under its thread id; your API shows the case in a review queue, and the reviewer&#39;s decision resumes the run with Command(resume=...). Make steps before the pause idempotent: the node restarts on resume.</p></div>
+<h4>Explained in depth</h4>
+<h4>Graph</h4>
+<p><code>extract_application -&gt; evaluate_rules -&gt; (human_review | decide) -&gt; bind_or_decline</code></p>
+<pre><code>from langgraph.types import interrupt, Command
+
+def route(state):
+    if state[&#39;requested_coverage&#39;] &gt; 500_000 or state[&#39;risk_score&#39;] &gt; 70:
+        return &#39;human_review&#39;
+    return &#39;decide&#39;
+
+def human_review(state):
+    decision = interrupt({                    # pauses here; payload goes to the caller
+        &#39;case_id&#39;: state[&#39;case_id&#39;],
+        &#39;summary&#39;: state[&#39;summary&#39;],
+        &#39;flags&#39;: state[&#39;flags&#39;],
+    })
+    return {&#39;review&#39;: decision}               # runs after resume
+
+graph = builder.compile(checkpointer=PostgresSaver(conn))</code></pre>
+<h4>Runtime flow</h4>
+<ol start="1"><li>The API runs the graph with <code>config={&#39;configurable&#39;: {&#39;thread_id&#39;: case_id}}</code>. When it reaches <code>interrupt</code>, the run stops and the state is saved; the caller receives the interrupt payload.</li><li>The case appears in the reviewer&#39;s queue with the extracted data, rule results and cited evidence.</li><li>The reviewer approves, edits or declines. The backend resumes: <code>graph.invoke(Command(resume={&#39;action&#39;: &#39;approve&#39;, &#39;notes&#39;: &#39;...&#39;}), config=same_config)</code>.</li><li><code>human_review</code> returns the decision into state and the graph continues to the next node.</li></ol>
+<h4>Details that matter in production</h4>
+<ul><li><strong>The interrupted node restarts from its beginning on resume.</strong> Put side effects (sending an email, writing to the policy system) in a later node or make them idempotent.</li><li>Validate the resume payload (allowed actions, the reviewer&#39;s authority for that amount) before using it.</li><li>Record who approved, when, what they saw and what they changed, for audit.</li><li>Handle timeouts: a scheduled job escalates cases waiting longer than the service level.</li><li>Thresholds are business rules: keep them in configuration owned by underwriting, not in a prompt.</li><li>Older code may use <code>interrupt_before=[&#39;node&#39;]</code> at compile time; the <code>interrupt()</code> function is more flexible because it can pause conditionally and pass data to the reviewer.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>Why must the code before interrupt() be idempotent?</li><li>How would you let the reviewer edit extracted fields before resuming?</li><li>How do you handle a review that never comes back?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-127">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-127%3A+In+LangGraph%2C+how+would+you+require+an+underwriter+or+adjuster+to%E2%80%A6&amp;question-id=ml-127&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+Agents%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-127.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

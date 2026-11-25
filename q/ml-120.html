@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>A payment-risk decision must be made in under 200 ms at checkout or retry time. How do you design it? | InterviewGearUp</title>
+<meta name="description" content="Precompute the heavy work. Batch or streaming jobs keep account features and slow-changing scores in a low-latency store; the online path fetches them,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-120.html">
+<meta property="og:title" content="A payment-risk decision must be made in under 200 ms at checkout or retry time. How do you design it? | InterviewGearUp">
+<meta property="og:description" content="Precompute the heavy work. Batch or streaming jobs keep account features and slow-changing scores in a low-latency store; the online path fetches them,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-120.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>A payment-risk decision must be made in under 200 ms at checkout or retry time. How do you design it?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 4 (Lead / Staff) · Deployment · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Precompute the heavy work. Batch or streaming jobs keep account features and slow-changing scores in a low-latency store; the online path fetches them, adds a few request-time features and runs a compact model (trees served natively or via ONNX) in single-digit milliseconds. Set a timeout with a safe default, keep LLMs and heavy enrichment asynchronous, and log every decision for monitoring.</p></div>
+<h4>Explained in depth</h4>
+<h4>Split online from offline</h4>
+<pre><code>Offline / streaming:  events -&gt; aggregates -&gt; feature store (Redis, DynamoDB, online store)
+                       nightly model -&gt; slow-moving account risk score -&gt; same store
+Online (&lt;200 ms):     request -&gt; fetch features (5-15 ms) -&gt; add request features
+                       -&gt; compact model (1-10 ms) -&gt; policy rules -&gt; decision</code></pre>
+<h4>Latency budget</h4>
+<ul><li>Network and feature lookup dominate; one batched key-value read beats many small calls.</li><li>Gradient-boosted trees with a few hundred trees score in well under a few milliseconds when compiled (Treelite, ONNX Runtime, or the library&#39;s native predictor). Logistic regression is faster still.</li><li>Keep LLMs, document parsing and expensive joins off this path; they can personalise follow-up messages asynchronously.</li></ul>
+<h4>Reliability</h4>
+<ul><li>A hard timeout (for example 100 ms on the model call) with a <strong>fallback</strong>: a cached score, a simple rule, or the safe default for that context (usually allow and flag for review rather than block a paying customer).</li><li>Version the model and the feature definitions together; validate that online feature values match offline ones (training-serving skew checks).</li><li>Log inputs, score, decision and latency for monitoring, audits and later training.</li></ul>
+<h4>Decision layer</h4>
+<ul><li>Keep business policy (grace period lengths, amount limits, regional rules) in a rules layer on top of the score so it can change without retraining and can be explained.</li></ul>
+<h4>Validate</h4>
+<ul><li>Load test at peak traffic, watch p99 not just average, and shadow-test new models before they make decisions.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>What fallback would you choose if the feature store is down?</li><li>How do you detect training-serving skew?</li><li>When would a streaming feature be worth its complexity?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-120">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-120%3A+A+payment-risk+decision+must+be+made+in+under+200+ms+at+checkout+or%E2%80%A6&amp;question-id=ml-120&amp;context=ML+%2F+AI+engineer%2C+Gear+4%2C+topic%3A+Deployment%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-120.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

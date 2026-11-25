@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you turn large volumes of SaaS product telemetry into features that signal a customer&#39;s financial health or churn risk? | InterviewGearUp</title>
+<meta name="description" content="Aggregate raw events to the account and date level, then build trend and ratio features over several windows: active users divided by paid seats, 7-day…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-119.html">
+<meta property="og:title" content="How do you turn large volumes of SaaS product telemetry into features that signal a customer&#39;s financial health or churn risk? | InterviewGearUp">
+<meta property="og:description" content="Aggregate raw events to the account and date level, then build trend and ratio features over several windows: active users divided by paid seats, 7-day…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-119.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you turn large volumes of SaaS product telemetry into features that signal a customer&#39;s financial health or churn risk?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · Applied ML · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Aggregate raw events to the account and date level, then build trend and ratio features over several windows: active users divided by paid seats, 7-day versus 90-day activity, admin and billing-page activity, integrations removed, support tickets per active user. Compute them point in time, normalise by account size and seasonality, and check which ones add lift over billing history alone.</p></div>
+<h4>Explained in depth</h4>
+<h4>Pipeline</h4>
+<ul><li>Roll raw events (issues created, pages edited, logins, API calls) up to <strong>account x day</strong> tables in the warehouse or a streaming job; models do not need event-level data.</li><li>Compute features <strong>as of</strong> each scoring date from a feature store so training and serving match and nothing from the future leaks in.</li></ul>
+<h4>Feature families</h4>
+<div class="md-table"><table><thead><tr><th>Family</th><th>Examples</th></tr></thead><tbody><tr><td>Utilisation</td><td>active users / paid seats; share of seats inactive 30+ days</td></tr><tr><td>Trend</td><td>7-day vs 90-day active users; slope of weekly activity; weeks since peak</td></tr><tr><td>Breadth</td><td>number of products, projects or spaces in use; integrations connected or removed</td></tr><tr><td>Admin and billing</td><td>billing page visits, payment method updates, seat reductions, downgrade or cancel page views</td></tr><tr><td>Support</td><td>billing tickets, critical bugs per active user, time to resolution</td></tr><tr><td>People</td><td>key admin or champion deactivated; owner email domain changes</td></tr></tbody></table></div>
+<h4>Make them comparable</h4>
+<ul><li>Use ratios and percent changes so a 10-seat and a 10,000-seat customer are on the same scale.</li><li>Adjust for seasonality and holidays (week-over-week drops at year end are normal).</li><li>For very high-cardinality event types, group by product area or learn embeddings of usage patterns, but simple aggregates usually carry most of the signal.</li></ul>
+<h4>Validate</h4>
+<ul><li>Measure lift over a billing-only baseline; usage features often help most for early warning, billing features near the due date.</li><li>Check for proxies of sensitive attributes and for features that are downstream of collections activity.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>Why use ratios rather than raw counts?</li><li>How would you build these features so training and serving match?</li><li>Which usage signal would you expect to predict non-renewal earliest?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-119">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-119%3A+How+do+you+turn+large+volumes+of+SaaS+product+telemetry+into%E2%80%A6&amp;question-id=ml-119&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+Applied+ML%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-119.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

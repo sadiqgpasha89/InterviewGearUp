@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>A motor claim suggests the car was used for ride-hailing, which the policy excludes. Walk through how your agent should process it. | InterviewGearUp</title>
+<meta name="description" content="Extract facts from the claim and police report, retrieve this policy&#39;s exact wording including the exclusion, and compare them in a validation step that…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-136.html">
+<meta property="og:title" content="A motor claim suggests the car was used for ride-hailing, which the policy excludes. Walk through how your agent should process it. | InterviewGearUp">
+<meta property="og:description" content="Extract facts from the claim and police report, retrieve this policy&#39;s exact wording including the exclusion, and compare them in a validation step that…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-136.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>A motor claim suggests the car was used for ride-hailing, which the policy excludes. Walk through how your agent should process it.</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 4 (Lead / Staff) · Agents · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Extract facts from the claim and police report, retrieve this policy&#39;s exact wording including the exclusion, and compare them in a validation step that records the evidence for each side. If the exclusion may apply, the agent does not decline: it sets the claim to pending review with the rule, evidence and confidence, routes it to a claims examiner, and sends the customer a neutral status message.</p></div>
+<h4>Explained in depth</h4>
+<h4>1. Extract facts</h4>
+<ul><li>From the first notice of loss, police report and any telematics: date, time, location, vehicle, drivers, passengers, and context such as &#39;carrying rideshare passengers&#39; or an active ride-hailing app session.</li><li>Each fact keeps a pointer to its source document and line.</li></ul>
+<h4>2. Ground in the policy</h4>
+<ul><li>Retrieve the claimant&#39;s <strong>active policy version</strong> on the loss date with endorsements and exclusions (for example a commercial or rideshare-use exclusion), plus any rideshare endorsement they may have bought that overrides it.</li></ul>
+<h4>3. Validate</h4>
+<ul><li>A validation node checks the facts against the exclusion conditions, ideally as explicit rules (was the vehicle in use for hire at the time of loss?) with the LLM only extracting and mapping evidence.</li><li>Output: <code>EXCLUSION_RIDESHARE_POSSIBLE</code>, supporting evidence, contrary evidence (app off, passenger was a family member), confidence.</li></ul>
+<h4>4. Route, do not decide</h4>
+<ul><li>An exclusion-based denial is an adverse decision with legal and regulatory consequences. The agent sets status to <code>PENDING_REVIEW</code>, attaches the evidence pack, and routes to a senior examiner&#39;s queue.</li><li>Third-party injury or property claims may still need handling even if first-party cover is excluded; the examiner decides.</li></ul>
+<h4>5. Communicate neutrally</h4>
+<ul><li>&#39;We&#39;ve received claim CLM-90812. A specialist is reviewing the details and will contact you within 2 business days.&#39; No speculation about the outcome, and nothing that reads as a decision.</li></ul>
+<h4>6. Record</h4>
+<ul><li>Audit log of facts, retrieved wording, rule results and routing, so the examiner and any regulator can see exactly why the claim was referred.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>What evidence would argue against applying the exclusion?</li><li>Why should the agent not issue the denial itself?</li><li>How would you test this flow before release?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-136">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-136%3A+A+motor+claim+suggests+the+car+was+used+for+ride-hailing%2C+which+the%E2%80%A6&amp;question-id=ml-136&amp;context=ML+%2F+AI+engineer%2C+Gear+4%2C+topic%3A+Agents%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-136.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

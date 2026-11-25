@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Emails, in-app notices, CSM calls and agencies all touch an overdue account. How do you attribute recovered payments to each channel? | InterviewGearUp</title>
+<meta name="description" content="Rule-based (first or last touch) and Shapley-style attribution split credit by correlation, so treat them as descriptive. To learn what each channel…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-125.html">
+<meta property="og:title" content="Emails, in-app notices, CSM calls and agencies all touch an overdue account. How do you attribute recovered payments to each channel? | InterviewGearUp">
+<meta property="og:description" content="Rule-based (first or last touch) and Shapley-style attribution split credit by correlation, so treat them as descriptive. To learn what each channel…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-125.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Emails, in-app notices, CSM calls and agencies all touch an overdue account. How do you attribute recovered payments to each channel?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 4 (Lead / Staff) · Experimentation · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Rule-based (first or last touch) and Shapley-style attribution split credit by correlation, so treat them as descriptive. To learn what each channel causes, run incrementality tests: holdouts per channel or randomised sequences. Survival or hazard models of time to payment with touches as time-varying covariates help, but contacts are targeted at risky accounts, so adjust for that selection or randomise.</p></div>
+<h4>Explained in depth</h4>
+<h4>Descriptive attribution</h4>
+<ul><li>First or last touch is simple but wrong for multi-step journeys: the agency letter gets all the credit for a payment the CSM call made likely.</li><li><strong>Shapley value</strong> attribution averages each channel&#39;s marginal contribution over all subsets of the channels observed in converting and non-converting journeys. It is fairer than rules but is still based on observed correlations.</li><li><strong>Markov chain removal effect</strong>: how much would conversions drop if a channel were removed from the observed paths.</li></ul>
+<h4>The selection problem</h4>
+<ul><li>Collectors call the hardest accounts, so calls correlate with lower recovery even if they help. Any observational method must adjust for the risk score and account features at the time of contact, or it will undervalue targeted channels.</li></ul>
+<h4>Causal measurement</h4>
+<ul><li><strong>Channel holdouts</strong>: randomly withhold one channel (for example the in-app banner) from a share of accounts and measure the difference in recovery.</li><li><strong>Randomised sequencing</strong>: test orders and timings of touches.</li><li><strong>Hazard models</strong>: a Cox model (or discrete-time survival model) for time to payment with each touch as a time-varying covariate estimates how a touch changes the daily payment rate, controlling for risk; causal only with randomisation or strong adjustment.</li></ul>
+<h4>Use</h4>
+<ul><li>Combine: causal estimates per channel from experiments, and descriptive attribution for day-to-day reporting, calibrated against the experiments.</li><li>Include cost per touch so the output is incremental cash per dollar spent by channel.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>Why do targeted channels look ineffective in observational data?</li><li>How would you design a holdout for the CSM call channel?</li><li>What does a Shapley attribution assume?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-125">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-125%3A+Emails%2C+in-app+notices%2C+CSM+calls+and+agencies+all+touch+an+overdue%E2%80%A6&amp;question-id=ml-125&amp;context=ML+%2F+AI+engineer%2C+Gear+4%2C+topic%3A+Experimentation%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-125.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>
