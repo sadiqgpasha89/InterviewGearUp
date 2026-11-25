@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is zero-copy cloning in Snowflake and Databricks, and how does metadata pointer copying work? | InterviewGearUp</title>
+<meta name="description" content="Zero-copy clone creates a new table, schema or database that points to the same underlying immutable data files as the source. Only metadata is copied,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-76.html">
+<meta property="og:title" content="What is zero-copy cloning in Snowflake and Databricks, and how does metadata pointer copying work? | InterviewGearUp">
+<meta property="og:description" content="Zero-copy clone creates a new table, schema or database that points to the same underlying immutable data files as the source. Only metadata is copied,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-76.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is zero-copy cloning in Snowflake and Databricks, and how does metadata pointer copying work?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Warehouses · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Zero-copy clone creates a new table, schema or database that points to the same underlying immutable data files as the source. Only metadata is copied, so cloning is nearly instant and initially costs no extra storage. After the clone, writes create new files for the changed data only, so source and clone diverge independently, and storage grows only by the differences.</p></div>
+<h4>Explained in depth</h4>
+<h4>The mechanism</h4>
+<p>Tables are stored as <strong>immutable micro-partitions</strong> (Snowflake) or <strong>immutable Parquet files plus a transaction log</strong> (Delta Lake). A table is metadata: a list of the files that make up its current version. Cloning creates new metadata that <strong>references the same files</strong>. No data is copied; a TB-scale table clones in seconds.</p>
+<p>After cloning:</p>
+<ul><li>Reads on both tables use shared files.</li><li>A write (<code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code>, <code>MERGE</code>) to either table creates <strong>new files</strong> owned only by that table; the shared files are untouched (copy-on-write). The two tables then <strong>diverge</strong>, and only the changed micro-partitions consume additional storage.</li><li>The clone has its own history from the point of cloning.</li></ul>
+<h4>Snowflake</h4>
+<pre><code>CREATE TABLE orders_dev CLONE orders;
+CREATE SCHEMA analytics_test CLONE analytics;
+CREATE DATABASE prod_snapshot CLONE prod AT (TIMESTAMP =&gt; &#39;2026-11-24 00:00:00&#39;::timestamp);   -- combine with Time Travel</code></pre>
+<ul><li>Cloning applies to databases, schemas, tables, streams, tasks (suspended) and other objects, with privileges not copied by default.</li><li>A clone references micro-partitions that exist at the clone moment; <strong>Time Travel and Fail-safe</strong> retention for shared partitions persists while either object still references them. Storage charges attribute shared partitions to the original, then to clones as the source&#39;s retention lapses or the source is dropped or changed.</li><li>Clones of external tables, some stages and pipes have restrictions.</li></ul>
+<h4>Databricks (Delta Lake)</h4>
+<pre><code>CREATE TABLE sales_dev SHALLOW CLONE sales;               -- copies the log only, references source files
+CREATE TABLE sales_backup DEEP CLONE sales;               -- copies data files and metadata, independent
+CREATE TABLE sales_v10 SHALLOW CLONE sales VERSION AS OF 10;</code></pre>
+<ul><li><strong>Shallow clone</strong>: zero-copy; depends on the source&#39;s files, so a <code>VACUUM</code> of the source can remove files the clone still needs, causing read failures. Managed Unity Catalog tables handle some of this, but keep retention in mind.</li><li><strong>Deep clone</strong>: full copy of data, supports incremental sync (re-running <code>CREATE OR REPLACE ... DEEP CLONE</code> copies only new changes), suited to backups, migrations and DR.</li><li>Iceberg-based platforms offer branches, tags and table snapshots with similar effect.</li></ul>
+<h4>Use cases</h4>
+<ul><li><strong>Dev and test environments</strong> with production-sized data, in seconds, without storage cost and without risking production.</li><li><strong>CI for dbt or pipelines</strong>: clone prod schema, run changes, compare, then drop.</li><li><strong>Backups and safe experimentation</strong> before risky migrations or bulk updates (clone, apply, validate, swap).</li><li><strong>Point-in-time snapshots</strong> for audits and reproducible ML datasets.</li><li><strong>Parallel analytics</strong> without contention.</li></ul>
+<h4>Risks and cautions</h4>
+<ul><li><strong>Sensitive data</strong>: clones expose the same production data in lower environments; apply masking, restrict roles, or clone then scrub.</li><li><strong>Cost surprises</strong>: heavy modifications to a clone create new storage; old retention can keep large versions alive.</li><li>Not a <strong>backup against corruption of the same storage</strong>: a deep copy or replication is needed for true DR.</li><li>Governance: clones are separate objects needing grants, tags and lineage; clean up stale clones automatically.</li></ul>
+<h4>Pitfalls</h4>
+<p>Vacuuming a source with active shallow clones, assuming clones inherit grants, forgetting clones when computing storage, and treating a clone as an independent backup.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What happens to storage when the source is deleted or when Time Travel retention expires?</li><li>How does Delta SHALLOW CLONE differ from DEEP CLONE?</li><li>What are good use cases and risks?</li></ul>
+<p><a class="btn primary" href="../#/q/de-76">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-76%3A+What+is+zero-copy+cloning+in+Snowflake+and+Databricks%2C+and+how+does%E2%80%A6&amp;question-id=de-76&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Warehouses%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-76.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

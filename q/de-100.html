@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is Reverse ETL and how does it sync modeled warehouse data back into operational CRMs? | InterviewGearUp</title>
+<meta name="description" content="Reverse ETL syncs modelled warehouse data back into operational tools such as CRMs, marketing platforms and support systems. A tool like Census,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-100.html">
+<meta property="og:title" content="What is Reverse ETL and how does it sync modeled warehouse data back into operational CRMs? | InterviewGearUp">
+<meta property="og:description" content="Reverse ETL syncs modelled warehouse data back into operational tools such as CRMs, marketing platforms and support systems. A tool like Census,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-100.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is Reverse ETL and how does it sync modeled warehouse data back into operational CRMs?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 2 (Mid-level) · Architecture · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Reverse ETL syncs modelled warehouse data back into operational tools such as CRMs, marketing platforms and support systems. A tool like Census, Hightouch or a custom job reads a model or query, diffs it against the last sync, maps columns to destination fields, and upserts changed records through the destination API, respecting rate limits and logging results.</p></div>
+<h4>Explained in depth</h4>
+<h4>The problem</h4>
+<p>Warehouses hold the best-modelled view of the business: customer lifetime value, product usage score, churn risk, account health. But sales, marketing and support teams work in Salesforce, HubSpot, Marketo, Zendesk, Braze, Facebook Ads or Slack. Without a way to push warehouse data to these tools, teams rely on CSV exports or one-off scripts, and the data goes stale.</p>
+<h4>What reverse ETL does</h4>
+<p><strong>Reverse ETL</strong> is the pipeline in the reverse direction of classic ETL: <strong>warehouse → operational systems</strong>. It makes warehouse data &quot;operational&quot; (data activation).</p>
+<pre><code>sources → ingestion → warehouse (dbt models: dim_customer, customer_health) → reverse ETL sync → Salesforce / HubSpot / Braze / Ads / Slack / Zendesk</code></pre>
+<p>Typical use cases: sync <strong>lead and account scores</strong> into the CRM, enrich contacts with product usage, build <strong>audiences</strong> for ad platforms and email segmentation, trigger lifecycle campaigns (usage dropped), push churn-risk alerts to customer success, and update support tickets with customer tier.</p>
+<h4>How a sync works</h4>
+<ol start="1"><li><strong>Model</strong>: define the source as a table, view or SQL model (preferably a dbt model with tests and a stable key such as <code>email</code> or <code>account_id</code>).</li><li><strong>Connect destination</strong>: authenticate (OAuth, API tokens), select the object (Contact, Account, custom object) and the <strong>identifier</strong> to match records.</li><li><strong>Field mapping</strong>: map warehouse columns to destination fields, with type conversion and defaults; handle custom fields.</li><li><strong>Change detection (diffing)</strong>: compare the current result with the previous snapshot (hash of row or key-level diff), producing a <strong>delta</strong> of inserts, updates and deletes, to send only what changed. This reduces API calls and respects limits.</li><li><strong>Sync mode</strong>: upsert, update-only, insert-only, mirror (including deletes), or append (event style).</li><li><strong>Schedule or trigger</strong>: cron, after dbt run (via webhook or orchestrator task), or near-real-time with change data capture.</li><li><strong>Execution</strong>: batch calls to destination bulk APIs, handle <strong>rate limits</strong> with backoff and concurrency control, retry transient failures, and write a <strong>sync log</strong> (rows added, updated, failed, errors per row).</li><li><strong>Observability</strong>: alerts on failures, row-count anomalies, schema or mapping errors, and reconciliation.</li></ol>
+<h4>Tools</h4>
+<p>Hightouch, Census, RudderStack, Segment Reverse ETL (Twilio), Airbyte (some destinations), Hevo, Polytomic, and in-house jobs in Airflow, plus native warehouse features (Snowflake Data Sharing to Salesforce Data Cloud, BigQuery to Sheets, Databricks Delta Sharing).</p>
+<h4>Design considerations</h4>
+<ul><li><strong>Identity resolution</strong>: stable keys and dedupe rules; match on email may duplicate contacts, so use customer or account ids with ID mapping tables.</li><li><strong>Source of truth and conflicts</strong>: decide which system owns each field; write only designated fields, avoid overwriting user edits in the CRM; use dedicated custom fields.</li><li><strong>Freshness versus cost</strong>: hourly or daily is typical; near-real-time requires streaming or CDC and more warehouse compute; consider <strong>event streaming</strong> (Kafka, Segment events) for immediate triggers and reverse ETL for batch attributes and audiences.</li><li><strong>Data quality and validation</strong>: test models before sync (not null keys, valid emails, no duplicates), use a staging or sandbox destination, dry runs and small cohorts, <strong>write-audit-publish</strong> gating.</li><li><strong>Governance and privacy</strong>: control which PII leaves the warehouse (consent flags, suppression lists, regional rules), log what was sent, use least-privilege API credentials, and honour deletion requests (propagate deletes to destinations).</li><li><strong>Reliability</strong>: idempotent upserts by external id, retries, dead letter handling for failed rows, backfills, and protection against <strong>accidentally pushing bad data</strong> (guardrails: maximum change thresholds, require approvals when more than 5 percent of rows change).</li><li><strong>Cost</strong>: warehouse query cost for diffs, API quota consumption; tune incremental models.</li></ul>
+<h4>Pitfalls</h4>
+<p>Pointing syncs at unreviewed SQL, overwriting fields owned by sales users, exceeding API limits and getting blocked, syncing PII without consent, and treating the warehouse as a low-latency operational database.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you handle API rate limits, retries and idempotency in syncs?</li><li>How do you decide between reverse ETL and event streaming for activation?</li><li>How do you monitor and govern what is written back?</li></ul>
+<p><a class="btn primary" href="../#/q/de-100">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-100%3A+What+is+Reverse+ETL+and+how+does+it+sync+modeled+warehouse+data+back%E2%80%A6&amp;question-id=de-100&amp;context=Data+engineer%2C+Gear+2%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-100.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

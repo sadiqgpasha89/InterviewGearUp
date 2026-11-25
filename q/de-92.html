@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What causes memory spill to disk in Spark and how do you tune memory fraction allocations? | InterviewGearUp</title>
+<meta name="description" content="Spark spills to disk when execution memory for shuffles, sorts, joins and aggregations cannot hold the working data, so it writes sorted runs to local…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-92.html">
+<meta property="og:title" content="What causes memory spill to disk in Spark and how do you tune memory fraction allocations? | InterviewGearUp">
+<meta property="og:description" content="Spark spills to disk when execution memory for shuffles, sorts, joins and aggregations cannot hold the working data, so it writes sorted runs to local…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-92.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What causes memory spill to disk in Spark and how do you tune memory fraction allocations?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Spark · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Spark spills to disk when execution memory for shuffles, sorts, joins and aggregations cannot hold the working data, so it writes sorted runs to local disk and merges them later. The unified memory region is controlled by spark.memory.fraction (default 0.6), with spark.memory.storageFraction protecting cached data. Reduce spill by smaller partitions, more memory, fewer cores per executor, and avoiding skew.</p></div>
+<h4>Explained in depth</h4>
+<h4>Spark memory model (unified memory manager)</h4>
+<p>For an executor with heap <code>spark.executor.memory</code>:</p>
+<ul><li><strong>Reserved memory</strong>: about 300 MB for Spark internals.</li><li><strong>Usable</strong> = heap minus reserved. <code>spark.memory.fraction</code> (default <strong>0.6</strong>) of usable is the <strong>unified region</strong> shared by:</li><li><strong>Execution memory</strong>: shuffles, joins, sorts, aggregations (hash maps, sort buffers).</li><li><strong>Storage memory</strong>: cached RDDs and DataFrames, broadcast variables.</li><li>The remaining 40 percent is <strong>user memory</strong>: your data structures, UDF objects, metadata.</li><li><code>spark.memory.storageFraction</code> (default <strong>0.5</strong>) of the unified region is storage memory that is <strong>protected from eviction by execution</strong>; beyond that, execution can borrow storage space and evict cached blocks, while storage cannot evict execution. Both can borrow unused space from each other.</li><li><strong>Overhead</strong> (<code>spark.executor.memoryOverhead</code>) is off-heap space for JVM overheads, native buffers, Python workers, and is outside the heap.</li></ul>
+<p>Example: 10 GB heap → ~9.7 GB usable → ~5.8 GB unified (execution + storage) → ~2.9 GB protected storage.</p>
+<h4>Why spill occurs</h4>
+<p>Tasks running concurrently in an executor (<code>cores</code>) each get a share of execution memory, roughly <code>1/N</code> to <code>1/2N</code> of the pool for N active tasks. When a task&#39;s sort buffer or hash map for its partition exceeds its share, Spark <strong>spills</strong> sorted runs to local disk, then merges them (external merge sort). Common causes:</p>
+<ol start="1"><li><strong>Partitions too large</strong> relative to memory (low shuffle partition count, large input splits).</li><li><strong>Data skew</strong>: hot-key partitions.</li><li><strong>Too many cores per executor</strong> (memory per task shrinks).</li><li>Heavy aggregations with high cardinality (<code>collect_list</code>, big <code>groupBy</code> maps), wide rows, large window frames.</li><li>Cached data occupying storage memory, leaving less for execution.</li><li>Executors too small, or memory fraction tuned poorly.</li></ol>
+<h4>Cost of spill</h4>
+<p>Disk I/O, serialisation, and CPU for merging slow stages (often 2x to 10x). It is not an error but a <strong>signal</strong>. A small amount can be fine; large spill and shuffle with GC pressure usually mean tuning is needed.</p>
+<h4>Diagnosing</h4>
+<p>Spark UI stage page: columns <strong>Spill (Memory)</strong> and <strong>Spill (Disk)</strong> per task and summary; compare to shuffle read size; look at GC time; check max versus median to find skew.</p>
+<h4>Tuning steps</h4>
+<ol start="1"><li><strong>Increase parallelism</strong> so each partition is smaller: <code>spark.sql.shuffle.partitions</code> (for example 200 to 2000) or AQE (<code>spark.sql.adaptive.coalescePartitions.enabled</code>, <code>advisoryPartitionSizeInBytes=128m</code> to 256m); <code>repartition</code> before heavy operations.</li><li><strong>Fix skew</strong>: AQE skew join, salting, filter null and default keys.</li><li><strong>Reduce cores per executor</strong> (4 to 5 is common) or give more memory per executor so each task gets enough.</li><li><strong>Raise memory</strong>: <code>spark.executor.memory</code> and <code>memoryOverhead</code>.</li><li><strong>Adjust fractions</strong> carefully: raise <code>spark.memory.fraction</code> (for example 0.7 or 0.8) when user memory is small, lower <code>spark.memory.storageFraction</code> (0.3 or lower) if you cache little; use <code>OFF_HEAP</code> mode (<code>spark.memory.offHeap.enabled</code>, <code>size</code>) to reduce GC.</li><li><strong>Reduce data volume</strong>: select only needed columns, filter early, pre-aggregate, use more efficient types.</li><li><strong>Avoid heavy caching</strong> or use serialised and disk-backed storage levels; <code>unpersist</code> when done.</li><li><strong>Use faster local disks</strong> (NVMe) for spill, and the right shuffle service.</li><li>Prefer <strong>built-in aggregations</strong> over <code>groupByKey</code> and collect-style functions.</li></ol>
+<pre><code>spark.executor.memory=16g
+spark.executor.cores=4
+spark.memory.fraction=0.7
+spark.memory.storageFraction=0.3
+spark.sql.shuffle.partitions=1000
+spark.sql.adaptive.enabled=true</code></pre>
+<h4>Pitfalls</h4>
+<p>Raising fractions without checking GC and user memory needs, assuming caching is free, tuning memory when the real problem is skew, and ignoring overhead memory for PySpark.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you read the spill metrics in the Spark UI?</li><li>Why does spark.memory.storageFraction not hard-reserve storage memory?</li><li>When is spilling acceptable and when is it a sign to resize?</li></ul>
+<p><a class="btn primary" href="../#/q/de-92">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-92%3A+What+causes+memory+spill+to+disk+in+Spark+and+how+do+you+tune+memory%E2%80%A6&amp;question-id=de-92&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Spark%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-92.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

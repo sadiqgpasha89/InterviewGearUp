@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do Slowly Changing Dimension Type 4 (Historical Min/Max Tables) scale over billions of rows? | InterviewGearUp</title>
+<meta name="description" content="SCD Type 4 keeps the dimension table with only current values and moves history to a separate history table, usually with effective dates, while a…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-95.html">
+<meta property="og:title" content="How do Slowly Changing Dimension Type 4 (Historical Min/Max Tables) scale over billions of rows? | InterviewGearUp">
+<meta property="og:description" content="SCD Type 4 keeps the dimension table with only current values and moves history to a separate history table, usually with effective dates, while a…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-95.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do Slowly Changing Dimension Type 4 (Historical Min/Max Tables) scale over billions of rows?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Data Modeling · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>SCD Type 4 keeps the dimension table with only current values and moves history to a separate history table, usually with effective dates, while a mini-dimension can hold rapidly changing attributes. It scales because the main dimension stays small and fast for current queries, and the history table is append-only and partitioned by date, so billions of historical rows do not slow everyday joins.</p></div>
+<h4>Explained in depth</h4>
+<h4>Definitions</h4>
+<ul><li><strong>SCD Type 1</strong>: overwrite, no history.</li><li><strong>SCD Type 2</strong>: add a new row per change with validity dates in the <strong>same</strong> table; history accumulates inside the main dimension.</li><li><strong>SCD Type 4</strong>: keep a <strong>current-only dimension</strong> (one row per entity) and write changes to a <strong>separate history table</strong>. A common variant, the <strong>mini-dimension</strong>, splits volatile attributes (age band, income band, loyalty tier) into a small separate dimension referenced by the fact table.</li></ul>
+<p>&quot;Historical Min/Max&quot; in the question refers to history tables that retain the range of values over time (effective-from and effective-to), plus sometimes first and latest values.</p>
+<h4>Structure</h4>
+<pre><code>-- current dimension: small, one row per customer, joined by most queries
+CREATE TABLE dim_customer (customer_sk BIGINT PRIMARY KEY, customer_id STRING, name STRING, segment STRING, city STRING, updated_at TIMESTAMP);
+-- history table: append-only, one row per version
+CREATE TABLE dim_customer_history (
+  customer_id STRING, version_no INT, segment STRING, city STRING,
+  valid_from TIMESTAMP, valid_to TIMESTAMP, changed_at TIMESTAMP, change_type STRING)
+PARTITION BY DATE(valid_from) CLUSTER BY customer_id;</code></pre>
+<p>Load: on each change, insert the <strong>previous version</strong> into history (closing <code>valid_to</code>), and update the current row (MERGE). Facts join to the current dimension for &quot;now&quot; analysis, and to history by <code>customer_id</code> plus event time for &quot;as it was&quot; analysis.</p>
+<h4>Why it scales</h4>
+<ol start="1"><li><strong>Current queries stay fast</strong>: most BI queries need present attributes. Type 2 tables with 10 versions per customer on a 500 million customer base mean billions of rows scanned or filtered with <code>is_current = true</code>; Type 4 keeps the working dimension at 500 million rows (or less with pruning).</li><li><strong>History is append-only and partitionable</strong>: partition by <code>valid_from</code> or change date, cluster by entity id, compress with columnar formats, tier older partitions to cheaper storage. Updates are cheap (inserts only).</li><li><strong>Independent lifecycle</strong>: the history table can have different retention, access control (audit teams only), and optimisation, and can be built from CDC logs.</li><li><strong>Mini-dimensions</strong> control <strong>dimension explosion</strong>: if 20 percent of a 100 million-row dimension changes monthly in volatile attributes, Type 2 would add 20 million rows per month. A mini-dimension of banded values (a few thousand combinations) captures the changing profile in the fact&#39;s foreign key, so the customer dimension never grows.</li></ol>
+<h4>Query patterns</h4>
+<ul><li>Current analysis: join facts to <code>dim_customer</code> (single row per customer).</li><li>Point-in-time analysis: use the history table with a range join or an <strong>as-of join</strong> (<code>fact.event_ts &gt;= valid_from AND fact.event_ts &lt; valid_to</code>), pre-materialised into the fact table when needed (store <code>customer_history_sk</code> at load time) to avoid repeated range joins on billions of rows.</li></ul>
+<pre><code>SELECT f.order_id, h.segment FROM fact_orders f
+JOIN dim_customer_history h ON h.customer_id = f.customer_id AND f.order_ts &gt;= h.valid_from AND f.order_ts &lt; h.valid_to;</code></pre>
+<ul><li>For performance, add a <strong>version key</strong> on the history and persist it on facts at load time.</li></ul>
+<h4>Trade-offs</h4>
+<ul><li>More objects and ETL logic; queries needing both current and historical attributes must join two tables or use a view that unions them.</li><li>Range joins on huge history tables are expensive without clustering and pruning; consider storing the snapshot key on facts or using temporal tables, periodic snapshots (daily snapshot facts), or lakehouse time travel for specific needs.</li><li>Compared with Type 2, simplicity is lower, but scalability for current-state workloads is higher.</li></ul>
+<h4>Choosing</h4>
+<p>Type 2 is fine for moderate row counts and typical change rates. Choose Type 4 or mini-dimensions when the dimension is very large, attributes change frequently, current-state queries dominate, or history has different governance needs. Consider <strong>Type 6</strong> hybrids when both views are needed in one table.</p>
+<h4>Pitfalls</h4>
+<p>Missing atomicity between history insert and current update (use MERGE in one transaction), unbounded history without retention, joins on non-clustered history, and forgetting to backfill history when adopting the pattern.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does Type 4 differ from Type 2 and when is Type 2 enough?</li><li>How do you partition and cluster a history table with billions of rows?</li><li>How does a mini-dimension reduce growth for rapidly changing attributes?</li></ul>
+<p><a class="btn primary" href="../#/q/de-95">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-95%3A+How+do+Slowly+Changing+Dimension+Type+4+%28Historical+Min%2FMax+Tables%29%E2%80%A6&amp;question-id=de-95&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Data+Modeling%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-95.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

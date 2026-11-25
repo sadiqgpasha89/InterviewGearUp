@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare Dagster software-defined assets with Airflow imperative task execution models. | InterviewGearUp</title>
+<meta name="description" content="Airflow is task-centric: you define the steps to run and their order, and data is implicit. Dagster is asset-centric: you declare the data assets…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-79.html">
+<meta property="og:title" content="Compare Dagster software-defined assets with Airflow imperative task execution models. | InterviewGearUp">
+<meta property="og:description" content="Airflow is task-centric: you define the steps to run and their order, and data is implicit. Dagster is asset-centric: you declare the data assets…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-79.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare Dagster software-defined assets with Airflow imperative task execution models.</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Orchestration · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Airflow is task-centric: you define the steps to run and their order, and data is implicit. Dagster is asset-centric: you declare the data assets (tables, files, models), their dependencies and how to produce them, and the orchestrator derives the run graph, tracks materialisation, lineage and freshness, and supports partitions and backfills natively.</p></div>
+<h4>Explained in depth</h4>
+<h4>Airflow: imperative, task-based</h4>
+<p>You describe <strong>what to run, in what order, when</strong>: a DAG of operators on a schedule. The data produced by tasks is a side effect that Airflow does not model. Dependencies reflect execution order, not data relationships. Lineage, freshness and &quot;is this table up to date?&quot; must be inferred or added externally.</p>
+<pre><code>with DAG(&quot;sales&quot;, schedule=&quot;@daily&quot;) as dag:
+    extract = PythonOperator(task_id=&quot;extract&quot;, python_callable=extract_orders)
+    transform = PythonOperator(task_id=&quot;transform&quot;, python_callable=transform_orders)
+    load = PythonOperator(task_id=&quot;load&quot;, python_callable=load_orders)
+    extract &gt;&gt; transform &gt;&gt; load</code></pre>
+<p>Strengths: mature, huge provider ecosystem, flexible for any workload (not only data), large community, managed offerings (MWAA, Cloud Composer, Astronomer), operational familiarity.</p>
+<h4>Dagster: declarative, asset-based</h4>
+<p>A <strong>software-defined asset</strong> is a Python function that produces a data object, with upstream assets as inputs.</p>
+<pre><code>import dagster as dg
+
+@dg.asset
+def raw_orders() -&gt; pd.DataFrame: ...
+@dg.asset
+def cleaned_orders(raw_orders: pd.DataFrame) -&gt; pd.DataFrame:      # dependency is the parameter name
+    return raw_orders.dropna(subset=[&quot;order_id&quot;])
+@dg.asset(partitions_def=dg.DailyPartitionsDefinition(start_date=&quot;2026-01-01&quot;),
+          automation_condition=dg.AutomationCondition.eager())
+def daily_revenue(context: dg.AssetExecutionContext, cleaned_orders) -&gt; pd.DataFrame: ...</code></pre>
+<p>Dagster builds the graph from asset dependencies, records every <strong>materialisation</strong> with metadata (row counts, schema), and shows an <strong>asset catalogue and lineage</strong> in the UI. dbt models, Spark jobs, and Fivetran syncs can be imported as assets (<code>dagster-dbt</code>).</p>
+<h4>Key differences</h4>
+<div class="md-table"><table><thead><tr><th>Aspect</th><th>Airflow</th><th>Dagster</th></tr></thead><tbody><tr><td>Core abstraction</td><td>task and DAG</td><td>asset (also ops and jobs)</td></tr><tr><td>Dependencies</td><td>execution order</td><td>data dependencies</td></tr><tr><td>Lineage and catalogue</td><td>external or limited</td><td>built in</td></tr><tr><td>Partitions and backfills</td><td>schedule intervals, CLI backfill</td><td>first-class partitions, UI backfills by partition</td></tr><tr><td>Data quality</td><td>via operators or external tools</td><td>asset checks built in</td></tr><tr><td>Scheduling</td><td>cron and datasets</td><td>cron, sensors, freshness policies, automation conditions</td></tr><tr><td>Local dev and testing</td><td>harder (scheduler, DB)</td><td>functions are testable, resources injectable, <code>materialize()</code> in tests</td></tr><tr><td>Config and environments</td><td>connections, variables</td><td>resources, IO managers, code locations</td></tr><tr><td>Ecosystem</td><td>very large</td><td>growing</td></tr><tr><td>Multi-tenancy</td><td>single deployment</td><td>code locations isolate teams</td></tr></tbody></table></div>
+<h4>Resources and IO managers</h4>
+<p>Dagster separates business logic from infrastructure: <strong>resources</strong> (database clients, API clients) and <strong>IO managers</strong> (how assets are stored and loaded, for example to S3 Parquet) are injected, enabling easy swapping between local, test and prod and unit testing without the orchestrator.</p>
+<h4>When to choose which</h4>
+<ul><li><strong>Dagster</strong> for analytics and ML platforms where assets, lineage, partitions, data quality and developer experience matter; greenfield or modernising teams; strong dbt use.</li><li><strong>Airflow</strong> for broad, heterogeneous workflow orchestration, existing investment, many third-party integrations, or when your team already operates it well. Airflow 3 adds <strong>asset-based scheduling</strong> and DAG versioning, narrowing the gap.</li><li>They can coexist: Dagster can observe or trigger Airflow DAGs, and teams migrate incrementally.</li></ul>
+<h4>Pitfalls</h4>
+<p>Re-implementing task graphs as assets without modelling data meaningfully, underestimating migration cost and operational expertise, and expecting either tool to replace data quality, catalogue or processing engines.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do partitions and automation conditions replace cron and sensors?</li><li>How does testing differ with resources and IO managers?</li><li>Can Dagster and Airflow coexist during a migration?</li></ul>
+<p><a class="btn primary" href="../#/q/de-79">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-79%3A+Compare+Dagster+software-defined+assets+with+Airflow+imperative+task%E2%80%A6&amp;question-id=de-79&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Orchestration%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-79.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does Time Travel work in Delta Lake and Iceberg using immutable snapshot manifests? | InterviewGearUp</title>
+<meta name="description" content="Time travel lets you query a table as of a previous version or timestamp. Delta Lake and Iceberg are built on immutable data files plus metadata (the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-30.html">
+<meta property="og:title" content="How does Time Travel work in Delta Lake and Iceberg using immutable snapshot manifests? | InterviewGearUp">
+<meta property="og:description" content="Time travel lets you query a table as of a previous version or timestamp. Delta Lake and Iceberg are built on immutable data files plus metadata (the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-30.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does Time Travel work in Delta Lake and Iceberg using immutable snapshot manifests?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Lakehouse · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Time travel lets you query a table as of a previous version or timestamp. Delta Lake and Iceberg are built on immutable data files plus metadata (the Delta transaction log, Iceberg snapshots with manifest lists and manifests). Each commit creates a new version that references a set of files, so older versions remain readable until their files are expired or vacuumed.</p></div>
+<h4>Explained in depth</h4>
+<h4>Core idea: immutable files and versioned metadata</h4>
+<p>Data files (Parquet) are never modified in place. Each write, update, delete or merge adds new files and marks old ones as removed in metadata. The <strong>table state at a commit</strong> is the list of live files in that commit&#39;s metadata; keeping the old metadata makes old states reconstructable.</p>
+<h4>Delta Lake</h4>
+<ul><li>The <code>_delta_log/</code> directory holds ordered JSON commit files (<code>00000000000000000012.json</code>) with <code>add</code> and <code>remove</code> actions, plus periodic <strong>checkpoint</strong> Parquet files that summarise state.</li><li>A reader replays the checkpoint and later JSON files to compute the active file set for a given <strong>version number</strong>.</li></ul>
+<pre><code>SELECT * FROM sales VERSION AS OF 42;
+SELECT * FROM sales TIMESTAMP AS OF &#39;2026-11-20 10:00:00&#39;;
+DESCRIBE HISTORY sales;                       -- versions, operations, users, metrics
+RESTORE TABLE sales TO VERSION AS OF 42;      -- roll back</code></pre>
+<ul><li>Files removed from a version stay on storage until <code>VACUUM</code> deletes them after the retention period (<code>delta.deletedFileRetentionDuration</code>, default 7 days); log retention is <code>delta.logRetentionDuration</code> (30 days).</li></ul>
+<h4>Apache Iceberg</h4>
+<p>Metadata is a tree: a <strong>metadata file</strong> (JSON) points to the current snapshot; each <strong>snapshot</strong> points to a <strong>manifest list</strong>, which lists <strong>manifest files</strong>, which list data files with column statistics and partition values. Every commit atomically swaps the table&#39;s metadata pointer (catalog compare-and-swap) to a new metadata file.</p>
+<pre><code>SELECT * FROM db.sales FOR VERSION AS OF 8271635;          -- snapshot id
+SELECT * FROM db.sales FOR TIMESTAMP AS OF &#39;2026-11-20 10:00:00&#39;;
+SELECT * FROM db.sales.snapshots;                            -- metadata tables
+CALL system.rollback_to_snapshot(&#39;db.sales&#39;, 8271635);
+CALL system.expire_snapshots(&#39;db.sales&#39;, TIMESTAMP &#39;2026-11-01 00:00:00&#39;);   -- delete old snapshots and unreachable files</code></pre>
+<p>Branches and tags (named snapshots) support audit snapshots and write-audit-publish workflows.</p>
+<h4>Why it works and what it costs</h4>
+<ul><li>Reads are <strong>snapshot-isolated</strong>: a query pins one version, so concurrent writers do not disturb it.</li><li>Enables <strong>audits</strong> (what did the table say last quarter), <strong>reproducible ML training and reports</strong>, comparing versions to debug data issues, <strong>rollback</strong> after a bad job, and incremental processing between versions (Delta change data feed, Iceberg incremental reads).</li><li>Storage grows with history; metadata and small-file overhead increase. Schedule <strong>compaction</strong> (<code>OPTIMIZE</code>, <code>rewrite_data_files</code>), <code>VACUUM</code> or <code>expire_snapshots</code>, and manifest rewriting.</li></ul>
+<h4>Limits</h4>
+<p>Time travel is <strong>not a backup</strong>: it lives in the same storage and expires with retention settings; deleted or corrupted storage or metadata cannot be recovered. It also does not cover external changes outside table commits, or regulatory deletions (GDPR erasure requires removing old versions&#39; data files through expiry and purge). Keep real backups or replication for disaster recovery.</p>
+<h4>Pitfalls</h4>
+<p>Running vacuum with a very short retention while long queries or streaming readers still need old files, assuming timestamps align across time zones and clock skew, and expecting time travel to work after snapshot expiry.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does vacuuming or snapshot expiry limit how far back you can travel?</li><li>How do you roll back a bad write using time travel?</li><li>How does time travel differ from backups?</li></ul>
+<p><a class="btn primary" href="../#/q/de-30">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-30%3A+How+does+Time+Travel+work+in+Delta+Lake+and+Iceberg+using+immutable%E2%80%A6&amp;question-id=de-30&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Lakehouse%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-30.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

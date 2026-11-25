@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Design a high-throughput clickstream event ingestion pipeline handling 500,000 events/second. | InterviewGearUp</title>
+<meta name="description" content="At 500,000 events per second, use a partitioned log (Kafka or Kinesis) behind a stateless, autoscaled collector tier, compress and batch on the client,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-96.html">
+<meta property="og:title" content="Design a high-throughput clickstream event ingestion pipeline handling 500,000 events/second. | InterviewGearUp">
+<meta property="og:description" content="At 500,000 events per second, use a partitioned log (Kafka or Kinesis) behind a stateless, autoscaled collector tier, compress and batch on the client,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-96.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Design a high-throughput clickstream event ingestion pipeline handling 500,000 events/second.</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Ingestion · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>At 500,000 events per second, use a partitioned log (Kafka or Kinesis) behind a stateless, autoscaled collector tier, compress and batch on the client, enforce schemas, process with Flink or Spark Structured Streaming for deduplication, sessionisation and enrichment, and land raw plus curated data in an Iceberg or Delta lakehouse and a real-time OLAP store. Plan capacity, backpressure and monitoring explicitly.</p></div>
+<h4>Explained in depth</h4>
+<h4>Requirements and numbers</h4>
+<p>Clarify: average versus peak (assume peak 2x, so 1M/s), event size (about 1 KB JSON, 300 to 500 bytes after Avro or Protobuf and compression), latency targets (seconds for real-time dashboards, hourly for batch), retention, durability, exactly-once or at-least-once, schema evolution, privacy (PII, consent), and consumers (BI, ML features, personalisation). Throughput: 500k events/s × 1 KB ≈ <strong>500 MB/s</strong> (about 43 TB/day raw, around 10 to 15 TB/day compressed).</p>
+<h4>Architecture</h4>
+<pre><code>Clients (web SDK, mobile SDK, server)
+  → CDN / load balancer → collector tier (stateless HTTP, autoscaled; validate, enrich with geo/UA, assign event_id)
+  → Kafka (or Kinesis / Pub/Sub / Redpanda) topics, partitioned by user/session id
+  → stream processing (Flink / Spark Structured Streaming): parse, dedupe, sessionise, enrich, filter bots, PII handling
+  → sinks: (a) lakehouse raw + curated (Iceberg/Delta on S3) via Kafka Connect or Flink
+           (b) real-time OLAP (ClickHouse / Pinot / Druid) for dashboards
+           (c) feature store / personalisation topics
+  → batch: dbt/Spark models for marts, ML training</code></pre>
+<h4>Ingestion tier</h4>
+<ul><li><strong>Client</strong>: batch events (flush every few seconds or N events), gzip or zstd compression, retry with backoff, <strong>client-generated UUID event ids</strong> for idempotency, offline buffering on mobile.</li><li><strong>Collectors</strong>: lightweight services (Go, Rust, Envoy plugins, Nginx plus Vector, or managed API Gateway to Kinesis) that validate against a schema, add server timestamps, and produce asynchronously to Kafka with <code>acks=all</code> (or <code>acks=1</code> plus replication tuning for lower latency), <code>linger.ms</code> 5 to 20, <code>batch.size</code> 128 KB to 1 MB, <code>compression.type=zstd</code> or <code>lz4</code>. Autoscale on CPU and requests; keep them <strong>stateless</strong>; return <code>202</code> quickly.</li><li>Add <strong>backpressure and load shedding</strong>: bounded queues, rate limits per tenant, and a fallback buffer (local disk or S3) when Kafka is unavailable.</li></ul>
+<h4>Kafka sizing</h4>
+<ul><li>Ingress 500 MB/s × replication 3 = 1.5 GB/s of broker write traffic; with compression ratios reducing it.</li><li>Partitions: a partition handles roughly 10 to 50 MB/s depending on hardware; for headroom use <strong>≥ 100 to 200 partitions</strong> per hot topic (for example 256), keyed by <code>session_id</code> or <code>user_id</code> for ordering, with a hash that avoids hot keys.</li><li>Brokers: 12 to 30 NVMe-backed brokers (e.g. 10 to 25 Gbps NICs), <code>min.insync.replicas=2</code>, rack awareness, retention 3 to 7 days (or tiered storage), monitor disk and network.</li><li>Separate topics for raw, validated, and dead-letter events; manage schemas in Schema Registry (Avro or Protobuf) with backward compatibility.</li></ul>
+<h4>Stream processing</h4>
+<ul><li><strong>Flink</strong> or Spark: consumer parallelism matches partitions; event-time processing with watermarks (allowed lateness 5 to 10 minutes), <strong>deduplication</strong> by <code>event_id</code> with TTL state in RocksDB, <strong>sessionisation</strong> (30-minute gap), enrichment through broadcast state or async lookups with caching, bot filtering, PII hashing, and routing of invalid records to a <strong>DLQ</strong>.</li><li>Checkpoints to object storage, incremental, with sensible intervals (30 to 60 seconds); exactly-once sinks via transactions or idempotent upserts.</li><li>Autoscale with Kafka lag (KEDA, Flink adaptive scheduler).</li></ul>
+<h4>Storage and serving</h4>
+<ul><li><strong>Lakehouse</strong>: write raw (immutable) and curated Parquet in Iceberg or Delta, partitioned by <code>event_date</code> (and hour) with file sizes 256 MB to 512 MB through compaction jobs; table maintenance (compaction, snapshot expiry). Feed batch marts with dbt/Spark.</li><li><strong>Real-time OLAP</strong>: ClickHouse, Pinot or Druid consuming from Kafka for sub-second aggregations (active users, funnel, top pages); pre-aggregated rollups.</li><li>Archive older raw data to cheaper tiers with lifecycle rules.</li></ul>
+<h4>Reliability and operations</h4>
+<p>Monitor end-to-end latency, consumer lag, collector error rates, producer retries, partition skew, checkpoint duration, and data quality (schema violations, duplicate rate, freshness). Run load tests at 2x peak, chaos tests for broker loss and zone failure, multi-AZ deployment, and a disaster recovery plan (MirrorMaker 2 or cluster linking). Control cost with compression, sampling for low-value events, tiered storage, and right-sized retention.</p>
+<h4>Privacy and governance</h4>
+<p>Consent flags, PII tokenisation at ingestion, regional routing for data residency, deletion workflows, and lineage.</p>
+<h4>Pitfalls</h4>
+<p>Too few partitions (cannot scale consumers later without rekeying), unbounded keys causing skew, no idempotency (retries create duplicates), schema chaos from many client versions, tiny files in the lake, and processing everything synchronously in the collector.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you size Kafka partitions and brokers for this throughput?</li><li>How do you handle bursts, late events and duplicates?</li><li>How would you design the serving layer for real-time and batch dashboards?</li></ul>
+<p><a class="btn primary" href="../#/q/de-96">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-96%3A+Design+a+high-throughput+clickstream+event+ingestion+pipeline%E2%80%A6&amp;question-id=de-96&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Ingestion%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-96.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

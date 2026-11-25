@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you implement PII masking, tokenization, and hashing in compliance with GDPR and HIPAA? | InterviewGearUp</title>
+<meta name="description" content="Masking hides parts of a value for display (j***@x.com), hashing derives a one-way digest (salted or keyed HMAC to resist lookups), and tokenization…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-57.html">
+<meta property="og:title" content="How do you implement PII masking, tokenization, and hashing in compliance with GDPR and HIPAA? | InterviewGearUp">
+<meta property="og:description" content="Masking hides parts of a value for display (j***@x.com), hashing derives a one-way digest (salted or keyed HMAC to resist lookups), and tokenization…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-57.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you implement PII masking, tokenization, and hashing in compliance with GDPR and HIPAA?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Security · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Masking hides parts of a value for display (j***@x.com), hashing derives a one-way digest (salted or keyed HMAC to resist lookups), and tokenization swaps the value for a random token held in a secure vault so it can be reversed by authorised services. Choose by need: analytics joins, reversibility, and re-identification risk under GDPR pseudonymisation and HIPAA de-identification rules.</p></div>
+<h4>Explained in depth</h4>
+<h4>Regulatory context</h4>
+<ul><li><strong>GDPR</strong>: personal data must be minimised and protected; <strong>pseudonymisation</strong> (replacing identifiers so data cannot be attributed without extra information kept separately) is an encouraged safeguard but the data is still personal. <strong>Anonymisation</strong> (irreversible, no reasonable re-identification) takes data out of scope.</li><li><strong>HIPAA</strong>: protected health information (PHI) can be de-identified by the <strong>Safe Harbor</strong> method (remove 18 identifier types: names, geographic units smaller than state, dates except year, phone, email, SSN, MRN, device IDs, IPs, biometrics, full-face photos) or <strong>Expert Determination</strong>.</li><li>Both require access control, encryption, audit logging, retention limits and breach readiness.</li></ul>
+<h4>Techniques</h4>
+<ol start="1"><li><strong>Masking</strong>: static (permanently altered copies for dev and test) or <strong>dynamic</strong> (applied at query time based on role). Examples: <code>****-****-****-1234</code>, <code>j***@example.com</code>.</li><li><strong>Hashing</strong>: one-way function. Use <strong>HMAC-SHA256 with a secret key</strong> (or salted hash) rather than plain SHA-256: low-entropy values (emails, phone numbers, SSNs) can be reversed by dictionary or rainbow table attacks. Deterministic hashing keeps joins possible across tables. It is pseudonymisation, not anonymisation.</li></ol>
+<pre><code>import hmac, hashlib
+def pseudonymise(value: str, key: bytes) -&gt; str:
+    return hmac.new(key, value.strip().lower().encode(), hashlib.sha256).hexdigest()</code></pre>
+<ol start="3"><li><strong>Tokenization</strong>: replace the value with a random token (vault-based, with a mapping table in a hardened service, or vaultless via format-preserving encryption). Reversible only by calling the token service with authorisation. Keeps format (16-digit tokens for card numbers), reduces compliance scope (PCI), and allows referential integrity when the same input yields the same token.</li><li><strong>Encryption</strong>: field-level or column-level with KMS-managed keys; envelope encryption; separate key custody. Reversible with the key.</li><li><strong>Generalisation and suppression</strong>: age bands instead of birthdate, truncated ZIP codes, removing rare categories; k-anonymity, l-diversity, and <strong>differential privacy</strong> for aggregates.</li></ol>
+<h4>Warehouse implementation</h4>
+<pre><code>-- Snowflake dynamic masking
+CREATE MASKING POLICY email_mask AS (val STRING) RETURNS STRING -&gt;
+  CASE WHEN CURRENT_ROLE() IN (&#39;PII_ANALYST&#39;) THEN val ELSE REGEXP_REPLACE(val, &#39;.+@&#39;, &#39;*****@&#39;) END;
+ALTER TABLE customers MODIFY COLUMN email SET MASKING POLICY email_mask;
+-- BigQuery: policy tags on columns with Data Catalog; Databricks Unity Catalog column masks.</code></pre>
+<p>Combine with <strong>row-level security</strong>, tag-based policies driven by classification (auto-discovery with Macie, DLP, BigID), least-privilege roles, and audit logs.</p>
+<h4>Pipeline design</h4>
+<ul><li>Classify PII at ingestion and tag columns; tokenise or hash <strong>as early as possible</strong> (in the bronze-to-silver step), keeping raw PII in a restricted zone.</li><li>Separate <strong>key and token vault</strong> from the data platform; rotate keys; restrict who can detokenise; log every access.</li><li>Provide analysts de-identified datasets by default; give controlled &quot;re-identification&quot; paths for support teams.</li><li>Support <strong>erasure</strong>: with tokenization, deleting the vault mapping effectively erases the subject across datasets (crypto-shredding with per-user keys achieves the same).</li><li>Test: re-identification risk assessment, linkage attacks, and avoid leaking PII in logs, error messages and ML features.</li></ul>
+<h4>Pitfalls</h4>
+<p>Unsalted hashes, using the same salt everywhere, masking only in the UI while raw columns remain readable by SQL, quasi-identifiers (ZIP + birthdate + gender) enabling re-identification, and treating pseudonymised data as anonymous.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is a plain SHA-256 of an email not anonymous?</li><li>How does format-preserving encryption differ from tokenization?</li><li>How do dynamic masking policies enforce this at query time?</li></ul>
+<p><a class="btn primary" href="../#/q/de-57">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-57%3A+How+do+you+implement+PII+masking%2C+tokenization%2C+and+hashing+in%E2%80%A6&amp;question-id=de-57&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Security%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-57.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

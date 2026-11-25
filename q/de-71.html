@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Why do standard Python UDFs suffer severe performance penalties in PySpark compared to Pandas UDFs? | InterviewGearUp</title>
+<meta name="description" content="Standard Python UDFs run row by row: Spark serialises each row from the JVM to a Python worker process with pickle, calls the function per row, and…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-71.html">
+<meta property="og:title" content="Why do standard Python UDFs suffer severe performance penalties in PySpark compared to Pandas UDFs? | InterviewGearUp">
+<meta property="og:description" content="Standard Python UDFs run row by row: Spark serialises each row from the JVM to a Python worker process with pickle, calls the function per row, and…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-71.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Why do standard Python UDFs suffer severe performance penalties in PySpark compared to Pandas UDFs?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Spark · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Standard Python UDFs run row by row: Spark serialises each row from the JVM to a Python worker process with pickle, calls the function per row, and serialises results back, and the optimiser cannot see inside them. Pandas UDFs use Apache Arrow to transfer columnar batches and operate vectorised on pandas Series, cutting serialisation overhead and Python call overhead dramatically.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why Python UDFs are slow</h4>
+<p>PySpark runs the query plan in the <strong>JVM</strong>. A Python UDF forces data to cross the JVM and Python boundary:</p>
+<ol start="1"><li>The JVM serialises rows and sends them to a <strong>separate Python worker process</strong> over a socket (pickle format, row by row).</li><li>Python invokes your function <strong>once per row</strong>, with interpreter overhead and the GIL.</li><li>Results are pickled and sent back to the JVM, then deserialised.</li></ol>
+<p>Additional penalties: the Catalyst optimiser treats the UDF as a <strong>black box</strong>, so no predicate pushdown through it, no whole-stage code generation across it, no constant folding; worker memory is outside JVM management; and exceptions are hard to debug. Typical slowdowns are 10x to 100x versus built-in functions.</p>
+<pre><code>@udf(&quot;double&quot;)
+def tax(amount):                      # called once per row via pickle
+    return amount * 0.2 if amount &gt; 100 else 0.0
+df.withColumn(&quot;tax&quot;, tax(&quot;amount&quot;))</code></pre>
+<h4>How pandas (vectorised) UDFs help</h4>
+<p>Pandas UDFs use <strong>Apache Arrow</strong>, an in-memory columnar format shared (zero-copy or near zero-copy) between JVM and Python:</p>
+<ol start="1"><li>Spark converts a <strong>batch of rows</strong> (default 10,000, <code>spark.sql.execution.arrow.maxRecordsPerBatch</code>) into an Arrow record batch.</li><li>The batch is sent to Python, where the function receives a <strong>pandas Series</strong> (or DataFrame) and applies <strong>vectorised NumPy and pandas operations</strong> in C.</li><li>The result Series is converted back through Arrow.</li></ol>
+<pre><code>import pandas as pd
+from pyspark.sql.functions import pandas_udf
+
+@pandas_udf(&quot;double&quot;)
+def tax(amount: pd.Series) -&gt; pd.Series:
+    return (amount * 0.2).where(amount &gt; 100, 0.0)       # vectorised over the batch
+df.withColumn(&quot;tax&quot;, tax(&quot;amount&quot;))</code></pre>
+<p>Gains come from <strong>bulk transfer</strong> (no per-row pickle), vectorised computation, and fewer Python call transitions. Typical speedups are 3x to 100x depending on the work.</p>
+<h4>Types</h4>
+<ul><li><strong>Series to Series</strong> (scalar), <strong>Iterator of Series</strong> (initialise expensive state such as a model once per executor, then stream batches), and <strong>Series to scalar</strong> (aggregation).</li><li><strong><code>applyInPandas</code></strong> (grouped map) and <strong><code>mapInPandas</code>/<code>mapInArrow</code></strong>: run arbitrary pandas logic per group or partition (per-customer model training, forecasting).</li><li>Spark 3.5 and 4 add <strong>Arrow-optimised Python UDFs</strong> (<code>useArrow=True</code>) and Python UDTFs.</li></ul>
+<h4>Better alternatives first</h4>
+<ol start="1"><li>Use <strong>built-in functions</strong> (<code>pyspark.sql.functions</code>, <code>when</code>, <code>regexp_extract</code>, higher-order array functions <code>transform</code>, <code>filter</code>) that run in the JVM and are optimised: always the fastest.</li><li>Express logic in <strong>Spark SQL expressions</strong> (<code>expr</code>).</li><li>Write <strong>Scala or Java UDFs</strong> (no Python serialisation, but still opaque to Catalyst) or use native Spark extensions.</li><li>Use pandas UDFs when you need Python libraries (scikit-learn inference, geospatial, NLP).</li></ol>
+<h4>Tuning pandas UDFs</h4>
+<p>Enable Arrow (<code>spark.sql.execution.arrow.pyspark.enabled=true</code>), tune batch size against executor and Python worker memory (<code>spark.executor.pyspark.memory</code>, <code>memoryOverhead</code>), avoid very large groups in <code>applyInPandas</code> (all rows of a group are loaded into memory), cache models inside iterator UDFs, and keep dependency versions (pandas, pyarrow) consistent across the cluster.</p>
+<h4>Pitfalls</h4>
+<p>Calling <code>toPandas()</code> on large data (collects to the driver), non-deterministic UDFs breaking retries, None handling differences, and out-of-memory in Python workers rather than JVM.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>When should you replace a UDF with built-in Spark SQL functions?</li><li>What are the types of pandas UDFs (scalar, grouped map, iterator)?</li><li>How do you tune Arrow batch sizes and memory?</li></ul>
+<p><a class="btn primary" href="../#/q/de-71">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-71%3A+Why+do+standard+Python+UDFs+suffer+severe+performance+penalties+in%E2%80%A6&amp;question-id=de-71&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Spark%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-71.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

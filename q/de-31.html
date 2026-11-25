@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare Copy-on-Write (CoW) and Merge-on-Read (MoR) storage strategies in Apache Hudi. | InterviewGearUp</title>
+<meta name="description" content="Hudi offers two table types. Copy-on-Write rewrites the affected Parquet file groups on every update, giving fast, simple reads but slower and more…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-31.html">
+<meta property="og:title" content="Compare Copy-on-Write (CoW) and Merge-on-Read (MoR) storage strategies in Apache Hudi. | InterviewGearUp">
+<meta property="og:description" content="Hudi offers two table types. Copy-on-Write rewrites the affected Parquet file groups on every update, giving fast, simple reads but slower and more…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-31.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare Copy-on-Write (CoW) and Merge-on-Read (MoR) storage strategies in Apache Hudi.</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Lakehouse · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Hudi offers two table types. Copy-on-Write rewrites the affected Parquet file groups on every update, giving fast, simple reads but slower and more expensive writes. Merge-on-Read appends updates to row-based delta log files and merges them with base files at query time or during compaction, giving fast ingestion and near real-time data at the cost of read complexity.</p></div>
+<h4>Explained in depth</h4>
+<h4>Background</h4>
+<p>Apache Hudi manages upserts and deletes on data lake files using a <strong>timeline</strong> of commits and an index mapping record keys to file groups. A <strong>file group</strong> has a base file (Parquet) and, in MoR, a log of updates. The table type decides where update cost is paid.</p>
+<h4>Copy-on-Write (CoW)</h4>
+<p>An update to a record causes Hudi to <strong>rewrite the whole base file</strong> containing it (new file slice with merged data). Readers only ever see columnar Parquet.</p>
+<ul><li><strong>Write</strong>: slower, higher write amplification (updating 1 percent of rows spread across files may rewrite most files).</li><li><strong>Read</strong>: fast and simple; no merge at query time; any engine reading Parquet works.</li><li><strong>Latency</strong>: data visible after each commit, commit frequency limited by rewrite cost (minutes).</li><li><strong>Operational</strong>: no compaction needed; fewer moving parts.</li><li>Best for <strong>read-heavy</strong> tables, batch updates, low update ratios, or when many query engines need plain Parquet.</li></ul>
+<h4>Merge-on-Read (MoR)</h4>
+<p>Updates are appended to <strong>Avro (or Parquet) delta log files</strong> attached to the file group; the base file stays unchanged until <strong>compaction</strong> merges logs into a new base file.</p>
+<ul><li><strong>Write</strong>: fast, low amplification (append-only), supports high-frequency streaming ingestion and CDC, seconds to minutes latency.</li><li><strong>Read</strong>: two query modes:</li><li><strong>Snapshot query</strong> merges base and logs at read time, returning the latest data with higher read latency.</li><li><strong>Read-optimised query</strong> reads only base files, fast but possibly stale (data since the last compaction is not visible).</li><li><strong>Incremental query</strong> reads changes since a commit.</li><li><strong>Compaction</strong> (inline, async in the writer, or a separate job) merges logs into base files; schedule frequency trades read speed for compute cost. Without it logs accumulate and queries slow down.</li><li>Best for <strong>write-heavy</strong> workloads, frequent small upserts, CDC from databases, near-real-time ingestion.</li></ul>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th></th><th>CoW</th><th>MoR</th></tr></thead><tbody><tr><td>Update cost</td><td>high (rewrite files)</td><td>low (append logs)</td></tr><tr><td>Read cost</td><td>low</td><td>higher unless compacted</td></tr><tr><td>Data freshness</td><td>commit interval</td><td>near real time</td></tr><tr><td>Write amplification</td><td>high</td><td>low</td></tr><tr><td>Complexity</td><td>low</td><td>higher (compaction, query modes)</td></tr><tr><td>Engine compatibility</td><td>any Parquet reader</td><td>needs Hudi-aware merge for snapshot reads</td></tr></tbody></table></div>
+<h4>Choosing and tuning</h4>
+<p>Pick CoW when queries dominate and update patterns are batchy; MoR for streaming upserts and fast ingestion. Tune the <strong>record key and index</strong> (bloom, simple, bucket, record-level) to find file groups cheaply, partitioning to localise updates, file sizing (<code>hoodie.parquet.max.file.size</code>), compaction trigger (<code>hoodie.compact.inline.max.delta.commits</code>), and cleaning and archival to control history. Delta Lake (deletion vectors) and Iceberg (position and equality deletes) offer similar CoW and MoR trade-offs through different mechanisms.</p>
+<h4>Pitfalls</h4>
+<p>Running MoR without compaction, mixing readers that only understand base files with expectations of fresh data, choosing a poor record key that causes full-table index lookups, and many small log files from high-frequency commits.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>When would you pick MoR over CoW for CDC ingestion?</li><li>What is compaction in MoR and how does it affect read latency?</li><li>How do the read-optimized and snapshot queries differ on an MoR table?</li></ul>
+<p><a class="btn primary" href="../#/q/de-31">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-31%3A+Compare+Copy-on-Write+%28CoW%29+and+Merge-on-Read+%28MoR%29+storage%E2%80%A6&amp;question-id=de-31&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Lakehouse%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-31.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

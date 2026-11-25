@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do vector databases integrate into enterprise data lakehouse pipelines for AI applications? | InterviewGearUp</title>
+<meta name="description" content="Vector databases (pgvector, Pinecone, Qdrant, Weaviate, Milvus, OpenSearch) store embeddings for similarity search. In a lakehouse they sit downstream of…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-93.html">
+<meta property="og:title" content="How do vector databases integrate into enterprise data lakehouse pipelines for AI applications? | InterviewGearUp">
+<meta property="og:description" content="Vector databases (pgvector, Pinecone, Qdrant, Weaviate, Milvus, OpenSearch) store embeddings for similarity search. In a lakehouse they sit downstream of…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-93.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do vector databases integrate into enterprise data lakehouse pipelines for AI applications?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Architecture · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Vector databases (pgvector, Pinecone, Qdrant, Weaviate, Milvus, OpenSearch) store embeddings for similarity search. In a lakehouse they sit downstream of governed data: pipelines chunk and embed documents and tables, write vectors with metadata and lineage to an index, keep it in sync through incremental updates and deletes, and serve retrieval for RAG and semantic search with access control.</p></div>
+<h4>Explained in depth</h4>
+<h4>Role in the architecture</h4>
+<p>Generative AI applications need to retrieve relevant enterprise content for an LLM (retrieval-augmented generation, RAG), power semantic search, recommendations and deduplication. Embeddings convert text, images or rows into high-dimensional vectors, and <strong>approximate nearest neighbour (ANN)</strong> indexes (HNSW, IVF, DiskANN) find similar vectors in milliseconds. The lakehouse remains the <strong>system of record</strong>; the vector store is a derived serving index.</p>
+<h4>Reference pipeline</h4>
+<pre><code>sources (docs, wikis, tickets, tables, transcripts)
+  → bronze (raw files/CDC) → silver (parsed, cleaned, PII-masked text)
+  → chunking (200 to 800 tokens, overlap, structure-aware)
+  → embedding model (batch via Spark/Ray or streaming)
+  → gold &quot;chunks&quot; table: chunk_id, doc_id, text, embedding, metadata (source, owner, ACL, updated_at, version)
+  → vector index (sync) → retrieval API → reranker → LLM</code></pre>
+<p>Steps:</p>
+<ol start="1"><li><strong>Ingest and clean</strong> documents (PDF, HTML parsing, OCR), dedupe, remove boilerplate, mask or exclude PII.</li><li><strong>Chunk</strong> carefully (semantic or heading-based) and keep <strong>metadata</strong> for filtering (tenant, department, date, document type, access groups).</li><li><strong>Embed</strong> with a consistent model and version (store <code>embedding_model</code> and <code>dimension</code>); use batch inference at scale, incremental runs for changed documents.</li><li><strong>Store</strong> embeddings in Delta or Iceberg tables for governance, lineage, time travel and reprocessing, then <strong>sync</strong> to the serving index (Databricks Vector Search Delta Sync, Snowflake Cortex Search, BigQuery vector search, OpenSearch, Pinecone, Qdrant, pgvector).</li><li><strong>Serve</strong>: hybrid retrieval (vector similarity + keyword BM25) with metadata filters, reranking with a cross-encoder, then prompt assembly.</li><li><strong>Evaluate</strong> retrieval quality (recall@k, MRR, groundedness) continuously.</li></ol>
+<h4>Choice of store</h4>
+<div class="md-table"><table><thead><tr><th>Option</th><th>Good for</th></tr></thead><tbody><tr><td>pgvector in Postgres</td><td>small to medium scale, transactions with relational data, simplicity</td></tr><tr><td>Lakehouse or warehouse-native vector search</td><td>data already in the platform, governance inherited, less movement</td></tr><tr><td>Dedicated vector DB (Pinecone, Qdrant, Milvus, Weaviate)</td><td>very large scale, low latency, advanced filtering, multi-tenancy</td></tr><tr><td>OpenSearch or Elasticsearch</td><td>hybrid keyword and vector search</td></tr></tbody></table></div>
+<h4>Operational concerns</h4>
+<ul><li><strong>Freshness</strong>: change data capture or incremental pipelines update embeddings when sources change; use upserts keyed by <code>chunk_id</code>; keep an <code>is_deleted</code> or tombstone flow to remove vectors.</li><li><strong>Deletion and compliance</strong>: erasure requests must delete source chunks, vectors and caches; track <code>doc_id</code> to chunk mapping.</li><li><strong>Access control</strong>: store ACL metadata and filter at query time (or per-tenant indexes) so users only retrieve what they may see; never rely on the LLM to enforce permissions.</li><li><strong>Re-embedding</strong>: changing the embedding model requires rebuilding the full index; version indexes and swap atomically (blue/green).</li><li><strong>Cost and scale</strong>: dimensionality (768 to 3072) drives memory; use quantisation (scalar, product, binary), disk-based indexes, sharding and caching.</li><li><strong>Observability</strong>: log queries, retrieved chunks, latency, empty-result rate, feedback; evaluate drift.</li><li><strong>Quality</strong>: dedupe near-duplicates, chunk tuning, metadata filters, reranking, and query rewriting matter more than the index choice.</li></ul>
+<h4>Pitfalls</h4>
+<p>Treating the vector DB as source of truth, embedding PII or secrets, forgetting ACL filters, mixing embedding model versions in one index, no deletion path, and skipping retrieval evaluation.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you keep the vector index in sync with changing source data and deletions?</li><li>When should you use pgvector or lakehouse-native vector search instead of a dedicated vector DB?</li><li>How do you enforce permissions on retrieved chunks?</li></ul>
+<p><a class="btn primary" href="../#/q/de-93">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-93%3A+How+do+vector+databases+integrate+into+enterprise+data+lakehouse%E2%80%A6&amp;question-id=de-93&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-93.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

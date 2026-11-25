@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare Broadcast Hash Join with Sort Merge Join in distributed SQL engines. | InterviewGearUp</title>
+<meta name="description" content="A broadcast hash join sends a small table to every executor and joins it with each partition of the large table locally, so the large side is not…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-70.html">
+<meta property="og:title" content="Compare Broadcast Hash Join with Sort Merge Join in distributed SQL engines. | InterviewGearUp">
+<meta property="og:description" content="A broadcast hash join sends a small table to every executor and joins it with each partition of the large table locally, so the large side is not…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-70.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare Broadcast Hash Join with Sort Merge Join in distributed SQL engines.</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 2 (Mid-level) · Spark · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A broadcast hash join sends a small table to every executor and joins it with each partition of the large table locally, so the large side is not shuffled. A sort-merge join shuffles both sides by key, sorts them, and merges, which scales to two large tables but costs shuffle and sort. Spark picks broadcast when one side is below spark.sql.autoBroadcastJoinThreshold.</p></div>
+<h4>Explained in depth</h4>
+<h4>Join strategies in distributed engines</h4>
+<p>A distributed join must bring matching keys together. The main trade-off is <strong>network and memory versus scalability</strong>.</p>
+<h4>Broadcast hash join (BHJ)</h4>
+<ol start="1"><li>The small side (build side) is collected to the driver, serialised, and <strong>broadcast to every executor</strong>.</li><li>Each executor builds an in-memory hash table from the small table.</li><li>Each partition of the large table (probe side) streams through and looks up matches locally.</li></ol>
+<ul><li><strong>No shuffle of the large table</strong>, no sort, very fast. Works for inner, left (large on the left), and semi and anti joins; supports <strong>non-equi</strong> conditions via broadcast nested loop join in some cases.</li><li><strong>Limits</strong>: the small table must fit in memory on the driver and every executor (default threshold 10 MB via <code>spark.sql.autoBroadcastJoinThreshold</code>; commonly raised to 100 to 500 MB). Broadcasting too much causes OOM, long broadcast time and network pressure, and timeouts (<code>spark.sql.broadcastTimeout</code>, 300 s).</li></ul>
+<pre><code>from pyspark.sql.functions import broadcast
+result = orders.join(broadcast(dim_country), &quot;country_code&quot;, &quot;left&quot;)
+# SQL: SELECT /*+ BROADCAST(c) */ ... FROM orders o JOIN country c ON ...</code></pre>
+<h4>Sort-merge join (SMJ)</h4>
+<p>Default for large equi-joins:</p>
+<ol start="1"><li><strong>Shuffle</strong> both datasets by the join key so equal keys land in the same partition (hash partitioning).</li><li><strong>Sort</strong> each partition by the join key.</li><li><strong>Merge</strong> the two sorted streams, matching keys in a single pass.</li></ol>
+<ul><li>Scales to <strong>arbitrarily large</strong> inputs because it spills to disk and needs only streaming access to each side.</li><li>Costs: two full shuffles (network, disk), sorting CPU, and skew sensitivity (a hot key makes one partition huge).</li><li>If the inputs are already bucketed and sorted on the join key (<code>bucketBy</code>), Spark can <strong>skip the shuffle and sort</strong> entirely.</li></ul>
+<h4>Other strategies</h4>
+<ul><li><strong>Shuffle hash join</strong>: shuffle both, but build a hash table from the smaller side per partition instead of sorting; faster than SMJ when one side per partition fits in memory (enabled when <code>spark.sql.join.preferSortMergeJoin=false</code> or by hint <code>SHUFFLE_HASH</code>).</li><li><strong>Broadcast nested loop join</strong> and <strong>cartesian product</strong>: for non-equi or cross joins; expensive.</li><li><strong>Adaptive Query Execution (3.0+)</strong> can <strong>convert a sort-merge join to a broadcast join at runtime</strong> when actual post-filter size is small, coalesce shuffle partitions, and split skewed partitions (<code>spark.sql.adaptive.skewJoin.enabled</code>).</li></ul>
+<h4>Choosing</h4>
+<div class="md-table"><table><thead><tr><th></th><th>Broadcast hash</th><th>Sort-merge</th></tr></thead><tbody><tr><td>Shuffle</td><td>none for large side</td><td>both sides</td></tr><tr><td>Memory</td><td>small table in memory per executor</td><td>spills OK</td></tr><tr><td>Best when</td><td>one table small (dimension)</td><td>both large</td></tr><tr><td>Skew risk</td><td>low</td><td>high (hot keys)</td></tr><tr><td>Join types</td><td>most, incl. non-equi nested loop</td><td>equi-joins</td></tr></tbody></table></div>
+<h4>Practical tuning</h4>
+<p>Filter and project before the join to shrink the build side, add <code>BROADCAST</code> hints for known dimensions, check <strong>statistics</strong> (<code>ANALYZE TABLE ... COMPUTE STATISTICS</code>) so the optimiser estimates sizes, enable AQE, use salting or skew hints for hot keys, repartition on join keys to avoid repeated shuffles, and inspect the plan (<code>df.explain(&quot;formatted&quot;)</code>: <code>BroadcastHashJoin</code> versus <code>SortMergeJoin</code>, <code>Exchange</code> nodes).</p>
+<h4>Pitfalls</h4>
+<p>Raising the broadcast threshold without sizing executor memory, broadcasting a table whose size is underestimated due to missing stats, and ignoring skew in sort-merge joins.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do hints and AQE change the chosen join strategy?</li><li>Why can a broadcast join cause driver or executor OOM?</li><li>What other strategies exist, such as shuffled hash join and bucketed joins?</li></ul>
+<p><a class="btn primary" href="../#/q/de-70">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-70%3A+Compare+Broadcast+Hash+Join+with+Sort+Merge+Join+in+distributed+SQL%E2%80%A6&amp;question-id=de-70&amp;context=Data+engineer%2C+Gear+2%2C+topic%3A+Spark%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-70.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

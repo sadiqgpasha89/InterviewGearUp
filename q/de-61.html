@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare ELT and ETL paradigms: Why has ELT become dominant with cloud data warehouses? | InterviewGearUp</title>
+<meta name="description" content="ETL transforms data before loading into a target, which needed powerful separate servers and rigid schemas. ELT loads raw data first and transforms it…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-61.html">
+<meta property="og:title" content="Compare ELT and ETL paradigms: Why has ELT become dominant with cloud data warehouses? | InterviewGearUp">
+<meta property="og:description" content="ETL transforms data before loading into a target, which needed powerful separate servers and rigid schemas. ELT loads raw data first and transforms it…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-61.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare ELT and ETL paradigms: Why has ELT become dominant with cloud data warehouses?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 2 (Mid-level) · Architecture · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>ETL transforms data before loading into a target, which needed powerful separate servers and rigid schemas. ELT loads raw data first and transforms it inside the warehouse. Cheap scalable storage, elastic massively parallel compute, SQL-based tools such as dbt, and the value of keeping raw history for reprocessing made ELT the default for cloud warehouses.</p></div>
+<h4>Explained in depth</h4>
+<h4>ETL (extract, transform, load)</h4>
+<p>Data is extracted from sources, <strong>transformed on a separate processing engine</strong> (Informatica, SSIS, Talend, custom Spark), and only the cleaned result is loaded into the warehouse. This suited an era of expensive on-premise warehouses with limited capacity: you had to load only what was needed, in the final shape. Drawbacks: transformations require upfront design of schemas and logic, a separate infrastructure to maintain and scale, long change cycles (every new question means changing the ETL job and reloading), raw data is often discarded, and engineers rather than analysts own transformation code.</p>
+<h4>ELT (extract, load, transform)</h4>
+<p>Data is extracted and <strong>loaded raw</strong> (or lightly typed) into the warehouse or lake, then transformed with SQL <strong>inside the platform</strong>:</p>
+<pre><code>sources → ingestion (Fivetran, Airbyte, CDC) → raw/bronze → dbt models (staging → marts) → BI, ML</code></pre>
+<h4>Why ELT dominates</h4>
+<ol start="1"><li><strong>Cloud economics</strong>: object storage is cheap, so retaining raw data is affordable. Compute scales elastically and separately (Snowflake, BigQuery, Redshift, Databricks), so heavy transformations run in the warehouse without managing a cluster.</li><li><strong>Performance</strong>: MPP engines transform terabytes in minutes next to the data; no extraction round trip to an external engine.</li><li><strong>Flexibility and agility</strong>: raw data is available, so new questions or model changes mean rewriting SQL and re-running, not re-ingesting. Schema-on-read for semi-structured JSON.</li><li><strong>Tooling</strong>: managed connectors make loading commodity; <strong>dbt</strong> brings version control, testing, documentation and CI to SQL transformations, making analytics engineers productive and shifting ownership toward analysts.</li><li><strong>Reproducibility and lineage</strong>: immutable raw layer plus declarative transformations allows rebuilding any model, auditing, and backfills.</li><li><strong>Simpler architecture</strong>: fewer systems, simpler failure modes, less data movement.</li></ol>
+<h4>Trade-offs of ELT</h4>
+<ul><li><strong>Governance and privacy</strong>: raw sensitive data lands in the warehouse; you need classification, masking, restricted raw zones and access controls from the start (or tokenise during ingestion).</li><li><strong>Cost control</strong>: unchecked transformations or full refreshes burn compute credits; use incremental models, monitoring and FinOps practices.</li><li><strong>Data quality</strong>: loading everything raw can create a swamp without tests, contracts and ownership.</li><li>Transformations are limited to what the warehouse&#39;s SQL and UDFs support; complex non-SQL logic (ML, parsing binary formats, image processing) still needs Spark or code.</li></ul>
+<h4>When ETL (or in-flight transformation) still wins</h4>
+<p>Data must be <strong>cleaned or minimised before landing</strong> (PII, regulatory restrictions, data sovereignty), the target has limited compute, you need heavy non-SQL processing, <strong>streaming transformation</strong> (Flink, Kafka Streams) before sinks, or you are reducing volume (filtering telemetry) to control storage and egress cost. Many real platforms are hybrid: <strong>EtLT</strong> performs light cleaning and masking before load, then heavy modelling in SQL.</p>
+<h4>Summary</h4>
+<p>ELT shifts transformation to elastic warehouse compute and raw-first storage, improving agility, auditability and cost flexibility, with governance and cost discipline as the price.</p>
+<h4>Pitfalls</h4>
+<p>Treating raw loads as final data, skipping staging layers, no PII controls, and rebuilding everything fully on each run.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>When is ETL still the better choice?</li><li>How does ELT affect governance and PII handling?</li><li>What do managed connectors like Fivetran and Airbyte contribute?</li></ul>
+<p><a class="btn primary" href="../#/q/de-61">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-61%3A+Compare+ELT+and+ETL+paradigms%3A+Why+has+ELT+become+dominant+with%E2%80%A6&amp;question-id=de-61&amp;context=Data+engineer%2C+Gear+2%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-61.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

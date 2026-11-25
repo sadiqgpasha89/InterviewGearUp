@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does Confluent Schema Registry enforce Backward, Forward, and Full schema compatibility? | InterviewGearUp</title>
+<meta name="description" content="Schema Registry stores versioned schemas per subject and checks each new version against a compatibility mode before accepting it. BACKWARD lets new…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-50.html">
+<meta property="og:title" content="How does Confluent Schema Registry enforce Backward, Forward, and Full schema compatibility? | InterviewGearUp">
+<meta property="og:description" content="Schema Registry stores versioned schemas per subject and checks each new version against a compatibility mode before accepting it. BACKWARD lets new…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-50.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does Confluent Schema Registry enforce Backward, Forward, and Full schema compatibility?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Streaming · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Schema Registry stores versioned schemas per subject and checks each new version against a compatibility mode before accepting it. BACKWARD lets new consumers read old data, FORWARD lets old consumers read new data, and FULL requires both. The TRANSITIVE variants check against all prior versions rather than only the latest.</p></div>
+<h4>Explained in depth</h4>
+<h4>What Schema Registry does</h4>
+<p>Producers register Avro, Protobuf or JSON Schema definitions under a <strong>subject</strong> (typically <code>&lt;topic&gt;-value</code>). Messages carry a small header with the schema ID, so consumers fetch the schema and deserialise correctly. The registry enforces a <strong>compatibility level</strong> per subject (or globally) when new versions are registered, preventing changes that would break running applications.</p>
+<h4>Compatibility modes</h4>
+<div class="md-table"><table><thead><tr><th>Mode</th><th>Meaning</th><th>Upgrade first</th></tr></thead><tbody><tr><td>BACKWARD (default)</td><td>Consumers using the new schema can read data written with the previous schema</td><td>consumers</td></tr><tr><td>FORWARD</td><td>Consumers using the previous schema can read data written with the new schema</td><td>producers</td></tr><tr><td>FULL</td><td>Both directions with the previous version</td><td>any order</td></tr><tr><td>BACKWARD_TRANSITIVE, FORWARD_TRANSITIVE, FULL_TRANSITIVE</td><td>Same checks against all earlier versions</td><td>as above</td></tr><tr><td>NONE</td><td>No checks</td><td>n/a</td></tr></tbody></table></div>
+<p>Default <code>BACKWARD</code> suits Kafka because consumers can <strong>rewind to the beginning of a topic</strong>, so new consumer code must read all historic messages.</p>
+<h4>Allowed changes (Avro)</h4>
+<ul><li><strong>Add a field with a default</strong>: BACKWARD and FORWARD compatible (FULL). Old data lacks the field, the reader fills the default. Old readers ignore the new field.</li><li><strong>Add a field without a default</strong>: FORWARD compatible only. A new reader cannot supply a value for old messages, so BACKWARD fails.</li><li><strong>Remove a field that has a default</strong>: BACKWARD compatible and FORWARD compatible as long as the removed field had a default (old reader fills it). <strong>Remove a field without a default</strong>: BACKWARD only.</li><li><strong>Rename a field</strong>: breaking unless you add an <code>aliases</code> entry (aliases help readers, mostly backward direction).</li><li><strong>Change a type</strong>: only safe widening promotions (int to long, float to double, string to bytes); otherwise breaking.</li><li><strong>Enum</strong>: adding symbols is backward-incompatible for old readers unless a default symbol is defined.</li></ul>
+<pre><code>{&quot;type&quot;:&quot;record&quot;,&quot;name&quot;:&quot;Order&quot;,&quot;fields&quot;:[
+  {&quot;name&quot;:&quot;id&quot;,&quot;type&quot;:&quot;string&quot;},
+  {&quot;name&quot;:&quot;amount&quot;,&quot;type&quot;:&quot;double&quot;},
+  {&quot;name&quot;:&quot;currency&quot;,&quot;type&quot;:&quot;string&quot;,&quot;default&quot;:&quot;USD&quot;}]}   // added in v2 with a default: FULL compatible</code></pre>
+<p>Protobuf and JSON Schema have their own rules (for example Protobuf field numbers must never be reused; JSON Schema closed content models behave differently).</p>
+<h4>Using the registry</h4>
+<pre><code>curl -X PUT -H &quot;Content-Type: application/json&quot; --data &#39;{&quot;compatibility&quot;: &quot;FULL_TRANSITIVE&quot;}&#39; http://sr:8081/config/orders-value
+curl -X POST -H &quot;Content-Type: application/vnd.schemaregistry.v1+json&quot; --data @new_schema.json http://sr:8081/compatibility/subjects/orders-value/versions/latest</code></pre>
+<p>Run the <strong>compatibility check in CI</strong> before merging a schema change and disable auto-registration in production clients (<code>auto.register.schemas=false</code>) so only reviewed schemas get registered.</p>
+<h4>Choosing a mode</h4>
+<ul><li>Consumers deployed independently and replaying history: <strong>BACKWARD_TRANSITIVE</strong> or FULL_TRANSITIVE.</li><li>Producers upgrade last (consumers lag): FORWARD.</li><li>Many unknown consumers and long retention: FULL_TRANSITIVE is safest.</li><li>CDC topics: be careful, since upstream database schema changes flow straight in.</li></ul>
+<h4>Breaking changes</h4>
+<p>Create a new topic or subject version (<code>orders-v2</code>), dual-write or migrate with a stream job, move consumers, then retire the old topic. Or use a schema with a <strong>union and default</strong> carefully planned from the start. Data contracts add semantic and ownership rules beyond syntactic compatibility.</p>
+<h4>Pitfalls</h4>
+<p>Fields without defaults, reusing Protobuf field numbers, relying on the default non-transitive check while old data is still in the topic, and uncontrolled auto-registration.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Which changes are safe under each mode for Avro, such as adding a field with or without a default?</li><li>Why is BACKWARD the default and what upgrade order does each mode imply?</li><li>How do you evolve a schema with a breaking change?</li></ul>
+<p><a class="btn primary" href="../#/q/de-50">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-50%3A+How+does+Confluent+Schema+Registry+enforce+Backward%2C+Forward%2C+and%E2%80%A6&amp;question-id=de-50&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Streaming%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-50.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

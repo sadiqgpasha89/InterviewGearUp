@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are the five pillars of Data Observability: Freshness, Volume, Schema, Quality, and Lineage? | InterviewGearUp</title>
+<meta name="description" content="Data observability monitors the health of data and pipelines continuously across five pillars. Freshness asks if data is up to date, volume whether row…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-86.html">
+<meta property="og:title" content="What are the five pillars of Data Observability: Freshness, Volume, Schema, Quality, and Lineage? | InterviewGearUp">
+<meta property="og:description" content="Data observability monitors the health of data and pipelines continuously across five pillars. Freshness asks if data is up to date, volume whether row…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-86.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are the five pillars of Data Observability: Freshness, Volume, Schema, Quality, and Lineage?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Observability · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Data observability monitors the health of data and pipelines continuously across five pillars. Freshness asks if data is up to date, volume whether row counts are as expected, schema whether structure changed, quality whether values are valid and distributions normal, and lineage who depends on what. Together they let teams detect issues before users do and trace root cause and impact.</p></div>
+<h4>Explained in depth</h4>
+<h4>Idea</h4>
+<p>Software teams use observability (metrics, logs, traces) to understand production systems. <strong>Data observability</strong> applies the same discipline to data: instead of waiting for a stakeholder to say &quot;the dashboard looks wrong&quot;, the platform continuously measures data health, alerts the owner, and gives context to fix it. The &quot;data downtime&quot; concept covers any period when data is missing, wrong or late.</p>
+<h4>The five pillars</h4>
+<ol start="1"><li><strong>Freshness</strong>: how recent is the data and are updates arriving on schedule? Measure <code>now() - max(updated_at)</code> per table, or time since the last successful load. Failures: stuck pipelines, upstream outages, late files. Example check: <code>orders</code> table must update within 30 minutes during business hours.</li><li><strong>Volume</strong>: are row counts and bytes consistent with history? Spot partial loads, duplicates and dropped partitions. Compare per-load counts to a seasonally aware baseline (same weekday), with absolute floors (zero rows always alerts).</li><li><strong>Schema</strong>: did columns, types or tables change (added, removed, renamed, type changes)? Schema drift breaks downstream SQL and ML features. Detect via <code>INFORMATION_SCHEMA</code> snapshots or table-format metadata and notify before consumers fail.</li><li><strong>Quality (distribution and validity)</strong>: are the values correct? Null rates, uniqueness, accepted values, ranges, referential integrity, <strong>distribution drift</strong> (mean, percentiles, category proportions), format validity, and reconciliation against source totals. Tools: dbt tests, Great Expectations, Soda, Monte Carlo, Elementary.</li><li><strong>Lineage</strong>: how data flows from sources through transformations to dashboards, models and reverse ETL, down to column level. Lineage provides <strong>impact analysis</strong> (what breaks if this fails?) and <strong>root cause</strong> (which upstream table caused this anomaly?).</li></ol>
+<h4>Detection and response workflow</h4>
+<ol start="1"><li><strong>Collect metadata and metrics</strong> automatically from warehouse query logs, system tables, orchestrator events, and table statistics (low overhead; avoid scanning full tables).</li><li><strong>Learn baselines</strong> with statistical or ML monitors that adapt to seasonality and trends, plus explicit rules and data contracts for critical assets.</li><li><strong>Alert</strong> the right owner with severity, lineage context, affected downstream assets (dashboards, models) and links to runs and queries; integrate Slack, PagerDuty, Jira.</li><li><strong>Triage and resolve</strong>: check upstream changes, recent deployments, query logs, and run history; fix and backfill; record incidents.</li><li><strong>Prevent</strong>: add tests, contracts and CI checks from lessons learned; track metrics like time to detection, time to resolution, and data incidents per quarter; define SLAs and SLOs for key data products.</li></ol>
+<h4>Observability versus testing</h4>
+<p>Tests (dbt, Great Expectations) assert <strong>known</strong> expectations at defined points (&quot;known unknowns&quot;). Observability adds broad automated monitoring that catches <strong>unknown unknowns</strong> (an unexpected drop in a column&#39;s distinct count) and ties them to lineage and incident workflow. Use both.</p>
+<h4>Tooling</h4>
+<p>Commercial: Monte Carlo, Bigeye, Anomalo, Acceldata, Metaplane. Open source and built-in: Elementary (dbt), Soda, OpenLineage with Marquez, DataHub, Great Expectations, plus warehouse-native features (Snowflake Data Quality monitoring, Databricks Lakehouse Monitoring, BigQuery data profile scans).</p>
+<h4>Pitfalls</h4>
+<p>Monitoring everything equally (alert fatigue), no ownership assigned to datasets, ignoring downstream impact, thresholds not accounting for seasonality or holidays, and no feedback loop to improve detectors.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you set thresholds for freshness and volume monitors without alert fatigue?</li><li>How does lineage speed incident triage?</li><li>How is data observability different from data testing?</li></ul>
+<p><a class="btn primary" href="../#/q/de-86">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-86%3A+What+are+the+five+pillars+of+Data+Observability%3A+Freshness%2C+Volume%2C%E2%80%A6&amp;question-id=de-86&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Observability%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-86.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

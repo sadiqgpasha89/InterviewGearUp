@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do Materialized Views and automated query rewrite improve dashboard performance? | InterviewGearUp</title>
+<meta name="description" content="A materialized view stores the precomputed result of a query and refreshes it incrementally or on a schedule, so dashboards read a small table instead of…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-39.html">
+<meta property="og:title" content="How do Materialized Views and automated query rewrite improve dashboard performance? | InterviewGearUp">
+<meta property="og:description" content="A materialized view stores the precomputed result of a query and refreshes it incrementally or on a schedule, so dashboards read a small table instead of…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-39.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do Materialized Views and automated query rewrite improve dashboard performance?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 2 (Mid-level) · Warehouses · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A materialized view stores the precomputed result of a query and refreshes it incrementally or on a schedule, so dashboards read a small table instead of rescanning and re-aggregating base data. With automatic query rewrite, the optimiser transparently answers matching queries from the view, giving speedups without changing the dashboard SQL, subject to freshness and supported query shapes.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why dashboards are slow</h4>
+<p>BI tools issue the same aggregations repeatedly (daily revenue by region, top products) over large fact tables. Each load scans and aggregates billions of rows, costing compute and seconds to minutes of latency, multiplied by many users and auto-refreshing widgets.</p>
+<h4>What a materialised view provides</h4>
+<pre><code>-- BigQuery
+CREATE MATERIALIZED VIEW analytics.daily_revenue
+OPTIONS (enable_refresh = true, refresh_interval_minutes = 30) AS
+SELECT DATE(order_ts) AS day, region, SUM(amount) AS revenue, COUNT(*) AS orders
+FROM analytics.orders GROUP BY day, region;
+
+-- Snowflake
+CREATE MATERIALIZED VIEW daily_revenue AS SELECT order_date, region, SUM(amount) revenue FROM orders GROUP BY 1, 2;
+-- Redshift
+CREATE MATERIALIZED VIEW mv_daily_revenue AUTO REFRESH YES AS SELECT ...;</code></pre>
+<p>The result is physically stored. Because it is far smaller than the base table (pre-aggregated), reads are fast and cheap.</p>
+<h4>Refresh</h4>
+<ul><li><strong>Incremental</strong>: only changed base data is processed. BigQuery materialised views refresh incrementally and automatically (within the configured interval) and combine the stored result with new base data at query time to guarantee <strong>fresh results</strong> (up to a <code>max_staleness</code> you can allow). Snowflake maintains views automatically in the background using serverless credits. Redshift supports incremental refresh for supported queries and auto-refresh.</li><li><strong>Full refresh</strong> for unsupported constructs (outer joins, non-deterministic functions, window functions in some engines).</li><li>Traditional engines (Postgres, Oracle) refresh on demand (<code>REFRESH MATERIALIZED VIEW [CONCURRENTLY]</code>).</li></ul>
+<h4>Automatic query rewrite</h4>
+<p>When a query&#39;s aggregation, filters and grouping can be satisfied from the view, the optimiser <strong>rewrites it</strong> to read the materialised view automatically (BigQuery smart tuning, Snowflake, Oracle, Redshift automatic query rewriting, Databricks). Dashboards need no change. Conditions: the query columns and aggregations must be derivable from the view, filters must be compatible, and data must be within staleness limits. Check <code>EXPLAIN</code> or the job plan to confirm the view is used.</p>
+<h4>Benefits</h4>
+<p>Faster dashboards, predictable latency, reduced bytes scanned and compute cost, less load on base tables, simpler than maintaining pipelines by hand.</p>
+<h4>Limitations and costs</h4>
+<ul><li><strong>Restrictions</strong>: limited SQL (single table in some engines, no non-deterministic functions, limited joins and subqueries, no <code>HAVING</code> or window functions in some), so complex logic needs derived tables.</li><li><strong>Storage and maintenance cost</strong>: extra storage and background refresh compute, which grows with base table change rate; frequently updated sources make views expensive.</li><li><strong>Freshness</strong>: deferred refresh means stale data unless you accept refresh intervals.</li><li><strong>Governance</strong>: more objects to manage, grants, and schema change handling (base table changes can invalidate views).</li></ul>
+<h4>Alternatives</h4>
+<p>Pre-aggregated <strong>summary tables</strong> built by dbt incremental models or scheduled pipelines (more flexible and portable, explicit control, but no automatic rewrite), BI-tool extracts and caches, BI Engine or result caching, semantic-layer aggregate awareness (Cube, dbt metrics) which routes queries to rollups, and OLAP serving layers (Druid, ClickHouse) for sub-second interactive use.</p>
+<h4>Pitfalls</h4>
+<p>Creating views that nobody&#39;s queries match, forgetting refresh cost on volatile tables, and relying on rewrite without verifying plans after SQL or schema changes.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do incremental refresh and staleness settings differ between BigQuery, Snowflake and Redshift?</li><li>What are the trade-offs against a dbt incremental table?</li><li>When can the optimiser not use the materialized view?</li></ul>
+<p><a class="btn primary" href="../#/q/de-39">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-39%3A+How+do+Materialized+Views+and+automated+query+rewrite+improve%E2%80%A6&amp;question-id=de-39&amp;context=Data+engineer%2C+Gear+2%2C+topic%3A+Warehouses%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-39.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

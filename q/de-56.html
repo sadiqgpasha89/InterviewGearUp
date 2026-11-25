@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you detect statistical anomalies in data distributions using Z-score and Interquartile Range (IQR)? | InterviewGearUp</title>
+<meta name="description" content="The Z-score flags values far from the mean in standard deviations (for example above 3), which assumes roughly normal data and is distorted by the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-56.html">
+<meta property="og:title" content="How do you detect statistical anomalies in data distributions using Z-score and Interquartile Range (IQR)? | InterviewGearUp">
+<meta property="og:description" content="The Z-score flags values far from the mean in standard deviations (for example above 3), which assumes roughly normal data and is distorted by the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-56.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you detect statistical anomalies in data distributions using Z-score and Interquartile Range (IQR)?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Data Quality · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>The Z-score flags values far from the mean in standard deviations (for example above 3), which assumes roughly normal data and is distorted by the outliers themselves. The IQR method flags values outside Q1 minus 1.5 times IQR and Q3 plus 1.5 times IQR, which is robust to skew and outliers. Compare against recent history per segment and season for pipeline monitoring.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why statistical checks</h4>
+<p>Fixed thresholds (row count &gt; 1,000,000) break as the business grows. Statistical checks learn what is <strong>normal for a metric</strong> (daily row count, null rate, mean order value, latency) from history and alert on deviations, catching silent issues such as partial loads, duplicated loads, or unit changes.</p>
+<h4>Z-score</h4>
+<p>For a value x with mean μ and standard deviation σ: <code>z = (x - μ) / σ</code>. Under a normal distribution about 99.7 percent of values have |z| &lt; 3, so |z| &gt; 3 is unusual.</p>
+<pre><code>import pandas as pd
+s = df[&quot;daily_rows&quot;]
+z = (s - s.mean()) / s.std()
+anomalies = df[z.abs() &gt; 3]</code></pre>
+<p>Pros: simple, interpretable, works on rolling windows (<code>s.rolling(30)</code>). Cons: assumes approximate normality, <strong>mean and standard deviation are themselves inflated by outliers</strong> (masking: one huge value hides others), poor for heavily skewed or small samples. <strong>Modified Z-score</strong> uses median and median absolute deviation: <code>0.6745 * (x - median) / MAD</code>; flag above 3.5. It is far more robust.</p>
+<h4>IQR method (Tukey fences)</h4>
+<p><code>IQR = Q3 - Q1</code>; outliers lie below <code>Q1 - 1.5*IQR</code> or above <code>Q3 + 1.5*IQR</code> (use 3*IQR for extreme outliers).</p>
+<pre><code>q1, q3 = s.quantile([0.25, 0.75])
+iqr = q3 - q1
+low, high = q1 - 1.5 * iqr, q3 + 1.5 * iqr
+anomalies = df[(s &lt; low) | (s &gt; high)]</code></pre>
+<pre><code>WITH q AS (SELECT approx_percentile(amount, 0.25) q1, approx_percentile(amount, 0.75) q3 FROM orders WHERE order_date &gt;= current_date - 30)
+SELECT o.* FROM orders o, q WHERE amount &gt; q3 + 1.5*(q3-q1) OR amount &lt; q1 - 1.5*(q3-q1);</code></pre>
+<p>Pros: distribution-free, robust to outliers, fine for skewed data. Cons: ignores trend and seasonality, can over-flag long-tailed metrics (revenue), needs enough data.</p>
+<h4>Applying to pipelines</h4>
+<ul><li>Monitor <strong>metrics per run</strong>: row count, distinct keys, null percentage, min/max/mean, freshness lag, and per-segment values (by country or source).</li><li>Use a <strong>rolling baseline</strong> (last 30 to 90 runs) and compare against the same weekday or hour to handle <strong>seasonality</strong> (weekend dips). Decompose with STL or use ratios to the same day last week; use Prophet-style or ML detectors for strong patterns.</li><li>Combine rules: statistical anomaly <strong>and</strong> minimum absolute change, to avoid alerting on tiny variations.</li><li>Warm up new metrics, handle holidays and planned launches (suppression windows), and let owners mark false positives.</li><li>Tools: Soda anomaly detection, Monte Carlo, Elementary (dbt), dbt-expectations, BigQuery ML <code>ML.DETECT_ANOMALIES</code>, Great Expectations with computed bounds.</li></ul>
+<h4>Choosing</h4>
+<p>Z-score (robust version) for roughly symmetric metrics with stable variance; IQR for skewed metrics and quick first-line checks; seasonal models for traffic-like data.</p>
+<h4>Pitfalls</h4>
+<p>Estimating the baseline including the anomalous run, alert fatigue from many correlated metrics, ignoring multiple comparisons (hundreds of checks produce false positives), and treating an anomaly as an error when it is a real business change.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is the modified Z-score using median and MAD more robust?</li><li>How do you handle seasonality when monitoring daily row counts?</li><li>How do you reduce false alerts in anomaly checks?</li></ul>
+<p><a class="btn primary" href="../#/q/de-56">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-56%3A+How+do+you+detect+statistical+anomalies+in+data+distributions+using%E2%80%A6&amp;question-id=de-56&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Data+Quality%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-56.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

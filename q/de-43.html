@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain the Apache Airflow architecture: Webserver, Scheduler, Metadata Database, and Workers. | InterviewGearUp</title>
+<meta name="description" content="Airflow has a webserver for the UI and API, a scheduler that parses DAGs and queues task instances when dependencies are met, a metadata database that…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-43.html">
+<meta property="og:title" content="Explain the Apache Airflow architecture: Webserver, Scheduler, Metadata Database, and Workers. | InterviewGearUp">
+<meta property="og:description" content="Airflow has a webserver for the UI and API, a scheduler that parses DAGs and queues task instances when dependencies are met, a metadata database that…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-43.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain the Apache Airflow architecture: Webserver, Scheduler, Metadata Database, and Workers.</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 2 (Mid-level) · Orchestration · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Airflow has a webserver for the UI and API, a scheduler that parses DAGs and queues task instances when dependencies are met, a metadata database that stores state for DAG runs and task instances, and workers that execute tasks through an executor. Optional pieces are a triggerer for deferred tasks, a message broker, and DAG file storage.</p></div>
+<h4>Explained in depth</h4>
+<h4>Overview</h4>
+<p>Apache Airflow orchestrates workflows defined as Python DAGs (directed acyclic graphs of tasks). It does not process data itself, it <strong>schedules, triggers, monitors and retries</strong> work that runs on other systems (Spark, dbt, warehouses, containers).</p>
+<h4>Components</h4>
+<ol start="1"><li><strong>DAG files</strong>: Python files in a DAGs folder (local disk, shared volume or Git-sync). The scheduler and workers must see the same code version.</li><li><strong>Scheduler</strong>: the heart of Airflow. It continuously <strong>parses DAG files</strong>, creates DAG runs according to schedules or data intervals (and datasets), evaluates task dependencies, concurrency and pool limits, then <strong>queues ready task instances</strong> to the executor. It also handles retries, SLAs, zombie task cleanup and heartbeats. Since Airflow 2 several schedulers can run concurrently for high availability and throughput, coordinating through row-level locks in the database.</li><li><strong>Executor</strong>: the mechanism that decides *where* tasks run. It lives inside the scheduler process. Types: Local (subprocesses), Celery (distributed workers via a broker), Kubernetes (a pod per task), plus hybrid and custom ones.</li><li><strong>Workers</strong>: processes or pods that actually run task code, report state, and write logs. Their count and resources determine parallel capacity.</li><li><strong>Metadata database</strong> (PostgreSQL or MySQL, never SQLite in production): stores DAG definitions metadata, DAG runs, task instances and their states, XCom values, variables, connections, pools, users and roles. It is the source of truth that every other component reads and writes.</li><li><strong>Webserver</strong> (API server in Airflow 3): serves the UI and REST API, shows DAG graphs, runs, logs and lets users trigger, clear and pause runs. It reads the metadata database and is stateless, so it scales horizontally behind a load balancer.</li><li><strong>Triggerer</strong>: asyncio process that runs deferred operators and sensors efficiently, without occupying worker slots.</li><li><strong>Message broker</strong> (Redis or RabbitMQ) with CeleryExecutor, and remote <strong>log storage</strong> (S3, GCS) so logs persist after pods end.</li></ol>
+<h4>Task lifecycle</h4>
+<p><code>scheduled → queued → running → success | failed | up_for_retry | deferred</code>. The scheduler sets <code>scheduled</code>, the executor places the command on a queue or pod, the worker runs <code>airflow tasks run</code>, updates state in the database, and the scheduler then evaluates downstream tasks.</p>
+<h4>Operating considerations</h4>
+<ul><li>The metadata database is the main bottleneck; keep it on managed Postgres with connection pooling (PgBouncer), clean old data with <code>airflow db clean</code>, and avoid enormous XComs.</li><li>Slow DAG parsing delays scheduling; keep DAG files lightweight and tune <code>min_file_process_interval</code> and parsing processes.</li><li>Use <strong>pools</strong>, <code>max_active_runs</code>, <code>max_active_tasks</code> and priority weights to manage concurrency.</li><li>Secure connections with a secrets backend (Vault, AWS Secrets Manager), RBAC, and TLS.</li><li>Monitor scheduler heartbeat, task queue lag, DAG parse time, failed tasks and DB load with StatsD or OpenTelemetry metrics.</li></ul>
+<h4>Pitfalls</h4>
+<p>Running a single scheduler without alerts, putting heavy computation inside Airflow workers instead of delegating, tight coupling of DAG code versions between components, and unbounded growth of the metadata tables.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What happens to running tasks if the scheduler restarts?</li><li>How does high availability work with multiple schedulers?</li><li>Why is the metadata database a scaling bottleneck?</li></ul>
+<p><a class="btn primary" href="../#/q/de-43">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-43%3A+Explain+the+Apache+Airflow+architecture%3A+Webserver%2C+Scheduler%2C%E2%80%A6&amp;question-id=de-43&amp;context=Data+engineer%2C+Gear+2%2C+topic%3A+Orchestration%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-43.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

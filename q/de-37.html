@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do table partitioning and clustering reduce query byte scanning and costs in BigQuery? | InterviewGearUp</title>
+<meta name="description" content="In BigQuery, partitioning splits a table into segments by date, timestamp or integer range, and clustering sorts data within partitions by chosen…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-37.html">
+<meta property="og:title" content="How do table partitioning and clustering reduce query byte scanning and costs in BigQuery? | InterviewGearUp">
+<meta property="og:description" content="In BigQuery, partitioning splits a table into segments by date, timestamp or integer range, and clustering sorts data within partitions by chosen…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-37.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do table partitioning and clustering reduce query byte scanning and costs in BigQuery?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 2 (Mid-level) · Warehouses · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>In BigQuery, partitioning splits a table into segments by date, timestamp or integer range, and clustering sorts data within partitions by chosen columns. Filters on those columns let BigQuery skip entire partitions or blocks, so fewer bytes are read and billed. Combine both, require partition filters, and select only needed columns.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why bytes scanned matter</h4>
+<p>On-demand BigQuery bills by the bytes processed by a query (compressed column data referenced). Reading less data is both cheaper and faster.</p>
+<h4>Partitioning</h4>
+<pre><code>CREATE TABLE analytics.events
+(event_ts TIMESTAMP, user_id STRING, country STRING, event_name STRING, payload JSON)
+PARTITION BY DATE(event_ts)
+OPTIONS (partition_expiration_days = 400, require_partition_filter = TRUE);</code></pre>
+<ul><li><strong>Types</strong>: time-unit column (<code>DATE</code>, <code>DATETIME</code>, <code>TIMESTAMP</code> by hour, day, month, year), ingestion-time (<code>_PARTITIONTIME</code>), and <strong>integer range</strong> (<code>RANGE_BUCKET</code>).</li><li>A query with a <strong>constant filter on the partition column</strong> (<code>WHERE DATE(event_ts) BETWEEN &#39;2026-11-01&#39; AND &#39;2026-11-07&#39;</code>) reads only the matching partitions (partition pruning). The dry run and query plan show exactly how many bytes are processed.</li><li><code>require_partition_filter</code> prevents accidental full scans; <code>partition_expiration_days</code> automates retention; partitions older than 90 days automatically fall to cheaper long-term storage pricing.</li><li>Limit: 10,000 partitions per table; prefer day or hour granularity depending on volume. Do not create <strong>date-sharded tables</strong> (<code>events_20261124</code>): they carry per-table metadata overhead, permissions and query planning costs, and are harder to manage than a single partitioned table.</li></ul>
+<h4>Clustering</h4>
+<pre><code>CREATE TABLE analytics.events (...)
+PARTITION BY DATE(event_ts)
+CLUSTER BY country, user_id, event_name;</code></pre>
+<p>Rows are physically sorted by up to <strong>4 clustering columns</strong> (the order matters) within each partition into blocks with min and max metadata. Filters, aggregations and joins on clustered columns skip blocks that cannot match, giving further reductions, especially for high-cardinality columns where partitioning is impractical. BigQuery <strong>re-clusters automatically and free of charge</strong> in the background as new data arrives. Cost estimates before execution are upper bounds because block pruning happens at runtime; actual billed bytes can be lower.</p>
+<h4>Choosing columns</h4>
+<ul><li>Partition on the column used in most time or range filters (event date).</li><li>Cluster on columns often used in <code>WHERE</code>, <code>JOIN</code> keys, or <code>GROUP BY</code>, ordered from the <strong>most frequently filtered or lowest cardinality</strong> to others; clustering helps equality and range predicates and works best for tables over about 1 GB.</li><li>Do not partition tiny tables (under 1 GB), and avoid partition columns that are rarely filtered.</li></ul>
+<h4>Other cost levers</h4>
+<ul><li>Select only required columns (no <code>SELECT *</code>); the columnar format means unselected columns are not read.</li><li><code>LIMIT</code> does not reduce scanned bytes (except on clustered tables with certain patterns); use <code>WHERE</code> filters or table sampling (<code>TABLESAMPLE</code>) for exploration.</li><li>Materialised views, summary tables, and BI Engine for dashboards; approximate functions; denormalise to avoid repeated large joins.</li><li>Use <strong>dry runs</strong> and the query validator; apply <strong>maximum bytes billed</strong> limits per query, custom quotas per project or user, and budgets with alerts.</li><li>Consider <strong>capacity pricing (slots)</strong> for heavy predictable use, and monitor with <code>INFORMATION_SCHEMA.JOBS</code> (total_bytes_billed by user and query).</li></ul>
+<h4>Pitfalls</h4>
+<p>Filters wrapped in functions that prevent pruning (<code>WHERE CAST(event_ts AS STRING) LIKE ...</code>), non-constant subquery filters on the partition column (can prevent pruning), clustering on columns never filtered, and too many tiny partitions.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is the cost estimate for clustered tables only an upper bound before running the query?</li><li>When should you choose partitioning over sharded date-named tables?</li><li>How do you pick clustering columns and how many?</li></ul>
+<p><a class="btn primary" href="../#/q/de-37">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-37%3A+How+do+table+partitioning+and+clustering+reduce+query+byte+scanning%E2%80%A6&amp;question-id=de-37&amp;context=Data+engineer%2C+Gear+2%2C+topic%3A+Warehouses%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-37.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

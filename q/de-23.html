@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does Spark Dynamic Resource Allocation scale executors up and down based on backlog? | InterviewGearUp</title>
+<meta name="description" content="Spark Dynamic Resource Allocation adds executors when tasks are pending and removes executors that have been idle, so a long-running application uses…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-23.html">
+<meta property="og:title" content="How does Spark Dynamic Resource Allocation scale executors up and down based on backlog? | InterviewGearUp">
+<meta property="og:description" content="Spark Dynamic Resource Allocation adds executors when tasks are pending and removes executors that have been idle, so a long-running application uses…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-23.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does Spark Dynamic Resource Allocation scale executors up and down based on backlog?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Spark · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Spark Dynamic Resource Allocation adds executors when tasks are pending and removes executors that have been idle, so a long-running application uses cluster resources in proportion to its workload. It needs shuffle data to survive executor removal, through an external shuffle service, shuffle tracking, or remote shuffle storage.</p></div>
+<h4>Explained in depth</h4>
+<h4>The problem</h4>
+<p>With a fixed <code>--num-executors</code>, a job holds its full allocation even during idle periods (waiting for a driver action, a notebook cell, or a skewed final stage), wasting money on shared clusters. Dynamic allocation lets the application request and release executors on demand through the cluster manager (YARN, Kubernetes, standalone).</p>
+<h4>Scale up on backlog</h4>
+<p>When there are pending tasks that cannot run because no executor slots are free, Spark requests more executors after <code>spark.dynamicAllocation.schedulerBacklogTimeout</code> (default 1 s). If the backlog persists it keeps requesting, with exponentially growing batches: 1, 2, 4, 8 executors per round (every <code>sustainedSchedulerBacklogTimeout</code>), so it ramps up quickly for large stages but conservatively for small ones. The target is bounded by <code>maxExecutors</code> and the number of tasks divided by slots per executor.</p>
+<h4>Scale down on idleness</h4>
+<p>An executor idle longer than <code>spark.dynamicAllocation.executorIdleTimeout</code> (default 60 s) is released. Executors that hold cached blocks use the longer <code>cachedExecutorIdleTimeout</code> (infinite by default), which prevents losing cached data unless configured.</p>
+<h4>Key settings</h4>
+<pre><code>spark.dynamicAllocation.enabled=true
+spark.dynamicAllocation.minExecutors=2
+spark.dynamicAllocation.initialExecutors=4
+spark.dynamicAllocation.maxExecutors=200
+spark.dynamicAllocation.executorIdleTimeout=60s
+spark.dynamicAllocation.shuffleTracking.enabled=true      # Kubernetes and no external shuffle service
+spark.shuffle.service.enabled=true                         # YARN and standalone: external shuffle service</code></pre>
+<h4>Shuffle data safety</h4>
+<p>Shuffle map outputs are stored on the executor&#39;s local disk. If that executor is removed, reducers cannot fetch the files and the stage must recompute. Solutions:</p>
+<ol start="1"><li><strong>External shuffle service</strong> (YARN NodeManager auxiliary service): a long-lived process serves shuffle blocks independently of the executor.</li><li><strong>Shuffle tracking</strong> (Spark 3.0+): the driver tracks which executors hold needed shuffle data and keeps them alive until it is no longer required; works on Kubernetes without a service.</li><li><strong>Remote or push-based shuffle</strong> (Spark 3.2 push-based shuffle on YARN, Celeborn or Uniffle remote shuffle services) so executors can disappear freely.</li></ol>
+<h4>Practical guidance</h4>
+<ul><li>Choose <code>minExecutors</code> to keep latency acceptable for interactive use, and <code>maxExecutors</code> to protect the cluster and quotas.</li><li>Dynamic allocation works well for ETL with variable stage sizes and notebooks; for <strong>Structured Streaming</strong> micro-batches it reacts slowly and may thrash, so many teams fix executors or use the dedicated streaming autoscaling of Databricks or Kubernetes operators.</li><li>Pair with adaptive query execution (AQE) so partition counts match the work, and with sensible <code>spark.executor.cores</code> and memory sizing (many small executors scale smoothly).</li><li>On Kubernetes, ensure the cluster autoscaler can add nodes quickly, because executor requests are only as fast as the node pool.</li></ul>
+<h4>Monitoring and pitfalls</h4>
+<p>Watch the Spark UI Executors tab, pending tasks, and executor add/remove events. Common issues: shuffle fetch failures from missing shuffle service, executors released while a driver collects results, cached data lost after idle timeout, and requests blocked by YARN queue limits.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does removing an executor risk losing shuffle files and how is that prevented?</li><li>How do you set minimum, initial and maximum executors for a streaming or interactive workload?</li><li>How does dynamic allocation interact with caching?</li></ul>
+<p><a class="btn primary" href="../#/q/de-23">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-23%3A+How+does+Spark+Dynamic+Resource+Allocation+scale+executors+up+and%E2%80%A6&amp;question-id=de-23&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Spark%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-23.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

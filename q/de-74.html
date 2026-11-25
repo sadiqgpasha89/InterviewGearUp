@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do Lakehouses resolve write conflicts when multiple pipelines write to the same table concurrently? | InterviewGearUp</title>
+<meta name="description" content="Lakehouse tables use optimistic concurrency control. Each writer reads a snapshot, writes new files, then commits atomically by adding a new version to…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-74.html">
+<meta property="og:title" content="How do Lakehouses resolve write conflicts when multiple pipelines write to the same table concurrently? | InterviewGearUp">
+<meta property="og:description" content="Lakehouse tables use optimistic concurrency control. Each writer reads a snapshot, writes new files, then commits atomically by adding a new version to…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-74.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do Lakehouses resolve write conflicts when multiple pipelines write to the same table concurrently?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Lakehouse · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Lakehouse tables use optimistic concurrency control. Each writer reads a snapshot, writes new files, then commits atomically by adding a new version to the log (Delta) or swapping the metadata pointer (Iceberg). If another writer committed first, the commit checks for logical conflicts, such as overlapping files or partitions, and either rebases, retries, or fails with a conflict error.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why conflicts happen</h4>
+<p>Object storage has no locks. Two jobs may update the same table at once (a streaming ingest and a nightly MERGE, two backfill tasks, compaction and a writer). The table format must guarantee <strong>ACID</strong> and isolation using only atomic put-if-absent or compare-and-swap primitives.</p>
+<h4>Optimistic concurrency control (OCC)</h4>
+<ol start="1"><li>A writer reads the <strong>latest snapshot version</strong> (read set).</li><li>It does its work and writes new Parquet files (not yet visible).</li><li>It attempts an <strong>atomic commit</strong>: Delta writes the next numbered file in <code>_delta_log</code> (<code>...013.json</code>) using put-if-absent (or a coordinator such as DynamoDB for S3 multi-cluster); Iceberg writes a new metadata file and updates the catalog pointer via compare-and-swap from the expected version.</li><li>If someone else committed in between, the commit fails the atomic step. The writer then <strong>checks whether the intervening commits conflict</strong> with what it read or changed. If not, it <strong>rebases</strong> (re-applies its changes on the new version) and retries; if they do conflict, it throws an exception.</li></ol>
+<p>Readers are never blocked: they use snapshot isolation on a consistent version.</p>
+<h4>Delta Lake conflicts</h4>
+<p>Delta compares the files read and removed or added by concurrent transactions. Typical outcomes:</p>
+<ul><li><strong>Append versus append</strong>: usually succeeds (no overlap of read files), so concurrent ingestion is fine.</li><li><strong>UPDATE, DELETE or MERGE versus another that touches the same files or partitions</strong>: <code>ConcurrentAppendException</code>, <code>ConcurrentDeleteReadException</code>, <code>ConcurrentDeleteDeleteException</code>, <code>ConcurrentModificationException</code>, <code>MetadataChangedException</code>, <code>ProtocolChangedException</code>.</li><li>Isolation levels: <strong>WriteSerializable</strong> (default, allows some reordering that no serial order would produce but reduces conflicts) versus <strong>Serializable</strong> (strictest; more conflicts).</li><li>Row-level concurrency (Databricks, deletion vectors) lowers conflicts for updates to different rows in the same files.</li></ul>
+<h4>Iceberg</h4>
+<p>Commits retry automatically (<code>commit.retry.num-retries</code>, with backoff) when the metadata pointer moved; operations validate against the new base for conflicts (<code>validateFromSnapshot</code>, <code>validateNoConflictingData</code> in overwrite and rewrite). Compaction (<code>rewrite_data_files</code>) can fail if the files it rewrote were deleted or changed; retry or use partial progress mode. Catalogs (Glue, Nessie, REST, Hive, JDBC) implement the atomic swap; Nessie adds Git-like branches and merges.</p>
+<h4>Designing to avoid conflicts</h4>
+<ul><li><strong>Partition and scope writes</strong> so jobs touch disjoint partitions, and state it in the condition: <code>MERGE ... ON t.date = s.date AND t.id = s.id</code> with <code>t.date = &#39;2026-11-25&#39;</code> (Delta can prune and detect no overlap); <code>replaceWhere</code> for partition-limited overwrites.</li><li>Prefer <strong>append-only ingestion</strong> plus compaction and MERGE into curated layers on a schedule, rather than many concurrent MERGEs into one table.</li><li><strong>Serialise</strong> conflicting jobs through the orchestrator (pools, <code>max_active_runs=1</code>, dependencies), or use a single writer per table (streaming job) with others as readers.</li><li>Run <strong>compaction and vacuum</strong> in windows or on partitions not being written, or with retry logic.</li><li>Use idempotent writes (checkpoint <code>txnAppId</code> in Delta for exactly-once streaming; Iceberg write IDs and transaction ids).</li><li>Build <strong>retry with backoff</strong> on conflict exceptions (they are safe to retry because the write did not apply).</li><li>For many writers, consider <strong>branching</strong> workflows (Iceberg or Nessie branches, write-audit-publish) and merging after validation.</li></ul>
+<h4>Pitfalls</h4>
+<p>Assuming &quot;ACID&quot; means concurrent MERGEs always succeed, unbounded retries causing livelock between compaction and writers, cross-table transactions (not supported in Delta and Iceberg individually; use sequencing or Nessie multi-table commits), and multi-cluster writes to S3 without a safe commit service.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Which operations conflict in Delta Lake under Serializable versus WriteSerializable?</li><li>How do you design pipelines to avoid conflicts with partitioning and merge conditions?</li><li>How do Iceberg commit retries work?</li></ul>
+<p><a class="btn primary" href="../#/q/de-74">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-74%3A+How+do+Lakehouses+resolve+write+conflicts+when+multiple+pipelines%E2%80%A6&amp;question-id=de-74&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Lakehouse%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-74.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

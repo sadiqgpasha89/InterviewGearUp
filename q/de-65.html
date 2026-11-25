@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare surrogate keys and natural business keys in relational dimensional modeling. | InterviewGearUp</title>
+<meta name="description" content="A natural key is the business identifier from the source (customer_id, SKU, email). A surrogate key is a meaningless, warehouse-generated integer or hash…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-65.html">
+<meta property="og:title" content="Compare surrogate keys and natural business keys in relational dimensional modeling. | InterviewGearUp">
+<meta property="og:description" content="A natural key is the business identifier from the source (customer_id, SKU, email). A surrogate key is a meaningless, warehouse-generated integer or hash…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-65.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare surrogate keys and natural business keys in relational dimensional modeling.</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 2 (Mid-level) · Data Modeling · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A natural key is the business identifier from the source (customer_id, SKU, email). A surrogate key is a meaningless, warehouse-generated integer or hash used as the dimension&#39;s primary key and the fact&#39;s foreign key. Surrogates insulate the model from source key changes, enable SCD Type 2 versioning, handle multiple sources, and keep joins small and fast.</p></div>
+<h4>Explained in depth</h4>
+<h4>Definitions</h4>
+<ul><li><strong>Natural (business) key</strong>: identifies an entity in the source system and has meaning to the business: <code>customer_id = &#39;C-10492&#39;</code>, a product SKU, an ISBN, an email, an order number.</li><li><strong>Surrogate key</strong>: a system-generated identifier with no business meaning, unique per dimension row (<code>customer_sk BIGINT</code>).</li></ul>
+<h4>Why dimensional models use surrogate keys</h4>
+<ol start="1"><li><strong>Source independence</strong>: natural keys change (system migration, re-numbering after a merger, reused SKUs, email changes). A surrogate key keeps fact rows stable.</li><li><strong>SCD Type 2 history</strong>: one natural key has several dimension rows over time (each version with <code>valid_from</code>, <code>valid_to</code>). The surrogate uniquely identifies <strong>the version</strong> that applied when the fact occurred; the natural key alone cannot.</li><li><strong>Multiple sources</strong>: the same customer in CRM and billing has different natural keys; the surrogate (with a crosswalk or master data) unifies them. Natural keys from different systems can also collide.</li><li><strong>Performance</strong>: integers (or fixed-width hashes) are compact, so fact tables, indexes and joins are smaller and faster than long composite or string keys. Smaller foreign keys also reduce storage in billion-row facts.</li><li><strong>Special members</strong>: reserved values such as <code>-1</code> for Unknown, <code>-2</code> for Not applicable, or inferred members for late-arriving data keep referential integrity without null foreign keys.</li><li><strong>Isolation from privacy issues</strong>: sensitive natural keys (SSN, email) do not need to be copied into every fact table.</li></ol>
+<h4>Generating surrogates</h4>
+<ul><li><strong>Sequence or identity columns</strong>: compact, but order-dependent; hard in distributed parallel loads and not reproducible (rebuilding a dimension gives different keys).</li><li><strong>Hash of natural key (plus version effective date for SCD2)</strong>: deterministic and idempotent across runs and environments, parallel-friendly (dbt <code>generate_surrogate_key</code>, <code>md5</code>/<code>xxhash64</code>), allows loading facts without lookup in some patterns; collision risk is negligible with 128-bit but keys are larger.</li></ul>
+<pre><code>select {{ dbt_utils.generate_surrogate_key([&#39;customer_id&#39;, &#39;valid_from&#39;]) }} as customer_sk, customer_id, name, segment, valid_from, valid_to
+from {{ ref(&#39;stg_customers_scd&#39;) }}</code></pre>
+<ul><li>Use distinct keys per version for SCD2, not just per natural key.</li></ul>
+<h4>Costs and drawbacks of surrogates</h4>
+<p>Extra lookup step in fact loading, one more column to manage, harder ad hoc debugging (keys are opaque, so keep the natural key in the dimension), and key generation must be consistent across environments if data moves between them.</p>
+<h4>When natural keys are fine</h4>
+<p>Stable, immutable, single-source identifiers (ISO country codes, date keys like <code>20261125</code>, well-governed product codes in a small model), data vault hubs that use business-key hashes, and wide denormalised tables used purely for analytics where history is unnecessary. Date dimensions commonly use an integer <code>YYYYMMDD</code> smart key by convention.</p>
+<h4>Best practices</h4>
+<p>Always retain the natural key as an attribute, create a unique constraint or test on the surrogate and on the (natural key, version) pair, define default members, keep key generation logic centralised, and avoid exposing surrogate keys to end users or external APIs.</p>
+<h4>Pitfalls</h4>
+<p>Using a surrogate without ever tracking the natural key (cannot reconcile to the source), generating non-deterministic sequences that change on rebuild, and joining facts on natural keys in SCD2 models, which duplicates rows across versions.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Should surrogate keys be sequences or hashes of the natural key?</li><li>How do you handle unknown and not-applicable members?</li><li>When is it acceptable to use the natural key directly?</li></ul>
+<p><a class="btn primary" href="../#/q/de-65">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-65%3A+Compare+surrogate+keys+and+natural+business+keys+in+relational%E2%80%A6&amp;question-id=de-65&amp;context=Data+engineer%2C+Gear+2%2C+topic%3A+Data+Modeling%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-65.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do Role-Based Access Control (RBAC) and row-level/column-level security work in modern warehouses? | InterviewGearUp</title>
+<meta name="description" content="RBAC grants privileges to roles and roles to users, so access is managed by job function. Modern warehouses add fine-grained controls: row-level security…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-58.html">
+<meta property="og:title" content="How do Role-Based Access Control (RBAC) and row-level/column-level security work in modern warehouses? | InterviewGearUp">
+<meta property="og:description" content="RBAC grants privileges to roles and roles to users, so access is managed by job function. Modern warehouses add fine-grained controls: row-level security…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-58.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do Role-Based Access Control (RBAC) and row-level/column-level security work in modern warehouses?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Security · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>RBAC grants privileges to roles and roles to users, so access is managed by job function. Modern warehouses add fine-grained controls: row-level security filters which rows a role may see through policies or secure views, and column-level security hides or masks sensitive columns, often driven by classification tags, so one table can serve different audiences safely.</p></div>
+<h4>Explained in depth</h4>
+<h4>RBAC basics</h4>
+<p>Instead of granting privileges to individuals, you create <strong>roles</strong> (<code>ANALYST_FINANCE</code>, <code>ENGINEER_PLATFORM</code>, <code>PII_READER</code>), grant privileges to roles (<code>SELECT</code> on schemas, <code>USAGE</code> on warehouses) and assign roles to users or groups (synced from an identity provider via SCIM and SSO). Roles can inherit other roles, forming a <strong>hierarchy</strong> (<code>SYSADMIN</code> over <code>ANALYST</code>). Benefits: least privilege, easy onboarding and offboarding, auditable access. Use <strong>future grants</strong> so new tables automatically inherit access, and separate <strong>functional roles</strong> (what you can do) from <strong>access roles</strong> (which data).</p>
+<h4>Row-level security (RLS)</h4>
+<p>Restrict rows by user attributes (region, tenant, department).</p>
+<pre><code>-- Snowflake row access policy
+CREATE ROW ACCESS POLICY sales_region_policy AS (region STRING) RETURNS BOOLEAN -&gt;
+  CURRENT_ROLE() = &#39;ADMIN&#39; OR EXISTS (SELECT 1 FROM entitlements e WHERE e.role_name = CURRENT_ROLE() AND e.region = region);
+ALTER TABLE sales ADD ROW ACCESS POLICY sales_region_policy ON (region);
+
+-- BigQuery
+CREATE ROW ACCESS POLICY eu_only ON analytics.sales GRANT TO (&#39;group:eu-analysts@corp.com&#39;) FILTER USING (region = &#39;EU&#39;);
+
+-- PostgreSQL / Redshift / Databricks
+CREATE POLICY tenant_isolation ON orders USING (tenant_id = current_setting(&#39;app.tenant_id&#39;)::int);
+ALTER TABLE orders ENABLE ROW LEVEL SECURITY;</code></pre>
+<p>The policy is evaluated for every query, transparently adding a filter predicate so users cannot bypass it.</p>
+<h4>Column-level security</h4>
+<ul><li><strong>Column grants</strong> (grant <code>SELECT</code> on specific columns) or <strong>policy tags</strong> (BigQuery) that deny access without the right fine-grained reader role.</li><li><strong>Dynamic data masking</strong> returns redacted or hashed values for unauthorised roles while still allowing the column in queries, joins or counts.</li></ul>
+<pre><code>CREATE MASKING POLICY ssn_mask AS (val STRING) RETURNS STRING -&gt;
+  CASE WHEN IS_ROLE_IN_SESSION(&#39;HR&#39;) THEN val ELSE &#39;XXX-XX-&#39; || RIGHT(val, 4) END;
+ALTER TABLE employees MODIFY COLUMN ssn SET MASKING POLICY ssn_mask;</code></pre>
+<ul><li><strong>Tag-based policies</strong>: classify columns (PII, PHI, CONFIDENTIAL) via automated discovery, bind a masking policy to the tag, and every tagged column inherits protection, which scales better than per-column configuration (Snowflake object tagging, Unity Catalog ABAC, Purview, Lake Formation LF-tags).</li></ul>
+<h4>Additional controls</h4>
+<p>Secure views (hide definitions, prevent optimiser leakage), network policies, private connectivity, encryption with customer-managed keys, audit logs (<code>ACCESS_HISTORY</code>, <code>INFORMATION_SCHEMA</code>, CloudTrail), data sharing governance, and periodic <strong>access reviews</strong> and recertification.</p>
+<h4>Design guidance</h4>
+<p>Define a role model early, manage grants as code (Terraform, Snowflake provider, dbt grants), centralise entitlement tables for RLS, test policies with impersonation (<code>EXECUTE AS</code>/<code>USE ROLE</code>), watch performance (complex policy subqueries slow scans), and ensure <strong>service accounts</strong> and BI tools use least-privilege roles, ideally with user-level credential passthrough.</p>
+<h4>Pitfalls</h4>
+<p>Granting to <code>PUBLIC</code>, owner roles used for daily work, copies of sensitive tables outside governed schemas, BI extracts that bypass policies, masking applied to a column but not to derived tables, and unmanaged role sprawl.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do role hierarchies and future grants reduce grant sprawl?</li><li>How do tag-based masking policies scale across thousands of columns?</li><li>Why can views leak data if not secured?</li></ul>
+<p><a class="btn primary" href="../#/q/de-58">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-58%3A+How+do+Role-Based+Access+Control+%28RBAC%29+and+row-level%2Fcolumn-level%E2%80%A6&amp;question-id=de-58&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Security%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-58.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

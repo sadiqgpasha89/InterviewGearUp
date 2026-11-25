@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does partition evolution work in Apache Iceberg without rewriting historical table data? | InterviewGearUp</title>
+<meta name="description" content="Iceberg records each partition spec with an ID in table metadata, and every data file keeps the spec ID it was written with. Changing the spec only…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-72.html">
+<meta property="og:title" content="How does partition evolution work in Apache Iceberg without rewriting historical table data? | InterviewGearUp">
+<meta property="og:description" content="Iceberg records each partition spec with an ID in table metadata, and every data file keeps the spec ID it was written with. Changing the spec only…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-72.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does partition evolution work in Apache Iceberg without rewriting historical table data?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Lakehouse · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Iceberg records each partition spec with an ID in table metadata, and every data file keeps the spec ID it was written with. Changing the spec only affects new writes: old files stay in their original layout, and query planning evaluates filters against each spec separately. No rewrite is needed, although you can compact old data into the new layout later.</p></div>
+<h4>Explained in depth</h4>
+<h4>The Hive problem</h4>
+<p>In Hive-style tables the partition scheme is baked into the directory layout and into queries. Changing from monthly to daily partitions means creating a new table, rewriting every historical file, and updating every consumer that references partition columns. At petabyte scale this is slow, costly and risky, so teams live with bad partitioning.</p>
+<h4>How Iceberg tracks partitioning</h4>
+<p>The table metadata JSON contains a list of <strong>partition specs</strong> (<code>partition-specs</code>), each with a <code>spec-id</code> and its fields (source column, transform, field id). One spec is the <strong>default</strong> for new writes. Every <strong>manifest file</strong> records the <code>partition_spec_id</code> it was written with, and each data file&#39;s partition tuple is stored in the manifest in terms of that spec. Because specs are versioned and referenced by ID, <strong>several layouts coexist in one table</strong>.</p>
+<h4>Evolving the spec</h4>
+<pre><code>-- Table was created partitioned by month
+CREATE TABLE lake.events (id BIGINT, ts TIMESTAMP, user_id BIGINT) USING iceberg PARTITIONED BY (months(ts));
+-- Data volume grows: switch to daily and add a bucket on user_id. Metadata-only operation.
+ALTER TABLE lake.events REPLACE PARTITION FIELD months(ts) WITH days(ts);
+ALTER TABLE lake.events ADD PARTITION FIELD bucket(16, user_id);
+ALTER TABLE lake.events DROP PARTITION FIELD bucket(16, user_id);</code></pre>
+<p>Only the metadata (a new spec and a new default spec ID) changes, in a single atomic commit. Existing data files are untouched. New data files are written with the new spec.</p>
+<h4>Query planning with mixed specs</h4>
+<p>For a query <code>WHERE ts &gt;= &#39;2026-11-20&#39;</code>, the planner:</p>
+<ol start="1"><li>Reads the manifest list, then manifests (each with a spec ID).</li><li>For each manifest, <strong>translates the predicate into that spec&#39;s partition predicate</strong> (<code>months(ts) &gt;= 2026-11</code> for old manifests, <code>days(ts) &gt;= 2026-11-20</code> for new ones) and prunes manifests and files accordingly, then applies column statistics.</li><li>Returns the union of surviving files; the engine reads them all uniformly.</li></ol>
+<p>Hidden partitioning makes this transparent: users filter on <code>ts</code>, never on partition columns, so queries do not change when the spec changes.</p>
+<h4>Practical considerations</h4>
+<ul><li><strong>Old data is not re-laid out</strong>: files under the old monthly spec are bigger and prune less effectively until rewritten. For hot ranges, run <code>rewrite_data_files</code> to rewrite selected partitions into the new spec (<code>CALL system.rewrite_data_files(table =&gt; &#39;lake.events&#39;, where =&gt; &#39;ts &gt;= TIMESTAMP &#39;&#39;2026-10-01&#39;&#39;&#39;)</code>), in the background and incrementally.</li><li>Metadata tables (<code>partitions</code>, <code>files</code>) show mixed specs; the <code>partitions</code> table may be shown in a unified &quot;coerced&quot; form.</li><li>Writers should use engine versions supporting spec evolution (Spark, Flink, Trino, Snowflake all do), and ensure partitioned write distribution (<code>write.distribution-mode=hash</code>) to avoid small files.</li><li>Delta Lake uses liquid clustering and Hive-style partitions (changing partitioning requires rewrite), while Iceberg uses partition evolution and sort order evolution.</li></ul>
+<h4>Benefits</h4>
+<p>Adapt to data growth or new query patterns without downtime or migration, start simple and refine later, and keep long-running consumers unaffected.</p>
+<h4>Pitfalls</h4>
+<p>Assuming old data is automatically re-clustered, too many specs complicating planning, and forgetting that an extremely fine spec (hourly on tiny tables) creates small files.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does planning prune files that were written under different specs?</li><li>What happens to partition columns in queries after an evolution?</li><li>When would you still rewrite historical data?</li></ul>
+<p><a class="btn primary" href="../#/q/de-72">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-72%3A+How+does+partition+evolution+work+in+Apache+Iceberg+without%E2%80%A6&amp;question-id=de-72&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Lakehouse%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-72.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

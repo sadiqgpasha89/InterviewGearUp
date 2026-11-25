@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare ClickHouse, Apache Pinot, and StarRocks for real-time sub-second analytics dashboards. | InterviewGearUp</title>
+<meta name="description" content="ClickHouse is a very fast columnar OLAP database with a flexible SQL surface and strong single-table and join performance, easy to start with. Pinot is…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-97.html">
+<meta property="og:title" content="Compare ClickHouse, Apache Pinot, and StarRocks for real-time sub-second analytics dashboards. | InterviewGearUp">
+<meta property="og:description" content="ClickHouse is a very fast columnar OLAP database with a flexible SQL surface and strong single-table and join performance, easy to start with. Pinot is…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-97.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare ClickHouse, Apache Pinot, and StarRocks for real-time sub-second analytics dashboards.</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Real-Time · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>ClickHouse is a very fast columnar OLAP database with a flexible SQL surface and strong single-table and join performance, easy to start with. Pinot is built for high-concurrency, low-latency user-facing analytics with rich indexes and native stream ingestion. StarRocks offers an MPP engine with a cost-based optimiser, strong joins and real-time updates, plus lakehouse query support.</p></div>
+<h4>Explained in depth</h4>
+<h4>The use case</h4>
+<p>Dashboards and APIs that need <strong>sub-second</strong> aggregations over billions of fresh rows, often with many concurrent users (product analytics, observability, ad-tech, operational monitoring). Warehouses are too slow or costly for this pattern, so a specialised real-time OLAP (RTOLAP) engine serves the hot data.</p>
+<h4>ClickHouse</h4>
+<ul><li><strong>Architecture</strong>: columnar storage with MergeTree table engines, vectorised execution, sparse primary index (sort key) with granules, data skipping indexes, compression codecs, materialised views, projections, and replication (ReplicatedMergeTree) with sharding via distributed tables. Can run single node or cluster; ClickHouse Cloud separates storage and compute.</li><li><strong>Strengths</strong>: extreme scan and aggregation speed on wide tables, flexible ad hoc SQL, many functions (arrays, JSON, approximate), efficient ingestion with Kafka engine and batched inserts, large community, lowest operational entry barrier.</li><li><strong>Weaknesses</strong>: joins have improved but remain less optimised for large multi-table star schemas (denormalise or use dictionaries); <strong>updates and deletes are asynchronous mutations</strong> (ReplacingMergeTree and CollapsingMergeTree for upserts, with eventual merge); concurrency limits per query compared to Pinot (many small queries OK but capacity planning needed); operational tuning of merges and parts.</li></ul>
+<h4>Apache Pinot</h4>
+<ul><li><strong>Architecture</strong>: controller, broker, server, minion; <strong>segments</strong> of columnar data with rich indexes: inverted, sorted, range, text, JSON, geospatial, bloom filters, and the <strong>star-tree index</strong> (pre-aggregated hierarchical tree for fast group-by queries). <strong>Real-time tables</strong> consume directly from Kafka or Kinesis with consuming segments flushed to immutable ones; hybrid tables mix offline and real-time.</li><li><strong>Strengths</strong>: designed for <strong>user-facing, high-QPS (thousands to tens of thousands) low-latency (tens of ms) queries</strong>, upsert support with primary keys (partial upserts), tight freshness (seconds), time-partitioned retention, multi-tenancy.</li><li><strong>Weaknesses</strong>: SQL surface and join support historically limited (multi-stage query engine v2 adds joins and window functions, still maturing); tuning of indexes and table configs requires expertise; more components to operate; less suited to arbitrary exploration across wide schemas.</li></ul>
+<h4>StarRocks</h4>
+<ul><li><strong>Architecture</strong>: frontend (FE) and backend (BE) nodes, MPP vectorised engine, <strong>cost-based optimiser</strong>, columnar storage with primary key model (real-time upserts and deletes using delete vectors), materialised views with automatic rewrite, shared-data (storage-compute separation) mode, external catalogs to query <strong>Iceberg, Hudi, Delta and Hive data in place</strong>, and MySQL protocol compatibility.</li><li><strong>Strengths</strong>: strong <strong>multi-table joins</strong> and complex SQL (TPC-H and SSB performance), good concurrency, real-time updates, unified lakehouse and internal-table acceleration, simpler for BI tools using MySQL drivers.</li><li><strong>Weaknesses</strong>: smaller community and ecosystem than ClickHouse, fewer integrations and managed offerings (CelerData cloud), less proven in extreme scale user-facing API patterns than Pinot.</li></ul>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th></th><th>ClickHouse</th><th>Pinot</th><th>StarRocks</th></tr></thead><tbody><tr><td>Best at</td><td>fast scans, ad hoc analytics, logs</td><td>user-facing high-QPS dashboards</td><td>joins, real-time updates, lakehouse acceleration</td></tr><tr><td>Concurrency</td><td>high with planning</td><td>very high</td><td>high</td></tr><tr><td>Joins</td><td>improving, prefer denormalised</td><td>limited (v2 engine improving)</td><td>strong</td></tr><tr><td>Upserts</td><td>eventual (ReplacingMergeTree)</td><td>supported (primary key)</td><td>strong (primary key tables)</td></tr><tr><td>Streaming ingestion</td><td>Kafka engine, connectors</td><td>native consuming segments</td><td>Routine Load, Flink connector</td></tr><tr><td>Ops complexity</td><td>moderate</td><td>higher</td><td>moderate</td></tr><tr><td>Ecosystem</td><td>very large</td><td>strong in streaming companies</td><td>growing</td></tr></tbody></table></div>
+<h4>Selection guidance</h4>
+<ul><li>Event or log analytics with wide denormalised tables, ad hoc exploration and cost sensitivity: <strong>ClickHouse</strong>.</li><li>Embedded analytics inside a product serving thousands of users with strict p99 latency and fresh data: <strong>Pinot</strong>.</li><li>Star-schema dashboards with many joins, changing data (CDC upserts), or acceleration of a lakehouse without copying: <strong>StarRocks</strong>.</li></ul>
+<p>Run a <strong>proof of concept</strong> with your data and query mix measuring p95 latency, throughput, ingestion lag, cost and operations. Also consider Druid, Rockset-like services, DuckDB for small scale, and warehouse features (Snowflake dynamic tables, BigQuery BI Engine) when freshness needs are modest.</p>
+<h4>Pitfalls</h4>
+<p>Choosing by benchmarks rather than your queries, ignoring operational skills, modelling relational schemas into engines optimised for denormalised data, and skipping capacity planning for merges or segment sizes.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Which engine handles multi-table joins and upserts best?</li><li>How do star-tree indexes in Pinot speed up aggregations?</li><li>What are the operational trade-offs of self-managing each cluster?</li></ul>
+<p><a class="btn primary" href="../#/q/de-97">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-97%3A+Compare+ClickHouse%2C+Apache+Pinot%2C+and+StarRocks+for+real-time%E2%80%A6&amp;question-id=de-97&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Real-Time%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-97.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

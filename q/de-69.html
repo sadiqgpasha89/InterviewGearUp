@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is speculative execution in Apache Spark and how does it mitigate straggler tasks? | InterviewGearUp</title>
+<meta name="description" content="Speculative execution lets Spark relaunch a copy of tasks that run much slower than the median of their stage, on another executor, and use whichever…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-69.html">
+<meta property="og:title" content="What is speculative execution in Apache Spark and how does it mitigate straggler tasks? | InterviewGearUp">
+<meta property="og:description" content="Speculative execution lets Spark relaunch a copy of tasks that run much slower than the median of their stage, on another executor, and use whichever…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-69.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is speculative execution in Apache Spark and how does it mitigate straggler tasks?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Spark · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Speculative execution lets Spark relaunch a copy of tasks that run much slower than the median of their stage, on another executor, and use whichever copy finishes first. It mitigates stragglers caused by a bad node, noisy neighbour or slow disk, but not data skew, and it requires side-effect-safe tasks and extra capacity.</p></div>
+<h4>Explained in depth</h4>
+<h4>The straggler problem</h4>
+<p>A stage completes only when its <strong>last task</strong> finishes. If 199 of 200 tasks take 30 seconds and one takes 10 minutes, the whole stage waits. Stragglers arise from <strong>hardware or environment problems</strong> (failing disk, overloaded node, noisy neighbour, slow network, GC pauses, a throttled cloud VM), not from the data itself.</p>
+<h4>How speculation works</h4>
+<p>When <code>spark.speculation=true</code>, the scheduler periodically checks running tasks (every <code>spark.speculation.interval</code>, default 100 ms):</p>
+<ol start="1"><li>After a <strong>quantile</strong> of tasks in the stage have finished (<code>spark.speculation.quantile</code>, default 0.75), it computes the median task duration.</li><li>Any running task slower than <code>multiplier × median</code> (<code>spark.speculation.multiplier</code>, default 1.5) is a candidate.</li><li>Spark launches a <strong>duplicate attempt</strong> of that task on a different executor or host.</li><li>The <strong>first attempt to finish wins</strong>; Spark kills the other. Output from the loser is discarded.</li></ol>
+<pre><code>spark.speculation=true
+spark.speculation.interval=200ms
+spark.speculation.multiplier=3
+spark.speculation.quantile=0.9
+spark.speculation.minTaskRuntime=60s          # do not speculate quick tasks (Spark 3.x)</code></pre>
+<p>(Spark 3.x also supports <code>spark.speculation.efficiency</code> settings to avoid wasteful speculation.)</p>
+<h4>When it helps</h4>
+<p>Long-running batch jobs on large, heterogeneous or cloud clusters with spot instances and shared hardware, where occasional slow nodes are expected. It reduces tail latency without code changes.</p>
+<h4>When it does not help (or hurts)</h4>
+<ul><li><strong>Data skew</strong>: if the slow task simply has more data (a hot key), the speculative copy processes the same large partition and is equally slow. Fix with AQE skew join handling, salting, repartitioning, or better keys.</li><li><strong>Resource waste</strong>: duplicates consume cores and memory; on a saturated cluster speculation can slow other tasks. Too aggressive settings cause cascades of unnecessary copies.</li><li><strong>Non-idempotent side effects</strong>: tasks that write to external databases, call APIs, or send messages may execute twice. File outputs use the output committer (commit protocol ensures only the winner commits), but custom sinks, JDBC writes without keys, and <code>foreachPartition</code> side effects can duplicate. Disable speculation or make writers idempotent. Some committers on object stores historically had issues, so check the commit protocol (S3A magic committer, Delta).</li><li>Tasks reading from <strong>non-replayable</strong> or consumed-once sources (some streaming sources) can misbehave.</li><li>For Structured Streaming, speculation is typically disabled or used cautiously.</li></ul>
+<h4>Diagnosing stragglers</h4>
+<p>Spark UI stage page: task duration distribution (min, 25th, median, 75th, max), <strong>summary metrics</strong> showing a max far above median, per-executor times (a single host consistently slow), GC time, shuffle read size per task (skew indicator), and speculative task counts (<code>Speculative</code> tasks listed). If shuffle read size is uniform but durations vary, suspect the node; if sizes vary, it is skew.</p>
+<h4>Complements</h4>
+<p>Executor blacklisting (<code>spark.excludeOnFailure.enabled</code>) to avoid bad nodes, decommissioning and spot instance handling, AQE (skew joins, coalescing partitions), right-sized partitions, and cluster health monitoring.</p>
+<h4>Pitfalls</h4>
+<p>Enabling speculation globally with non-idempotent writes, expecting it to cure skew, aggressive multipliers, and ignoring the real root cause (a failing host).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does speculation not fix data skew?</li><li>Which settings control the threshold and quantile?</li><li>What are the risks when writing to external systems with speculation?</li></ul>
+<p><a class="btn primary" href="../#/q/de-69">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-69%3A+What+is+speculative+execution+in+Apache+Spark+and+how+does+it%E2%80%A6&amp;question-id=de-69&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Spark%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-69.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

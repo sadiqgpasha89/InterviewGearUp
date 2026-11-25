@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you deduplicate incoming streaming events using stateful rocksdb storage in Apache Flink? | InterviewGearUp</title>
+<meta name="description" content="Key the stream by the event ID and keep a ValueState (or MapState) flag in Flink&#39;s managed keyed state, backed by RocksDB for state larger than memory.…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-83.html">
+<meta property="og:title" content="How do you deduplicate incoming streaming events using stateful rocksdb storage in Apache Flink? | InterviewGearUp">
+<meta property="og:description" content="Key the stream by the event ID and keep a ValueState (or MapState) flag in Flink&#39;s managed keyed state, backed by RocksDB for state larger than memory.…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-83.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you deduplicate incoming streaming events using stateful rocksdb storage in Apache Flink?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Streaming · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Key the stream by the event ID and keep a ValueState (or MapState) flag in Flink&#39;s managed keyed state, backed by RocksDB for state larger than memory. On each event, if the flag is unset, emit it and set the flag with a state TTL or timer to expire it. If already set, drop the duplicate. Checkpointing makes the deduplication fault tolerant.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why duplicates occur</h4>
+<p>At-least-once sources (Kafka producer retries, upstream replays, CDC re-sent after failover), client retries, and multiple publishers produce <strong>duplicate events</strong>. Downstream aggregates and counts would be wrong, so streaming jobs must deduplicate by a stable identifier (<code>event_id</code>, <code>(user_id, session_id, seq)</code>).</p>
+<h4>Stateful approach in Flink</h4>
+<p>Flink <strong>keyed state</strong> is partitioned by key across parallel tasks and stored locally in a <strong>state backend</strong>:</p>
+<ul><li><strong>HashMapStateBackend</strong>: state on the JVM heap; fastest but limited by memory.</li><li><strong>EmbeddedRocksDBStateBackend</strong>: state in an embedded <strong>RocksDB</strong> instance on local disk (LSM tree) with off-heap memory, so state can be <strong>many times larger than memory</strong> (terabytes), with serialisation cost per access. Supports <strong>incremental checkpoints</strong> that upload only changed SST files.</li></ul>
+<pre><code>public class Deduplicate extends KeyedProcessFunction&lt;String, Event, Event&gt; {
+    private transient ValueState&lt;Boolean&gt; seen;
+
+    @Override
+    public void open(Configuration cfg) {
+        StateTtlConfig ttl = StateTtlConfig.newBuilder(Time.hours(24))
+            .setUpdateType(StateTtlConfig.UpdateType.OnCreateAndWrite)
+            .setStateVisibility(StateTtlConfig.StateVisibility.NeverReturnExpired)
+            .cleanupInRocksdbCompactFilter(1000).build();
+        ValueStateDescriptor&lt;Boolean&gt; d = new ValueStateDescriptor&lt;&gt;(&quot;seen&quot;, Boolean.class);
+        d.enableTimeToLive(ttl);
+        seen = getRuntimeContext().getState(d);
+    }
+
+    @Override
+    public void processElement(Event e, Context ctx, Collector&lt;Event&gt; out) throws Exception {
+        if (seen.value() == null) {
+            seen.update(true);
+            out.collect(e);                                // first time: emit
+        }                                                  // else: duplicate, drop
+    }
+}
+events.keyBy(Event::getEventId).process(new Deduplicate());</code></pre>
+<h4>Bounding state</h4>
+<p>Without cleanup, the set of seen IDs grows forever. Strategies:</p>
+<ol start="1"><li><strong>State TTL</strong> (as above): keys expire after the duplicate window (for example 24 hours); RocksDB cleans expired entries during compaction.</li><li><strong>Event-time timers</strong>: register a timer at <code>eventTime + window</code> and clear state in <code>onTimer</code>, giving deterministic expiry tied to watermarks.</li><li><strong>Flink SQL</strong>: <code>ROW_NUMBER() OVER (PARTITION BY event_id ORDER BY proctime ASC) = 1</code> is optimised as a deduplication operator; set <code>table.exec.state.ttl</code>.</li></ol>
+<pre><code>SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY event_id ORDER BY event_time) AS rn FROM events) WHERE rn = 1;</code></pre>
+<ol start="4"><li><strong>Approximate approach</strong>: Bloom filters reduce memory but permit false positives (dropping a unique event), so use only when tolerable.</li><li>Choose the <strong>dedup key and window</strong> from the producer&#39;s retry behaviour, not arbitrarily.</li></ol>
+<h4>Fault tolerance</h4>
+<p>State is included in <strong>checkpoints</strong> (barrier snapshots) stored in durable storage (S3, HDFS). On failure Flink restores state and source offsets together, so the dedup set and position remain consistent, giving <strong>exactly-once state semantics</strong>. Savepoints support upgrades; state schema evolution requires care.</p>
+<h4>End-to-end exactly-once</h4>
+<p>Dedup inside Flink does not stop duplicates from the sink on restart. Use <strong>transactional or idempotent sinks</strong>: Kafka transactions with two-phase commit sink, upserts by key into a database or Iceberg/Delta (merge on primary key), or deterministic file naming.</p>
+<h4>Tuning and operations</h4>
+<p>Choose a sensible key parallelism to spread hot keys, size RocksDB memory (managed memory fraction), use SSD local disks, enable incremental checkpoints and unaligned checkpoints for backpressure, monitor state size, checkpoint duration and alignment time, and compaction stalls.</p>
+<h4>Pitfalls</h4>
+<p>Unbounded state, TTL shorter than the real duplicate window, dedup key that is not unique enough (drops valid events) or too unique (misses duplicates), and skewed keys causing hot partitions.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you bound state growth using TTL and event-time timers?</li><li>Why use RocksDB state backend with incremental checkpoints for large state?</li><li>How do exactly-once sinks relate to deduplication?</li></ul>
+<p><a class="btn primary" href="../#/q/de-83">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-83%3A+How+do+you+deduplicate+incoming+streaming+events+using+stateful%E2%80%A6&amp;question-id=de-83&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Streaming%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-83.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What query optimization techniques prevent expensive shuffle operations in BigQuery and Snowflake? | InterviewGearUp</title>
+<meta name="description" content="Reduce data before it shuffles and avoid shuffling at all where possible: filter and select early, partition and cluster on join and filter keys,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-68.html">
+<meta property="og:title" content="What query optimization techniques prevent expensive shuffle operations in BigQuery and Snowflake? | InterviewGearUp">
+<meta property="og:description" content="Reduce data before it shuffles and avoid shuffling at all where possible: filter and select early, partition and cluster on join and filter keys,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-68.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What query optimization techniques prevent expensive shuffle operations in BigQuery and Snowflake?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Warehouses · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Reduce data before it shuffles and avoid shuffling at all where possible: filter and select early, partition and cluster on join and filter keys, pre-aggregate before joins, use small-table broadcast, avoid skewed keys and cross joins, prefer approximate aggregates, and use nested columns instead of join-heavy normalisation. Read query profiles for large shuffle bytes and spill.</p></div>
+<h4>Explained in depth</h4>
+<h4>What a shuffle is</h4>
+<p>In an MPP engine, joins, <code>GROUP BY</code>, <code>DISTINCT</code>, window functions and <code>ORDER BY</code> often need rows with the same key on the same worker. Data is <strong>redistributed over the network</strong> between stages (BigQuery shuffle tier, Snowflake <code>Repartition</code> and <code>Join</code> steps). Shuffles consume network and memory, may <strong>spill to disk</strong>, and are the main cost of large queries.</p>
+<h4>Techniques</h4>
+<ol start="1"><li><strong>Filter and project early</strong>: apply <code>WHERE</code> predicates and select only needed columns before joins so fewer bytes move. Push filters into subqueries or CTEs when the engine does not (or use <code>QUALIFY</code>).</li><li><strong>Partition pruning and clustering</strong>: partition by date and cluster by join or filter keys so scans read less data and clustered join keys are co-located, reducing shuffled volume (BigQuery <code>CLUSTER BY</code>, Snowflake clustering keys).</li><li><strong>Pre-aggregate before join</strong>: aggregate the large fact to the join grain, then join to dimensions.</li></ol>
+<pre><code>WITH daily AS (SELECT customer_id, DATE(ts) d, SUM(amount) amt FROM facts WHERE ts &gt;= &#39;2026-11-01&#39; GROUP BY 1, 2)
+SELECT c.segment, SUM(d.amt) FROM daily d JOIN customers c USING (customer_id) GROUP BY 1;</code></pre>
+<ol start="4"><li><strong>Join small to large with broadcast</strong>: engines broadcast small tables automatically (BigQuery chooses broadcast joins when one side is small; Snowflake uses broadcast for small build sides). Keep dimension tables compact, filter them before the join, and avoid joins of two huge tables if one side can be reduced.</li><li><strong>Handle skew</strong>: a hot key (null, &#39;unknown&#39;, one huge customer) sends most rows to one worker. Filter or isolate hot keys (<code>WHERE key IS NOT NULL</code>), split them (salting), or aggregate before joining.</li><li><strong>Avoid cross joins and non-equi joins</strong> on large inputs; they explode row counts and cannot hash-partition. Replace with range pre-bucketing.</li><li><strong>Use approximate and incremental aggregates</strong>: <code>APPROX_COUNT_DISTINCT</code>, <code>HLL</code> sketches, <code>APPROX_TOP_COUNT</code>, instead of exact distinct over billions of values, which needs a full shuffle.</li><li><strong>Avoid unnecessary <code>ORDER BY</code></strong>, window functions over huge unpartitioned sets, and <code>DISTINCT</code> where <code>GROUP BY</code> or constraints already guarantee uniqueness. <code>ORDER BY</code> with <code>LIMIT</code> is cheaper than full sort.</li><li><strong>Denormalise or nest</strong>: BigQuery <code>STRUCT</code> and <code>ARRAY</code> columns store one-to-many data together (order with line items), so no join is needed. Wide pre-joined tables for hot dashboards.</li><li><strong>Materialised views and summary tables</strong> precompute aggregations and joins, so queries read small results.</li><li><strong>Reduce data volume at the source</strong>: filter by partition filters, use <code>TABLESAMPLE</code> in exploration, and avoid <code>SELECT *</code>.</li><li><strong>Keep statistics and metadata healthy</strong> (Snowflake automatic clustering for large tables; BigQuery re-clustering).</li></ol>
+<h4>Diagnosing</h4>
+<p>BigQuery execution graph: look for stages with large <code>shuffle output bytes</code>, <code>slot time skew</code> (max versus avg), and spill to disk. Snowflake query profile: operators with high &quot;bytes spilled to local or remote storage&quot;, <code>Join</code> explosion (rows out greater than rows in), and &quot;Most expensive nodes&quot;. Both reveal row count blow-ups from duplicate join keys.</p>
+<h4>Pitfalls</h4>
+<p>Joining on non-unique keys unintentionally multiplying rows, joining before filtering, relying on <code>DISTINCT</code> to mask duplicates, and neglecting skew when one tenant dominates.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you spot a skewed join key in the query profile?</li><li>When does denormalisation or nested data beat joins?</li><li>How do materialised views or pre-aggregations remove shuffles?</li></ul>
+<p><a class="btn primary" href="../#/q/de-68">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-68%3A+What+query+optimization+techniques+prevent+expensive+shuffle%E2%80%A6&amp;question-id=de-68&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Warehouses%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-68.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

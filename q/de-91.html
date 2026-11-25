@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you diagnose and resolve Out of Memory (OOM) errors in Spark driver and executor nodes? | InterviewGearUp</title>
+<meta name="description" content="Read the failure first: driver OOM usually comes from collect, toPandas, huge broadcast or too many partitions and tasks; executor OOM from skew,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-91.html">
+<meta property="og:title" content="How do you diagnose and resolve Out of Memory (OOM) errors in Spark driver and executor nodes? | InterviewGearUp">
+<meta property="og:description" content="Read the failure first: driver OOM usually comes from collect, toPandas, huge broadcast or too many partitions and tasks; executor OOM from skew,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-91.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you diagnose and resolve Out of Memory (OOM) errors in Spark driver and executor nodes?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Spark · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Read the failure first: driver OOM usually comes from collect, toPandas, huge broadcast or too many partitions and tasks; executor OOM from skew, oversized partitions, large aggregations, caching or insufficient memory overhead. Use the Spark UI and GC logs, then fix the cause: repartition, handle skew, reduce broadcast, tune memory and overhead, or avoid collecting data to the driver.</p></div>
+<h4>Explained in depth</h4>
+<h4>First identify what ran out of memory</h4>
+<p>Error messages differ:</p>
+<ul><li><code>java.lang.OutOfMemoryError: Java heap space</code> (JVM heap exhausted).</li><li><code>GC overhead limit exceeded</code> (JVM spending most time in GC).</li><li><code>Container killed by YARN for exceeding memory limits</code> or Kubernetes <code>OOMKilled</code> / exit code 137: the <strong>process total</strong> (heap + off-heap + Python) exceeded the container limit, which is an <strong>overhead problem</strong>, not heap.</li><li><code>Direct buffer memory</code> / Netty errors: shuffle and off-heap pressure.</li></ul>
+<p>Check the Spark UI (Executors tab, Stages), driver and executor logs, and which stage failed.</p>
+<h4>Driver OOM</h4>
+<p>Causes and fixes:</p>
+<ol start="1"><li><strong><code>collect()</code>, <code>toPandas()</code>, <code>take(huge)</code></strong>: pulls all data to the driver. Aggregate or filter first, write to storage, use <code>limit</code>, <code>toLocalIterator()</code>, or raise <code>spark.driver.maxResultSize</code> and <code>spark.driver.memory</code> only when the data is small.</li><li><strong>Large broadcast</strong> (<code>broadcast(df)</code>, broadcast joins above available memory): lower <code>spark.sql.autoBroadcastJoinThreshold</code>, avoid broadcasting growing tables, remove the hint.</li><li><strong>Too many partitions or files</strong> (millions of tiny tasks or files): driver tracks task metadata and file listings. Coalesce, compact small files, use Delta or Iceberg manifests, increase driver memory, tune <code>spark.sql.sources.parallelPartitionDiscovery</code>.</li><li><strong>Huge lineage and plan</strong> (iterative loops without checkpoints): <code>checkpoint()</code> or <code>localCheckpoint()</code> to cut lineage, avoid growing union chains.</li><li>Many accumulated UI events: lower <code>spark.ui.retainedJobs/Stages/Tasks</code>.</li></ol>
+<pre><code>spark.driver.memory=8g
+spark.driver.maxResultSize=2g
+spark.sql.autoBroadcastJoinThreshold=64m</code></pre>
+<h4>Executor OOM</h4>
+<ol start="1"><li><strong>Data skew</strong>: one partition far larger than others. Look at the stage task summary (max versus median input and shuffle read). Fix with AQE skew join (<code>spark.sql.adaptive.skewJoin.enabled=true</code>), salting hot keys, pre-aggregation, or filtering null keys.</li><li><strong>Partitions too large</strong>: increase parallelism (<code>spark.sql.shuffle.partitions</code>, <code>repartition(n)</code>), target 100 to 200 MB per shuffle partition; AQE coalescing can then merge small ones.</li><li><strong>Wide transformations in memory</strong>: <code>groupByKey</code> (use <code>reduceByKey</code>/<code>aggregateByKey</code> or DataFrame aggregations), large <code>collect_list</code>/<code>collect_set</code>, exploding arrays, window functions over huge groups without partition limits.</li><li><strong>Caching too much</strong> (<code>MEMORY_ONLY</code>): use <code>MEMORY_AND_DISK</code>, unpersist, or avoid caching.</li><li><strong>Insufficient memory settings</strong>: raise <code>spark.executor.memory</code> and <code>spark.executor.memoryOverhead</code> (default max(384 MB, 10 percent); PySpark and off-heap often need 20 to 30 percent), lower <code>spark.executor.cores</code> so fewer tasks share memory, or use more executors with less per-core pressure.</li><li><strong>Python UDFs and pandas</strong>: memory sits in Python workers (counted in overhead): set <code>spark.executor.pyspark.memory</code>, use iterator UDFs, smaller Arrow batches.</li><li><strong>Big objects</strong> broadcast to executors, large closures, or inefficient serialisation (switch to Kryo).</li></ol>
+<pre><code>spark.executor.memory=12g
+spark.executor.memoryOverhead=3g
+spark.executor.cores=4
+spark.sql.shuffle.partitions=800
+spark.sql.adaptive.enabled=true
+spark.serializer=org.apache.spark.serializer.KryoSerializer</code></pre>
+<h4>Diagnosis workflow</h4>
+<ol start="1"><li>Locate the failing stage and task in the UI; look at <strong>input size, shuffle read, spill (memory and disk), GC time</strong> per task.</li><li>If one task is far larger: skew. If all tasks heavy: partitions too large or insufficient memory.</li><li>Reproduce with a sample, examine the physical plan (<code>explain</code>) for broadcast, cartesian or wide joins.</li><li>Change one thing at a time and compare stage metrics.</li></ol>
+<h4>Pitfalls</h4>
+<p>Only increasing memory without finding skew, setting too many cores per executor, ignoring overhead for PySpark, and <code>repartition(1)</code> before write.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you tell JVM heap OOM from container killed for exceeding memory overhead?</li><li>What is the effect of too many small partitions on the driver?</li><li>How does AQE help prevent executor OOM?</li></ul>
+<p><a class="btn primary" href="../#/q/de-91">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-91%3A+How+do+you+diagnose+and+resolve+Out+of+Memory+%28OOM%29+errors+in+Spark%E2%80%A6&amp;question-id=de-91&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Spark%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-91.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

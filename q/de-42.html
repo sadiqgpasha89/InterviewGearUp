@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is the difference between generic dbt tests and singular custom SQL tests? | InterviewGearUp</title>
+<meta name="description" content="Generic dbt tests are reusable parameterised checks declared in YAML (unique, not_null, accepted_values, relationships, plus package tests) and applied…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-42.html">
+<meta property="og:title" content="What is the difference between generic dbt tests and singular custom SQL tests? | InterviewGearUp">
+<meta property="og:description" content="Generic dbt tests are reusable parameterised checks declared in YAML (unique, not_null, accepted_values, relationships, plus package tests) and applied…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-42.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is the difference between generic dbt tests and singular custom SQL tests?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 2 (Mid-level) · Transformation · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Generic dbt tests are reusable parameterised checks declared in YAML (unique, not_null, accepted_values, relationships, plus package tests) and applied to any column or model. Singular tests are one-off SQL files in the tests folder that return failing rows for a specific business rule. Both pass when zero rows are returned.</p></div>
+<h4>Explained in depth</h4>
+<h4>The testing model in dbt</h4>
+<p>Every dbt test compiles to a query that selects <strong>failing rows</strong>. If the query returns no rows, the test passes. A non-zero count fails (or warns, depending on severity). Tests run with <code>dbt test</code> or as part of <code>dbt build</code>, which tests each model right after building it and skips downstream models when an upstream test fails.</p>
+<h4>Generic tests</h4>
+<p>Defined once, applied declaratively in YAML to many columns:</p>
+<pre><code>models:
+  - name: fct_orders
+    columns:
+      - name: order_id
+        tests: [unique, not_null]
+      - name: status
+        tests:
+          - accepted_values: {values: [placed, shipped, returned, cancelled]}
+      - name: customer_id
+        tests:
+          - relationships: {to: ref(&#39;dim_customers&#39;), field: customer_id}</code></pre>
+<p>Built-ins: <code>unique</code>, <code>not_null</code>, <code>accepted_values</code>, <code>relationships</code> (referential integrity). Packages such as <strong>dbt_utils</strong> (<code>expression_is_true</code>, <code>unique_combination_of_columns</code>, <code>recency</code>) and <strong>dbt-expectations</strong> (distribution, regex and row-count checks inspired by Great Expectations) add many more.</p>
+<p>You can define your own as a Jinja macro:</p>
+<pre><code>{% test positive_value(model, column_name) %}
+select * from {{ model }} where {{ column_name }} &lt;= 0
+{% endtest %}</code></pre>
+<p>then use <code>- positive_value</code> in YAML. Arguments, <code>where</code> filters, <code>severity</code>, <code>error_if</code> and <code>warn_if</code> configure behaviour:</p>
+<pre><code>- not_null:
+    config: {severity: warn, where: &quot;ordered_at &gt; current_date - 7&quot;}</code></pre>
+<h4>Singular tests</h4>
+<p>A plain SQL file under <code>tests/</code> that encodes a rule too specific for reuse:</p>
+<pre><code>-- tests/assert_revenue_matches_payments.sql
+select o.order_id, o.order_total, p.paid_total
+from {{ ref(&#39;fct_orders&#39;) }} o
+join {{ ref(&#39;fct_payments&#39;) }} p using (order_id)
+where abs(o.order_total - p.paid_total) &gt; 0.01</code></pre>
+<p>It cross-checks two models and returns mismatching orders. Singular tests are quick for ad hoc reconciliations, multi-model rules and complex conditions. If you copy the same query for several models, convert it into a generic test.</p>
+<h4>Choosing between them</h4>
+<div class="md-table"><table><thead><tr><th></th><th>Generic</th><th>Singular</th></tr></thead><tbody><tr><td>Reuse</td><td>many models and columns</td><td>one rule</td></tr><tr><td>Defined in</td><td>YAML plus macro</td><td>SQL file</td></tr><tr><td>Best for</td><td>structural integrity, formats, ranges</td><td>business logic, reconciliation, cross-model</td></tr><tr><td>Maintenance</td><td>central macro</td><td>each file individually</td></tr></tbody></table></div>
+<h4>Practices</h4>
+<ul><li>Test <strong>primary keys and joins</strong> on every model, and sources too (catch bad loads early).</li><li>Use severity levels: <code>error</code> blocks pipelines for critical contracts, <code>warn</code> for monitoring.</li><li>Store failures with <code>--store-failures</code> to inspect bad rows in the warehouse.</li><li>Run tests in CI on changed models and in production after each load; add <strong>unit tests</strong> (dbt 1.8+) for transformation logic using mock inputs.</li><li>Alert on failures (dbt Cloud, Slack, Elementary) and track test coverage.</li></ul>
+<h4>Pitfalls</h4>
+<p>Over-testing trivial columns while skipping keys, slow full-table tests on huge models (use <code>where</code> limits), and singular tests that silently depend on production-only data.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you write your own generic test as a macro?</li><li>How do you set severity and thresholds so a test warns instead of fails?</li><li>Where do dbt-expectations and dbt_utils fit in?</li></ul>
+<p><a class="btn primary" href="../#/q/de-42">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-42%3A+What+is+the+difference+between+generic+dbt+tests+and+singular+custom%E2%80%A6&amp;question-id=de-42&amp;context=Data+engineer%2C+Gear+2%2C+topic%3A+Transformation%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-42.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

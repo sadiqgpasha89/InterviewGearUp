@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do automated data catalogs (DataHub, Amundsen) index metadata and facilitate data discovery? | InterviewGearUp</title>
+<meta name="description" content="Data catalogs such as DataHub and Amundsen collect technical metadata (schemas, tables, usage, lineage) by running ingestion connectors against…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-88.html">
+<meta property="og:title" content="How do automated data catalogs (DataHub, Amundsen) index metadata and facilitate data discovery? | InterviewGearUp">
+<meta property="og:description" content="Data catalogs such as DataHub and Amundsen collect technical metadata (schemas, tables, usage, lineage) by running ingestion connectors against…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-88.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do automated data catalogs (DataHub, Amundsen) index metadata and facilitate data discovery?</h1>
+<p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Governance · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Data catalogs such as DataHub and Amundsen collect technical metadata (schemas, tables, usage, lineage) by running ingestion connectors against warehouses, orchestrators, BI tools and streams. They store it in a graph and search index, enrich it with ownership, tags, glossary terms and popularity, and expose search, lineage and documentation so users can discover and trust data.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why catalogs</h4>
+<p>As data grows, analysts cannot find tables, do not know which is the trusted one, who owns it, how fresh it is, or what a column means. A <strong>data catalog</strong> is a searchable inventory of data assets with context.</p>
+<h4>DataHub (LinkedIn, now Acryl)</h4>
+<ul><li><strong>Metadata model</strong>: entities (datasets, dashboards, charts, pipelines, ML models, users, domains) with <strong>aspects</strong> (schema, ownership, tags, glossary terms, usage, lineage, properties). Stored in a metadata service (MySQL or Postgres), exposed via GraphQL and REST, indexed in <strong>Elasticsearch/OpenSearch</strong>, with a <strong>graph store</strong> for lineage; changes flow as events on <strong>Kafka</strong> (Metadata Change Events and Proposals) so integrations react in real time.</li><li><strong>Ingestion framework</strong>: recipes (YAML) run source connectors (Snowflake, BigQuery, Redshift, dbt, Airflow, Looker, Tableau, Kafka, Spark, Postgres, S3, Iceberg) and sink to the metadata service. Both <strong>pull</strong> (scheduled crawl) and <strong>push</strong> (Airflow plugin, Spark listener, OpenLineage, SDK emitters) are supported.</li></ul>
+<pre><code>source:
+  type: snowflake
+  config: {account_id: acme, username: datahub, include_table_lineage: true, include_column_lineage: true, profiling: {enabled: true}}
+sink:
+  type: datahub-rest
+  config: {server: http://datahub-gms:8080}</code></pre>
+<ul><li><strong>Features</strong>: full-text and faceted search, column-level lineage, usage-based ranking, glossary and domains, data products, ownership and stewardship, documentation, data contracts, assertions and quality results, access request workflows, and Actions framework for automation (notify owners, auto-tag PII, propagate tags through lineage).</li></ul>
+<h4>Amundsen (Lyft)</h4>
+<p>Simpler, discovery-focused catalog: a <strong>frontend</strong>, <strong>metadata service</strong> (Neo4j or Atlas graph), <strong>search service</strong> (Elasticsearch), and <strong>Databuilder</strong> ingestion library (Python extractors, transformers, loaders, run from Airflow). Highlights <strong>popularity ranking</strong> from query logs, table owners, frequent users, and previews/column stats. Less feature-rich for governance and lineage than DataHub or OpenMetadata, and a smaller community.</p>
+<h4>How discovery works</h4>
+<ol start="1"><li><strong>Ingest</strong> technical metadata automatically (tables, columns, types, partitions) and operational metadata (last updated, row counts, usage from query logs).</li><li><strong>Enrich</strong> with business metadata: descriptions (from dbt docs), owners, tiers (certified), tags (PII, finance), glossary terms, domains.</li><li><strong>Link</strong> assets through lineage so users see upstream sources and downstream dashboards.</li><li><strong>Index</strong> for search with ranking by popularity, certification, freshness.</li><li><strong>Present</strong> a search UI, API, Slack and BI integrations (see catalog info inside Tableau or Looker).</li></ol>
+<h4>Making it useful</h4>
+<ul><li>Establish <strong>ownership and stewardship</strong>; require descriptions for certified datasets.</li><li>Keep metadata <strong>fresh and automatic</strong>; sync with dbt and orchestrators; avoid manual-only catalogs that rot.</li><li>Classify and tag <strong>PII</strong> automatically and drive policy enforcement downstream (masking, access).</li><li>Define curated <strong>golden datasets</strong> and deprecate duplicates.</li><li>Measure adoption: searches, active users, documented asset percentage.</li></ul>
+<h4>Alternatives</h4>
+<p>OpenMetadata, Atlan, Collibra, Alation, Unity Catalog, Dataplex, AWS Glue Data Catalog and DataZone, Microsoft Purview.</p>
+<h4>Pitfalls</h4>
+<p>Treating the catalog as a one-time documentation project, no clear owners, ingesting everything without curation (noise), and catalog metadata disconnected from access controls.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does push-based ingestion differ from pull-based crawling?</li><li>How do you drive adoption and keep metadata fresh?</li><li>How do catalogs integrate with access control and data quality tooling?</li></ul>
+<p><a class="btn primary" href="../#/q/de-88">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-88%3A+How+do+automated+data+catalogs+%28DataHub%2C+Amundsen%29+index+metadata%E2%80%A6&amp;question-id=de-88&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Governance%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-88.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>
