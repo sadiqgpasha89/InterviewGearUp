@@ -31,9 +31,10 @@
       if (a.dataset.tab === tab) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
     app.replaceChildren();
-    const titles = { questions: 'Question bank', drill: 'Drill', community: 'Community', post: 'Post a question' };
+    const titles = { questions: 'Question bank', drill: 'Drill', progress: 'Progress', community: 'Community', post: 'Post a question' };
     document.title = (titles[tab] || 'Question bank') + ' | InterviewGearUp';
-    if (tab === 'drill') drillView();
+    if (tab === 'drill') drillView(r.params);
+    else if (tab === 'progress') progressView();
     else if (tab === 'community') communityView(r.params);
     else if (tab === 'post') postView();
     else questionsView(r);
@@ -55,11 +56,50 @@
     return f;
   }
 
-  const done = {
-    all: function () { return store.get('done', {}); },
-    has: function (id) { return !!store.get('done', {})[id]; },
-    toggle: function (id) { const d = store.get('done', {}); if (d[id]) delete d[id]; else d[id] = 1; store.set('done', d); return !!d[id]; }
+  const S = IGU.stats;
+  function touchActivity() { store.set('activity', S.touch(store.get('activity', []))); }
+
+  /* A set of question ids kept in localStorage under one key. */
+  function idSet(key) {
+    return {
+      all: function () { return store.get(key, {}); },
+      has: function (id) { return !!store.get(key, {})[id]; },
+      toggle: function (id) { const d = store.get(key, {}); if (d[id]) delete d[id]; else d[id] = 1; store.set(key, d); touchActivity(); return !!d[id]; }
+    };
+  }
+  const done = idSet('done');
+  const saved = idSet('saved');
+  const notes = {
+    get: function (id) { return store.get('notes', {})[id] || ''; },
+    set: function (id, text) {
+      const n = store.get('notes', {});
+      if (text.trim()) n[id] = text.slice(0, 4000); else delete n[id];
+      store.set('notes', n);
+    }
   };
+
+  /* Status filters shared by the bank (?show=) and drill pool. */
+  const SHOW = [
+    { id: '', label: 'All' },
+    { id: 'todo', label: 'To prepare' },
+    { id: 'done', label: 'Prepared' },
+    { id: 'saved', label: 'Saved' },
+    { id: 'weak', label: 'Needs practice' },
+    { id: 'notes', label: 'With notes' }
+  ];
+  function showFilter(mode) {
+    if (!mode) return function () { return true; };
+    const d = done.all(), sv = saved.all(), nt = store.get('notes', {});
+    const wk = {}; S.weak(store.get('practice', {})).forEach(function (id) { wk[id] = 1; });
+    return function (e) {
+      if (mode === 'todo') return !d[e.id];
+      if (mode === 'done') return !!d[e.id];
+      if (mode === 'saved') return !!sv[e.id];
+      if (mode === 'weak') return !!wk[e.id];
+      if (mode === 'notes') return !!nt[e.id];
+      return true;
+    };
+  }
 
   function selectField(id, label, options, value, extra) {
     return h('div', null,
@@ -77,13 +117,17 @@
       role: r.params.get('role') || '',
       level: Number(r.params.get('level')) || 0,
       q: r.params.get('q') || '',
+      show: r.params.get('show') || '',
       limit: PAGE
     };
+    if (!SHOW.some(function (s) { return s.id === f.show; })) f.show = '';
     const openEntry = openId ? bank.filter(function (e) { return e.id === openId; })[0] : null;
+    let showOk = showFilter(f.show);
 
     function matches(e, skipRole) {
       if (!skipRole && f.role && e.role !== f.role) return false;
       if (f.level && e.level !== f.level) return false;
+      if (!showOk(e)) return false;
       if (f.q.trim()) {
         const hay = (e.q + ' ' + e.topic + ' ' + (e.tags || []).join(' ') + ' ' + e.short + ' ' + e.detail).toLowerCase();
         return f.q.toLowerCase().split(/\s+/).filter(Boolean).every(function (t) { return hay.indexOf(t) >= 0; });
@@ -108,6 +152,7 @@
       if (f.role) p.set('role', f.role);
       if (f.level) p.set('level', f.level);
       if (f.q.trim()) p.set('q', f.q.trim());
+      if (f.show) p.set('show', f.show);
       const s = p.toString();
       history.replaceState(null, '', '#/questions' + (s ? '?' + s : ''));
     }
@@ -171,15 +216,28 @@
         total ? h('span', { class: 'progress', role: 'img', 'aria-label': doneN + ' of ' + total + ' prepared' }, fill) : null);
     }
 
-    function paint() { paintSide(); paintList(); }
+    const chips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Show' });
+    function paintChips() {
+      chips.replaceChildren();
+      SHOW.forEach(function (s) {
+        chips.appendChild(h('button', {
+          type: 'button', class: 'chip', 'aria-pressed': f.show === s.id ? 'true' : 'false',
+          onclick: function () { f.show = s.id; showOk = showFilter(f.show); f.limit = PAGE; sync(); paint(); }
+        }, s.label));
+      });
+    }
+
+    function paint() { paintChips(); paintSide(); paintList(); }
 
     function qRow(e, open) {
       const mark = h('span', { class: 'done' + (done.has(e.id) ? ' on' : ''), title: 'Prepared' }, '✓');
+      const star = h('span', { class: 'star' + (saved.has(e.id) ? ' on' : ''), title: 'Saved', 'aria-hidden': 'true' }, '★');
       const d = h('details', { class: 'q', id: 'q-' + e.id, open: open },
         h('summary', null, gearBadge(e.level),
           h('div', null, h('div', { class: 'qt' }, e.q),
-            h('div', { class: 'qm' }, h('span', null, roleName(e.role)), h('span', null, e.topic))),
-          mark));
+            h('div', { class: 'qm' }, h('span', null, roleName(e.role)), h('span', null, e.topic),
+              notes.get(e.id) ? h('span', { class: 'has-note' }, 'Has notes') : null)),
+          h('span', { class: 'marks' }, star, mark)));
       function build() {
         if (d.dataset.built) return;
         d.dataset.built = '1';
@@ -197,7 +255,26 @@
           if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(ok, function () { location.hash = '#/q/' + e.id; });
           else location.hash = '#/q/' + e.id;
         });
-        d.appendChild(h('div', { class: 'q-body' }, answerBody(e), h('div', { class: 'q-actions' }, prepared, copy)));
+        const save = h('button', { class: 'btn small ghost', type: 'button', 'aria-pressed': saved.has(e.id) ? 'true' : 'false' }, saved.has(e.id) ? '★ Saved' : '☆ Save for later');
+        save.addEventListener('click', function () {
+          const on = saved.toggle(e.id);
+          save.textContent = on ? '★ Saved' : '☆ Save for later';
+          save.setAttribute('aria-pressed', on ? 'true' : 'false');
+          star.classList.toggle('on', on);
+        });
+        const noteId = 'note-' + e.id;
+        const noteBox = h('textarea', { id: noteId, class: 'note', maxlength: '4000', placeholder: 'Your own talking points, a story from your experience, or what to revisit. Saved in this browser only.' });
+        noteBox.value = notes.get(e.id);
+        const noteState = h('span', { class: 'muted small-text', 'aria-live': 'polite' });
+        let noteTimer = null;
+        noteBox.addEventListener('input', function () {
+          clearTimeout(noteTimer);
+          noteTimer = setTimeout(function () { notes.set(e.id, noteBox.value); noteState.textContent = 'Saved'; }, 400);
+        });
+        d.appendChild(h('div', { class: 'q-body' }, answerBody(e),
+          h('div', { class: 'notes' }, h('label', { for: noteId }, 'My notes ', noteState), noteBox),
+          h('div', { class: 'q-actions' }, prepared, save, copy,
+            h('a', { class: 'btn small ghost', href: '#/drill?id=' + encodeURIComponent(e.id) }, 'Drill this'))));
       }
       d.addEventListener('toggle', function () { if (d.open) build(); });
       if (open) build();
@@ -213,8 +290,17 @@
         h('p', { class: 'lede' }, 'Questions run from first gear (junior) to fourth (lead or staff). Open one for a 30-second answer, then the full explanation.'),
         openId && !openEntry ? h('p', { class: 'notice bad' }, 'That question link is not in the bank. Showing everything instead.') : null,
         h('div', { class: 'search' }, input),
+        chips,
         status, list, more)));
     paint();
+    const slash = function (ev) {
+      if (ev.key !== '/' || ev.ctrlKey || ev.metaKey || ev.altKey) return;
+      const t = ev.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
+      ev.preventDefault(); input.focus();
+    };
+    document.addEventListener('keydown', slash);
+    cleanup = function () { document.removeEventListener('keydown', slash); };
     if (openEntry) {
       const el = document.getElementById('q-' + openId);
       if (el) setTimeout(function () { el.scrollIntoView({ block: 'start' }); }, 0);
@@ -222,11 +308,28 @@
   }
 
   /* ---------------- drill ---------------- */
-  function drillView() {
-    const st = { role: '', level: 0, current: null, shown: false, t0: 0, timer: null, last: null };
+  function drillView(params) {
+    const st = { role: '', level: 0, pool: '', current: null, shown: false, t0: 0, secs: 0, timer: null, last: null,
+      session: { n: 0, ok: 0, again: 0, secs: 0 } };
+    const POOLS = [
+      { id: '', label: 'Everything (unprepared first)' },
+      { id: 'weak', label: 'Needs practice' },
+      { id: 'saved', label: 'Saved for later' },
+      { id: 'todo', label: 'Not yet prepared' }
+    ];
     const stage = h('div');
+    const summary = h('p', { class: 'muted small-text', 'aria-live': 'polite' });
     function pool() {
-      return bank.filter(function (e) { return (!st.role || e.role === st.role) && (!st.level || e.level === st.level); });
+      const ok = showFilter(st.pool);
+      return bank.filter(function (e) { return (!st.role || e.role === st.role) && (!st.level || e.level === st.level) && ok(e); });
+    }
+    function begin(e) {
+      st.current = e;
+      st.last = e.id;
+      st.shown = false;
+      st.t0 = Date.now();
+      startTimer();
+      paint();
     }
     function draw() {
       const p = pool();
@@ -235,12 +338,21 @@
       let fresh = p.filter(function (e) { return !d[e.id] && e.id !== st.last; });
       if (!fresh.length) fresh = p.filter(function (e) { return e.id !== st.last; });
       if (!fresh.length) fresh = p;
-      st.current = fresh[Math.floor(Math.random() * fresh.length)];
-      st.last = st.current.id;
-      st.shown = false;
-      st.t0 = Date.now();
-      startTimer();
-      paint();
+      begin(fresh[Math.floor(Math.random() * fresh.length)]);
+    }
+    function grade(outcome) {
+      const e = st.current;
+      store.set('practice', S.record(store.get('practice', {}), e.id, outcome, st.secs));
+      touchActivity();
+      if (outcome === 'ok' && !done.has(e.id)) done.toggle(e.id);
+      st.session.n++; st.session[outcome]++; st.session.secs += st.secs;
+      paintSummary();
+      draw();
+    }
+    function paintSummary() {
+      const s = st.session;
+      summary.textContent = s.n ? 'This session: ' + s.n + ' answered, ' + s.ok + ' confident, ' + s.again + ' to revisit, average ' +
+        Math.round(s.secs / s.n) + 's per question.' : '';
     }
     function startTimer() {
       stopTimer();
@@ -253,47 +365,169 @@
       }, 500);
     }
     function stopTimer() { if (st.timer) { clearInterval(st.timer); st.timer = null; } }
-    cleanup = stopTimer;
+    function reveal() { st.shown = true; st.secs = (Date.now() - st.t0) / 1000; stopTimer(); paint(); }
+
+    /* Shortcuts: R reveal, N skip/next, Y could answer, P needs practice. Ignored while typing. */
+    function onKey(ev) {
+      if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
+      const t = ev.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
+      const k = ev.key.toLowerCase();
+      if (!st.current) { if (k === 'n' && pool().length) { ev.preventDefault(); draw(); } return; }
+      if (!st.shown && k === 'r') { ev.preventDefault(); reveal(); }
+      else if (!st.shown && k === 'n') { ev.preventDefault(); draw(); }
+      else if (st.shown && k === 'y') { ev.preventDefault(); grade('ok'); }
+      else if (st.shown && k === 'p') { ev.preventDefault(); grade('again'); }
+    }
+    document.addEventListener('keydown', onKey);
+    cleanup = function () { stopTimer(); document.removeEventListener('keydown', onKey); };
 
     function paint() {
       stage.replaceChildren();
       if (!st.current) {
-        stage.appendChild(h('div', { class: 'drill-card' }, h('p', { class: 'muted' }, pool().length ? 'Press Draw a question to start.' : 'No questions in this selection. Pick another role or gear.'),
-          h('div', { class: 'drill-row' }, h('button', { class: 'btn primary', type: 'button', disabled: !pool().length, onclick: draw }, 'Draw a question'))));
+        const n = pool().length;
+        const empty = st.pool === 'weak' ? 'Nothing marked "needs practice" yet. Drill a few questions first.' :
+          st.pool === 'saved' ? 'No saved questions in this selection. Use "Save for later" in the question bank.' :
+          'No questions in this selection. Pick another role or gear.';
+        stage.appendChild(h('div', { class: 'drill-card' }, h('p', { class: 'muted' }, n ? n + (n === 1 ? ' question' : ' questions') + ' in this pool. Press Draw a question (or N) to start.' : empty),
+          h('div', { class: 'drill-row' }, h('button', { class: 'btn primary', type: 'button', disabled: !n, onclick: draw }, 'Draw a question'))));
         return;
       }
       const e = st.current;
+      const hist = store.get('practice', {})[e.id];
       const card = h('div', { class: 'drill-card' },
         h('div', { class: 'drill-row' }, gearBadge(e.level), h('span', { class: 'muted' }, roleName(e.role) + ', ' + e.topic), h('span', { class: 'grow' }),
-          h('span', { class: 'timer', id: 'timer', role: 'timer', 'aria-label': 'Time spent' }, '0:00')),
+          h('span', { class: 'timer', id: 'timer', role: 'timer', 'aria-label': 'Time spent' }, st.shown ? Math.floor(st.secs / 60) + ':' + String(Math.floor(st.secs % 60)).padStart(2, '0') : '0:00')),
         h('div', { class: 'drill-q' }, e.q),
+        hist ? h('p', { class: 'muted small-text' }, 'Drilled ' + hist.n + (hist.n === 1 ? ' time' : ' times') + ': ' + hist.ok + ' confident, ' + hist.again + ' to revisit.') : null,
         h('p', { class: 'muted' }, 'Answer out loud first. Aim for about two minutes, then reveal the answer and compare.'));
       if (!st.shown) {
         card.appendChild(h('div', { class: 'drill-row' },
-          h('button', { class: 'btn primary', type: 'button', onclick: function () { st.shown = true; stopTimer(); paint(); } }, 'Reveal answer'),
-          h('button', { class: 'btn ghost', type: 'button', onclick: draw }, 'Skip')));
+          h('button', { class: 'btn primary', type: 'button', onclick: reveal }, 'Reveal answer'),
+          h('button', { class: 'btn ghost', type: 'button', onclick: draw }, 'Skip'),
+          h('span', { class: 'kbd-hint' }, h('kbd', null, 'R'), ' reveal  ', h('kbd', null, 'N'), ' skip')));
       } else {
-        const body = h('div', { class: 'q-body' }, answerBody(e));
-        body.style.padding = '0';
+        const body = h('div', { class: 'q-body flush' }, answerBody(e));
         card.appendChild(body);
+        const note = notes.get(e.id);
+        if (note) card.appendChild(h('div', { class: 'short' }, h('h4', null, 'Your notes'), h('p', { class: 'userq plain' }, note)));
         card.appendChild(h('div', { class: 'q-actions' },
-          h('button', { class: 'btn primary', type: 'button', onclick: function () { if (!done.has(e.id)) done.toggle(e.id); draw(); } }, 'I could answer this'),
-          h('button', { class: 'btn', type: 'button', onclick: draw }, 'Needs more practice')));
+          h('button', { class: 'btn primary', type: 'button', onclick: function () { grade('ok'); } }, 'I could answer this'),
+          h('button', { class: 'btn', type: 'button', onclick: function () { grade('again'); } }, 'Needs more practice'),
+          h('span', { class: 'kbd-hint' }, h('kbd', null, 'Y'), ' confident  ', h('kbd', null, 'P'), ' practise again')));
       }
       stage.appendChild(card);
     }
 
-    const roleSel = h('select', { id: 'd-role', onchange: function () { st.role = roleSel.value; st.current = null; stopTimer(); paint(); } },
+    const resetDraw = function () { st.current = null; stopTimer(); paint(); };
+    const roleSel = h('select', { id: 'd-role', onchange: function () { st.role = roleSel.value; resetDraw(); } },
       [h('option', { value: '' }, 'All roles')].concat(meta.roles.map(function (r) { return h('option', { value: r.id }, r.name); })));
-    const lvlSel = h('select', { id: 'd-level', onchange: function () { st.level = Number(lvlSel.value); st.current = null; stopTimer(); paint(); } },
+    const lvlSel = h('select', { id: 'd-level', onchange: function () { st.level = Number(lvlSel.value); resetDraw(); } },
       [h('option', { value: '0' }, 'All gears')].concat(meta.levels.map(function (l) { return h('option', { value: String(l.n) }, l.n + ' ' + l.name); })));
+    const poolSel = h('select', { id: 'd-pool', onchange: function () { st.pool = poolSel.value; resetDraw(); } },
+      POOLS.map(function (p) { return h('option', { value: p.id }, p.label); }));
 
     app.appendChild(h('div', { class: 'drill' },
       h('h1', null, 'Drill'),
-      h('p', { class: 'lede' }, 'Random questions with a timer, for practising answers out loud. Questions you mark as prepared come up less often.'),
-      h('div', { class: 'drill-filters' }, h('div', null, h('label', { for: 'd-role' }, 'Role'), roleSel), h('div', null, h('label', { for: 'd-level' }, 'Gear'), lvlSel)),
-      stage));
-    paint();
+      h('p', { class: 'lede' }, 'Random questions with a timer, for practising answers out loud. Grade yourself after each one: questions you struggle with go into a "Needs practice" pool you can drill on their own.'),
+      h('div', { class: 'drill-filters three' },
+        h('div', null, h('label', { for: 'd-role' }, 'Role'), roleSel),
+        h('div', null, h('label', { for: 'd-level' }, 'Gear'), lvlSel),
+        h('div', null, h('label', { for: 'd-pool' }, 'Pool'), poolSel)),
+      stage, summary));
+    const want = params && params.get('id');
+    const pick = want ? bank.filter(function (e) { return e.id === want; })[0] : null;
+    if (pick) begin(pick); else paint();
+  }
+
+  /* ---------------- progress ---------------- */
+  function progressView() {
+    const m = S.matrix(bank, done.all(), meta);
+    const practice = store.get('practice', {});
+    const weakIds = S.weak(practice);
+    const drilled = Object.keys(practice).length;
+    const streakDays = S.streak(store.get('activity', []));
+    const savedN = Object.keys(saved.all()).length;
+    const notesN = Object.keys(store.get('notes', {})).length;
+    const pct = function (a, b) { return b ? Math.round(100 * a / b) : 0; };
+    const bar = function (a, b, label) {
+      const fill = h('i'); fill.style.width = pct(a, b) + '%';
+      return h('span', { class: 'progress', role: 'img', 'aria-label': label || (a + ' of ' + b + ' prepared') }, fill);
+    };
+
+    const tiles = h('div', { class: 'tiles' },
+      tile(pct(m.done, m.total) + '%', m.done + ' of ' + m.total + ' prepared', '#/questions?show=done'),
+      tile(String(streakDays), streakDays === 1 ? 'day study streak' : 'days study streak', null),
+      tile(String(drilled), drilled === 1 ? 'question drilled' : 'questions drilled', '#/drill'),
+      tile(String(weakIds.length), 'need more practice', weakIds.length ? '#/questions?show=weak' : null),
+      tile(String(savedN), 'saved for later', savedN ? '#/questions?show=saved' : null),
+      tile(String(notesN), 'with your notes', notesN ? '#/questions?show=notes' : null));
+    function tile(big, small, href) {
+      const inner = [h('strong', null, big), h('span', null, small)];
+      return href ? h('a', { class: 'tile', href: href }, inner) : h('div', { class: 'tile' }, inner);
+    }
+
+    const table = h('table', { class: 'matrix' },
+      h('caption', { class: 'sr-only' }, 'Prepared questions by role and gear'),
+      h('thead', null, h('tr', null, h('th', { scope: 'col' }, 'Role'),
+        meta.levels.map(function (l) { return h('th', { scope: 'col' }, 'Gear ' + l.n, h('span', { class: 'gyears' }, l.name)); }),
+        h('th', { scope: 'col' }, 'Total'))),
+      h('tbody', null, m.rows.map(function (r) {
+        return h('tr', null,
+          h('th', { scope: 'row' }, h('a', { href: '#/questions?role=' + r.role }, r.name)),
+          r.cells.map(function (c) {
+            return h('td', null, h('a', { href: '#/questions?role=' + r.role + '&level=' + c.level + '&show=todo', title: 'Show what is left to prepare' },
+              h('span', { class: 'num' }, c.done + '/' + c.total), bar(c.done, c.total)));
+          }),
+          h('td', null, h('span', { class: 'num' }, pct(r.done, r.total) + '%'), bar(r.done, r.total)));
+      })));
+
+    const weakList = weakIds.length ? h('ul', { class: 'plain-list' }, weakIds.slice(0, 15).map(function (id) {
+      const e = bank.filter(function (x) { return x.id === id; })[0];
+      return e ? h('li', null, gearBadge(e.level), h('a', { href: '#/q/' + e.id }, e.q)) : null;
+    })) : h('p', { class: 'muted' }, 'Nothing yet. In Drill, press "Needs more practice" on questions you struggle with and they collect here.');
+
+    /* Backup: progress lives in this browser only, so let people move it between devices. API keys are never exported. */
+    const msg = h('p', { class: 'notice', hidden: true, 'aria-live': 'polite' });
+    const fileIn = h('input', { type: 'file', accept: 'application/json,.json', id: 'import-file', class: 'sr-only' });
+    fileIn.addEventListener('change', function () {
+      const file = fileIn.files && fileIn.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function () {
+        let parsed;
+        try { parsed = JSON.parse(String(reader.result)); } catch (e) { parsed = null; }
+        const res = S.readBackup(parsed);
+        if (res.error) { msg.className = 'notice bad'; msg.textContent = res.error; msg.hidden = false; return; }
+        if (!confirm('Replace the progress in this browser with the backup?')) return;
+        Object.keys(res.data).forEach(function (k) { store.set(k, res.data[k]); });
+        render();
+      };
+      reader.readAsText(file);
+    });
+    const exportBtn = h('button', { class: 'btn', type: 'button' }, 'Download backup');
+    exportBtn.addEventListener('click', function () {
+      const blob = new Blob([JSON.stringify(S.makeBackup(function (k) { return store.get(k, null); }), null, 2)], { type: 'application/json' });
+      const a = h('a', { href: URL.createObjectURL(blob), download: 'interviewgearup-backup-' + new Date().toISOString().slice(0, 10) + '.json' });
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+      msg.className = 'notice'; msg.textContent = 'Backup downloaded. It contains progress, saved questions, notes and drafts, but never your API key.'; msg.hidden = false;
+    });
+
+    app.appendChild(h('div', { class: 'progress-page' },
+      h('h1', null, 'Your progress'),
+      h('p', { class: 'lede' }, 'Everything here is stored in this browser only. Download a backup to move it to another device.'),
+      tiles,
+      h('h2', null, 'Coverage by role and gear'),
+      h('div', { class: 'table-wrap' }, table),
+      h('h2', null, 'Needs more practice'),
+      weakList,
+      weakIds.length ? h('p', null, h('a', { class: 'btn primary', href: '#/drill' }, 'Drill these'), ' ', h('span', { class: 'muted small-text' }, 'Choose the "Needs practice" pool.')) : null,
+      h('h2', null, 'Backup and restore'),
+      msg,
+      h('div', { class: 'q-actions' }, exportBtn,
+        h('button', { class: 'btn ghost', type: 'button', onclick: function () { fileIn.value = ''; fileIn.click(); } }, 'Restore from backup'),
+        h('label', { for: 'import-file', class: 'sr-only' }, 'Backup file'), fileIn)));
   }
 
   /* ---------------- profile and posting ---------------- */
@@ -734,7 +968,7 @@
     render();
   });
   document.getElementById('wipe').addEventListener('click', function () {
-    if (!confirm('Delete your profile, posts, progress and API key from this browser?')) return;
+    if (!confirm('Delete your profile, posts, progress, notes, saved questions and API key from this browser? Download a backup from the Progress page first if you want to keep them.')) return;
     store.wipe();
     dlg.close('cancel');
     location.hash = '#/questions';
@@ -746,6 +980,35 @@
   links.appendChild(h('a', { href: 'https://sadiqgpasha89.github.io', rel: 'noopener noreferrer' }, 'Portfolio'));
   links.appendChild(h('a', { href: repo, rel: 'noopener noreferrer' }, 'Source on GitHub'));
   links.appendChild(h('a', { href: repo + '/issues/new', rel: 'noopener noreferrer' }, 'Report a wrong answer'));
+
+  /* Theme: Auto (follow OS) -> Light -> Dark. theme.js applies the saved choice before first paint. */
+  const themeBtn = document.getElementById('theme-toggle');
+  const THEMES = ['auto', 'light', 'dark'];
+  function applyTheme(t) {
+    if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+    else document.documentElement.removeAttribute('data-theme');
+    if (themeBtn) {
+      themeBtn.textContent = t === 'light' ? 'Light' : t === 'dark' ? 'Dark' : 'Auto';
+      themeBtn.setAttribute('aria-label', 'Colour theme: ' + t + '. Click to change.');
+      themeBtn.title = 'Theme: ' + t;
+    }
+  }
+  if (themeBtn) {
+    applyTheme(store.get('theme', 'auto'));
+    themeBtn.addEventListener('click', function () {
+      const cur = store.get('theme', 'auto');
+      const next = THEMES[(THEMES.indexOf(cur) + 1) % THEMES.length];
+      store.set('theme', next);
+      applyTheme(next);
+    });
+  }
+
+  /* Offline support: cache the app shell and question bank so it works on a flight or a patchy commute. */
+  if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator && location.protocol === 'https:') {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js').catch(function (e) { console.warn('Offline mode unavailable:', e); });
+    });
+  }
 
   window.addEventListener('hashchange', render);
   render();
