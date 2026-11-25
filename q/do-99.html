@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does `iptables` NAT (Network Address Translation) forward traffic in container environments? | InterviewGearUp</title>
+<meta name="description" content="iptables NAT rewrites packet addresses in the kernel&#39;s netfilter nat table. DNAT in PREROUTING redirects incoming traffic to a different destination (for…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-99.html">
+<meta property="og:title" content="How does `iptables` NAT (Network Address Translation) forward traffic in container environments? | InterviewGearUp">
+<meta property="og:description" content="iptables NAT rewrites packet addresses in the kernel&#39;s netfilter nat table. DNAT in PREROUTING redirects incoming traffic to a different destination (for…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-99.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does `iptables` NAT (Network Address Translation) forward traffic in container environments?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 2 (Mid-level) · Linux · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>iptables NAT rewrites packet addresses in the kernel&#39;s netfilter nat table. DNAT in PREROUTING redirects incoming traffic to a different destination (for example a container), and SNAT or MASQUERADE in POSTROUTING rewrites the source so replies return through the host. Connection tracking (conntrack) remembers each translation so reply packets are automatically reversed.</p></div>
+<h4>Explained in depth</h4>
+<h4>Netfilter hooks and tables</h4>
+<p>Packets traverse netfilter hooks: <strong>PREROUTING</strong> (before the routing decision), <strong>INPUT</strong> (to local processes), <strong>FORWARD</strong> (routed through the host), <strong>OUTPUT</strong> (from local processes), <strong>POSTROUTING</strong> (after routing, leaving the host). The <strong>nat</strong> table is consulted only for the <strong>first packet</strong> of a connection; the result is stored in the conntrack table and applied to all later packets of the flow and, reversed, to replies.</p>
+<h4>Key target types</h4>
+<ul><li><strong>DNAT</strong> (destination NAT), in PREROUTING and OUTPUT: change the destination address or port (port forwarding, load balancing).</li><li><strong>SNAT</strong>: change the source address to a fixed IP in POSTROUTING.</li><li><strong>MASQUERADE</strong>: like SNAT but uses the outgoing interface&#39;s current IP (good for dynamic addresses).</li><li><strong>REDIRECT</strong>: DNAT to the local machine&#39;s port (transparent proxies).</li></ul>
+<h4>Container networking example (Docker bridge)</h4>
+<p>Containers get private IPs (<code>172.17.0.0/16</code>) on a bridge <code>docker0</code>. The host acts as a router:</p>
+<pre><code># Outbound: containers reach the internet; replies come back to the host&#39;s public IP
+iptables -t nat -A POSTROUTING -s 172.17.0.0/16 ! -o docker0 -j MASQUERADE
+
+# Published port: docker run -p 8080:80 -&gt; DNAT incoming traffic on host:8080 to the container
+iptables -t nat -A DOCKER ! -i docker0 -p tcp --dport 8080 -j DNAT --to-destination 172.17.0.2:80
+iptables -A FORWARD -d 172.17.0.2 -p tcp --dport 80 -j ACCEPT      # allow forwarding to it
+sysctl -w net.ipv4.ip_forward=1                                     # required to route between interfaces</code></pre>
+<p>Flow for <code>curl host:8080</code>: packet arrives on the host NIC → PREROUTING <code>DOCKER</code> chain DNAT rewrites destination to <code>172.17.0.2:80</code> → routing decides FORWARD → filter FORWARD allows → POSTROUTING (no change for this direction) → container replies; conntrack <strong>un-NATs</strong> the reply so the client sees it coming from <code>host:8080</code>. For outbound traffic from a container to the internet, POSTROUTING MASQUERADE rewrites the source <code>172.17.0.2:51000</code> to the host&#39;s address with a unique port, and replies are mapped back.</p>
+<h4>Kubernetes</h4>
+<p>kube-proxy in iptables mode programs <code>KUBE-SERVICES</code> and <code>KUBE-SVC-*</code> chains: DNAT from a Service ClusterIP and port to a randomly chosen pod IP (using the <code>statistic</code> match), and <code>KUBE-MARK-MASQ</code> plus <code>KUBE-POSTROUTING</code> MASQUERADE for traffic that needs source rewriting (NodePorts, hairpin). The CNI plugin and cloud routes handle pod-to-pod addressing without NAT in most designs.</p>
+<h4>Inspecting and debugging</h4>
+<pre><code>iptables -t nat -L -n -v --line-numbers          # rules and packet counters
+iptables-save -t nat                             # exact ruleset
+conntrack -L | head ; conntrack -S               # translation entries and stats
+sysctl net.netfilter.nf_conntrack_max net.netfilter.nf_conntrack_count
+tcpdump -ni any host 172.17.0.2                  # observe addresses before and after NAT
+nft list ruleset                                 # on nftables-based systems (iptables-nft shim)</code></pre>
+<h4>Operational pitfalls</h4>
+<ul><li><strong>conntrack table full</strong> (<code>nf_conntrack: table full, dropping packet</code> in dmesg) under many short connections or UDP flows: raise <code>nf_conntrack_max</code>, tune timeouts, and bypass tracking for hot traffic (<code>-t raw -j NOTRACK</code>).</li><li>Missing <code>ip_forward</code> or FORWARD rules (packets silently dropped), rule order mistakes (first match wins), duplicate rules after repeated scripts, and firewalls (firewalld, ufw) overwriting manual rules; use persistent configuration (<code>iptables-persistent</code>, nftables files).</li><li><strong>Port exhaustion</strong> with SNAT to a single IP at high connection rates (use multiple source IPs or <code>--random</code>/port ranges).</li><li><strong>Hairpin NAT</strong> (container reaching its own published port through the host IP) needs special handling.</li><li>Source IP loss with MASQUERADE (use <code>externalTrafficPolicy: Local</code> or DSR if client IP matters).</li><li>Modern systems move to <strong>nftables</strong> and eBPF (Cilium) which avoid long linear rule lists.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does Docker use MASQUERADE for outbound container traffic and DNAT for published ports?</li><li>What is conntrack and how can its table become a bottleneck?</li><li>How does Kubernetes kube-proxy use NAT chains for Services?</li></ul>
+<p><a class="btn primary" href="../#/q/do-99">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-99%3A+How+does+%60iptables%60+NAT+%28Network+Address+Translation%29+forward%E2%80%A6&amp;question-id=do-99&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+2%2C+topic%3A+Linux%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-99.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

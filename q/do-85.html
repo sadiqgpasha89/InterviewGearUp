@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain the difference between soft interrupts (softirqs) and hard interrupts in network performance. | InterviewGearUp</title>
+<meta name="description" content="Hard interrupts are signals from hardware (a NIC raising an IRQ) that preempt the CPU immediately and run a short handler. Softirqs are deferred,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-85.html">
+<meta property="og:title" content="Explain the difference between soft interrupts (softirqs) and hard interrupts in network performance. | InterviewGearUp">
+<meta property="og:description" content="Hard interrupts are signals from hardware (a NIC raising an IRQ) that preempt the CPU immediately and run a short handler. Softirqs are deferred,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-85.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain the difference between soft interrupts (softirqs) and hard interrupts in network performance.</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · Linux · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Hard interrupts are signals from hardware (a NIC raising an IRQ) that preempt the CPU immediately and run a short handler. Softirqs are deferred, high-priority kernel work (such as NET_RX packet processing) scheduled by the handler and run shortly after, often on the same CPU. Heavy packet rates can saturate one CPU&#39;s softirq processing, so tuning involves RSS, RPS, NAPI and IRQ affinity.</p></div>
+<h4>Explained in depth</h4>
+<h4>Packet receive path</h4>
+<ol start="1"><li>The NIC DMA-writes packets into receive ring buffers in memory.</li><li>It raises a <strong>hard interrupt (IRQ)</strong> to the CPU (or MSI-X vector tied to a queue).</li><li>The CPU stops current work and runs the <strong>top half</strong>, the interrupt handler: minimal, with interrupts masked: acknowledges the device, disables further RX interrupts for that queue, and schedules a softirq.</li><li>The <strong>bottom half</strong> runs as <strong>NET_RX softirq</strong> (<code>ksoftirqd/N</code> threads when overloaded): the kernel polls the ring using <strong>NAPI</strong>, builds <code>sk_buff</code> structures, runs GRO, the IP and TCP/UDP stack, netfilter, and queues data to sockets.</li><li>The application reads from the socket.</li></ol>
+<h4>Hard interrupt versus softirq</h4>
+<div class="md-table"><table><thead><tr><th></th><th>Hard interrupt</th><th>Softirq</th></tr></thead><tbody><tr><td>Trigger</td><td>hardware signal</td><td>raised by kernel code (often at the end of a hard IRQ)</td></tr><tr><td>Context</td><td>interrupt context, other interrupts of that line masked</td><td>interrupt-like context, can be preempted by hard IRQs, cannot sleep</td></tr><tr><td>Duration</td><td>microseconds, must be tiny</td><td>can run longer, bounded by budget</td></tr><tr><td>Purpose</td><td>acknowledge hardware, queue work</td><td>heavy deferred processing: networking (NET_RX, NET_TX), timers, RCU, block, tasklets</td></tr><tr><td>Visibility</td><td><code>/proc/interrupts</code>, <code>%irq</code> in mpstat</td><td><code>/proc/softirqs</code>, <code>%soft</code> in mpstat, <code>ksoftirqd</code> threads</td></tr></tbody></table></div>
+<h4>NAPI</h4>
+<p>At high packet rates one interrupt per packet would overwhelm the CPU (&quot;interrupt livelock&quot;). NAPI uses an interrupt to start polling, then <strong>polls up to a budget</strong> (<code>net.core.netdev_budget</code>, default 300 packets or 2 jiffies) with the device interrupt disabled; when the queue empties, it re-enables interrupts. Interrupt coalescing (<code>ethtool -C eth0 rx-usecs 50</code>) further batches interrupts, trading latency for throughput.</p>
+<h4>Why it matters for performance</h4>
+<p>A single NIC queue interrupts one CPU, which then runs the whole receive path; at multi-million packets per second that CPU reaches 100 percent in softirq while others idle, causing drops (<code>rx_dropped</code>, ring overflow) and latency. Symptoms: one core at 100 percent <code>%soft</code>, <code>ksoftirqd/N</code> high in <code>top</code>, <code>softnet_stat</code> drops and time-squeeze counters, <code>netstat -s</code> drops.</p>
+<h4>Tuning</h4>
+<ul><li><strong>Multiple queues and RSS</strong> (Receive Side Scaling): NIC hashes flows (5-tuple) onto several RX queues, each with its own IRQ; <code>ethtool -l eth0</code> and <code>-L eth0 combined 8</code>.</li><li><strong>IRQ affinity</strong>: spread queue IRQs across cores (<code>/proc/irq/N/smp_affinity</code>, <code>irqbalance</code>, or pin to the NIC&#39;s NUMA node).</li><li><strong>RPS/RFS/XPS</strong> (software equivalents when hardware queues are fewer): <code>/sys/class/net/eth0/queues/rx-0/rps_cpus</code>; RFS steers packets to the CPU where the consuming thread runs, improving cache locality.</li><li>Increase ring sizes (<code>ethtool -G eth0 rx 4096</code>), tune <code>netdev_budget</code> and <code>netdev_budget_usecs</code>, enable GRO/GSO/TSO offloads, use jumbo frames where supported, and keep NUMA locality.</li><li>Kernel bypass or eBPF (XDP, DPDK) for extreme rates; reduce netfilter and conntrack overhead (nftables sets, IPVS, eBPF datapaths).</li></ul>
+<h4>Diagnosis</h4>
+<pre><code>mpstat -P ALL 1                         # %irq and %soft per CPU
+cat /proc/softirqs                      # per-CPU counts of NET_RX, NET_TX, TIMER ...
+watch -d cat /proc/interrupts           # which CPUs handle which NIC queues
+cat /proc/net/softnet_stat              # per-CPU processed, dropped, time_squeeze
+ethtool -S eth0 | egrep &#39;drop|miss|err&#39; # NIC drop counters
+perf top -g ; sar -n DEV,EDEV 1</code></pre>
+<h4>Pitfalls</h4>
+<p>All queue interrupts landing on CPU 0, irqbalance fighting manual pinning, assuming application slowness when the network stack is the bottleneck, and ignoring time_squeeze in <code>softnet_stat</code>.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is NAPI and why does it switch between interrupts and polling?</li><li>How do RSS, RPS and RFS spread packet processing across CPUs?</li><li>How do you diagnose a softirq bottleneck with top, mpstat and /proc/softirqs?</li></ul>
+<p><a class="btn primary" href="../#/q/do-85">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-85%3A+Explain+the+difference+between+soft+interrupts+%28softirqs%29+and+hard%E2%80%A6&amp;question-id=do-85&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+Linux%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-85.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

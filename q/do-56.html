@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain Prometheus metrics architecture: Counter, Gauge, Histogram, and Summary metric types. | InterviewGearUp</title>
+<meta name="description" content="Prometheus has four metric types. A Counter only increases (requests, errors) and is queried with rate(). A Gauge goes up and down (memory, queue size,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-56.html">
+<meta property="og:title" content="Explain Prometheus metrics architecture: Counter, Gauge, Histogram, and Summary metric types. | InterviewGearUp">
+<meta property="og:description" content="Prometheus has four metric types. A Counter only increases (requests, errors) and is queried with rate(). A Gauge goes up and down (memory, queue size,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-56.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain Prometheus metrics architecture: Counter, Gauge, Histogram, and Summary metric types.</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 2 (Mid-level) · Observability · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Prometheus has four metric types. A Counter only increases (requests, errors) and is queried with rate(). A Gauge goes up and down (memory, queue size, temperature). A Histogram counts observations into configurable buckets plus a sum and count, enabling server-side quantiles and aggregation. A Summary computes client-side quantiles that cannot be aggregated across instances.</p></div>
+<h4>Explained in depth</h4>
+<h4>Architecture refresher</h4>
+<p>Prometheus <strong>pulls (scrapes)</strong> text-format metrics from <code>/metrics</code> endpoints on a schedule, stores them in a time-series database as <code>name{labels} value timestamp</code>, and offers PromQL for querying and alerting. Instrumentation libraries expose the types below.</p>
+<h4>Counter</h4>
+<p>Monotonically increasing number that resets to zero on process restart. Examples: <code>http_requests_total</code>, <code>errors_total</code>, <code>bytes_sent_total</code>.</p>
+<pre><code>requests = prometheus.NewCounterVec(prometheus.CounterOpts{Name: &quot;http_requests_total&quot;}, []string{&quot;method&quot;, &quot;status&quot;})
+requests.WithLabelValues(&quot;GET&quot;, &quot;200&quot;).Inc()</code></pre>
+<p>Query with <code>rate(http_requests_total[5m])</code> (per-second average, handles resets) or <code>increase()</code>. Never alert on the raw value.</p>
+<h4>Gauge</h4>
+<p>Value that can rise and fall: current memory, in-flight requests, queue depth, temperature, number of replicas. Use directly, with <code>avg_over_time</code>, <code>max_over_time</code>, or <code>deriv()</code>/<code>predict_linear()</code> for trends.</p>
+<pre><code>sum(kube_deployment_status_replicas_available) by (deployment)
+predict_linear(node_filesystem_avail_bytes[6h], 4 * 3600) &lt; 0     # disk full in 4 hours</code></pre>
+<h4>Histogram</h4>
+<p>Samples observations (request duration, response size) into cumulative <strong>buckets</strong> <code>le</code> (&quot;less than or equal&quot;), exposing <code>_bucket{le=&quot;0.1&quot;}</code>, <code>_sum</code> and <code>_count</code>.</p>
+<pre><code># p95 latency over 5 minutes, aggregated across all instances
+histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[5m])))
+# average latency
+rate(http_request_duration_seconds_sum[5m]) / rate(http_request_duration_seconds_count[5m])</code></pre>
+<p>Buckets must be chosen up front (for example 0.005, 0.01, 0.025, ..., 10 seconds). Quantiles are <strong>estimated by linear interpolation</strong> inside a bucket, so accuracy depends on bucket layout near your SLO threshold (put a bucket exactly at the SLO, for example 0.3 s). Histograms are <strong>aggregatable</strong> across instances, which is their main strength. Cost: one time series per bucket per label combination.</p>
+<h4>Summary</h4>
+<p>The client computes configurable quantiles (<code>quantile=&quot;0.99&quot;</code>) over a sliding time window and exposes them with <code>_sum</code> and <code>_count</code>. Accurate, no bucket design, but <strong>quantiles cannot be averaged or aggregated</strong> across instances (the average of p99s is not a p99), and the quantiles are fixed at instrumentation time.</p>
+<h4>Choosing</h4>
+<div class="md-table"><table><thead><tr><th>Need</th><th>Type</th></tr></thead><tbody><tr><td>Events counted over time</td><td>Counter</td></tr><tr><td>Current level or state</td><td>Gauge</td></tr><tr><td>Latency or size distribution aggregated across a fleet, SLOs</td><td>Histogram</td></tr><tr><td>Precise per-instance quantiles, no aggregation</td><td>Summary</td></tr></tbody></table></div>
+<p>Newer <strong>native (sparse) histograms</strong> (Prometheus 2.40 and later, stable in 3.x) use exponentially spaced buckets with high resolution and far lower cost, removing manual bucket choices. OpenTelemetry exponential histograms map to them.</p>
+<h4>Naming and labels</h4>
+<p>Use base units (seconds, bytes), suffix counters with <code>_total</code>, histograms with <code>_seconds</code> and similar. Keep label cardinality low (method, status class, route template), never user ids or raw URLs.</p>
+<h4>Pitfalls</h4>
+<p>Using <code>irate</code> or raw counters in alerts, histograms with too few or poorly placed buckets, high-cardinality labels exploding series, and averaging precomputed quantiles.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why must you apply rate() to counters rather than graph raw values?</li><li>When do you choose a Summary over a Histogram?</li><li>How do native histograms improve on classic bucket histograms?</li></ul>
+<p><a class="btn primary" href="../#/q/do-56">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-56%3A+Explain+Prometheus+metrics+architecture%3A+Counter%2C+Gauge%2C+Histogram%2C%E2%80%A6&amp;question-id=do-56&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+2%2C+topic%3A+Observability%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-56.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

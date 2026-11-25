@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain the Four Golden Signals of monitoring: Latency, Traffic, Errors, and Saturation. | InterviewGearUp</title>
+<meta name="description" content="The Four Golden Signals from Google&#39;s SRE book are the minimum monitoring for any user-facing service: latency (how long requests take, separating…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-55.html">
+<meta property="og:title" content="Explain the Four Golden Signals of monitoring: Latency, Traffic, Errors, and Saturation. | InterviewGearUp">
+<meta property="og:description" content="The Four Golden Signals from Google&#39;s SRE book are the minimum monitoring for any user-facing service: latency (how long requests take, separating…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-55.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain the Four Golden Signals of monitoring: Latency, Traffic, Errors, and Saturation.</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 2 (Mid-level) · Observability · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>The Four Golden Signals from Google&#39;s SRE book are the minimum monitoring for any user-facing service: latency (how long requests take, separating successes from errors), traffic (demand on the system), errors (rate of failed requests), and saturation (how full the most constrained resource is). Together they show health and predict problems.</p></div>
+<h4>Explained in depth</h4>
+<h4>The four signals</h4>
+<ol start="1"><li><strong>Latency</strong>: time to serve a request. Track <strong>successful and failed requests separately</strong>, because a fast error can hide real slowness (a failure returning in 5 ms lowers the average). Use percentiles (p50, p95, p99) or histograms, not averages, since tail latency is what users feel and what cascades through microservices.</li><li><strong>Traffic</strong>: how much demand is placed on the system: HTTP requests per second, messages consumed per second, transactions per minute, concurrent sessions, network bytes. Gives context to every other metric and supports capacity planning.</li><li><strong>Errors</strong>: the rate of requests that fail, explicitly (HTTP 5xx, exceptions), implicitly (HTTP 200 with wrong content, empty result), or by policy (responses slower than the SLO count as errors). Express as a ratio of total requests.</li><li><strong>Saturation</strong>: how &quot;full&quot; the service is, measured on the most constrained resource: CPU, memory, disk I/O, network, thread or connection pool usage, queue depth, file descriptors. Many systems degrade before reaching 100 percent (for example around 80 percent utilisation), so also watch trends that predict saturation (disk filling in 4 hours).</li></ol>
+<h4>Example Prometheus queries</h4>
+<pre><code># Traffic
+sum(rate(http_requests_total[5m]))
+# Errors (ratio)
+sum(rate(http_requests_total{status=~&quot;5..&quot;}[5m])) / sum(rate(http_requests_total[5m]))
+# Latency p99 from a histogram
+histogram_quantile(0.99, sum by (le) (rate(http_request_duration_seconds_bucket[5m])))
+# Saturation (CPU) and queue length
+avg(rate(container_cpu_usage_seconds_total[5m])) / avg(kube_pod_container_resource_limits{resource=&quot;cpu&quot;})
+max(job_queue_length)</code></pre>
+<h4>Related frameworks</h4>
+<ul><li><strong>RED</strong> (Rate, Errors, Duration) is Golden Signals for request-driven services without saturation.</li><li><strong>USE</strong> (Utilisation, Saturation, Errors) for resources such as hosts and disks.</li><li>Golden Signals combine both views: use RED/USE-style dashboards per service and per resource.</li></ul>
+<h4>Using them in practice</h4>
+<ul><li><strong>Alert on symptoms users experience</strong> (high error ratio, high latency against the SLO, burn rate of the error budget), not on every cause (CPU 85 percent). Causes belong on dashboards for diagnosis.</li><li>Page only for urgent, actionable conditions; send others to tickets.</li><li>Break down by dimensions with low cardinality: endpoint, region, status class, version; avoid user IDs as labels.</li><li>Build one standard dashboard template per service so on-call engineers recognise patterns quickly, with deploy markers and dependency panels (upstream and downstream signals).</li><li>Tie them to <strong>SLIs and SLOs</strong>: for example 99.9 percent of requests succeed and 95 percent finish in under 300 ms over 30 days.</li></ul>
+<h4>Pitfalls</h4>
+<p>Averages hiding tail latency, counting only HTTP codes (missing business failures), saturation metrics that are not the limiting resource, and too many alerts causing fatigue.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why measure latency percentiles instead of averages?</li><li>How do the Golden Signals relate to RED and USE methods?</li><li>What would you alert on and what would you only graph?</li></ul>
+<p><a class="btn primary" href="../#/q/do-55">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-55%3A+Explain+the+Four+Golden+Signals+of+monitoring%3A+Latency%2C+Traffic%2C%E2%80%A6&amp;question-id=do-55&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+2%2C+topic%3A+Observability%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-55.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

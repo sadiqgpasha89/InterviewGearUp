@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does AWS IAM Role Assumption (`sts:AssumeRole`) enable cross-account access securely? | InterviewGearUp</title>
+<meta name="description" content="sts:AssumeRole lets a principal in one AWS account obtain temporary credentials for an IAM role in another account. The target role&#39;s trust policy states…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-73.html">
+<meta property="og:title" content="How does AWS IAM Role Assumption (`sts:AssumeRole`) enable cross-account access securely? | InterviewGearUp">
+<meta property="og:description" content="sts:AssumeRole lets a principal in one AWS account obtain temporary credentials for an IAM role in another account. The target role&#39;s trust policy states…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-73.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does AWS IAM Role Assumption (`sts:AssumeRole`) enable cross-account access securely?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · Cloud · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>sts:AssumeRole lets a principal in one AWS account obtain temporary credentials for an IAM role in another account. The target role&#39;s trust policy states who may assume it, the caller&#39;s identity policy must allow sts:AssumeRole, and the role&#39;s permission policy defines what the temporary session can do. Credentials expire, avoiding long-lived keys.</p></div>
+<h4>Explained in depth</h4>
+<h4>The model</h4>
+<p>Cross-account access without sharing credentials uses two policies:</p>
+<ol start="1"><li><strong>Trust policy</strong> on the role in the target account (account B): who is allowed to assume it.</li><li><strong>Identity (permissions) policy</strong> on the caller in account A: permission to call <code>sts:AssumeRole</code> on that role ARN.</li></ol>
+<p>Both must allow it. The role itself has permission policies defining what can be done in account B.</p>
+<pre><code>// Role in account B: trust policy
+{
+  &quot;Version&quot;: &quot;2012-10-17&quot;,
+  &quot;Statement&quot;: [{
+    &quot;Effect&quot;: &quot;Allow&quot;,
+    &quot;Principal&quot;: { &quot;AWS&quot;: &quot;arn:aws:iam::111111111111:role/ci-deployer&quot; },
+    &quot;Action&quot;: &quot;sts:AssumeRole&quot;,
+    &quot;Condition&quot;: { &quot;StringEquals&quot;: { &quot;sts:ExternalId&quot;: &quot;a1b2c3-vendor-unique&quot; },
+                   &quot;Bool&quot;: { &quot;aws:MultiFactorAuthPresent&quot;: &quot;true&quot; } }
+  }]
+}
+// Caller in account A: identity policy
+{ &quot;Effect&quot;: &quot;Allow&quot;, &quot;Action&quot;: &quot;sts:AssumeRole&quot;, &quot;Resource&quot;: &quot;arn:aws:iam::222222222222:role/prod-readonly&quot; }</code></pre>
+<pre><code>aws sts assume-role --role-arn arn:aws:iam::222222222222:role/prod-readonly \
+  --role-session-name alice-audit --duration-seconds 3600 --external-id a1b2c3-vendor-unique
+# returns AccessKeyId, SecretAccessKey, SessionToken, Expiration</code></pre>
+<p>The SDK and CLI do this automatically with a profile (<code>role_arn</code>, <code>source_profile</code>, <code>credential_process</code>) and refresh the credentials.</p>
+<h4>Why it is secure</h4>
+<ul><li><strong>Temporary credentials</strong> (15 minutes to 12 hours, default 1 hour) expire; no long-lived access keys are copied across accounts.</li><li>Central identity: users or roles in a hub account assume roles in many accounts (AWS Organizations, IAM Identity Center sets this up).</li><li>Fine-grained, auditable: CloudTrail records the <code>AssumeRole</code> event with the session name and source identity (<code>--source-identity</code>) so actions trace back to a person.</li><li>Controls: conditions on MFA, source IP, <code>aws:PrincipalOrgID</code>, session tags, and <strong>session policies</strong> (inline policy passed at assume time that further restricts, never expands). <strong>Permission boundaries</strong> and <strong>SCPs</strong> cap what roles can do.</li></ul>
+<h4>Confused deputy and ExternalId</h4>
+<p>When a third-party SaaS assumes a role in your account on your behalf, another customer could trick the SaaS into using their role ARN. The vendor gives you a unique <strong>ExternalId</strong> that must appear in the trust policy condition, ensuring the vendor only assumes the role for the right customer.</p>
+<h4>Other facts</h4>
+<ul><li><strong>Role chaining</strong> (assuming a role from an assumed role) limits sessions to 1 hour.</li><li>Workloads use similar mechanisms: EC2 instance profiles, EKS IRSA and Pod Identity, Lambda execution roles, GitHub Actions through OIDC (<code>sts:AssumeRoleWithWebIdentity</code>), SAML federation (<code>AssumeRoleWithSAML</code>).</li><li>Resource-based policies (S3 bucket policy, KMS key policy) can grant cross-account access directly, but then the principal uses its own account identity; roles give a single clean permission set.</li><li>Least privilege: scope trust principals to specific roles (not <code>:root</code> of the entire account, which delegates to any identity in it that is allowed by its own policies), set short durations, require session names and tags, and monitor with IAM Access Analyzer.</li></ul>
+<h4>Troubleshooting</h4>
+<p><code>AccessDenied</code> is usually a missing allow in either the trust policy or caller policy, a condition mismatch (ExternalId, MFA), an SCP deny, a wrong region for STS endpoints (use regional endpoints), or a role that was recreated (principal IDs change, invalidating the trust relationship).</p>
+<h4>Pitfalls</h4>
+<p>Wildcard principals (<code>&quot;AWS&quot;: &quot;*&quot;</code>) in trust policies, long durations for powerful roles, embedding access keys in CI instead of OIDC, and forgetting to log and alert on role assumptions to sensitive accounts.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the confused deputy problem and how does ExternalId prevent it?</li><li>How do session policies and permission boundaries limit assumed roles?</li><li>How do role chaining and session duration limits work?</li></ul>
+<p><a class="btn primary" href="../#/q/do-73">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-73%3A+How+does+AWS+IAM+Role+Assumption+%28%60sts%3AAssumeRole%60%29+enable%E2%80%A6&amp;question-id=do-73&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+Cloud%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-73.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

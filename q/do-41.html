@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are Custom Resource Definitions (CRDs) and the Kubernetes Operator pattern? | InterviewGearUp</title>
+<meta name="description" content="A CustomResourceDefinition registers a new resource type in the Kubernetes API, so you can store and validate your own objects. The Operator pattern…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-41.html">
+<meta property="og:title" content="What are Custom Resource Definitions (CRDs) and the Kubernetes Operator pattern? | InterviewGearUp">
+<meta property="og:description" content="A CustomResourceDefinition registers a new resource type in the Kubernetes API, so you can store and validate your own objects. The Operator pattern…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-41.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are Custom Resource Definitions (CRDs) and the Kubernetes Operator pattern?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · Kubernetes · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A CustomResourceDefinition registers a new resource type in the Kubernetes API, so you can store and validate your own objects. The Operator pattern pairs CRDs with a controller that watches those objects and continuously reconciles the real world toward the declared spec, encoding operational knowledge such as backups, upgrades and failover for an application.</p></div>
+<h4>Explained in depth</h4>
+<h4>CRD</h4>
+<p>A CRD declares a group, kind, versions and an OpenAPI v3 schema. After applying it the API server serves <code>kubectl get postgresclusters</code> like built-in types, with validation, RBAC, watch and storage in etcd.</p>
+<pre><code>apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata: { name: postgresclusters.db.example.com }
+spec:
+  group: db.example.com
+  scope: Namespaced
+  names: { kind: PostgresCluster, plural: postgresclusters, singular: postgrescluster, shortNames: [pg] }
+  versions:
+  - name: v1
+    served: true
+    storage: true
+    subresources: { status: {}, scale: { specReplicasPath: .spec.replicas, statusReplicasPath: .status.replicas } }
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            required: [replicas, version]
+            properties:
+              replicas: { type: integer, minimum: 1, maximum: 7 }
+              version:  { type: string, enum: [&quot;15&quot;, &quot;16&quot;] }
+              backup:   { type: object, properties: { schedule: { type: string } } }</code></pre>
+<p>A <strong>custom resource</strong> (instance) then declares desired state:</p>
+<pre><code>apiVersion: db.example.com/v1
+kind: PostgresCluster
+metadata: { name: orders-db }
+spec: { replicas: 3, version: &quot;16&quot;, backup: { schedule: &quot;0 2 * * *&quot; } }</code></pre>
+<p>A CRD alone is just data. Behaviour comes from a controller.</p>
+<h4>The Operator pattern</h4>
+<p>An <strong>operator</strong> is a controller (a Deployment running your code) that implements human operational knowledge for a particular application. It uses the same control loop as built-in controllers:</p>
+<ol start="1"><li><strong>Watch</strong> custom resources and related objects (informers and caches).</li><li><strong>Reconcile</strong> on each event: read the desired state in <code>spec</code>, observe the actual state (pods, PVCs, Services, external systems), compute the difference, and act (create StatefulSets, configure replication, run backups, perform a rolling version upgrade, fail over).</li><li><strong>Report</strong> progress in <code>status</code> (conditions, observed generation, ready replicas) and emit events.</li><li>Requeue on errors or for periodic checks.</li></ol>
+<h4>Design principles</h4>
+<ul><li><strong>Level-triggered and idempotent</strong>: reconcile based on the current state, not on events received; running it twice must be safe. It should converge regardless of missed events.</li><li><strong>Owner references</strong> make created objects children of the custom resource so garbage collection cleans them up.</li><li><strong>Finalizers</strong> let the operator run cleanup (delete cloud resources, take a final backup) before the object disappears.</li><li>Use <strong>conditions</strong>, <code>status.observedGeneration</code>, leader election for HA, rate-limited work queues, and optimistic concurrency (resourceVersion).</li><li>Version the API (<code>v1alpha1</code> to <code>v1</code>) with conversion webhooks; use validation and defaulting webhooks or CEL rules in the schema.</li><li>Keep reconcile fast and non-blocking; avoid long sleeps.</li></ul>
+<h4>Tooling</h4>
+<p><strong>Kubebuilder</strong> and <strong>Operator SDK</strong> (Go, controller-runtime), <code>kopf</code> (Python), Java Operator SDK, Metacontroller, and Helm- or Ansible-based operators for simple cases. Well-known operators: Prometheus Operator, cert-manager, CloudNativePG and Zalando Postgres, Strimzi (Kafka), Argo CD, Crossplane. Prefer a mature operator over writing your own, and consider whether a Helm chart suffices when no ongoing reconciliation is needed.</p>
+<h4>Pitfalls</h4>
+<p>Reconcilers that depend on in-memory state, missing finalizer handling that blocks deletion, hot loops from status updates triggering reconciles, unvalidated CRD schemas, and operators with excessive RBAC permissions.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does the reconcile loop stay idempotent and handle errors?</li><li>What are finalizers and owner references used for?</li><li>Which frameworks help build operators (Operator SDK, Kubebuilder) and when should you use an existing one?</li></ul>
+<p><a class="btn primary" href="../#/q/do-41">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-41%3A+What+are+Custom+Resource+Definitions+%28CRDs%29+and+the+Kubernetes%E2%80%A6&amp;question-id=do-41&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+Kubernetes%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-41.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

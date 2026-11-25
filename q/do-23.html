@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do control groups (cgroups v1 vs v2) enforce CPU and memory resource limits on containers? | InterviewGearUp</title>
+<meta name="description" content="Control groups (cgroups) are the Linux kernel feature that limits, accounts for and isolates resource use of process groups. Containers use them for CPU,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-23.html">
+<meta property="og:title" content="How do control groups (cgroups v1 vs v2) enforce CPU and memory resource limits on containers? | InterviewGearUp">
+<meta property="og:description" content="Control groups (cgroups) are the Linux kernel feature that limits, accounts for and isolates resource use of process groups. Containers use them for CPU,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-23.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do control groups (cgroups v1 vs v2) enforce CPU and memory resource limits on containers?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 2 (Mid-level) · Containers · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Control groups (cgroups) are the Linux kernel feature that limits, accounts for and isolates resource use of process groups. Containers use them for CPU, memory, I/O and PIDs limits. cgroups v1 has separate hierarchies per controller; v2 has one unified hierarchy with better consistency, memory.high throttling, PSI metrics and safer delegation.</p></div>
+<h4>Explained in depth</h4>
+<h4>Role of cgroups</h4>
+<p>Namespaces give containers an isolated <strong>view</strong> (pids, network, mounts); cgroups limit <strong>how much</strong> of the host they can use. Docker, containerd and Kubernetes create a cgroup per container (and per pod) and write limits into it.</p>
+<h4>CPU</h4>
+<ul><li><strong>Shares or weight</strong> (relative priority when contended): v1 <code>cpu.shares</code> (default 1024), v2 <code>cpu.weight</code> (1 to 10000, default 100). Kubernetes <strong>requests</strong> map to this, so requests decide fair share, not a cap.</li><li><strong>Quota</strong> (hard cap): v1 <code>cpu.cfs_quota_us</code> and <code>cpu.cfs_period_us</code>, v2 <code>cpu.max</code> as <code>quota period</code>, for example <code>50000 100000</code> means 0.5 CPU. Kubernetes <strong>limits</strong> map here. Once the container uses its quota in a 100 ms period it is <strong>throttled</strong> until the next period, causing latency spikes even when the node is idle (watch <code>container_cpu_cfs_throttled_periods_total</code> and <code>cpu.stat nr_throttled</code>). Many teams set only requests, or use higher limits.</li><li><code>cpuset</code> pins cores and NUMA nodes (Kubernetes static CPU manager for guaranteed pods).</li></ul>
+<h4>Memory</h4>
+<ul><li><strong>Hard limit</strong>: v1 <code>memory.limit_in_bytes</code>, v2 <code>memory.max</code>. If usage (including page cache that cannot be reclaimed, kernel memory) reaches the limit and reclaim fails, the kernel&#39;s <strong>OOM killer</strong> kills processes in that cgroup (<code>OOMKilled</code>, exit code 137 in Kubernetes).</li><li>v2 adds <strong><code>memory.high</code></strong> (soft throttling threshold: processes are slowed and forced to reclaim before reaching max), <code>memory.min</code> and <code>memory.low</code> (protection from reclaim), and <code>memory.swap.max</code>.</li><li>Memory counted includes anonymous memory, page cache and kernel structures; monitor working set (<code>container_memory_working_set_bytes</code>), which Kubernetes uses for eviction decisions.</li></ul>
+<h4>I/O and PIDs</h4>
+<p>v1 <code>blkio</code> (weight, throttling); v2 <code>io.max</code> and <code>io.weight</code> (works better with buffered writes because the unified hierarchy accounts for writeback). <code>pids.max</code> stops fork bombs.</p>
+<h4>v1 versus v2</h4>
+<div class="md-table"><table><thead><tr><th>Aspect</th><th>cgroups v1</th><th>cgroups v2</th></tr></thead><tbody><tr><td>Hierarchy</td><td>one per controller, inconsistent</td><td>single unified tree</td></tr><tr><td>Process placement</td><td>different groups per controller possible</td><td>one cgroup per process</td></tr><tr><td>Memory control</td><td><code>limit_in_bytes</code>, soft limit</td><td><code>max</code>, <code>high</code>, <code>min</code>, <code>low</code></td></tr><tr><td>Buffered I/O control</td><td>weak</td><td>supported</td></tr><tr><td>Pressure metrics</td><td>none</td><td><strong>PSI</strong> (<code>cpu.pressure</code>, <code>memory.pressure</code>, <code>io.pressure</code>)</td></tr><tr><td>Rootless and delegation</td><td>limited</td><td>designed for it</td></tr><tr><td>Default in</td><td>older distributions</td><td>RHEL 9, Ubuntu 22.04+, Fedora, Debian 11+, Kubernetes 1.25+ GA support</td></tr></tbody></table></div>
+<p>Check which one is active: <code>stat -fc %T /sys/fs/cgroup</code> returns <code>cgroup2fs</code> for v2.</p>
+<h4>Examples</h4>
+<pre><code>docker run --cpus=1.5 --memory=512m --memory-swap=512m --pids-limit=200 app
+cat /sys/fs/cgroup/&lt;path&gt;/memory.max           # v2
+cat /sys/fs/cgroup/&lt;path&gt;/cpu.max
+cat /sys/fs/cgroup/&lt;path&gt;/memory.events        # oom, oom_kill counters</code></pre>
+<p>Kubernetes: <code>resources.requests.cpu=500m</code>, <code>limits.memory=512Mi</code>; QoS classes (Guaranteed, Burstable, BestEffort) are derived from them and decide OOM kill priority.</p>
+<h4>Pitfalls</h4>
+<p>Applications that read host CPU or memory instead of cgroup limits (older JVMs, Node.js, Go before <code>GOMAXPROCS</code> awareness; use <code>automaxprocs</code>), CPU limits causing throttling, setting memory limits below the real working set, and forgetting swap behaviour.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What happens when a container exceeds its memory limit versus its CPU limit?</li><li>How do Kubernetes requests and limits map to cgroup settings?</li><li>What is PSI and how does it help detect resource pressure?</li></ul>
+<p><a class="btn primary" href="../#/q/do-23">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-23%3A+How+do+control+groups+%28cgroups+v1+vs+v2%29+enforce+CPU+and+memory%E2%80%A6&amp;question-id=do-23&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+2%2C+topic%3A+Containers%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-23.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

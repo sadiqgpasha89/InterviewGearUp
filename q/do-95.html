@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you implement semantic versioning and automated changelog generation in release pipelines? | InterviewGearUp</title>
+<meta name="description" content="Semantic versioning (MAJOR.MINOR.PATCH) communicates the impact of changes: breaking changes bump major, features bump minor, fixes bump patch. Release…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-95.html">
+<meta property="og:title" content="How do you implement semantic versioning and automated changelog generation in release pipelines? | InterviewGearUp">
+<meta property="og:description" content="Semantic versioning (MAJOR.MINOR.PATCH) communicates the impact of changes: breaking changes bump major, features bump minor, fixes bump patch. Release…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-95.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you implement semantic versioning and automated changelog generation in release pipelines?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 2 (Mid-level) · CI/CD · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Semantic versioning (MAJOR.MINOR.PATCH) communicates the impact of changes: breaking changes bump major, features bump minor, fixes bump patch. Release pipelines can derive the version automatically from Conventional Commits messages (feat, fix, BREAKING CHANGE), generate the changelog, tag, build and publish with tools such as semantic-release or release-please.</p></div>
+<h4>Explained in depth</h4>
+<h4>Semantic Versioning (SemVer 2.0.0)</h4>
+<p>Version <code>MAJOR.MINOR.PATCH</code> (for example <code>2.4.1</code>):</p>
+<ul><li><strong>MAJOR</strong>: incompatible API changes.</li><li><strong>MINOR</strong>: backward-compatible new functionality.</li><li><strong>PATCH</strong>: backward-compatible bug fixes.</li></ul>
+<p>Pre-release and build metadata: <code>2.5.0-rc.1</code>, <code>2.5.0+build.7</code>. Version <code>0.y.z</code> is for initial development (anything may change). Consumers use ranges (<code>^2.4.0</code>) trusting the contract, so incorrectly labelled breaking changes cause real damage.</p>
+<h4>Conventional Commits</h4>
+<p>A commit message convention that machines can read:</p>
+<pre><code>feat(auth): add passkey login            -&gt; MINOR
+fix(api): handle empty cart               -&gt; PATCH
+perf: cache product queries               -&gt; PATCH (configurable)
+feat!: remove v1 endpoints                -&gt; MAJOR
+fix: correct totals
+
+BREAKING CHANGE: orders.total is now a string  -&gt; MAJOR
+docs, chore, refactor, test, ci, build    -&gt; no release by default</code></pre>
+<p>Enforce with commitlint and a Git hook or PR title check (squash merges use the PR title).</p>
+<h4>Automated release flows</h4>
+<p><strong>semantic-release</strong> (publish on every merge to main):</p>
+<ol start="1"><li>CI runs on <code>main</code>; the tool analyses commits since the last tag.</li><li>Determines the next version, generates release notes and <code>CHANGELOG.md</code>.</li><li>Creates the Git tag and GitHub release, publishes packages (npm, Docker, PyPI) and commits updated version files (via plugins).</li></ol>
+<pre><code>// .releaserc
+{ &quot;branches&quot;: [&quot;main&quot;, { &quot;name&quot;: &quot;next&quot;, &quot;prerelease&quot;: true }],
+  &quot;plugins&quot;: [&quot;@semantic-release/commit-analyzer&quot;, &quot;@semantic-release/release-notes-generator&quot;,
+              &quot;@semantic-release/changelog&quot;, &quot;@semantic-release/npm&quot;, &quot;@semantic-release/github&quot;, &quot;@semantic-release/git&quot;] }</code></pre>
+<p><strong>release-please</strong> (Google): opens and maintains a <strong>release pull request</strong> that accumulates commits, updates the changelog and version; merging the PR creates the tag and release. This gives human control over timing and review of notes, and supports monorepos with per-package versions. Others: <code>standard-version</code> (older), <code>changesets</code> (explicit change files, popular in JS monorepos), <code>GitVersion</code> (.NET), <code>bump2version</code>/<code>commitizen</code> (Python), <code>goreleaser</code> (Go).</p>
+<h4>Pipeline integration</h4>
+<pre><code>on: { push: { branches: [main] } }
+jobs:
+  release:
+    permissions: { contents: write, id-token: write, packages: write }
+    steps:
+      - uses: actions/checkout@v4          # fetch-depth: 0 so tags and history exist
+      - run: npx semantic-release
+      - run: docker build -t ghcr.io/acme/app:${{ steps.v.outputs.version }} . &amp;&amp; docker push ...</code></pre>
+<p>The version becomes the single source for image tags, Helm chart <code>appVersion</code>, artifact names and deploy manifests; the same immutable artifact is promoted from staging to production.</p>
+<h4>Good practices</h4>
+<ul><li>Tag releases (<code>v1.8.2</code>), keep changelogs by type (Features, Fixes, Breaking Changes), link to PRs and issues.</li><li>Protect release branches and credentials; publish with provenance (npm provenance, SLSA, cosign signatures).</li><li>Use pre-release channels (<code>next</code>, <code>beta</code>, <code>rc</code>) for testing, and backport branches for maintenance (<code>1.x</code>).</li><li>For services (not libraries), SemVer may be replaced by CalVer or commit SHAs plus a deploy history; for APIs expose the compatibility version separately from the build version.</li></ul>
+<h4>Pitfalls</h4>
+<p>Inconsistent commit messages leading to wrong bumps, force-pushing tags, releasing from unreviewed branches, shallow clones missing tags, and treating minor versions as safe when they changed behaviour.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do Conventional Commit types map to version bumps?</li><li>What is the difference between semantic-release and release-please workflows?</li><li>How do pre-releases and monorepo packages fit?</li></ul>
+<p><a class="btn primary" href="../#/q/do-95">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-95%3A+How+do+you+implement+semantic+versioning+and+automated+changelog%E2%80%A6&amp;question-id=do-95&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+2%2C+topic%3A+CI%2FCD%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-95.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

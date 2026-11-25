@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is high cardinality in metric TSDBs and how does it cause Prometheus out-of-memory crashes? | InterviewGearUp</title>
+<meta name="description" content="Cardinality is the number of unique time series, which multiplies with every unique label value. Labels such as user ID, request ID, URL or pod hash…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-96.html">
+<meta property="og:title" content="What is high cardinality in metric TSDBs and how does it cause Prometheus out-of-memory crashes? | InterviewGearUp">
+<meta property="og:description" content="Cardinality is the number of unique time series, which multiplies with every unique label value. Labels such as user ID, request ID, URL or pod hash…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-96.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is high cardinality in metric TSDBs and how does it cause Prometheus out-of-memory crashes?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · Observability · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Cardinality is the number of unique time series, which multiplies with every unique label value. Labels such as user ID, request ID, URL or pod hash create millions of series, and each series costs memory in Prometheus&#39;s head block and index, causing OOM crashes, slow queries and compaction pressure. Control it with label discipline, relabeling, limits and aggregation.</p></div>
+<h4>Explained in depth</h4>
+<h4>Series and cost</h4>
+<p>A time series is one unique combination of metric name and labels: <code>http_requests_total{method=&quot;GET&quot;,path=&quot;/orders/1234&quot;,status=&quot;200&quot;}</code>. Prometheus keeps recent series in the in-memory <strong>head block</strong> (about 2 hours), with per-series overhead of roughly 1 to 3 KB (series metadata, chunks, postings index entries), plus label strings interned. 10 million active series needs tens of GB of RAM. Churn (series appearing and disappearing, for example per pod name in rolling deploys) also bloats the index.</p>
+<h4>How cardinality explodes</h4>
+<p>Total series = metric × product of distinct values per label:</p>
+<ul><li><code>user_id</code> (1M users) × <code>endpoint</code> (50) × <code>status</code> (5) = 250M series.</li><li><strong>Histograms</strong>: each series is multiplied by buckets (+ <code>_sum</code> and <code>_count</code>): 12 buckets × 1,000 label combinations = 12,000+ series for one metric.</li><li>Unbounded values: raw URL paths with IDs, query strings, email, IP address, trace IDs, timestamps, container IDs, error messages.</li><li>Kubernetes churn: pod names, <code>pod_template_hash</code>, new nodes, short-lived Jobs.</li></ul>
+<p>Symptoms: rising <code>prometheus_tsdb_head_series</code>, memory climbing until the OOM killer terminates Prometheus, long WAL replay on restart, slow queries and dashboards timing out, compaction lag and disk growth.</p>
+<h4>Finding offenders</h4>
+<pre><code>topk(10, count by (__name__)({__name__=~&quot;.+&quot;}))                     # series per metric (can be expensive)
+count(count by (path)(http_requests_total))                         # distinct values of one label</code></pre>
+<p>Use Prometheus UI <strong>TSDB Status</strong> page (<code>/tsdb-status</code>), <code>promtool tsdb analyze &lt;data-dir&gt;</code>, <code>prometheus_tsdb_head_series</code>, <code>scrape_samples_scraped</code> per target, and tools such as Grafana Mimir cardinality explorer. Check <code>scrape_series_added</code> for churn.</p>
+<h4>Fixing it</h4>
+<ol start="1"><li><strong>Design labels for bounded sets</strong>: method, status class (<code>2xx</code>), route template (<code>/orders/:id</code>, never the raw path), region, version. Move high-cardinality identifiers to <strong>logs and traces</strong>, not metrics.</li><li><strong>Drop or rewrite labels at scrape time</strong> with relabeling:</li></ol>
+<pre><code>metric_relabel_configs:
+- action: labeldrop
+  regex: &quot;request_id|user_id|session&quot;
+- action: drop
+  source_labels: [__name__]
+  regex: &quot;go_gc_.*|http_request_size_bytes_bucket&quot;   # unneeded metrics
+- source_labels: [path]
+  regex: &quot;/orders/[0-9]+&quot;
+  target_label: path
+  replacement: &quot;/orders/:id&quot;</code></pre>
+<ol start="3"><li><strong>Set safety limits</strong> per scrape job: <code>sample_limit</code>, <code>label_limit</code>, <code>label_value_length_limit</code>, <code>target_limit</code>; scrapes exceeding them fail visibly instead of destroying the server.</li><li><strong>Reduce buckets</strong> for histograms, use fewer labels on histograms, or <strong>native histograms</strong>, which compress distributions more cheaply.</li><li><strong>Aggregate before storage</strong>: recording rules and <code>sum without (instance)</code>, remote write aggregation (Grafana Agent, Vector, VictoriaMetrics <code>stream aggregation</code>), and drop per-pod labels for long retention.</li><li><strong>Scale architecture</strong>: shard Prometheus by team or function (federation), use remote storage (Thanos, Mimir, Cortex, VictoriaMetrics) with per-tenant limits, increase memory, and tune retention.</li><li><strong>Use the right tool</strong>: <strong>exemplars</strong> attach trace IDs to histogram samples for drill-down, distributed tracing for per-request detail, and logs or ClickHouse for high-cardinality analytics.</li></ol>
+<h4>Governance</h4>
+<p>Review new metrics in code review (label sets and expected cardinality), publish instrumentation guidelines, alert on <code>prometheus_tsdb_head_series</code> growth, and enforce limits in CI by linting exposition output.</p>
+<h4>Pitfalls</h4>
+<p>Adding a label &quot;just for debugging&quot;, labelling with error strings, forgetting that relabeling happens after scrape (the target still sends the data), and ignoring churn from short-lived pods.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you find which metrics and labels are causing the cardinality explosion?</li><li>Why do histograms with many labels amplify the problem?</li><li>What are alternatives for high-cardinality data such as traces, logs and exemplars?</li></ul>
+<p><a class="btn primary" href="../#/q/do-96">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-96%3A+What+is+high+cardinality+in+metric+TSDBs+and+how+does+it+cause%E2%80%A6&amp;question-id=do-96&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+Observability%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-96.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is an Incident Commander (IC) and what are the primary responsibilities during a Sev-1 outage? | InterviewGearUp</title>
+<meta name="description" content="The Incident Commander (IC) leads the response to a major incident without doing hands-on fixes. During a Sev-1 outage the IC declares and classifies the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-83.html">
+<meta property="og:title" content="What is an Incident Commander (IC) and what are the primary responsibilities during a Sev-1 outage? | InterviewGearUp">
+<meta property="og:description" content="The Incident Commander (IC) leads the response to a major incident without doing hands-on fixes. During a Sev-1 outage the IC declares and classifies the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-83.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is an Incident Commander (IC) and what are the primary responsibilities during a Sev-1 outage?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · SRE · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>The Incident Commander (IC) leads the response to a major incident without doing hands-on fixes. During a Sev-1 outage the IC declares and classifies the incident, assigns roles (operations lead, communications lead, scribe), sets priorities and the cadence, keeps the team focused on mitigation before root cause, makes decisions and escalations, and ensures clear stakeholder communication and a follow-up postmortem.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why the role exists</h4>
+<p>Under pressure, many capable engineers all dive into the same problem, duplicate work, give conflicting commands and forget communication. A single coordinator with authority reduces chaos. The model comes from emergency services (ICS) and is used by Google SRE, PagerDuty and others.</p>
+<h4>Primary responsibilities</h4>
+<ol start="1"><li><strong>Declare and classify</strong>: confirm user impact, set severity (Sev-1: major customer-facing outage or data loss risk), open the incident channel and video bridge, page the right responders.</li><li><strong>Assign roles</strong> explicitly, by name:</li></ol>
+<ul><li><strong>Operations / technical lead(s)</strong>: investigate and apply mitigations.</li><li><strong>Communications lead</strong>: updates to the status page, customer support, executives and customers at a regular cadence.</li><li><strong>Scribe</strong>: keeps a timestamped log of actions, hypotheses and decisions (the raw material for the postmortem).</li><li><strong>Subject matter experts</strong> pulled in as needed; a <strong>liaison</strong> for other teams or vendors.</li></ul>
+<ol start="3"><li><strong>Coordinate and prioritise</strong>: keep the focus on <strong>restoring service first</strong> (mitigation) over finding the root cause; ask &quot;what is the quickest safe way to reduce customer impact?&quot; (rollback, feature flag off, failover, scale up, traffic shed, restart) before deep analysis.</li><li><strong>Make decisions</strong>: choose among options, approve risky actions (database failover, rollbacks), avoid analysis paralysis, ensure changes are made one at a time with a note of timing and expected effect.</li><li><strong>Manage the people</strong>: keep the channel clean (side discussions elsewhere), prevent too many cooks, make sure responders rest and hand off in long incidents (rotate the IC every 2 to 4 hours), escalate to leadership when needed.</li><li><strong>Communicate</strong>: set an update cadence (every 15 to 30 minutes), ensure messages are factual, state impact, current status, next update time, and avoid speculation or blame.</li><li><strong>Close out</strong>: declare resolution only when metrics confirm recovery and monitoring is stable, schedule the <strong>blameless postmortem</strong>, assign action owners, and publish follow-ups.</li></ol>
+<h4>How the IC behaves</h4>
+<p>Calm, concise, decisive; asks clarifying questions; delegates instead of debugging; keeps a running summary (&quot;current state: ...; hypotheses: ...; who is doing what&quot;); uses checklists; avoids jargon in stakeholder updates. The IC does not need to be the most senior or most technical person, but must be trained and empowered, and the incident process should define who can take over command (&quot;handoff announcement&quot;).</p>
+<h4>Typical timeline</h4>
+<p>Detection (alert or report), triage and declaration (minutes), mitigation (target within the SLO impact budget), recovery verification, resolution, then postmortem within a few days with timeline, impact, contributing factors (not a single &quot;root cause&quot;), what went well and badly, and tracked action items.</p>
+<h4>Measuring and improving</h4>
+<p>Track time to detect, acknowledge, mitigate and resolve (MTTD, MTTA, MTTM, MTTR), run game days and tabletop exercises, maintain runbooks, keep contact lists and on-call schedules current, and train new ICs by shadowing.</p>
+<h4>Pitfalls</h4>
+<p>IC becoming the hands-on debugger and losing the overview, unclear role assignments, no one updating stakeholders (so executives interrupt responders), parallel conflicting changes, blame culture, and ignoring fatigue.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why should the IC avoid debugging personally?</li><li>What should status updates to stakeholders contain?</li><li>How do mitigation and root cause analysis differ during an incident?</li></ul>
+<p><a class="btn primary" href="../#/q/do-83">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-83%3A+What+is+an+Incident+Commander+%28IC%29+and+what+are+the+primary%E2%80%A6&amp;question-id=do-83&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+SRE%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-83.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

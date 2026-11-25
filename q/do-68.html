@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is Kubelet, and how does the Container Runtime Interface (CRI) execute pod containers? | InterviewGearUp</title>
+<meta name="description" content="The kubelet is the node agent that registers the node, watches the API server for pods assigned to it, and ensures the described containers are running…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-68.html">
+<meta property="og:title" content="What is Kubelet, and how does the Container Runtime Interface (CRI) execute pod containers? | InterviewGearUp">
+<meta property="og:description" content="The kubelet is the node agent that registers the node, watches the API server for pods assigned to it, and ensures the described containers are running…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-68.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is Kubelet, and how does the Container Runtime Interface (CRI) execute pod containers?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · Kubernetes · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>The kubelet is the node agent that registers the node, watches the API server for pods assigned to it, and ensures the described containers are running and healthy. It talks to a container runtime (containerd, CRI-O) over the Container Runtime Interface, a gRPC API, to create sandboxes, pull images, start and stop containers, and it reports status, runs probes and manages volumes.</p></div>
+<h4>Explained in depth</h4>
+<h4>Role of the kubelet</h4>
+<p>Every node runs a kubelet. It is not run in a container by default (a systemd service) and it is the only component that creates containers on the node. Responsibilities:</p>
+<ul><li>Register the node with the control plane, send heartbeats (Lease objects) and node status (capacity, conditions).</li><li>Watch for <strong>PodSpecs</strong> assigned to the node (from the API server, or static manifests on disk, or an HTTP source) and make reality match them.</li><li>Pull images, set up volumes (CSI), inject secrets and config maps, configure environment and DNS.</li><li>Run <strong>liveness, readiness and startup probes</strong> and restart containers per <code>restartPolicy</code>.</li><li>Collect container and node metrics (cAdvisor integration), garbage-collect images and dead containers, enforce resource limits through cgroups, and <strong>evict pods</strong> under node pressure.</li><li>Report pod status back to the API server.</li></ul>
+<h4>The Container Runtime Interface</h4>
+<p>The CRI is a gRPC protocol over a Unix socket (<code>/run/containerd/containerd.sock</code>, <code>/var/run/crio/crio.sock</code>) with two services:</p>
+<ul><li><strong>RuntimeService</strong>: <code>RunPodSandbox</code>, <code>StopPodSandbox</code>, <code>CreateContainer</code>, <code>StartContainer</code>, <code>StopContainer</code>, <code>RemoveContainer</code>, <code>ExecSync</code>, <code>Exec</code>, <code>Attach</code>, <code>PortForward</code>, <code>ListContainers</code>, <code>ContainerStatus</code>.</li><li><strong>ImageService</strong>: <code>PullImage</code>, <code>ListImages</code>, <code>ImageStatus</code>, <code>RemoveImage</code>.</li></ul>
+<p>Runtimes implement it so kubelet is runtime-agnostic. Debug with <code>crictl</code> (<code>crictl ps</code>, <code>crictl pods</code>, <code>crictl logs</code>, <code>crictl inspect</code>).</p>
+<h4>Starting a pod: flow</h4>
+<ol start="1"><li>Scheduler binds the pod to a node by writing <code>spec.nodeName</code>.</li><li>Kubelet sees the pod through its watch and runs admission checks (resources, security).</li><li>It asks the runtime to <strong>run a pod sandbox</strong>: creates the pod&#39;s shared network namespace using the CNI plugin (pause container holds the namespaces), IP assignment.</li><li>Volumes are attached and mounted (CSI node plugin), secrets and configmaps projected.</li><li>Init containers run one by one (<code>PullImage</code>, <code>CreateContainer</code>, <code>StartContainer</code>).</li><li>App containers start; the runtime (through the OCI runtime such as runc) sets up namespaces, cgroups, seccomp and capabilities.</li><li>Probes run; the status (Pending, Running, conditions Ready) is posted to the API server.</li><li>On delete, kubelet runs preStop hooks, sends SIGTERM, waits the grace period, SIGKILL, then tears down sandbox and volumes.</li></ol>
+<h4>Static pods</h4>
+<p>Pods defined as YAML in the kubelet&#39;s <code>staticPodPath</code> (<code>/etc/kubernetes/manifests</code>) are started directly by the kubelet, without the scheduler or controllers; kubeadm uses them for the API server, scheduler, controller manager and etcd. A mirror pod object appears in the API for visibility.</p>
+<h4>Resource management and eviction</h4>
+<p>Kubelet computes allocatable resources (capacity minus <code>kube-reserved</code> and <code>system-reserved</code>), enforces limits via cgroups (cgroup driver <code>systemd</code>), supports CPU Manager, Memory Manager and Topology Manager for guaranteed pods, and evicts pods based on thresholds (<code>memory.available&lt;100Mi</code>, <code>nodefs.available&lt;10%</code>), ordering by QoS class and usage relative to requests.</p>
+<h4>Troubleshooting</h4>
+<p><code>systemctl status kubelet</code>, <code>journalctl -u kubelet</code>, node conditions (<code>kubectl describe node</code>: Ready, MemoryPressure, DiskPressure, PIDPressure), <code>crictl ps -a</code>, certificate expiry (kubelet client certificates rotate), cgroup driver mismatch with the runtime, CNI plugin missing, and image pull failures.</p>
+<h4>Pitfalls</h4>
+<p>Wrong runtime socket path, mismatched cgroup drivers, ignoring disk pressure from images and logs, and assuming the control plane starts containers (only kubelet does).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What happens step by step when a pod is scheduled to a node?</li><li>How do static pods differ from API-created pods?</li><li>How does the kubelet handle node pressure and eviction?</li></ul>
+<p><a class="btn primary" href="../#/q/do-68">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-68%3A+What+is+Kubelet%2C+and+how+does+the+Container+Runtime+Interface+%28CRI%29%E2%80%A6&amp;question-id=do-68&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+Kubernetes%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-68.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

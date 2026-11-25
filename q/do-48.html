@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you securely manage secrets in a GitOps workflow using Sealed Secrets or External Secrets Operator? | InterviewGearUp</title>
+<meta name="description" content="Git must never hold plain secrets, so GitOps teams either store encrypted secrets in Git (Sealed Secrets, SOPS) that only the cluster can decrypt, or…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-48.html">
+<meta property="og:title" content="How do you securely manage secrets in a GitOps workflow using Sealed Secrets or External Secrets Operator? | InterviewGearUp">
+<meta property="og:description" content="Git must never hold plain secrets, so GitOps teams either store encrypted secrets in Git (Sealed Secrets, SOPS) that only the cluster can decrypt, or…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-48.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you securely manage secrets in a GitOps workflow using Sealed Secrets or External Secrets Operator?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · GitOps · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Git must never hold plain secrets, so GitOps teams either store encrypted secrets in Git (Sealed Secrets, SOPS) that only the cluster can decrypt, or store references in Git and sync the values from an external manager (External Secrets Operator with Vault, AWS Secrets Manager, GCP Secret Manager). The second approach centralises rotation and audit.</p></div>
+<h4>Explained in depth</h4>
+<h4>The problem</h4>
+<p>In GitOps Git is the source of truth, but Kubernetes <code>Secret</code> objects are only base64 encoded, so committing them exposes credentials to everyone with repository access and to history forever.</p>
+<h4>Pattern 1: encrypt in Git (Sealed Secrets)</h4>
+<p>A controller in the cluster owns a private key; developers encrypt with the public certificate and commit only the encrypted <code>SealedSecret</code>.</p>
+<pre><code>kubectl create secret generic db --from-literal=password=&#39;s3cr3t&#39; --dry-run=client -o yaml \
+  | kubeseal --controller-name sealed-secrets --format yaml &gt; db-sealed.yaml     # safe to commit</code></pre>
+<pre><code>apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata: { name: db, namespace: orders }
+spec: { encryptedData: { password: AgBy3i4OJSWK... } }</code></pre>
+<p>The controller decrypts in-cluster and creates the real Secret. By default the ciphertext is <strong>bound to name and namespace</strong> (strict scope), so it cannot be reused elsewhere. Pros: fully GitOps, simple, no external dependency at runtime. Cons: the <strong>controller key must be backed up</strong> (losing it makes all sealed values unrecoverable), rotation and revocation are manual (re-seal after rotating the actual secret), encryption is per cluster, and there is no central audit of secret access.</p>
+<h4>Pattern 2: reference external secrets (External Secrets Operator)</h4>
+<p>Git stores only <strong>where</strong> the secret lives; the operator fetches the value into a Kubernetes Secret.</p>
+<pre><code>apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata: { name: db, namespace: orders }
+spec:
+  refreshInterval: 1h
+  secretStoreRef: { name: aws-secrets, kind: ClusterSecretStore }
+  target: { name: db, creationPolicy: Owner }
+  data:
+  - secretKey: password
+    remoteRef: { key: prod/orders/db, property: password }</code></pre>
+<p>The <code>SecretStore</code> configures access (IRSA on AWS, Workload Identity on GCP, Vault Kubernetes auth), so no static credentials sit in the cluster. Pros: <strong>central rotation and audit</strong> in the secret manager, short refresh intervals pick up new values, one source for many clusters, fine-grained IAM. Cons: runtime dependency on the external service (the Kubernetes Secret remains cached during outages) and more moving parts. Related options: Secrets Store CSI Driver (mount secrets into pods without creating Secrets), Vault Agent injector, and Vault Secrets Operator.</p>
+<h4>Pattern 3: SOPS</h4>
+<p>Encrypt values in YAML files with SOPS using KMS, age or PGP keys; ArgoCD (with plugins or <code>helm-secrets</code>) or Flux (native SOPS support) decrypts at render time. Good for small teams, keeps key names visible, and works for non-Kubernetes files.</p>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th></th><th>Sealed Secrets</th><th>External Secrets</th><th>SOPS</th></tr></thead><tbody><tr><td>Secret in Git</td><td>encrypted</td><td>none (reference only)</td><td>encrypted</td></tr><tr><td>Source of truth</td><td>Git</td><td>secret manager</td><td>Git</td></tr><tr><td>Rotation</td><td>manual re-seal</td><td>automatic refresh</td><td>manual re-encrypt</td></tr><tr><td>Central audit</td><td>no</td><td>yes</td><td>via KMS logs</td></tr><tr><td>Runtime dependency</td><td>in-cluster controller</td><td>external API</td><td>decryption plugin and key</td></tr></tbody></table></div>
+<h4>Best practices</h4>
+<p>Never commit plaintext (add pre-commit scanners such as gitleaks and <code>detect-secrets</code>), restrict RBAC on Secrets, enable etcd encryption at rest, prefer short-lived credentials and workload identity over static keys, rotate regularly, separate secrets per environment, and test recovery of encryption keys.</p>
+<h4>Pitfalls</h4>
+<p>Committing a secret by mistake (rotate it immediately, rewriting history is not enough), putting secret values in Helm values or ArgoCD parameters, and exposing Secrets through overly broad <code>get</code> permissions or logs.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does Sealed Secrets encryption work and what happens if the controller key is lost?</li><li>How does External Secrets Operator refresh and rotate values?</li><li>How does SOPS with KMS compare to both?</li></ul>
+<p><a class="btn primary" href="../#/q/do-48">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-48%3A+How+do+you+securely+manage+secrets+in+a+GitOps+workflow+using+Sealed%E2%80%A6&amp;question-id=do-48&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+GitOps%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-48.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

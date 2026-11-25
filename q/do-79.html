@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you implement pipeline gating with automated integration test suites and security scans? | InterviewGearUp</title>
+<meta name="description" content="Pipeline gating makes promotion conditional on automated evidence: fast unit and static checks first, then integration and end-to-end tests, dependency,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-79.html">
+<meta property="og:title" content="How do you implement pipeline gating with automated integration test suites and security scans? | InterviewGearUp">
+<meta property="og:description" content="Pipeline gating makes promotion conditional on automated evidence: fast unit and static checks first, then integration and end-to-end tests, dependency,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-79.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you implement pipeline gating with automated integration test suites and security scans?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 2 (Mid-level) · CI/CD · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Pipeline gating makes promotion conditional on automated evidence: fast unit and static checks first, then integration and end-to-end tests, dependency, image and IaC security scans, coverage and quality thresholds, and policy checks. Failing gates stop the pipeline, required status checks protect protected branches, and environment approvals add human control where needed.</p></div>
+<h4>Explained in depth</h4>
+<h4>Gate structure</h4>
+<p>Order stages from cheapest and fastest to most expensive, failing early:</p>
+<ol start="1"><li><strong>Pre-commit and PR checks (minutes)</strong>: formatting, lint, type checks, unit tests, secret scanning (gitleaks), dependency review, commit message and PR policies.</li><li><strong>Build</strong>: reproducible build, produce an immutable artifact (container image tagged with the commit SHA), generate an SBOM, sign it.</li><li><strong>Security scans</strong>: SAST (CodeQL, Semgrep), SCA (Dependabot, Snyk, OSV-Scanner, <code>npm audit</code>), container image scan (Trivy, Grype), IaC scan (Checkov, tfsec, Kubescape), license checks.</li><li><strong>Integration tests</strong>: run against real dependencies in containers (Testcontainers, docker compose) or an ephemeral environment per PR (namespace, preview deploy), including database migrations and contract tests.</li><li><strong>End-to-end and smoke tests</strong> (Playwright, Cypress, k6): a small critical-path suite; broader suites nightly.</li><li><strong>Deploy to staging, verify, then promote</strong> to production with approvals and progressive delivery (canary with automated analysis).</li><li><strong>Post-deploy verification</strong>: smoke tests, synthetic checks, SLO monitoring, automatic rollback on burn.</li></ol>
+<pre><code># GitHub Actions sketch
+jobs:
+  test:    { runs-on: ubuntu-latest, steps: [...] }
+  scan:    { needs: test, steps: [ { uses: aquasecurity/trivy-action@master, with: { severity: &quot;CRITICAL,HIGH&quot;, exit-code: &quot;1&quot; } } ] }
+  integration: { needs: [test, scan], services: { postgres: { image: postgres:16 } }, steps: [...] }
+  deploy-staging: { needs: integration, environment: staging }
+  deploy-prod:    { needs: deploy-staging, environment: production }   # required reviewers on the environment</code></pre>
+<h4>Enforcing gates</h4>
+<ul><li><strong>Branch protection / rulesets</strong>: require specific status checks to pass, up-to-date branches, code owner approvals, signed commits, linear history, and no force pushes; admins included.</li><li><strong>Environments with required reviewers and wait timers</strong> for production deploys, plus deployment branch restrictions.</li><li><strong>Policy as code</strong> (OPA Conftest, Kyverno, admission controls) so the cluster rejects unsigned or unscanned images, even if the pipeline is bypassed.</li><li>Quality thresholds: coverage on <strong>changed code</strong>, mutation or complexity limits, performance budgets (Lighthouse, k6 thresholds), no new critical vulnerabilities (differential scanning: fail only on <strong>new</strong> findings to avoid blocking on legacy debt).</li></ul>
+<h4>Keeping gates effective</h4>
+<ul><li><strong>Fast feedback</strong>: parallelise, cache, shard tests, run affected tests only; keep PR checks under about 10 minutes.</li><li><strong>Deterministic</strong>: quarantine flaky tests with tracking, retry sparingly, and fix root causes; measure flake rate.</li><li><strong>Triage security findings</strong> with severity, exploitability and reachability; allow time-limited, justified exceptions (ignore files with expiry, VEX) approved by security.</li><li><strong>Exceptions and emergencies</strong>: a documented break-glass path with audit and post-hoc review, not silent bypasses.</li><li>Treat the pipeline as code: reviewed, versioned, and protected from tampering (separate permissions for pipeline definitions, pinned actions by SHA, least-privilege tokens, OIDC to clouds).</li><li>Report: dashboards for DORA metrics (lead time, deployment frequency, change failure rate, time to restore), gate failure reasons, and test duration.</li></ul>
+<h4>Pitfalls</h4>
+<p>Gates that are slow or flaky (teams skip them), scanners failing builds on unfixable low-risk findings, tests that depend on shared mutable environments, and approvals without meaningful evidence presented to reviewers.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you keep gates fast enough that developers do not bypass them?</li><li>How do you handle flaky tests and false positive scan findings?</li><li>What belongs in pre-merge versus pre-deploy versus post-deploy checks?</li></ul>
+<p><a class="btn primary" href="../#/q/do-79">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-79%3A+How+do+you+implement+pipeline+gating+with+automated+integration+test%E2%80%A6&amp;question-id=do-79&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+2%2C+topic%3A+CI%2FCD%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-79.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you conduct architectural capacity planning and rightsizing for high-traffic peak events? | InterviewGearUp</title>
+<meta name="description" content="Capacity planning for peak events combines historical load analysis, forecasting with growth and event multipliers, load testing to find per-instance…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-98.html">
+<meta property="og:title" content="How do you conduct architectural capacity planning and rightsizing for high-traffic peak events? | InterviewGearUp">
+<meta property="og:description" content="Capacity planning for peak events combines historical load analysis, forecasting with growth and event multipliers, load testing to find per-instance…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-98.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you conduct architectural capacity planning and rightsizing for high-traffic peak events?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · SRE · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Capacity planning for peak events combines historical load analysis, forecasting with growth and event multipliers, load testing to find per-instance throughput and bottlenecks, rightsizing with headroom and autoscaling limits, dependency and quota review, pre-scaling, and a rehearsed runbook. Success means meeting SLOs at peak without wasteful overprovisioning afterwards.</p></div>
+<h4>Explained in depth</h4>
+<h4>1. Define the objective and baseline</h4>
+<p>Pick measurable goals: target peak traffic (requests per second, concurrent users, orders per minute), SLOs (availability 99.9 percent, p99 latency under 500 ms), and budget. Collect <strong>historical data</strong>: last year&#39;s events, daily and weekly patterns, growth rate, marketing campaign calendars, new features, geographic mix. Build a <strong>demand forecast</strong>: baseline × growth × event multiplier (for example Black Friday is 8 to 10 times normal) with confidence ranges (P50, P90) and a safety margin (typically 20 to 50 percent above forecast peak).</p>
+<h4>2. Understand the system&#39;s capacity</h4>
+<ul><li>Map the critical path and dependencies (CDN, load balancer, API, cache, database, queues, third-party APIs, payment gateways).</li><li>Use <strong>load tests</strong> (k6, Gatling, Locust, production traffic replay, game days) to find per-instance throughput at the SLO and the <strong>saturation point</strong> (the knee of the latency curve), resource limits (CPU, memory, connections, threads, IOPS), and bottlenecks. Test with realistic data and mixes of requests, caching state and spikes.</li><li>Apply <strong>Little&#39;s Law</strong> and queueing intuition: latency rises sharply above about 70 to 80 percent utilisation, so size for a target utilisation (for example 50 to 60 percent of the measured max at peak so failure of one zone is tolerable).</li></ul>
+<h4>3. Sizing</h4>
+<pre><code>instances = ceil( peak_rps / (rps_per_instance_at_target_util) ) × (1 + failure_headroom)
+Example: peak 40,000 rps; one instance sustains 800 rps at 60% CPU → 50 instances; add N+1 per AZ and 25% buffer → about 66 across 3 AZs.</code></pre>
+<p>Check each tier: connection pools sized to database limits, cache memory and hit rate, queue consumers throughput, network bandwidth, and per-AZ failure (if one zone is lost the rest must carry peak).</p>
+<h4>4. Rightsizing and efficiency</h4>
+<p>Use metrics and tools (VPA recommendations, AWS Compute Optimizer, Kubecost) to match requests and limits to actual usage; choose instance families by workload (compute, memory, ARM Graviton), improve code efficiency and caching first because it multiplies capacity, and reserve or commit for the steady baseline while using on-demand or spot for burst.</p>
+<h4>5. Elasticity and pre-scaling</h4>
+<ul><li><strong>Autoscaling</strong> (HPA, KEDA, cloud autoscaling groups) reacts in minutes, which may be too slow for sudden spikes: <strong>pre-scale</strong> (scheduled scaling, minimum replicas raised before the event), warm caches and JIT, pre-provision database read replicas and connection capacity, and raise load balancer pre-warming (ask the provider for ALB or NLB pre-scaling if needed).</li><li>Set sensible max limits, scale-in protection and cooldowns, and check <strong>cloud quotas</strong> (vCPU limits, ENI, IP addresses, API rate limits, load balancer capacity) well ahead with support tickets.</li><li><strong>Databases</strong> scale poorly on demand: plan vertical headroom, read replicas, partitioning, query optimisation, and connection pooling; isolate heavy reports from OLTP.</li></ul>
+<h4>6. Resilience features for overload</h4>
+<p>Rate limiting and load shedding by priority, circuit breakers, graceful degradation (disable recommendations, simplify pages), queue-based buffering for non-critical work, static fallback pages, feature flags for quick toggles, and CDN caching of read-heavy content.</p>
+<h4>7. Operational readiness</h4>
+<ul><li><strong>Rehearse</strong>: run a full-scale load test or game day weeks before, fix findings, repeat.</li><li><strong>Freeze</strong> risky changes before the event; staff the war room and on-call, with a clear escalation path and communication plan; dashboards for the golden signals and business KPIs.</li><li>Define <strong>trigger thresholds and runbooks</strong> (add capacity, shed load, disable features) and roles (incident commander).</li><li>Coordinate with third parties (payment providers, CDN, email) on their limits.</li></ul>
+<h4>8. After the event</h4>
+<p>Scale down gradually, compare forecast versus actual, hold a retrospective, record new per-instance baselines, update models and costs, and clean up temporary capacity.</p>
+<h4>Pitfalls</h4>
+<p>Planning only compute and forgetting the database or third-party limits, trusting synthetic tests that do not match real traffic, no zonal failure margin, quota limits hit at the worst moment, and autoscalers that scale too slowly.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you derive instances needed from requests per second and utilisation targets?</li><li>Why must you plan dependencies, quotas and databases, not just stateless services?</li><li>How do you scale down safely after the event?</li></ul>
+<p><a class="btn primary" href="../#/q/do-98">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-98%3A+How+do+you+conduct+architectural+capacity+planning+and+rightsizing%E2%80%A6&amp;question-id=do-98&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+SRE%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-98.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

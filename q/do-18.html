@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain Maximum Transmission Unit (MTU), Path MTU Discovery (PMTUD), and packet fragmentation issues. | InterviewGearUp</title>
+<meta name="description" content="MTU is the largest packet a link can carry (1500 bytes on Ethernet). Path MTU Discovery finds the smallest MTU along a route by sending packets with the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-18.html">
+<meta property="og:title" content="Explain Maximum Transmission Unit (MTU), Path MTU Discovery (PMTUD), and packet fragmentation issues. | InterviewGearUp">
+<meta property="og:description" content="MTU is the largest packet a link can carry (1500 bytes on Ethernet). Path MTU Discovery finds the smallest MTU along a route by sending packets with the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-18.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain Maximum Transmission Unit (MTU), Path MTU Discovery (PMTUD), and packet fragmentation issues.</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 2 (Mid-level) · Networking · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>MTU is the largest packet a link can carry (1500 bytes on Ethernet). Path MTU Discovery finds the smallest MTU along a route by sending packets with the Don&#39;t Fragment bit and reacting to ICMP Fragmentation Needed replies. When ICMP is filtered, large packets silently vanish (black holes), causing hangs that small packets avoid.</p></div>
+<h4>Explained in depth</h4>
+<h4>Definitions</h4>
+<ul><li><strong>MTU</strong> (Maximum Transmission Unit): maximum IP packet size, including headers, per interface. Ethernet 1500, jumbo frames 9000 (AWS inside a VPC supports 9001), PPPoE 1492, many VPNs 1400 or less.</li><li><strong>MSS</strong> (TCP Maximum Segment Size): payload per TCP segment, negotiated in SYN: MTU − 20 (IP) − 20 (TCP) = 1460 for a 1500 MTU.</li></ul>
+<h4>Fragmentation</h4>
+<p>If an IPv4 packet is larger than a link&#39;s MTU and DF is not set, routers fragment it; the destination reassembles. Fragmentation is costly: extra CPU, loss of any fragment loses the whole packet, firewalls and load balancers often drop fragments, and it enables attacks. <strong>IPv6 routers never fragment</strong>; only the sender can, so PMTUD is essential.</p>
+<h4>Path MTU Discovery (PMTUD)</h4>
+<ol start="1"><li>The sender sets the <strong>DF</strong> (Don&#39;t Fragment) bit and sends packets at its interface MTU.</li><li>A router that cannot forward a packet that large drops it and sends <strong>ICMP Type 3 Code 4</strong> (Fragmentation Needed, with the next-hop MTU) (ICMPv6 Packet Too Big).</li><li>The sender lowers its path MTU for that destination and retransmits smaller segments.</li></ol>
+<h4>The black hole problem</h4>
+<p>Firewalls, security groups and some network devices block all ICMP. The &quot;need to fragment&quot; message never arrives, so large packets are dropped forever. Symptoms: TCP handshake works (small packets), small requests succeed, but transfers hang on larger responses, TLS handshakes stall at the certificate, SSH connects but freezes on large output, VPNs work for ping but not for downloads. Fixes: allow ICMP type 3 code 4 (and ICMPv6 type 2), or enable <strong>PLPMTUD</strong> (packetization layer PMTUD, <code>net.ipv4.tcp_mtu_probing=1</code>), which probes using TCP itself.</p>
+<h4>Common causes of reduced MTU</h4>
+<p>Encapsulation adds headers: IPsec (50 to 70 bytes), GRE (24), VXLAN (50), WireGuard (60 to 80), Geneve, Kubernetes overlay CNIs (Flannel VXLAN, Calico IPIP), cloud transit gateways, PPPoE. Pod MTU must be set below the node MTU minus the overhead (for example 1450 on VXLAN over 1500).</p>
+<h4>Testing and tools</h4>
+<pre><code>ping -M do -s 1472 example.com       # 1472 + 28 (ICMP+IP) = 1500; fails if the path MTU is smaller
+ping -M do -s 1372 example.com       # binary-search the largest size that works
+tracepath example.com                # reports MTU per hop
+ip link show eth0 | grep mtu
+ip route get &lt;dst&gt;                   # shows cached path MTU
+sudo tcpdump -ni any &#39;icmp[0]==3 and icmp[1]==4&#39;</code></pre>
+<h4>Mitigations</h4>
+<ul><li><strong>MSS clamping</strong> on routers or firewalls: <code>iptables -t mangle -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu</code>, so TCP endpoints never send oversized segments even if ICMP is blocked. Useful on VPN and tunnel gateways.</li><li>Set consistent MTU across the path (jumbo frames only when every hop supports it, including storage networks), configure CNI and VPN MTU correctly, and document it in Infrastructure as Code.</li><li>UDP applications (DNS over large responses, QUIC, VoIP) need application-level size limits; QUIC uses a conservative 1200-byte minimum. DNS EDNS buffer sizes around 1232 avoid fragmentation.</li></ul>
+<h4>Pitfalls</h4>
+<p>Blocking all ICMP &quot;for security&quot;, mixing jumbo and standard MTUs without PMTUD, and misdiagnosing hangs as application bugs.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do VPN, VXLAN and cloud overlay networks reduce effective MTU?</li><li>What does MSS clamping do and when is it needed?</li><li>How do you test the path MTU with ping?</li></ul>
+<p><a class="btn primary" href="../#/q/do-18">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-18%3A+Explain+Maximum+Transmission+Unit+%28MTU%29%2C+Path+MTU+Discovery+%28PMTUD%29%2C%E2%80%A6&amp;question-id=do-18&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+2%2C+topic%3A+Networking%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-18.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

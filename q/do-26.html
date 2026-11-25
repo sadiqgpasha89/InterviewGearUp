@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are rootless containers and how do user namespaces prevent privilege escalation attacks? | InterviewGearUp</title>
+<meta name="description" content="Rootless containers run the container runtime and the containers without real root privileges. User namespaces map UID 0 inside the container to an…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-26.html">
+<meta property="og:title" content="What are rootless containers and how do user namespaces prevent privilege escalation attacks? | InterviewGearUp">
+<meta property="og:description" content="Rootless containers run the container runtime and the containers without real root privileges. User namespaces map UID 0 inside the container to an…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-26.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are rootless containers and how do user namespaces prevent privilege escalation attacks?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · Containers · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Rootless containers run the container runtime and the containers without real root privileges. User namespaces map UID 0 inside the container to an unprivileged UID on the host, so even if an attacker escapes as root in the container, they hold only an unprivileged identity on the host. This reduces the impact of runtime vulnerabilities and misconfigurations.</p></div>
+<h4>Explained in depth</h4>
+<h4>The risk with rootful containers</h4>
+<p>By default Docker&#39;s daemon runs as root and processes in containers run as UID 0, which is the same UID 0 as on the host (only restricted by capabilities, seccomp, AppArmor/SELinux and namespaces). A container breakout (runc CVE, mounted Docker socket, privileged flag, kernel bug) gives the attacker host root.</p>
+<h4>User namespaces</h4>
+<p>A <strong>user namespace</strong> maps UIDs and GIDs inside the namespace to different ranges outside it:</p>
+<pre><code>inside container   host
+0      (root)  -&gt;  100000   (unprivileged user)
+1                  100001
+...
+65535          -&gt;  165535</code></pre>
+<p>Configured by <code>/etc/subuid</code> and <code>/etc/subgid</code> (for example <code>alice:100000:65536</code>), so a normal user can create a namespace where they appear as root. Inside, the process has capabilities (such as <code>CAP_NET_ADMIN</code>) <strong>only over resources owned by that namespace</strong>, not over the host&#39;s files or devices. Files owned by container root appear on the host as owned by UID 100000, and the host kernel treats the process as unprivileged for everything outside the namespace.</p>
+<h4>Rootless implementations</h4>
+<ul><li><strong>Podman</strong> runs rootless by default: no daemon, containers are children of the user&#39;s processes (<code>podman run</code>).</li><li><strong>Rootless Docker</strong> (<code>dockerd-rootless-setuptool.sh install</code>) runs dockerd as the user.</li><li><strong>containerd, BuildKit and Kubernetes</strong> (usernamespaces feature in pods, <code>hostUsers: false</code>, GA path in recent versions) support user namespace mapping.</li><li>Tools: <code>newuidmap</code>/<code>newgidmap</code> setuid helpers, <code>slirp4netns</code> or <code>pasta</code> for user-mode networking, <code>fuse-overlayfs</code> or native overlay for storage.</li></ul>
+<h4>Security benefits</h4>
+<ul><li>A compromised container or runtime has no host root; many CVEs become low impact.</li><li>Reduced blast radius for builds on shared CI hosts.</li><li>Safer multi-tenant development environments.</li><li>Works together with seccomp, capabilities dropping, read-only root filesystems and SELinux/AppArmor for defence in depth.</li></ul>
+<h4>Limitations</h4>
+<ul><li>Binding ports below 1024 needs <code>sysctl net.ipv4.ip_unprivileged_port_start=0</code> or a port mapping to a high port.</li><li>Networking uses user-space stacks (slirp4netns, pasta) with lower throughput and no direct access to host interfaces; no <code>ping</code> unless <code>net.ipv4.ping_group_range</code> is set.</li><li>Cannot mount many filesystem types, create device nodes or load kernel modules; some workloads (systemd inside containers, certain storage drivers, NFS) need extra configuration.</li><li>Cgroup resource limits require cgroups v2 with delegation (systemd user sessions).</li><li>Volume ownership: bind-mounted files must be accessible to the mapped UID (<code>:U</code> option, <code>podman unshare</code>, <code>chown</code> with mapped IDs).</li></ul>
+<h4>Distinction: non-root user versus rootless</h4>
+<p><code>USER 1000</code> in a Dockerfile makes the process non-root <strong>inside</strong> the container, but a rootful runtime still runs as host root. Rootless mode protects the host from the <strong>runtime</strong> and from container root. Best practice: use both: rootless or userns-remapped runtime plus non-root users in images, minimal capabilities (<code>--cap-drop=ALL</code>), <code>--security-opt no-new-privileges</code>, and read-only filesystems.</p>
+<h4>Pitfalls</h4>
+<p>Assuming rootless prevents all escapes (kernel vulnerabilities still matter), forgetting subuid ranges when many users or images exist, and permission mismatches on volumes after mapping.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What limitations do rootless containers have with networking and ports below 1024?</li><li>How do subuid and subgid mappings work?</li><li>What is the difference between running as non-root inside a container and rootless mode?</li></ul>
+<p><a class="btn primary" href="../#/q/do-26">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-26%3A+What+are+rootless+containers+and+how+do+user+namespaces+prevent%E2%80%A6&amp;question-id=do-26&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+Containers%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-26.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

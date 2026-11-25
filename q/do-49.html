@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you optimize CI pipeline execution speed using Docker layer caching and dependency caching? | InterviewGearUp</title>
+<meta name="description" content="Speed up CI by caching what rarely changes: Docker layers (order Dockerfile from least to most volatile, use BuildKit cache mounts and remote cache…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-49.html">
+<meta property="og:title" content="How do you optimize CI pipeline execution speed using Docker layer caching and dependency caching? | InterviewGearUp">
+<meta property="og:description" content="Speed up CI by caching what rarely changes: Docker layers (order Dockerfile from least to most volatile, use BuildKit cache mounts and remote cache…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-49.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you optimize CI pipeline execution speed using Docker layer caching and dependency caching?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 2 (Mid-level) · CI/CD · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Speed up CI by caching what rarely changes: Docker layers (order Dockerfile from least to most volatile, use BuildKit cache mounts and remote cache backends), dependency directories keyed by lockfile hash, and build outputs. Combine with parallel jobs, test sharding, affected-only builds and smaller images, then measure with timing data.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why CI is slow</h4>
+<p>Ephemeral runners start clean, so every run reinstalls dependencies, rebuilds images and recompiles everything. Typical wins come from caching, parallelism and doing less work.</p>
+<h4>Docker layer caching</h4>
+<p>Docker reuses a layer if the instruction and its inputs are unchanged and all previous layers are cached. One changed layer invalidates every layer after it, so order instructions from stable to volatile:</p>
+<pre><code>FROM node:22-slim AS build
+WORKDIR /app
+COPY package.json package-lock.json ./          # changes rarely
+RUN --mount=type=cache,target=/root/.npm npm ci   # BuildKit cache mount keeps the npm cache between builds
+COPY . .                                         # changes on every commit
+RUN npm run build
+
+FROM node:22-slim
+COPY --from=build /app/dist ./dist</code></pre>
+<ul><li>Copy only dependency manifests before installing, copy source afterwards.</li><li>Use <strong>multi-stage builds</strong> and a <code>.dockerignore</code> (exclude <code>.git</code>, <code>node_modules</code>, tests) so irrelevant file changes do not bust the cache and context upload is small.</li><li>Combine related commands and clean package caches in the same <code>RUN</code>.</li><li>Pin base image tags or digests to keep cache stable and reproducible.</li></ul>
+<h4>Persisting cache on ephemeral runners</h4>
+<p>Local layer cache disappears with the runner, so export it:</p>
+<pre><code>docker buildx build \
+  --cache-from type=registry,ref=ghcr.io/acme/app:buildcache \
+  --cache-to   type=registry,ref=ghcr.io/acme/app:buildcache,mode=max \
+  -t ghcr.io/acme/app:$SHA --push .</code></pre>
+<p>Other backends: <code>type=gha</code> (GitHub Actions cache), <code>type=s3</code>, <code>type=local</code>. <code>mode=max</code> caches intermediate stages too. Alternatives: Kaniko cache, BuildKit daemons on persistent runners, and Depot or similar remote builders.</p>
+<h4>Dependency and tool caches</h4>
+<p>Cache package manager directories keyed by the <strong>lockfile hash</strong>:</p>
+<pre><code>- uses: actions/cache@v4
+  with:
+    path: ~/.cache/pip
+    key: pip-${{ runner.os }}-${{ hashFiles(&#39;requirements.lock&#39;) }}
+    restore-keys: pip-${{ runner.os }}-</code></pre>
+<p>Equivalents: <code>actions/setup-node</code> with <code>cache: npm</code>, Gradle and Maven repositories, Go module and build cache, Cargo target dir with <code>sccache</code>, Bazel remote cache, <code>ccache</code> for C++, Turborepo or Nx remote caches for monorepos. Cache keys must include OS, toolchain version and lockfile hash so a change invalidates correctly. Never cache secrets or untrusted PR outputs into shared caches (cache poisoning risk), and scope caches per branch with fallbacks to main.</p>
+<h4>Beyond caching</h4>
+<ul><li><strong>Parallelise</strong>: split independent jobs (lint, unit, build, security scan) and <strong>shard tests</strong> across runners (<code>jest --shard</code>, <code>pytest-xdist</code>, test timing based splitting).</li><li><strong>Run only what changed</strong>: path filters, <code>nx affected</code>, <code>turbo --filter</code>, Bazel graph, skipping docs-only changes.</li><li><strong>Fail fast</strong> with cheap checks (lint, type check) first.</li><li>Use faster or larger runners, self-hosted runners with warm caches, and prebuilt CI base images with tools installed.</li><li>Reduce image size (distroless, slim bases) for faster push and pull; use registry mirrors close to runners.</li></ul>
+<h4>Measuring</h4>
+<p>Record pipeline and per-step durations, cache hit rates, queue time and flaky test rates; set a target (for example under 10 minutes for PR checks) and track it as a developer-experience metric.</p>
+<h4>Pitfalls</h4>
+<p>Caching too broadly (stale results hiding failures), keys that never change (never refresh), huge caches slower to restore than to rebuild, and non-reproducible builds that defeat cache hits.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do BuildKit cache mounts differ from layer caching?</li><li>How do you choose cache keys to avoid stale or poisoned caches?</li><li>What does remote caching (registry, S3, Bazel) add for ephemeral runners?</li></ul>
+<p><a class="btn primary" href="../#/q/do-49">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-49%3A+How+do+you+optimize+CI+pipeline+execution+speed+using+Docker+layer%E2%80%A6&amp;question-id=do-49&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+2%2C+topic%3A+CI%2FCD%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-49.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

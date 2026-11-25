@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain the OverlayFS union filesystem: LowerDir, UpperDir, WorkDir, and MergedDir layers. | InterviewGearUp</title>
+<meta name="description" content="OverlayFS is a union filesystem that stacks read-only lower layers (image layers) with a writable upper layer, presenting a merged view. Files unchanged…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-24.html">
+<meta property="og:title" content="Explain the OverlayFS union filesystem: LowerDir, UpperDir, WorkDir, and MergedDir layers. | InterviewGearUp">
+<meta property="og:description" content="OverlayFS is a union filesystem that stacks read-only lower layers (image layers) with a writable upper layer, presenting a merged view. Files unchanged…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-24.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain the OverlayFS union filesystem: LowerDir, UpperDir, WorkDir, and MergedDir layers.</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 2 (Mid-level) · Containers · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>OverlayFS is a union filesystem that stacks read-only lower layers (image layers) with a writable upper layer, presenting a merged view. Files unchanged stay in lower layers, modified files are copied up on first write (copy-on-write), deletions use whiteout markers, and WorkDir is internal scratch space needed for atomic operations.</p></div>
+<h4>Explained in depth</h4>
+<h4>Image layers</h4>
+<p>Container images are built from ordered, immutable layers (each Dockerfile instruction that changes the filesystem makes a layer), content-addressed and shared between images and containers. Storing common base layers once saves disk space and speeds pulls.</p>
+<h4>OverlayFS mount</h4>
+<pre><code>mount -t overlay overlay \
+  -o lowerdir=/layers/l3:/layers/l2:/layers/l1,upperdir=/c/upper,workdir=/c/work \
+  /c/merged</code></pre>
+<ul><li><strong>LowerDir</strong>: one or more read-only directories (the image layers, topmost first). Never modified.</li><li><strong>UpperDir</strong>: the container&#39;s writable layer; all changes, new files and copy-ups go here. Removed when the container is deleted.</li><li><strong>WorkDir</strong>: an empty directory on the same filesystem as UpperDir used internally by OverlayFS to prepare files atomically before moving them into UpperDir. Not visible to users.</li><li><strong>MergedDir</strong>: the unified view the container sees as <code>/</code>: upper over lower, topmost wins for same paths.</li></ul>
+<p>Inspect with <code>docker inspect &lt;container&gt; --format &#39;{{json .GraphDriver.Data}}&#39;</code>, or <code>mount | grep overlay</code>, and layers live under <code>/var/lib/docker/overlay2/</code>.</p>
+<h4>Read, write, delete semantics</h4>
+<ul><li><strong>Read</strong>: the lookup goes from upper down to lower; the first match is returned, directories are merged.</li><li><strong>Write to an existing lower file</strong>: <strong>copy-up</strong>: the whole file is copied into UpperDir (data and metadata), then modified. Large files (a multi-GB database file) suffer a slow first write and double storage. OverlayFS copies the entire file in v1 style (metadata-only copy-up exists for some operations in newer kernels).</li><li><strong>Create</strong>: written directly to upper.</li><li><strong>Delete</strong>: a <strong>whiteout</strong> (a character device with 0/0 device number) in upper hides the lower file; deleting a directory creates an <strong>opaque directory</strong> marker (<code>trusted.overlay.opaque</code>). Deleting files in a later Dockerfile layer does <strong>not</strong> shrink the image because the old data remains in lower layers; combine install and cleanup in a single <code>RUN</code>, or use multi-stage builds.</li><li><strong>Rename</strong> of directories from lower layers may return <code>EXDEV</code> unless <code>redirect_dir</code> is enabled, which Docker handles.</li></ul>
+<h4>Performance and design implications</h4>
+<ul><li>Fine for read-heavy and typical app workloads; adds overhead for metadata operations across many layers (keep layer count reasonable) and for copy-up.</li><li>Use <strong>volumes or bind mounts</strong> (not the writable layer) for databases, logs, caches and any heavy I/O, which also persists data beyond the container lifetime.</li><li><code>docker diff &lt;container&gt;</code> shows changes in the upper layer; <code>docker commit</code> turns an upper layer into a new image layer.</li><li>Run on supported backing filesystems (ext4, xfs with <code>d_type</code> enabled, ftype=1); overlay2 is the default Docker and containerd snapshotter. Other drivers: btrfs, zfs, devicemapper, and lazy-pull snapshotters (stargz) for faster starts.</li><li>Security: untrusted images, setuid files and nested overlay on overlay have limitations; rootless setups use fuse-overlayfs or kernel support with user namespaces.</li></ul>
+<h4>Pitfalls</h4>
+<p>Deleting secrets in a later layer (they stay in image history), writing logs to the container layer until the disk fills, and huge numbers of layers hurting performance.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is copy-up and why can writing to large files in a container be slow?</li><li>How do whiteout files represent deletions?</li><li>Why should databases use volumes instead of the container layer?</li></ul>
+<p><a class="btn primary" href="../#/q/do-24">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-24%3A+Explain+the+OverlayFS+union+filesystem%3A+LowerDir%2C+UpperDir%2C+WorkDir%2C%E2%80%A6&amp;question-id=do-24&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+2%2C+topic%3A+Containers%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-24.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

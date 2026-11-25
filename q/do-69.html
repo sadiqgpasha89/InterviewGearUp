@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does CoreDNS resolve internal cluster domain names (`service.namespace.svc.cluster.local`)? | InterviewGearUp</title>
+<meta name="description" content="CoreDNS is the cluster DNS server. Pods get a resolv.conf pointing at the kube-dns Service IP with search domains and ndots:5. Services get names like…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-69.html">
+<meta property="og:title" content="How does CoreDNS resolve internal cluster domain names (`service.namespace.svc.cluster.local`)? | InterviewGearUp">
+<meta property="og:description" content="CoreDNS is the cluster DNS server. Pods get a resolv.conf pointing at the kube-dns Service IP with search domains and ndots:5. Services get names like…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-69.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does CoreDNS resolve internal cluster domain names (`service.namespace.svc.cluster.local`)?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · Kubernetes · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>CoreDNS is the cluster DNS server. Pods get a resolv.conf pointing at the kube-dns Service IP with search domains and ndots:5. Services get names like service.namespace.svc.cluster.local resolved by CoreDNS&#39;s kubernetes plugin from the API; unknown names are forwarded to upstream resolvers. The ndots setting causes extra lookups that can add latency.</p></div>
+<h4>Explained in depth</h4>
+<h4>How pods are configured</h4>
+<p>Kubelet writes each pod&#39;s <code>/etc/resolv.conf</code>:</p>
+<pre><code>search orders.svc.cluster.local svc.cluster.local cluster.local eu-west-1.compute.internal
+nameserver 10.96.0.10          # ClusterIP of the kube-dns Service (backed by CoreDNS pods)
+options ndots:5</code></pre>
+<p>The pod&#39;s <code>dnsPolicy: ClusterFirst</code> (default) applies this; <code>Default</code> uses the node&#39;s resolver; <code>None</code> plus <code>dnsConfig</code> customises.</p>
+<h4>Records served by CoreDNS</h4>
+<p>CoreDNS runs as a Deployment in <code>kube-system</code> using the <strong>kubernetes plugin</strong>, which watches Services, Endpoints (EndpointSlices) and Pods through the API:</p>
+<ul><li><strong>Service</strong> (ClusterIP): <code>my-svc.my-ns.svc.cluster.local</code> returns the ClusterIP (A or AAAA).</li><li><strong>Headless Service</strong> (<code>clusterIP: None</code>): returns the IPs of all ready pods, so clients can load balance themselves; with StatefulSets each pod gets a stable name <code>pod-0.my-svc.my-ns.svc.cluster.local</code>.</li><li><strong>SRV records</strong> for named ports: <code>_http._tcp.my-svc.my-ns.svc.cluster.local</code>.</li><li><strong>ExternalName</strong> Services return a CNAME to an external hostname.</li><li>Pod records (<code>10-244-1-5.my-ns.pod.cluster.local</code>) exist but are rarely used.</li></ul>
+<h4>Example Corefile</h4>
+<pre><code>.:53 {
+    errors
+    health { lameduck 5s }
+    ready
+    kubernetes cluster.local in-addr.arpa ip6.arpa {
+        pods insecure
+        fallthrough in-addr.arpa ip6.arpa
+        ttl 30
+    }
+    prometheus :9153
+    forward . /etc/resolv.conf { max_concurrent 1000 }     # non-cluster names go upstream
+    cache 30
+    loop
+    reload
+    loadbalance
+}</code></pre>
+<p>Plugins chain: <code>cache</code> reduces load, <code>forward</code> handles external domains, <code>rewrite</code> and <code>template</code> can customise answers, <code>log</code> for debugging, and stub domains or conditional forwarding are set with extra server blocks.</p>
+<h4>The ndots:5 effect</h4>
+<p>With <code>ndots:5</code>, any name with fewer than 5 dots is tried <strong>with each search domain first</strong>. Resolving <code>api.example.com</code> (2 dots) issues queries for <code>api.example.com.orders.svc.cluster.local</code>, <code>...svc.cluster.local</code>, <code>...cluster.local</code>, the cloud domain, and only then the absolute name, producing 4 or more NXDOMAIN lookups (each over A and AAAA). That adds latency and CoreDNS load. Mitigations: use <strong>fully qualified names with a trailing dot</strong> (<code>api.example.com.</code>), set <code>dnsConfig.options: ndots: 2</code> per pod, run <strong>NodeLocal DNSCache</strong> (a per-node caching agent over TCP to CoreDNS, reducing conntrack races and latency), and scale CoreDNS with the cluster proportional autoscaler.</p>
+<h4>Troubleshooting</h4>
+<pre><code>kubectl run -it --rm dns --image=nicolaka/netshoot -- bash
+nslookup my-svc.my-ns.svc.cluster.local ; dig +search my-svc ; dig @10.96.0.10 example.com
+kubectl -n kube-system logs deploy/coredns ; kubectl -n kube-system get endpoints kube-dns
+cat /etc/resolv.conf ; kubectl get svc -n kube-system kube-dns</code></pre>
+<p>Common issues: CoreDNS pods crash-looping on forwarding loops (node resolv.conf pointing to 127.0.0.53, fix with <code>loop</code> plugin guidance or <code>--resolv-conf</code>), NetworkPolicies blocking UDP and TCP 53, <strong>conntrack races</strong> on UDP causing 5 second delays (NodeLocal DNSCache helps), insufficient CoreDNS replicas or CPU limits throttling, and upstream resolver rate limits (AWS 1024 packets per second per ENI).</p>
+<h4>Pitfalls</h4>
+<p>Assuming DNS is free (every request may trigger several queries), hardcoding ClusterIPs, long TTL caching of removed services in clients (JVM <code>networkaddress.cache.ttl</code>), and forgetting search path semantics when using short names across namespaces.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does ndots:5 create many failing lookups and how do you reduce them?</li><li>What DNS records exist for headless Services and StatefulSet pods?</li><li>How do you troubleshoot intermittent DNS failures in a cluster?</li></ul>
+<p><a class="btn primary" href="../#/q/do-69">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-69%3A+How+does+CoreDNS+resolve+internal+cluster+domain+names%E2%80%A6&amp;question-id=do-69&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+Kubernetes%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-69.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

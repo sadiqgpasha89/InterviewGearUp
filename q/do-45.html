@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does Terragrunt keep Terraform configurations DRY across multiple environments and accounts? | InterviewGearUp</title>
+<meta name="description" content="Terragrunt is a thin wrapper around Terraform or OpenTofu that keeps configuration DRY across environments and accounts. It generates backend and…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-45.html">
+<meta property="og:title" content="How does Terragrunt keep Terraform configurations DRY across multiple environments and accounts? | InterviewGearUp">
+<meta property="og:description" content="Terragrunt is a thin wrapper around Terraform or OpenTofu that keeps configuration DRY across environments and accounts. It generates backend and…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-45.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does Terragrunt keep Terraform configurations DRY across multiple environments and accounts?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · IaC · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Terragrunt is a thin wrapper around Terraform or OpenTofu that keeps configuration DRY across environments and accounts. It generates backend and provider blocks, inherits shared settings through include blocks and hierarchical config files, declares dependencies between stacks, and runs commands across many modules (run-all), reducing repeated boilerplate.</p></div>
+<h4>Explained in depth</h4>
+<h4>The problem Terragrunt solves</h4>
+<p>With plain Terraform every environment (dev, staging, prod) and region or account needs a copy of: backend configuration (cannot use variables), provider blocks, module calls and tfvars. Copying leads to drift and large diffs, and Terraform backends do not allow interpolation.</p>
+<h4>Typical layout</h4>
+<pre><code>live/
+  terragrunt.hcl                  # root config: remote state, provider generation
+  prod/
+    account.hcl                   # account_id, role, env = &quot;prod&quot;
+    eu-west-1/
+      region.hcl
+      vpc/terragrunt.hcl
+      eks/terragrunt.hcl
+      rds/terragrunt.hcl
+  staging/ ...
+modules/                          # reusable Terraform modules (versioned in a separate repo)</code></pre>
+<h4>Root configuration (DRY backend and providers)</h4>
+<pre><code># live/terragrunt.hcl
+locals {
+  account = read_terragrunt_config(find_in_parent_folders(&quot;account.hcl&quot;)).locals
+  region  = read_terragrunt_config(find_in_parent_folders(&quot;region.hcl&quot;)).locals
+}
+remote_state {
+  backend = &quot;s3&quot;
+  generate = { path = &quot;backend.tf&quot;, if_exists = &quot;overwrite_terragrunt&quot; }
+  config = {
+    bucket         = &quot;acme-tf-state-${local.account.account_id}&quot;
+    key            = &quot;${path_relative_to_include()}/terraform.tfstate&quot;   # unique key per unit
+    region         = local.region.aws_region
+    encrypt        = true
+    dynamodb_table = &quot;tf-locks&quot;
+  }
+}
+generate &quot;provider&quot; {
+  path      = &quot;provider.tf&quot;
+  if_exists = &quot;overwrite_terragrunt&quot;
+  contents  = &quot;provider \&quot;aws\&quot; { region = \&quot;${local.region.aws_region}\&quot; }&quot;
+}</code></pre>
+<h4>A unit</h4>
+<pre><code># live/prod/eu-west-1/eks/terragrunt.hcl
+include &quot;root&quot; { path = find_in_parent_folders() }
+
+terraform { source = &quot;git::git@github.com:acme/tf-modules.git//eks?ref=v1.4.0&quot; }
+
+dependency &quot;vpc&quot; { config_path = &quot;../vpc&quot; }          # reads outputs of another unit
+
+inputs = {
+  cluster_name = &quot;prod-eks&quot;
+  vpc_id       = dependency.vpc.outputs.vpc_id
+  subnet_ids   = dependency.vpc.outputs.private_subnets
+}</code></pre>
+<p><code>include</code> merges parent configuration; <code>locals</code> and <code>read_terragrunt_config</code> share variables; <strong>dependency</strong> blocks both pass outputs and order execution (with <code>mock_outputs</code> for planning before dependencies exist).</p>
+<h4>Commands</h4>
+<pre><code>terragrunt plan                      # inside one unit
+terragrunt run-all plan              # across all units, respecting dependency order, in parallel
+terragrunt run-all apply --terragrunt-non-interactive</code></pre>
+<p>Newer Terragrunt adds <code>stack</code> and <code>unit</code> concepts to generate repeated layouts from templates.</p>
+<h4>Benefits</h4>
+<ul><li>Backend and provider config defined once, unique state key per unit automatically.</li><li>Environments differ by small <code>inputs</code> and folder placement; promotion is copying module version pins.</li><li>Smaller, isolated state files (limits blast radius, faster plans) while still orchestrating them.</li><li>Hooks (<code>before_hook</code>, <code>after_hook</code>), retries, and <code>prevent_destroy</code>.</li></ul>
+<h4>Trade-offs</h4>
+<p>An extra tool and language layer to learn and keep in CI images, tool version coupling, harder debugging of generated files, risk of overusing HCL logic, and some of the pain it addresses can be handled in Terraform with workspaces and modules (though workspaces share backends). Terraform Stacks and Terraform Cloud offer overlapping features. Choose Terragrunt for many accounts and environments with many small states.</p>
+<h4>Pitfalls</h4>
+<p>Dependency cycles, mock outputs applied by mistake, <code>run-all apply</code> hitting many accounts at once without review, and unclear ownership of root configuration changes.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does dependency between units work and how are outputs passed?</li><li>What are the drawbacks and when is plain Terraform enough?</li><li>How do generate blocks avoid repeating backend and provider configuration?</li></ul>
+<p><a class="btn primary" href="../#/q/do-45">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-45%3A+How+does+Terragrunt+keep+Terraform+configurations+DRY+across%E2%80%A6&amp;question-id=do-45&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+IaC%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-45.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

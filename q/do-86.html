@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is an IP Virtual Server (IPVS) and why is it faster than iptables for large Kubernetes clusters? | InterviewGearUp</title>
+<meta name="description" content="IPVS (IP Virtual Server) is a Linux kernel layer 4 load balancer built on netfilter that uses hash tables for service and backend lookup, giving O(1)…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-86.html">
+<meta property="og:title" content="What is an IP Virtual Server (IPVS) and why is it faster than iptables for large Kubernetes clusters? | InterviewGearUp">
+<meta property="og:description" content="IPVS (IP Virtual Server) is a Linux kernel layer 4 load balancer built on netfilter that uses hash tables for service and backend lookup, giving O(1)…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-86.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is an IP Virtual Server (IPVS) and why is it faster than iptables for large Kubernetes clusters?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · Networking · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>IPVS (IP Virtual Server) is a Linux kernel layer 4 load balancer built on netfilter that uses hash tables for service and backend lookup, giving O(1) performance and rich scheduling algorithms. kube-proxy&#39;s iptables mode evaluates sequential rule chains, so rule count and update time grow linearly with services and endpoints, while IPVS scales to tens of thousands of services.</p></div>
+<h4>Explained in depth</h4>
+<h4>What kube-proxy must do</h4>
+<p>For each Service ClusterIP (and NodePort, LoadBalancer IP) kube-proxy programs the node so connections to the virtual IP are DNAT&#39;ed to one of the ready pod endpoints. It runs on every node and watches Services and EndpointSlices.</p>
+<h4>iptables mode</h4>
+<p>kube-proxy writes rules to the <code>nat</code> table: chains <code>KUBE-SERVICES</code> (one rule per service, checked <strong>sequentially</strong>), per-service chains <code>KUBE-SVC-*</code> (random probability rules to select endpoints with <code>-m statistic --mode random</code>), and per-endpoint <code>KUBE-SEP-*</code> DNAT rules. Problems at scale:</p>
+<ul><li>Rule matching is <strong>O(n)</strong>: a packet traverses the service chain until it matches. With 10,000 services (roughly 50,000 to 100,000+ rules) connection setup latency grows and CPU time in the kernel rises.</li><li>Updates <strong>rewrite the whole ruleset</strong> (<code>iptables-restore</code>) with locking; with big clusters a sync can take seconds to minutes and consume CPU, delaying endpoint changes.</li><li>Load balancing is only random selection with no connection-aware algorithms.</li><li>Debugging thousands of rules is hard.</li></ul>
+<h4>IPVS mode</h4>
+<pre><code>kube-proxy --proxy-mode=ipvs --ipvs-scheduler=rr     # or in KubeProxyConfiguration
+ipvsadm -Ln                                          # virtual services and real servers (pods)</code></pre>
+<p>IPVS (part of the kernel since 2.4, <code>ip_vs</code> modules) keeps services and real servers in <strong>hash tables</strong>, so lookup is O(1) regardless of count. kube-proxy creates one IPVS virtual server per Service IP and port with the endpoints as real servers, and uses a few iptables rules plus <strong>ipsets</strong> for masquerade, SNAT and filtering. Incremental updates avoid full rewrites. Advantages:</p>
+<ul><li>Scales to <strong>10,000+ services</strong> with stable latency and lower CPU.</li><li>Better, selectable <strong>schedulers</strong>: round robin (<code>rr</code>), least connection (<code>lc</code>), destination hashing (<code>dh</code>), source hashing (<code>sh</code>), shortest expected delay (<code>sed</code>), never queue (<code>nq</code>), weighted variants.</li><li>Connection tracking and session persistence support, health-aware real server management, and fast sync.</li></ul>
+<p>Requirements and caveats: kernel modules (<code>ip_vs</code>, <code>ip_vs_rr</code>, <code>nf_conntrack</code>) must be loaded, a dummy interface <code>kube-ipvs0</code> holds service IPs, interplay with <code>iptables</code> and conntrack remains (NAT still tracked), graceful termination of connections needs configuration (<code>--ipvs-tcp-timeout</code>), and behaviour differences exist for hairpin and source IP preservation. Idle TCP session timeouts in IPVS can reset long-lived connections if not tuned.</p>
+<h4>Alternatives</h4>
+<ul><li><strong>nftables mode</strong> (newer kube-proxy) improves rule structure with maps and sets.</li><li><strong>eBPF dataplanes</strong> (Cilium kube-proxy replacement, Calico eBPF) implement service load balancing with hash maps at the socket or XDP/tc layer, avoiding conntrack in many paths, preserving client IPs, and offering Maglev consistent hashing, DSR and observability (Hubble). Usually the best choice at large scale.</li><li>Managed clusters hide the choice: GKE Dataplane V2 uses Cilium; EKS supports iptables or IPVS in kube-proxy; AKS offers Cilium.</li></ul>
+<h4>Choosing</h4>
+<p>Small clusters (hundreds of services): iptables is fine and simplest. Large clusters, heavy connection churn or need for scheduling algorithms: IPVS or eBPF. Measure sync duration (<code>kubeproxy_sync_proxy_rules_duration_seconds</code>) and connection latency before changing.</p>
+<h4>Pitfalls</h4>
+<p>Missing kernel modules causing silent fallback to iptables, too-short IPVS timeouts breaking idle connections, and mixed behaviour assumptions with NetworkPolicies or external load balancers.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does iptables mode slow down with thousands of services and how do updates cause latency?</li><li>Which IPVS scheduling algorithms are available?</li><li>How do eBPF-based replacements like Cilium compare to IPVS?</li></ul>
+<p><a class="btn primary" href="../#/q/do-86">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-86%3A+What+is+an+IP+Virtual+Server+%28IPVS%29+and+why+is+it+faster+than%E2%80%A6&amp;question-id=do-86&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+Networking%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-86.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

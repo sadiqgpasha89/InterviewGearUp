@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is the Linux page cache, and why is high cache memory usage normal and beneficial? | InterviewGearUp</title>
+<meta name="description" content="The Linux page cache uses otherwise free RAM to cache file data read from or written to disk, so repeated access is served from memory. High cache usage…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-84.html">
+<meta property="og:title" content="What is the Linux page cache, and why is high cache memory usage normal and beneficial? | InterviewGearUp">
+<meta property="og:description" content="The Linux page cache uses otherwise free RAM to cache file data read from or written to disk, so repeated access is served from memory. High cache usage…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-84.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is the Linux page cache, and why is high cache memory usage normal and beneficial?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 2 (Mid-level) · Linux · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>The Linux page cache uses otherwise free RAM to cache file data read from or written to disk, so repeated access is served from memory. High cache usage is normal and beneficial because the kernel reclaims cache instantly when applications need memory. The right health indicators are available memory, swap activity, and page faults, not low free memory.</p></div>
+<h4>Explained in depth</h4>
+<h4>What it is</h4>
+<p>When a process reads a file, the kernel loads the data into memory pages tracked in the <strong>page cache</strong>. Later reads of the same data hit RAM (nanoseconds to microseconds) instead of disk (microseconds to milliseconds). Writes go to the cache first as <strong>dirty pages</strong> and are flushed to disk later (writeback), so <code>write()</code> returns quickly. Memory-mapped files and executables use the same cache. Filesystem metadata is cached too (dentries and inodes in the slab cache).</p>
+<h4>Why high usage is good</h4>
+<p>&quot;Free memory is wasted memory.&quot; Linux fills spare RAM with cache to speed I/O. Cache pages are <strong>reclaimable</strong>: if applications need memory, the kernel drops clean cache pages immediately and writes back dirty ones first. So a server showing 95 percent memory &quot;used&quot; with most of it as cache is healthy.</p>
+<pre><code>$ free -h
+              total   used   free  shared  buff/cache  available
+Mem:           62Gi   8.1Gi  1.2Gi   300Mi      53Gi       53Gi</code></pre>
+<ul><li><strong>free</strong>: completely unused memory (low is normal).</li><li><strong>buff/cache</strong>: page cache plus buffers (and reclaimable slab).</li><li><strong>available</strong>: the kernel&#39;s estimate of memory available to start new applications without swapping, <strong>the number to watch</strong>.</li><li>Use <code>vmstat 1</code> (<code>si</code>/<code>so</code> swap in and out, <code>bi</code>/<code>bo</code> block I/O, <code>cache</code>), <code>/proc/meminfo</code> (<code>Cached</code>, <code>Dirty</code>, <code>Writeback</code>, <code>MemAvailable</code>), and <code>sar -r</code>.</li></ul>
+<h4>Dirty pages and writeback</h4>
+<p>Dirty data is flushed by kernel threads when it exceeds thresholds: <code>vm.dirty_background_ratio</code> (start background writeback, default 10 percent), <code>vm.dirty_ratio</code> (processes block and write synchronously, default 20 percent), plus <code>dirty_expire_centisecs</code> and <code>dirty_writeback_centisecs</code>. Large bursts of writes can cause latency spikes when the limit is reached; for databases and latency-sensitive systems tune lower thresholds (<code>dirty_bytes</code>) or use <code>O_DIRECT</code> and <code>fsync</code> appropriately. <code>sync</code> forces writeback; <code>fsync(fd)</code> ensures a file&#39;s durability.</p>
+<h4>Operations</h4>
+<ul><li><strong>Clearing the cache</strong> is almost never needed: <code>echo 3 &gt; /proc/sys/vm/drop_caches</code> (after <code>sync</code>) only discards cached data and hurts performance temporarily; use for benchmarking cold-cache behaviour.</li><li><strong>Prefetching and eviction</strong>: readahead loads sequential data in advance; use <code>fadvise</code> or <code>vmtouch</code> to inspect and pin or evict files.</li><li><strong>Swapping</strong>: <code>vm.swappiness</code> (0 to 100) controls preference for swapping anonymous memory versus dropping cache. Persistent swap-in activity with low available memory signals real pressure.</li><li><strong>Containers</strong>: page cache used by a container&#39;s files is charged to its cgroup memory. It counts toward the memory limit but is reclaimable under pressure; <code>memory.usage</code> includes cache while the &quot;working set&quot; excludes inactive cache, which is why Kubernetes uses working set for eviction. A limit set too tight can reduce cache and slow I/O even without OOM kills.</li><li><strong>Databases</strong> (PostgreSQL) rely on OS cache in addition to shared buffers; sizing <code>effective_cache_size</code> reflects it. Some engines (Oracle, MySQL InnoDB with <code>O_DIRECT</code>) bypass it and manage their own buffer pool.</li></ul>
+<h4>Pitfalls</h4>
+<p>Alarming on low free memory, dropping caches in production as a &quot;fix&quot;, ignoring dirty page storms, and misreading container memory metrics that include cache.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you read free, available and buff/cache in the free command output?</li><li>What are dirty pages and how does writeback work?</li><li>How do containers and cgroups account for page cache?</li></ul>
+<p><a class="btn primary" href="../#/q/do-84">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-84%3A+What+is+the+Linux+page+cache%2C+and+why+is+high+cache+memory+usage%E2%80%A6&amp;question-id=do-84&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+2%2C+topic%3A+Linux%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-84.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

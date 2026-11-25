@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do VPC Peering, Transit Gateways, and PrivateLink connect isolated private cloud networks? | InterviewGearUp</title>
+<meta name="description" content="VPC peering is a non-transitive one-to-one private link between two VPCs. Transit Gateway is a regional hub-and-spoke router that connects many VPCs,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-91.html">
+<meta property="og:title" content="How do VPC Peering, Transit Gateways, and PrivateLink connect isolated private cloud networks? | InterviewGearUp">
+<meta property="og:description" content="VPC peering is a non-transitive one-to-one private link between two VPCs. Transit Gateway is a regional hub-and-spoke router that connects many VPCs,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-91.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do VPC Peering, Transit Gateways, and PrivateLink connect isolated private cloud networks?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · Cloud · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>VPC peering is a non-transitive one-to-one private link between two VPCs. Transit Gateway is a regional hub-and-spoke router that connects many VPCs, VPNs and on-premises networks with transitive routing and route tables. PrivateLink exposes a specific service privately through interface endpoints without exposing the whole network, so CIDRs may even overlap.</p></div>
+<h4>Explained in depth</h4>
+<h4>The problem</h4>
+<p>Workloads live in separate VPCs (accounts, environments, regions, vendors). Private IP communication between them without crossing the public internet needs a connectivity construct. The right choice depends on scale, routing needs, and how much of each network you want to expose.</p>
+<h4>VPC peering</h4>
+<p>A direct, private network connection between <strong>two VPCs</strong> (same or different account and region). Traffic uses the provider backbone, not the internet.</p>
+<ul><li>Setup: request and accept the peering, then add <strong>routes</strong> in each route table to the other&#39;s CIDR, and open security groups and NACLs.</li><li><strong>Non-transitive</strong>: if A peers with B and B with C, A cannot reach C through B; it needs its own peering. A full mesh of N VPCs requires N(N−1)/2 peerings, which becomes unmanageable beyond a handful.</li><li><strong>CIDRs must not overlap</strong> (the route table cannot disambiguate).</li><li>Low latency, no bandwidth bottleneck (no gateway), no hourly attachment fee (data transfer charges apply cross-AZ and cross-region).</li><li>Best for small numbers of VPCs and simple topologies.</li></ul>
+<h4>Transit Gateway (AWS; equivalents: Azure Virtual WAN, GCP Network Connectivity Center)</h4>
+<p>A regional <strong>virtual router hub</strong>. Each VPC, VPN or Direct Connect attachment connects once to the gateway; <strong>route tables</strong> on the gateway control which attachments can reach which (propagation and association).</p>
+<ul><li><strong>Transitive routing</strong>: spokes reach each other via the hub, plus on-premises through VPN and Direct Connect.</li><li><strong>Segmentation</strong>: separate route tables for prod, dev and shared services, with isolation or controlled paths (for example all traffic to an inspection VPC with firewalls via appliance mode).</li><li>Scales to thousands of attachments, supports inter-region peering, multicast and centralised egress and inspection architectures.</li><li>Costs: per attachment per hour plus per GB processed; bandwidth limits per VPC attachment (tens of Gbps).</li><li>Overlapping CIDRs still cannot be routed together.</li></ul>
+<h4>PrivateLink (interface and gateway endpoints)</h4>
+<p>Exposes <strong>one service</strong> (behind a Network Load Balancer, or an AWS service like S3 and Secrets Manager) to consumers as an <strong>elastic network interface with a private IP in the consumer&#39;s subnet</strong>. Traffic is one-directional (consumer initiates), the provider cannot reach into the consumer network, and <strong>overlapping CIDRs are fine</strong> since the consumer talks to a local IP. Provider approves consumer connections, and consumers use security groups and endpoint policies. Used for SaaS vendors, shared internal platforms, accessing AWS services without NAT or internet gateways. Costs: hourly per endpoint per AZ plus data processing.</p>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th></th><th>Peering</th><th>Transit Gateway</th><th>PrivateLink</th></tr></thead><tbody><tr><td>Scope</td><td>whole network to network</td><td>many networks, hub and spoke</td><td>one service</td></tr><tr><td>Transitive</td><td>no</td><td>yes</td><td>not applicable</td></tr><tr><td>Overlapping CIDR</td><td>no</td><td>no</td><td>yes</td></tr><tr><td>Direction</td><td>bidirectional</td><td>bidirectional</td><td>consumer to provider</td></tr><tr><td>Scale</td><td>few VPCs</td><td>hundreds to thousands</td><td>many consumers per service</td></tr><tr><td>Segmentation</td><td>security groups, routes</td><td>route tables, inspection</td><td>per endpoint</td></tr><tr><td>Cost</td><td>data transfer</td><td>attachments + data</td><td>endpoint hours + data</td></tr></tbody></table></div>
+<h4>Choosing</h4>
+<ul><li>Two or three VPCs, simple: peering.</li><li>Many VPCs, shared services, hybrid with on-premises, centralised inspection: Transit Gateway.</li><li>Exposing or consuming a specific API across accounts or organisations, or CIDR overlap: PrivateLink.</li></ul>
+<p>Often combined: Transit Gateway for internal connectivity, PrivateLink for third-party and shared SaaS endpoints.</p>
+<h4>Operations</h4>
+<p>Plan CIDRs centrally (IPAM) to avoid overlap, use infrastructure as code for route tables, monitor flow logs and attachment metrics, use DNS (Route 53 Resolver rules, private hosted zones associated across VPCs), and apply least-privilege security groups instead of broad CIDR routing.</p>
+<h4>Pitfalls</h4>
+<p>Forgetting return routes or security group rules, assuming transitive peering, overlapping address plans discovered late, and hidden data processing costs of centralised inspection.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does peering not support transitive routing or overlapping CIDRs?</li><li>How do you segment traffic with Transit Gateway route tables?</li><li>When do you choose PrivateLink over peering for service consumption?</li></ul>
+<p><a class="btn primary" href="../#/q/do-91">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-91%3A+How+do+VPC+Peering%2C+Transit+Gateways%2C+and+PrivateLink+connect%E2%80%A6&amp;question-id=do-91&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+Cloud%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-91.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

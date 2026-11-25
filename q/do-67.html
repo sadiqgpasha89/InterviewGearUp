@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you scan container images for Common Vulnerabilities and Exposures (CVEs) with Trivy? | InterviewGearUp</title>
+<meta name="description" content="Trivy scans container images, filesystems and IaC for known vulnerabilities (CVEs), misconfigurations, secrets and licences by matching installed OS…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-67.html">
+<meta property="og:title" content="How do you scan container images for Common Vulnerabilities and Exposures (CVEs) with Trivy? | InterviewGearUp">
+<meta property="og:description" content="Trivy scans container images, filesystems and IaC for known vulnerabilities (CVEs), misconfigurations, secrets and licences by matching installed OS…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-67.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you scan container images for Common Vulnerabilities and Exposures (CVEs) with Trivy?</h1>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 2 (Mid-level) · Containers · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Trivy scans container images, filesystems and IaC for known vulnerabilities (CVEs), misconfigurations, secrets and licences by matching installed OS packages and language dependencies against vulnerability databases. Run it in CI to fail builds above a severity threshold, scan registries and clusters continuously, and manage findings with ignore files and VEX statements.</p></div>
+<h4>Explained in depth</h4>
+<h4>How scanning works</h4>
+<p>Trivy unpacks the image layers, detects the OS (Alpine, Debian, RHEL, Ubuntu and others) and application manifests (package-lock.json, requirements.txt, go.mod, pom.xml, Gemfile.lock), builds an inventory of packages and versions, and compares them with advisories from OS vendors, GitHub Advisory Database, NVD and others (database downloaded and cached locally, no source code upload).</p>
+<h4>Running it</h4>
+<pre><code>trivy image myapp:1.4.2                                   # scan local or remote image
+trivy image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 myapp:1.4.2   # fail the pipeline
+trivy image --format sarif -o trivy.sarif myapp:1.4.2     # upload to GitHub code scanning
+trivy fs --scanners vuln,secret,misconfig .               # repository: dependencies, secrets, IaC
+trivy config ./k8s ./terraform                            # Kubernetes, Dockerfile, Terraform misconfigurations
+trivy image --format cyclonedx -o sbom.json myapp:1.4.2   # generate an SBOM
+trivy k8s --report summary cluster                        # scan a running cluster</code></pre>
+<p>Output lists package, installed version, fixed version, severity (CVSS based) and CVE id.</p>
+<h4>In the pipeline</h4>
+<pre><code>- name: Build image
+  run: docker build -t myapp:${{ github.sha }} .
+- name: Scan
+  uses: aquasecurity/trivy-action@master
+  with:
+    image-ref: myapp:${{ github.sha }}
+    severity: CRITICAL,HIGH
+    ignore-unfixed: true
+    exit-code: &#39;1&#39;</code></pre>
+<p>Place the scan <strong>before pushing to production registries</strong>, cache the vulnerability DB, and publish reports. Add a scheduled scan of images already deployed, because new CVEs are discovered after you ship. Admission controllers (Trivy Operator, Kyverno, Gatekeeper with signature and scan policies) can block unscanned images.</p>
+<h4>Reducing noise and risk</h4>
+<ul><li>Use <strong>minimal base images</strong> (distroless, Alpine, Chainguard, slim) and multi-stage builds so build tools and shells are absent, which removes most findings.</li><li><strong>Update base images and dependencies regularly</strong> (Renovate, Dependabot) and rebuild frequently.</li><li><code>--ignore-unfixed</code> hides vulnerabilities with no patch yet (track them separately).</li><li>Use <code>.trivyignore</code> with expirations and justification, or <strong>VEX</strong> (Vulnerability Exploitability eXchange) documents to state &quot;not affected&quot; (the vulnerable function is not reachable).</li><li>Prioritise by severity, exploitability (EPSS, known exploited vulnerabilities list), exposure (internet-facing), and whether it is in the runtime path.</li><li>Pin images by digest and sign them (cosign) to ensure the scanned image is what runs.</li></ul>
+<h4>SBOM</h4>
+<p>A Software Bill of Materials (CycloneDX or SPDX) lists all components. Generate at build, attach to the image as an attestation (<code>cosign attest</code>), store it, and rescan the SBOM later when new CVEs appear without pulling the image.</p>
+<h4>Limits</h4>
+<p>Scanners rely on package metadata (statically linked or vendored code may be missed), report CVEs that may not be exploitable, and cannot find zero-days or logic flaws. Combine with runtime protection, least privilege (non-root, read-only filesystems), network policies and patch SLAs (critical within days).</p>
+<h4>Pitfalls</h4>
+<p>Scanning only once, blocking every build on unfixable low-risk CVEs, ignoring application dependencies, and storing registry credentials insecurely in CI.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you reduce false positives and handle vulnerabilities without a fix available?</li><li>Why scan both at build time and in the registry or cluster continuously?</li><li>What is an SBOM and how does Trivy generate and use one?</li></ul>
+<p><a class="btn primary" href="../#/q/do-67">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-67%3A+How+do+you+scan+container+images+for+Common+Vulnerabilities+and%E2%80%A6&amp;question-id=do-67&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+2%2C+topic%3A+Containers%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-67.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>
