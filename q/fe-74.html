@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What causes Long Tasks (&gt;50ms) in the browser, and how do you yield to the main thread with `scheduler.yield()`? | InterviewGearUp</title>
+<meta name="description" content="A long task is any main-thread task running over 50 ms; it blocks input and rendering and hurts INP and TBT. Typical causes are big JavaScript execution,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-74.html">
+<meta property="og:title" content="What causes Long Tasks (&gt;50ms) in the browser, and how do you yield to the main thread with `scheduler.yield()`? | InterviewGearUp">
+<meta property="og:description" content="A long task is any main-thread task running over 50 ms; it blocks input and rendering and hurts INP and TBT. Typical causes are big JavaScript execution,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-74.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What causes Long Tasks (&gt;50ms) in the browser, and how do you yield to the main thread with `scheduler.yield()`?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 3 (Senior) · Performance · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A long task is any main-thread task running over 50 ms; it blocks input and rendering and hurts INP and TBT. Typical causes are big JavaScript execution, heavy rendering, layout thrashing and synchronous work. Break the work into chunks and yield with scheduler.yield() so the browser can handle input between chunks.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why 50 ms</h4>
+<p>The main thread handles JavaScript, style, layout, paint and input. A task longer than 50 ms delays the response to a tap or keypress beyond the roughly 100 ms users perceive as instant. <strong>INP</strong> (Interaction to Next Paint) measures this latency, <strong>TBT</strong> (Total Blocking Time) sums time over 50 ms in lab tests.</p>
+<h4>Common causes</h4>
+<ul><li>Large JS bundles to parse, compile and execute at startup, hydration of big trees.</li><li>Processing large JSON or arrays synchronously, sorting or filtering thousands of rows.</li><li>Rendering large lists or complex React updates (many components re-rendering).</li><li>Forced synchronous layout (read, write, read) and style recalculation across big DOMs.</li><li>Third-party scripts (tag managers, chat widgets, analytics).</li></ul>
+<h4>Yield to the main thread</h4>
+<p>Split work into small slices and let the browser run input and rendering between them.</p>
+<pre><code>async function processAll(items) {
+  let last = performance.now();
+  for (const item of items) {
+    work(item);
+    if (performance.now() - last &gt; 40) {          // keep slices under about 50 ms
+      await scheduler.yield();                    // continue afterwards, with priority over other queued tasks
+      last = performance.now();
+    }
+  }
+}
+// fallback where unsupported
+const yieldToMain = () =&gt; globalThis.scheduler?.yield?.() ?? new Promise(r =&gt; setTimeout(r, 0));</code></pre>
+<p><code>scheduler.yield()</code> returns a promise that resolves later and, unlike <code>setTimeout(0)</code>, <strong>continues the task at the front of the queue</strong> instead of behind other pending tasks, and it is not clamped by timer throttling. <code>scheduler.postTask(fn, { priority: &#39;user-blocking&#39; | &#39;user-visible&#39; | &#39;background&#39; })</code> schedules prioritised work, and <code>requestIdleCallback</code> suits non-urgent tasks.</p>
+<h4>Other fixes</h4>
+<ul><li><strong>Web Workers</strong> (or Comlink) for CPU heavy computation: parsing, search indexes, image processing.</li><li>Reduce and defer JavaScript: code splitting, lazy hydration, islands, defer third parties.</li><li>Virtualise long lists, use <code>content-visibility</code>, and batch DOM writes.</li><li>Debounce input handlers; show an immediate visual response, then do the heavy part.</li><li>In React: transitions (<code>startTransition</code>, <code>useDeferredValue</code>) mark expensive updates as interruptible.</li></ul>
+<h4>Finding them</h4>
+<p>DevTools <strong>Performance</strong> panel shows red-flagged long tasks with call trees. The <strong>Long Animation Frames API</strong> (<code>PerformanceObserver</code> with <code>long-animation-frame</code>) attributes script culprits in the field. Measure INP with the <code>web-vitals</code> library in RUM.</p>
+<h4>Pitfalls</h4>
+<p>Yielding too often (overhead), yielding while holding inconsistent UI state, using <code>setTimeout(0)</code> with nested throttling (4 ms clamp), and moving work to a worker with huge <code>postMessage</code> copies (use transferables).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you find long tasks with the Performance panel and the Long Tasks or Long Animation Frames API?</li><li>When would you move work to a Web Worker instead of yielding?</li><li>How does scheduler.postTask prioritisation differ from setTimeout yielding?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-74">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-74%3A+What+causes+Long+Tasks+%28%3E50ms%29+in+the+browser%2C+and+how+do+you+yield%E2%80%A6&amp;question-id=fe-74&amp;context=Frontend+engineer%2C+Gear+3%2C+topic%3A+Performance%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-74.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

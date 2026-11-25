@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does Brotli compression compare to Gzip for text assets (HTML, CSS, JS)? | InterviewGearUp</title>
+<meta name="description" content="Brotli compresses text assets about 15 to 25 percent smaller than Gzip at comparable or higher levels, thanks to a built-in static dictionary and better…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-91.html">
+<meta property="og:title" content="How does Brotli compression compare to Gzip for text assets (HTML, CSS, JS)? | InterviewGearUp">
+<meta property="og:description" content="Brotli compresses text assets about 15 to 25 percent smaller than Gzip at comparable or higher levels, thanks to a built-in static dictionary and better…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-91.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does Brotli compression compare to Gzip for text assets (HTML, CSS, JS)?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · Performance · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Brotli compresses text assets about 15 to 25 percent smaller than Gzip at comparable or higher levels, thanks to a built-in static dictionary and better modelling. It needs HTTPS in browsers. Precompress static files at max level (11) and use moderate levels (4 to 5) for dynamic responses.</p></div>
+<h4>Explained in depth</h4>
+<h4>How they work</h4>
+<p><strong>Gzip</strong> (DEFLATE) uses LZ77 and Huffman coding with a 32 KB window. <strong>Brotli</strong> (RFC 7932) uses LZ77, a larger window (up to 16 MB), context modelling, and a <strong>pre-built 120 KB dictionary</strong> of common web strings (HTML tags, CSS properties, JS keywords), which especially helps small files.</p>
+<h4>Compression comparison</h4>
+<div class="md-table"><table><thead><tr><th></th><th>Gzip</th><th>Brotli</th></tr></thead><tbody><tr><td>Typical size of JS, CSS, HTML</td><td>baseline</td><td>15 to 25 percent smaller (about 14 to 20 percent on JS, more on CSS and HTML)</td></tr><tr><td>Levels</td><td>1 to 9</td><td>0 to 11</td></tr><tr><td>Compression speed at high level</td><td>fast</td><td>very slow at level 11, comparable at 4 to 5</td></tr><tr><td>Decompression speed</td><td>fast</td><td>similar to Gzip</td></tr><tr><td>Browser support</td><td>universal</td><td>all modern browsers, HTTPS only</td></tr><tr><td>Header</td><td><code>Content-Encoding: gzip</code></td><td><code>Content-Encoding: br</code></td></tr></tbody></table></div>
+<h4>Best practice</h4>
+<ul><li><strong>Static assets</strong>: compress at build time with Brotli level 11 (and keep a Gzip fallback), store <code>app.js.br</code> and <code>app.js.gz</code>, and let the server or CDN pick the matching file. Slow compression does not matter because it happens once.</li><li><strong>Dynamic responses (HTML, JSON APIs)</strong>: use Brotli at levels 4 to 5 (or Gzip 6); level 11 would add latency and CPU per request.</li><li>Compress only compressible types: HTML, CSS, JS, JSON, SVG, XML, fonts like TTF and OTF. <strong>Do not recompress</strong> images, video, WOFF2 (already Brotli) or PDFs.</li><li>Skip tiny responses (under about 1 KB) where headers outweigh savings.</li></ul>
+<h4>Negotiation</h4>
+<p>The browser sends <code>Accept-Encoding: gzip, deflate, br, zstd</code>; the server picks one and replies with <code>Content-Encoding</code>. Always add <code>Vary: Accept-Encoding</code> so shared caches store each variant correctly.</p>
+<pre><code>brotli on;  brotli_comp_level 5;  brotli_types text/css application/javascript application/json image/svg+xml;
+brotli_static on;                 # serve precompressed .br files
+gzip on;    gzip_static on;</code></pre>
+<h4>Results in practice</h4>
+<p>A 300 KB JavaScript bundle might be about 90 KB with Gzip and about 78 KB with Brotli 11. The benefit is largest on slow mobile networks and for many small files. Measure with <code>curl -H &#39;Accept-Encoding: br&#39; -I</code> and Lighthouse.</p>
+<h4>Alternatives</h4>
+<p><strong>Zstandard (zstd)</strong> is now supported in browsers, with fast compression and good ratios at lower CPU cost, so it is attractive for dynamic content. Minification and tree shaking reduce the input size before compression.</p>
+<h4>Pitfalls</h4>
+<p>Double compression, missing <code>Vary</code>, serving Brotli over HTTP (ignored by browsers), and compressing responses that contain secrets mixed with attacker input over TLS (BREACH), which needs CSRF token masking or per-response randomisation.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is Brotli level 11 unsuitable for on-the-fly compression?</li><li>How does the Accept-Encoding negotiation work and what is Vary for?</li><li>What about Zstandard as a newer alternative?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-91">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-91%3A+How+does+Brotli+compression+compare+to+Gzip+for+text+assets+%28HTML%2C%E2%80%A6&amp;question-id=fe-91&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+Performance%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-91.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

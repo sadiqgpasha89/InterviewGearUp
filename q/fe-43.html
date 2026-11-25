@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you optimize image delivery using modern formats (AVIF, WebP), responsive `srcset`, and lazy loading? | InterviewGearUp</title>
+<meta name="description" content="Deliver the smallest correctly sized image the browser can display: use AVIF or WebP with a fallback through picture, provide srcset and sizes so devices…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-43.html">
+<meta property="og:title" content="How do you optimize image delivery using modern formats (AVIF, WebP), responsive `srcset`, and lazy loading? | InterviewGearUp">
+<meta property="og:description" content="Deliver the smallest correctly sized image the browser can display: use AVIF or WebP with a fallback through picture, provide srcset and sizes so devices…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-43.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you optimize image delivery using modern formats (AVIF, WebP), responsive `srcset`, and lazy loading?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · Performance · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Deliver the smallest correctly sized image the browser can display: use AVIF or WebP with a fallback through picture, provide srcset and sizes so devices choose the right width, set width and height to prevent layout shift, lazy-load below-the-fold images, and prioritise the LCP image.</p></div>
+<h4>Explained in depth</h4>
+<h4>Modern formats</h4>
+<div class="md-table"><table><thead><tr><th>Format</th><th>Typical saving vs JPEG</th><th>Notes</th></tr></thead><tbody><tr><td>WebP</td><td>25 to 35%</td><td>wide support, lossy and lossless, animation</td></tr><tr><td>AVIF</td><td>40 to 50%</td><td>best compression, slower to encode, wide modern support</td></tr><tr><td>JPEG XL</td><td>variable</td><td>limited browser support</td></tr></tbody></table></div>
+<p>Serve the best format the browser supports using <code>&lt;picture&gt;</code>:</p>
+<pre><code>&lt;picture&gt;
+  &lt;source type=&quot;image/avif&quot; srcset=&quot;hero-480.avif 480w, hero-960.avif 960w, hero-1600.avif 1600w&quot; sizes=&quot;(min-width: 900px) 50vw, 100vw&quot;&gt;
+  &lt;source type=&quot;image/webp&quot; srcset=&quot;hero-480.webp 480w, hero-960.webp 960w, hero-1600.webp 1600w&quot; sizes=&quot;(min-width: 900px) 50vw, 100vw&quot;&gt;
+  &lt;img src=&quot;hero-960.jpg&quot; srcset=&quot;hero-480.jpg 480w, hero-960.jpg 960w, hero-1600.jpg 1600w&quot;
+       sizes=&quot;(min-width: 900px) 50vw, 100vw&quot; width=&quot;960&quot; height=&quot;540&quot; alt=&quot;Team at work&quot; fetchpriority=&quot;high&quot;&gt;
+&lt;/picture&gt;</code></pre>
+<h4>Responsive sizing</h4>
+<ul><li><code>srcset</code> with <strong>width descriptors</strong> (<code>480w</code>) lists candidate files; <code>sizes</code> tells the browser how wide the image will be <strong>in the layout</strong>, so it can choose before CSS loads. The browser multiplies by device pixel ratio and picks the smallest sufficient file.</li><li>Use <code>srcset</code> with <code>1x, 2x</code> descriptors for fixed-size images (logos, avatars).</li><li>Use <code>&lt;picture&gt;</code> with <code>media</code> for <strong>art direction</strong> (different crops).</li></ul>
+<h4>Loading behaviour</h4>
+<ul><li><code>loading=&quot;lazy&quot;</code> defers off-screen images and iframes. Do <strong>not</strong> lazy-load the LCP image or anything above the fold.</li><li><code>decoding=&quot;async&quot;</code> avoids blocking the main thread.</li><li><code>fetchpriority=&quot;high&quot;</code> on the LCP image, with a <code>&lt;link rel=&quot;preload&quot; as=&quot;image&quot; imagesrcset=... imagesizes=...&gt;</code> if it is discovered late (CSS background).</li><li>Always set <code>width</code> and <code>height</code> (or CSS <code>aspect-ratio</code>) so the browser reserves space and <strong>CLS</strong> stays near zero.</li></ul>
+<h4>Delivery</h4>
+<ul><li>Use an <strong>image CDN or optimiser</strong> (Cloudflare, Cloudinary, imgix, Next.js <code>&lt;Image&gt;</code>, Astro assets) to resize and convert on demand, and negotiate format with the <code>Accept</code> header.</li><li>Set long immutable cache headers on hashed filenames.</li><li>Compress thoughtfully: quality 60 to 80 for photos, SVG for icons (minified with SVGO), CSS or inline SVG for simple shapes, and strip metadata.</li></ul>
+<h4>Pitfalls</h4>
+<p>Serving a 4000 px photo into a 300 px slot, lazy-loading the hero (hurts LCP), missing <code>sizes</code> (the browser assumes <code>100vw</code> and overfetches), upscaled blurry assets, and CSS background images that the preload scanner cannot discover.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does the sizes attribute interact with srcset and DPR selection?</li><li>How do you prioritise the hero image without hurting other resources?</li><li>When would you use an image CDN or build-time pipeline?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-43">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-43%3A+How+do+you+optimize+image+delivery+using+modern+formats+%28AVIF%2C%E2%80%A6&amp;question-id=fe-43&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+Performance%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-43.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does the Navigation Timing and Resource Timing API provide real-user performance monitoring (RUM)? | InterviewGearUp</title>
+<meta name="description" content="The Navigation Timing and Resource Timing APIs expose precise timestamps for page loads and every subresource, so you can compute TTFB, DNS, connect,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-78.html">
+<meta property="og:title" content="How does the Navigation Timing and Resource Timing API provide real-user performance monitoring (RUM)? | InterviewGearUp">
+<meta property="og:description" content="The Navigation Timing and Resource Timing APIs expose precise timestamps for page loads and every subresource, so you can compute TTFB, DNS, connect,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-78.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does the Navigation Timing and Resource Timing API provide real-user performance monitoring (RUM)?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 3 (Senior) · Browser APIs · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>The Navigation Timing and Resource Timing APIs expose precise timestamps for page loads and every subresource, so you can compute TTFB, DNS, connect, download and render milestones from real users. Collect them with PerformanceObserver and send the aggregates to an analytics endpoint to build a Real User Monitoring pipeline.</p></div>
+<h4>Explained in depth</h4>
+<h4>Lab versus field data</h4>
+<p>Lighthouse runs on one machine and network. <strong>RUM</strong> measures what real users experience across devices, networks and geographies, revealing long tails that synthetic tests miss. Browsers expose the data through the <strong>Performance Timeline</strong>.</p>
+<h4>Navigation Timing (Level 2)</h4>
+<pre><code>const [nav] = performance.getEntriesByType(&#39;navigation&#39;);
+const metrics = {
+  dns:  nav.domainLookupEnd - nav.domainLookupStart,
+  tcp:  nav.connectEnd - nav.connectStart,
+  tls:  nav.secureConnectionStart ? nav.connectEnd - nav.secureConnectionStart : 0,
+  ttfb: nav.responseStart - nav.startTime,          // time to first byte (includes redirects)
+  download: nav.responseEnd - nav.responseStart,
+  domInteractive: nav.domInteractive,
+  domComplete: nav.domComplete,
+  load: nav.loadEventEnd,
+  type: nav.type, transferSize: nav.transferSize,
+};</code></pre>
+<p>It covers one entry: the document navigation, with redirect, DNS, connection, request, response and DOM processing phases.</p>
+<h4>Resource Timing</h4>
+<p>One entry per fetched resource (scripts, CSS, images, fetch/XHR):</p>
+<pre><code>new PerformanceObserver((list) =&gt; {
+  for (const e of list.getEntries()) {
+    if (e.duration &gt; 1000) beacon({ name: e.name, type: e.initiatorType, duration: e.duration, size: e.transferSize, cache: e.transferSize === 0 });
+  }
+}).observe({ type: &#39;resource&#39;, buffered: true });</code></pre>
+<p><code>transferSize</code>, <code>encodedBodySize</code> and <code>decodedBodySize</code> show compression and cache hits; <code>deliveryType</code>, <code>renderBlockingStatus</code> and <code>responseStatus</code> add context in newer browsers.</p>
+<h4>Cross-origin and privacy</h4>
+<p>Detailed timing for third-party resources is zeroed unless the server sends <code>Timing-Allow-Origin: *</code> (or your origin). Timing data is also coarsened to limit side channels.</p>
+<h4>Core Web Vitals and more</h4>
+<p>Use <code>PerformanceObserver</code> for <code>largest-contentful-paint</code>, <code>layout-shift</code>, <code>event</code> (INP), <code>paint</code>, <code>long-animation-frame</code>, or the <strong><code>web-vitals</code></strong> library. Add <code>navigator.connection.effectiveType</code>, <code>deviceMemory</code> and viewport for segmentation.</p>
+<h4>Sending data</h4>
+<pre><code>addEventListener(&#39;visibilitychange&#39;, () =&gt; {
+  if (document.visibilityState === &#39;hidden&#39;) navigator.sendBeacon(&#39;/rum&#39;, JSON.stringify(payload));
+});</code></pre>
+<p><code>sendBeacon</code> or <code>fetch(..., { keepalive: true })</code> survive page unload. Sample (for example 10%) to control cost, avoid personal data and respect consent rules.</p>
+<h4>Analysis</h4>
+<p>Report <strong>p75</strong> (the Core Web Vitals threshold) and p95, segmented by page, device class, country and connection, with release tags to catch regressions. Correlate with back-end traces using <code>Server-Timing</code> headers.</p>
+<h4>Pitfalls</h4>
+<p>Resource Timing buffer is limited (about 250 entries; raise with <code>setResourceTimingBufferSize</code> or observe continuously), bfcache restores skewing metrics, bot traffic, and averaging skewed distributions.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do Server-Timing headers connect front-end and back-end timing?</li><li>What are the cross-origin limits of Resource Timing and how does Timing-Allow-Origin help?</li><li>Why report percentiles by device and network class instead of averages?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-78">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-78%3A+How+does+the+Navigation+Timing+and+Resource+Timing+API+provide%E2%80%A6&amp;question-id=fe-78&amp;context=Frontend+engineer%2C+Gear+3%2C+topic%3A+Browser+APIs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-78.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain CSS Stacking Contexts and how `z-index` works across parent and child stacking contexts. | InterviewGearUp</title>
+<meta name="description" content="A stacking context is a self-contained 3D layering scope. Inside it, z-index values only compare with siblings in the same context; the context itself is…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-26.html">
+<meta property="og:title" content="Explain CSS Stacking Contexts and how `z-index` works across parent and child stacking contexts. | InterviewGearUp">
+<meta property="og:description" content="A stacking context is a self-contained 3D layering scope. Inside it, z-index values only compare with siblings in the same context; the context itself is…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-26.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain CSS Stacking Contexts and how `z-index` works across parent and child stacking contexts.</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · CSS · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A stacking context is a self-contained 3D layering scope. Inside it, z-index values only compare with siblings in the same context; the context itself is painted as one unit at its own z-level in its parent. So a child with z-index 9999 cannot escape a parent stacking context with a lower rank.</p></div>
+<h4>Explained in depth</h4>
+<h4>The rule people forget</h4>
+<p><code>z-index</code> is <strong>not global</strong>. It orders elements only within the same stacking context. Each stacking context is atomic: the browser paints its whole subtree together, and the context as a whole sits at one position in its parent&#39;s ordering.</p>
+<pre><code>&lt;div class=&quot;a&quot; style=&quot;position:relative; z-index:1&quot;&gt;   &lt;!-- context A --&gt;
+  &lt;div class=&quot;modal&quot; style=&quot;position:absolute; z-index:9999&quot;&gt;I am inside A&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;b&quot; style=&quot;position:relative; z-index:2&quot;&gt;B covers the modal&lt;/div&gt;</code></pre>
+<p><code>.modal</code> has a huge z-index but lives in context A (rank 1); <code>.b</code> is rank 2 in the root context, so B paints above the whole of A, including the modal.</p>
+<h4>What creates a stacking context</h4>
+<ul><li>The root element</li><li><code>position: relative</code> or <code>absolute</code> with a z-index other than <code>auto</code>; <code>position: fixed</code> or <code>sticky</code> (always)</li><li>A flex or grid <strong>item</strong> with a z-index other than <code>auto</code></li><li><code>opacity</code> below 1</li><li><code>transform</code>, <code>filter</code>, <code>perspective</code>, <code>clip-path</code>, <code>mask</code>, <code>backdrop-filter</code>, <code>mix-blend-mode</code> other than normal</li><li><code>isolation: isolate</code>, <code>will-change</code> of one of those properties, <code>contain: layout</code> or <code>paint</code></li></ul>
+<p>The accidental ones (<code>transform</code> for animation, <code>opacity: .99</code>, <code>will-change: transform</code>) are the usual reason a tooltip or dropdown is trapped behind something else.</p>
+<h4>Paint order inside one context (low to high)</h4>
+<ol start="1"><li>The context root&#39;s background and borders</li><li>Descendants with negative z-index</li><li>In-flow, non-positioned block descendants</li><li>Floats</li><li>In-flow inline content</li><li>Positioned descendants with <code>z-index: auto</code> or <code>0</code>, in DOM order</li><li>Descendants with positive z-index, ascending</li></ol>
+<h4>Debugging</h4>
+<p>Walk up from the hidden element and look at each ancestor&#39;s <code>position</code>, <code>z-index</code>, <code>transform</code>, <code>opacity</code> and <code>filter</code>. Browser DevTools (Chrome 3D view or the &quot;Layers&quot; panel, Firefox&#39;s &quot;z-index&quot; display) help. A quick test is to temporarily remove ancestors&#39; properties.</p>
+<h4>Practical strategies</h4>
+<ul><li>Render overlays (modals, popovers, toasts) with a <strong>portal</strong> at the end of <code>&lt;body&gt;</code> so they are in the root context.</li><li>Use <code>isolation: isolate</code> on components to create a deliberate local context, so internal z-indexes cannot leak.</li><li>Keep a small scale of z-index tokens (<code>--z-dropdown</code>, <code>--z-modal</code>, <code>--z-toast</code>) instead of arbitrary numbers.</li><li>The modern <code>popover</code> attribute and <code>&lt;dialog&gt;</code> use the <strong>top layer</strong>, which sits above all stacking contexts.</li></ul>
+<h4>Pitfalls</h4>
+<p>Increasing z-index without understanding contexts leads to &quot;z-index wars&quot;. Fix the structure instead.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Which CSS properties silently create a stacking context, and how do you find the culprit when a dropdown is hidden behind another element?</li><li>What is the paint order inside a single stacking context?</li><li>How does isolation: isolate help you avoid z-index wars?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-26">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-26%3A+Explain+CSS+Stacking+Contexts+and+how+%60z-index%60+works+across+parent%E2%80%A6&amp;question-id=fe-26&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+CSS%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-26.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

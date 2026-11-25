@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you implement internationalization (i18n) and RTL layout support in a large web app? | InterviewGearUp</title>
+<meta name="description" content="Internationalisation means externalising strings into message catalogs with ICU message formatting for plurals and gender, using Intl APIs for dates,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-85.html">
+<meta property="og:title" content="How do you implement internationalization (i18n) and RTL layout support in a large web app? | InterviewGearUp">
+<meta property="og:description" content="Internationalisation means externalising strings into message catalogs with ICU message formatting for plurals and gender, using Intl APIs for dates,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-85.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you implement internationalization (i18n) and RTL layout support in a large web app?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 3 (Senior) · Architecture · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Internationalisation means externalising strings into message catalogs with ICU message formatting for plurals and gender, using Intl APIs for dates, numbers and currency, lazy-loading locale bundles, and building layouts with CSS logical properties and dir attributes so right-to-left languages mirror correctly.</p></div>
+<h4>Explained in depth</h4>
+<h4>Building blocks</h4>
+<ul><li><strong>Locale detection</strong>: URL segment or domain (best for SEO), user preference, then <code>Accept-Language</code> and <code>navigator.languages</code>; persist the choice. Add <code>&lt;html lang dir&gt;</code>, <code>hreflang</code> links and a locale-aware sitemap.</li><li><strong>Message catalogs</strong>: keys mapped to translations per locale (JSON, XLIFF, PO). Use a library: i18next, FormatJS (react-intl), LinguiJS, Fluent, or framework-native (Angular, Vue i18n).</li><li><strong>ICU MessageFormat</strong> for grammar:</li></ul>
+<pre><code>{count, plural, =0 {No messages} one {# message} other {# messages}}
+{gender, select, female {She replied} male {He replied} other {They replied}}</code></pre>
+<p>Never build sentences with concatenation (<code>&quot;You have &quot; + n + &quot; items&quot;</code>) because word order, plural categories (Arabic has six, Polish has few and many) and gender vary.</p>
+<ul><li><strong>Formatting</strong> with <code>Intl</code>: <code>Intl.NumberFormat</code>, <code>DateTimeFormat</code>, <code>RelativeTimeFormat</code>, <code>ListFormat</code>, <code>PluralRules</code>, <code>Collator</code> (locale-aware sort). Store dates as UTC ISO and format at the edge.</li><li><strong>Lazy loading</strong>: split catalogs per locale and per route; keep a fallback chain (<code>pt-BR</code> to <code>pt</code> to <code>en</code>).</li></ul>
+<h4>RTL support</h4>
+<ul><li>Set <code>dir=&quot;rtl&quot;</code> on <code>&lt;html&gt;</code> for Arabic, Hebrew, Persian, Urdu.</li><li>Use <strong>CSS logical properties</strong>: <code>margin-inline-start</code>, <code>padding-inline</code>, <code>inset-inline-end</code>, <code>text-align: start</code>, <code>border-start-start-radius</code>, and flexbox/grid (which mirror automatically with <code>direction</code>). Avoid hardcoded <code>left</code> and <code>right</code>.</li><li>Mirror directional icons (arrows, back chevrons, progress) but not logos, media controls or clocks; use <code>:dir(rtl)</code> or <code>[dir=rtl]</code> selectors and <code>transform: scaleX(-1)</code> for icons.</li><li>Bidirectional text: wrap user content in <code>&lt;bdi&gt;</code> or <code>dir=&quot;auto&quot;</code>, isolate embedded LTR (numbers, URLs, code) to avoid punctuation jumping.</li><li>Test fonts for script coverage and line-height (Arabic and Thai need more height); avoid letter-spacing on cursive scripts.</li></ul>
+<h4>Process and tooling</h4>
+<ul><li>Extract keys automatically, use stable key ids and context notes for translators, integrate a TMS (Crowdin, Lokalise, Phrase) with CI.</li><li>Lint for missing or unused keys and ICU syntax errors; use <strong>pseudo-localisation</strong> (accented, expanded text) to find hardcoded strings and overflow; allow about 30 to 40 percent text growth.</li><li>Snapshot or visual tests per locale, including RTL.</li></ul>
+<h4>Pitfalls</h4>
+<p>Hardcoded strings in images and SVG, truncating text, assuming 12/24 hour formats, sorting with default <code>sort()</code>, name and address formats, currency versus locale confusion, and flash of untranslated content during hydration.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why do plurals and word order make string concatenation unsafe?</li><li>How do you handle bidirectional text and mixed LTR content inside RTL pages?</li><li>How do you keep translations in sync with the code and catch missing keys?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-85">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-85%3A+How+do+you+implement+internationalization+%28i18n%29+and+RTL+layout%E2%80%A6&amp;question-id=fe-85&amp;context=Frontend+engineer%2C+Gear+3%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-85.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

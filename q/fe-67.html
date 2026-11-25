@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do CSS subgrid and `minmax()` solve nested grid alignment problems? | InterviewGearUp</title>
+<meta name="description" content="With subgrid a nested grid adopts its parent&#39;s row or column tracks instead of defining new ones, so deeply nested items align to the outer lines.…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-67.html">
+<meta property="og:title" content="How do CSS subgrid and `minmax()` solve nested grid alignment problems? | InterviewGearUp">
+<meta property="og:description" content="With subgrid a nested grid adopts its parent&#39;s row or column tracks instead of defining new ones, so deeply nested items align to the outer lines.…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-67.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do CSS subgrid and `minmax()` solve nested grid alignment problems?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 3 (Senior) · CSS · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>With subgrid a nested grid adopts its parent&#39;s row or column tracks instead of defining new ones, so deeply nested items align to the outer lines. minmax(min, max) gives a track a flexible size range, and together they solve cross-card alignment and overflow problems that nested independent grids cannot.</p></div>
+<h4>Explained in depth</h4>
+<h4>The nesting problem</h4>
+<p>A grid item that itself becomes a grid creates <strong>independent tracks</strong>. Each card in a row of cards has its own internal rows, so a title that wraps to two lines in one card pushes only that card&#39;s content down. Titles, descriptions and buttons no longer line up across cards, and you must guess fixed heights.</p>
+<h4>Subgrid</h4>
+<pre><code>.cards { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: auto; gap: 24px; }
+
+.card {
+  display: grid;
+  grid-row: span 3;                    /* the card occupies 3 parent rows */
+  grid-template-rows: subgrid;         /* adopt those parent rows */
+  row-gap: 0;
+}
+/* children: &lt;h3&gt;, &lt;p&gt;, &lt;a class=&quot;btn&quot;&gt; now sit in the parent&#39;s 3 shared rows */</code></pre>
+<p>Row sizes are computed across <strong>all cards together</strong>, so the tallest title defines row 1 for every card, the longest paragraph defines row 2, and buttons align along the bottom. You can also use <code>grid-template-columns: subgrid</code> for forms (labels and fields aligned across rows) and table-like layouts.</p>
+<p>Gaps are inherited unless overridden, and line names in the parent are available to the subgrid.</p>
+<h4>minmax()</h4>
+<p><code>minmax(min, max)</code> defines a track size range: the track is at least <code>min</code> and grows up to <code>max</code>.</p>
+<pre><code>grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));    /* responsive columns, no media queries */
+grid-template-columns: minmax(0, 1fr) 320px;                    /* flexible main column that can shrink */</code></pre>
+<p>Key detail: <code>1fr</code> is really <code>minmax(auto, 1fr)</code>, and <code>auto</code> minimum means the track will not shrink below its <strong>min-content</strong> (a long word, an image, a <code>pre</code> block), causing overflow. Writing <code>minmax(0, 1fr)</code> allows the track to shrink below content size, so you can truncate or wrap.</p>
+<h4>Combined use</h4>
+<p>Responsive card grid with <code>repeat(auto-fit, minmax(260px, 1fr))</code> for columns, and <code>subgrid</code> for the inner rows of each card, giving aligned rows without JavaScript equalisers or fixed heights.</p>
+<h4>Fallbacks</h4>
+<p>Subgrid is supported in all current evergreen browsers (Firefox first, Chrome and Safari later). Use <code>@supports (grid-template-rows: subgrid)</code> to enhance, with a flex column fallback (<code>margin-top: auto</code> on buttons) for older browsers.</p>
+<h4>Pitfalls</h4>
+<p>The item must span the parent tracks it wants to share; padding on the subgrid element shifts its children relative to parent lines; implicit tracks are not created in subgrid dimension; and heavy use makes layout recomputation more complex, so test with long content and translations.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does minmax(0, 1fr) fix content overflow in grid tracks?</li><li>How would you align the headings, bodies and buttons across cards in a row using subgrid?</li><li>What is the fallback strategy where subgrid is not supported?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-67">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-67%3A+How+do+CSS+subgrid+and+%60minmax%28%29%60+solve+nested+grid+alignment%E2%80%A6&amp;question-id=fe-67&amp;context=Frontend+engineer%2C+Gear+3%2C+topic%3A+CSS%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-67.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Design an autocomplete search component with debouncing, request cancellation, and keyboard navigation. | InterviewGearUp</title>
+<meta name="description" content="A robust autocomplete debounces input, cancels stale requests with AbortController, ignores out-of-order responses, and implements the ARIA combobox…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-81.html">
+<meta property="og:title" content="Design an autocomplete search component with debouncing, request cancellation, and keyboard navigation. | InterviewGearUp">
+<meta property="og:description" content="A robust autocomplete debounces input, cancels stale requests with AbortController, ignores out-of-order responses, and implements the ARIA combobox…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-81.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Design an autocomplete search component with debouncing, request cancellation, and keyboard navigation.</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · Architecture · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A robust autocomplete debounces input, cancels stale requests with AbortController, ignores out-of-order responses, and implements the ARIA combobox pattern with arrow, Enter and Escape keyboard handling. Cache recent queries and show loading, empty and error states.</p></div>
+<h4>Explained in depth</h4>
+<h4>Requirements</h4>
+<p>Type-ahead suggestions that feel instant, never show stale results, reduce server load, and work fully by keyboard and screen reader.</p>
+<h4>Data flow</h4>
+<ol start="1"><li><strong>Input</strong> event updates local state immediately (the text box must never lag).</li><li><strong>Debounce</strong> (150 to 300 ms) before querying; skip queries shorter than 2 characters or equal to the previous one.</li><li><strong>Cancel</strong> the in-flight request when a newer query starts.</li><li><strong>Cache</strong> results by normalised query (Map or LRU) so backspacing is instant.</li><li>Render the list, tracking an <code>activeIndex</code> for keyboard focus.</li></ol>
+<pre><code>function createAutocomplete(fetchSuggestions, render) {
+  let timer, controller;
+  const cache = new Map();
+  return function onInput(raw) {
+    const q = raw.trim().toLowerCase();
+    clearTimeout(timer);
+    controller?.abort();                           // cancel stale request
+    if (q.length &lt; 2) return render({ status: &#39;idle&#39;, items: [] });
+    if (cache.has(q)) return render({ status: &#39;ok&#39;, items: cache.get(q) });
+    timer = setTimeout(async () =&gt; {
+      controller = new AbortController();
+      render({ status: &#39;loading&#39; });
+      try {
+        const items = await fetchSuggestions(q, controller.signal);
+        cache.set(q, items);
+        render({ status: items.length ? &#39;ok&#39; : &#39;empty&#39;, items });
+      } catch (e) {
+        if (e.name !== &#39;AbortError&#39;) render({ status: &#39;error&#39; });
+      }
+    }, 200);
+  };
+}</code></pre>
+<p>Aborting guarantees only the latest request can update the UI. If the API cannot be aborted, compare a monotonically increasing request id before applying a response.</p>
+<h4>Keyboard and ARIA (combobox pattern)</h4>
+<ul><li>Input: <code>role=&quot;combobox&quot;</code>, <code>aria-expanded</code>, <code>aria-controls</code> (listbox id), <code>aria-autocomplete=&quot;list&quot;</code>, and <code>aria-activedescendant</code> pointing at the highlighted option. DOM focus stays in the input.</li><li>List: <code>role=&quot;listbox&quot;</code>, items <code>role=&quot;option&quot;</code> with unique ids and <code>aria-selected</code>.</li><li>Keys: ArrowDown and ArrowUp move (wrap or stop), Enter selects, Escape closes then clears, Tab closes, Home and End move the caret, not the list.</li><li>Announce the number of results in a polite <code>aria-live</code> region.</li></ul>
+<h4>Edge cases</h4>
+<p>Ignore Enter during <strong>IME composition</strong> (<code>isComposing</code>), keep the highlight in view (<code>scrollIntoView({ block: &#39;nearest&#39; })</code>), close on blur but allow clicks (use <code>mousedown</code> and <code>preventDefault</code>), highlight matched text safely (escape HTML), and highlight no option by default so Enter submits the typed text.</p>
+<h4>Production concerns</h4>
+<p>Server-side rate limiting and caching, request cost (prefix indexes, search engines), highlighting and ranking, recent searches, analytics on selection, and virtualised lists for large result sets. In React, put the logic in a <code>useAutocomplete</code> hook or use Downshift, React Aria or Headless UI Combobox.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you prevent a slow earlier response from overwriting a newer one?</li><li>Which ARIA attributes does the combobox pattern require?</li><li>How would you handle IME composition and very fast typists?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-81">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-81%3A+Design+an+autocomplete+search+component+with+debouncing%2C+request%E2%80%A6&amp;question-id=fe-81&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-81.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

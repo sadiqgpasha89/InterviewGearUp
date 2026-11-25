@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Design a client-side routing library supporting browser history, parameters, and query strings. | InterviewGearUp</title>
+<meta name="description" content="A client-side router maps URLs to views without page loads. It intercepts link clicks, updates the URL with the History API pushState and replaceState,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-82.html">
+<meta property="og:title" content="Design a client-side routing library supporting browser history, parameters, and query strings. | InterviewGearUp">
+<meta property="og:description" content="A client-side router maps URLs to views without page loads. It intercepts link clicks, updates the URL with the History API pushState and replaceState,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-82.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Design a client-side routing library supporting browser history, parameters, and query strings.</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 3 (Senior) · Architecture · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A client-side router maps URLs to views without page loads. It intercepts link clicks, updates the URL with the History API pushState and replaceState, listens to popstate for back and forward, matches the path against route patterns that extract params, and parses query strings with URLSearchParams.</p></div>
+<h4>Explained in depth</h4>
+<h4>Core pieces</h4>
+<ol start="1"><li><strong>Route table</strong>: patterns such as <code>/users/:id</code>, <code>/files/*path</code>, each with a component or loader.</li><li><strong>Matcher</strong>: compile patterns to regular expressions once and rank by specificity.</li><li><strong>History layer</strong>: wraps <code>pushState</code>, <code>replaceState</code> and <code>popstate</code>.</li><li><strong>Link handling</strong>: intercept same-origin anchor clicks.</li><li><strong>Subscription</strong>: notifies the app (a store or event) when the location changes.</li></ol>
+<pre><code>const routes = [];
+const compile = (path) =&gt; {
+  const keys = [];
+  const re = new RegExp(&#39;^&#39; + path.replace(/:([A-Za-z_]\w*)/g, (_, k) =&gt; (keys.push(k), &#39;([^/]+)&#39;)) + &#39;/?$&#39;);
+  return { re, keys };
+};
+export function route(path, handler) { routes.push({ ...compile(path), handler }); }
+
+function match(pathname) {
+  for (const r of routes) {
+    const m = r.re.exec(pathname);
+    if (m) return { handler: r.handler, params: Object.fromEntries(r.keys.map((k, i) =&gt; [k, decodeURIComponent(m[i + 1])])) };
+  }
+}
+
+export function navigate(url, { replace = false } = {}) {
+  history[replace ? &#39;replaceState&#39; : &#39;pushState&#39;]({}, &#39;&#39;, url);
+  render();
+}
+function render() {
+  const u = new URL(location.href);
+  const hit = match(u.pathname);
+  (hit ? hit.handler : notFound)({ params: hit?.params ?? {}, query: Object.fromEntries(u.searchParams), hash: u.hash });
+}
+addEventListener(&#39;popstate&#39;, render);                       // back and forward
+document.addEventListener(&#39;click&#39;, (e) =&gt; {
+  const a = e.target.closest(&#39;a[href]&#39;);
+  if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || a.target || a.origin !== location.origin) return;
+  e.preventDefault();
+  navigate(a.pathname + a.search + a.hash);
+});</code></pre>
+<h4>Design details</h4>
+<ul><li><strong>Query strings</strong>: read with <code>URLSearchParams</code>; update with <code>navigate</code> and keep the URL as the source of truth for filters and pagination, so links are shareable.</li><li><strong>Params</strong>: decode and validate; support optional and wildcard segments; sort routes by specificity (static before dynamic).</li><li><strong>Nested routes and layouts</strong>: match a tree and render outlets, with loaders running in parallel (as React Router, Remix do).</li><li><strong>Guards and redirects</strong>: async hooks before commit (<code>beforeEnter</code>), returning redirect targets; cancel stale navigations with a token when a newer one starts.</li><li><strong>Scroll and focus</strong>: restore scroll positions per history entry key; on forward navigation scroll to top or the hash target, then move focus to the main heading and announce the route change for screen readers.</li><li><strong>Base path</strong> and trailing slash normalisation; 404 handling.</li><li><strong>Hash mode</strong> (<code>#/path</code>) needs no server support; <strong>history mode</strong> requires the server to return <code>index.html</code> for unknown paths. The <strong>Navigation API</strong> (<code>navigation.navigate</code>, <code>navigate</code> event) is the modern replacement for manual interception.</li></ul>
+<h4>Pitfalls</h4>
+<p>Forgetting to handle modified clicks and downloads, double rendering on <code>popstate</code>, leaking listeners, unvalidated redirect targets (open redirect), and losing form state when remounting layouts.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you handle scroll restoration and focus management on navigation?</li><li>How do nested routes, guards and data loaders fit into the design?</li><li>What server configuration does history mode need?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-82">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-82%3A+Design+a+client-side+routing+library+supporting+browser+history%2C%E2%80%A6&amp;question-id=fe-82&amp;context=Frontend+engineer%2C+Gear+3%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-82.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

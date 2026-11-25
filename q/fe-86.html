@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Design an image carousel component supporting touch gestures, infinite loops, and accessibility. | InterviewGearUp</title>
+<meta name="description" content="A carousel needs a track of slides translated with transform, pointer events for drag and swipe with velocity and snap, scroll-snap as a simpler…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-86.html">
+<meta property="og:title" content="Design an image carousel component supporting touch gestures, infinite loops, and accessibility. | InterviewGearUp">
+<meta property="og:description" content="A carousel needs a track of slides translated with transform, pointer events for drag and swipe with velocity and snap, scroll-snap as a simpler…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-86.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Design an image carousel component supporting touch gestures, infinite loops, and accessibility.</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · Architecture · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A carousel needs a track of slides translated with transform, pointer events for drag and swipe with velocity and snap, scroll-snap as a simpler foundation, cloned edge slides or modular indexing for infinite looping, and full accessibility: labelled region, controls, pause for autoplay, keyboard support and reduced motion respect.</p></div>
+<h4>Explained in depth</h4>
+<h4>Option 1: CSS scroll-snap (preferred baseline)</h4>
+<pre><code>.track { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; overscroll-behavior-x: contain; }
+.slide { flex: 0 0 100%; scroll-snap-align: center; }</code></pre>
+<p>The browser provides native touch physics, momentum, keyboard scrolling and accessibility. Use <code>IntersectionObserver</code> to track the active slide and drive indicators; <code>scrollTo</code> for buttons. New CSS <code>::scroll-button()</code> and <code>::scroll-marker</code> features can generate controls natively.</p>
+<h4>Option 2: custom transform track</h4>
+<p>Use pointer events (works for mouse, touch and pen) with <code>touch-action: pan-y</code> so vertical scrolling still works:</p>
+<pre><code>let startX, dx, startT;
+track.addEventListener(&#39;pointerdown&#39;, (e) =&gt; { startX = e.clientX; startT = e.timeStamp; track.setPointerCapture(e.pointerId); });
+track.addEventListener(&#39;pointermove&#39;, (e) =&gt; { if (startX == null) return; dx = e.clientX - startX; track.style.transform = `translateX(${base + dx}px)`; });
+track.addEventListener(&#39;pointerup&#39;, (e) =&gt; {
+  const v = dx / (e.timeStamp - startT);                     // px per ms
+  if (Math.abs(dx) &gt; width / 4 || Math.abs(v) &gt; 0.5) go(dx &lt; 0 ? +1 : -1); else go(0);
+  startX = null; dx = 0;
+});</code></pre>
+<p>Disable transitions while dragging, animate to the snap point afterwards using <code>transform</code> (GPU friendly), and add rubber-band resistance at ends when not looping.</p>
+<h4>Infinite loop</h4>
+<ul><li><strong>Clone approach</strong>: append clones of the first slides and prepend clones of the last; after the transition ends on a clone, jump (no transition) to the real slide.</li><li><strong>Modular index</strong>: keep a window of slides and rotate DOM order or compute position as <code>(i mod n)</code>, repositioning off-screen items. Avoid duplicating focusable content (hide clones with <code>aria-hidden</code> and <code>inert</code>).</li></ul>
+<h4>Accessibility</h4>
+<ul><li>Container <code>role=&quot;region&quot;</code> with <code>aria-roledescription=&quot;carousel&quot;</code> and a label; each slide <code>role=&quot;group&quot;</code> <code>aria-roledescription=&quot;slide&quot;</code> labelled &quot;2 of 5&quot;.</li><li>Previous and next buttons with accessible names, visible focus, large touch targets; pagination dots as real buttons (<code>aria-current</code>).</li><li><strong>Autoplay</strong>: avoid by default; if used, provide a visible pause button, stop on hover and focus, stop permanently once the user interacts, and honour <code>prefers-reduced-motion</code>. WCAG 2.2.2 requires pause for moving content over 5 seconds.</li><li>Do not announce every auto-change; use <code>aria-live=&quot;off&quot;</code> while rotating and &quot;polite&quot; when the user navigates. Hide offscreen slides from the tab order (<code>inert</code>).</li><li>Keyboard: Arrow keys, Home and End when the carousel has focus.</li></ul>
+<h4>Performance and UX</h4>
+<p>Lazy-load offscreen images (<code>loading=&quot;lazy&quot;</code>, <code>decoding=&quot;async&quot;</code>), reserve aspect ratio to avoid layout shift, preload the next slide, and pause video. Avoid carousels for critical content because engagement on later slides is low.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is CSS scroll-snap often better than a JavaScript transform slider?</li><li>How do you implement the seamless infinite loop?</li><li>How do you make autoplay compliant with WCAG?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-86">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-86%3A+Design+an+image+carousel+component+supporting+touch+gestures%2C%E2%80%A6&amp;question-id=fe-86&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-86.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

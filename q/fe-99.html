@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are synthetic events in React and how do they differ from native browser events? | InterviewGearUp</title>
+<meta name="description" content="React&#39;s synthetic events are cross-browser wrapper objects that React passes to your handlers. They normalise the native event API, are delegated to the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-99.html">
+<meta property="og:title" content="What are synthetic events in React and how do they differ from native browser events? | InterviewGearUp">
+<meta property="og:description" content="React&#39;s synthetic events are cross-browser wrapper objects that React passes to your handlers. They normalise the native event API, are delegated to the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-99.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are synthetic events in React and how do they differ from native browser events?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · React · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>React&#39;s synthetic events are cross-browser wrapper objects that React passes to your handlers. They normalise the native event API, are delegated to the React root container instead of each node, and since React 17 are no longer pooled. They share the common interface of native events with stopPropagation, preventDefault and nativeEvent access.</p></div>
+<h4>Explained in depth</h4>
+<h4>What they are</h4>
+<p><code>onClick</code>, <code>onChange</code>, <code>onKeyDown</code> handlers receive a <code>SyntheticEvent</code> that wraps the browser event and provides a consistent interface (<code>target</code>, <code>currentTarget</code>, <code>type</code>, <code>preventDefault()</code>, <code>stopPropagation()</code>, <code>isDefaultPrevented()</code>), with <code>e.nativeEvent</code> as the escape hatch.</p>
+<pre><code>function Form() {
+  const onSubmit = (e) =&gt; { e.preventDefault(); console.log(e.nativeEvent instanceof Event); };
+  return &lt;form onSubmit={onSubmit}&gt;...&lt;/form&gt;;
+}</code></pre>
+<h4>Differences from native events</h4>
+<ul><li><strong>Delegation</strong>: React attaches one listener per event type at the <strong>root container</strong> (React 17 and later; at <code>document</code> in 16) and dispatches to the matching handlers through the fibre tree, which is efficient for many elements.</li><li><strong>Bubbling follows the React tree</strong>, not only the DOM tree, so events in a <strong>portal</strong> bubble to React ancestors.</li><li><strong>Naming and API</strong>: camelCase props (<code>onClick</code>), handlers receive functions rather than strings, <code>return false</code> does nothing; call <code>preventDefault()</code> explicitly.</li><li><strong><code>onChange</code></strong> fires on every input change (like the native <code>input</code> event), not only on blur.</li><li><strong><code>onFocus</code> and <code>onBlur</code></strong> bubble (they use <code>focusin</code> and <code>focusout</code> under the hood), unlike native focus and blur.</li><li><strong>Pooling removed</strong>: before React 17 the event object was reused and nullified after the handler, so async access required <code>e.persist()</code>. Now it is safe to read in async code, although it is still better to copy needed values.</li><li>Scroll and wheel handlers may be passive; <code>onWheel</code>, <code>onTouchStart</code> registered passively by React, so <code>preventDefault</code> in them can fail. Add native non-passive listeners for that.</li><li>Some native events (<code>onScroll</code>) do not bubble in React 17 and later, matching the browser.</li></ul>
+<h4>Mixing with native listeners</h4>
+<p>Native listeners attached to <code>document</code> or <code>window</code> run <strong>after</strong> React&#39;s root handler for bubbling events, and <code>e.stopPropagation()</code> in React stops only React propagation plus native bubbling above the root. Use <code>e.nativeEvent.stopImmediatePropagation()</code> carefully, or capture phase props (<code>onClickCapture</code>) to run earlier. For outside-click detection attach a <code>pointerdown</code> listener in <code>useEffect</code> and compare with <code>ref.current.contains(e.target)</code>.</p>
+<h4>Practical tips</h4>
+<p>Use <code>e.currentTarget</code> for the element that owns the handler and <code>e.target</code> for the origin of the event. Type handlers in TypeScript with <code>React.MouseEvent&lt;HTMLButtonElement&gt;</code>. Prefer a single delegated handler with <code>data-*</code> attributes for very large lists only when profiling shows a problem, since React already delegates internally.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does event delegation at the root differ between React 16 and React 17?</li><li>Why is onChange for inputs different from the native change event?</li><li>How do you mix native listeners and React handlers without ordering bugs?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-99">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-99%3A+What+are+synthetic+events+in+React+and+how+do+they+differ+from%E2%80%A6&amp;question-id=fe-99&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+React%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-99.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

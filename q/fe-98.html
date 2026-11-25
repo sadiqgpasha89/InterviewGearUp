@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you implement code splitting at the route level versus component level in React? | InterviewGearUp</title>
+<meta name="description" content="Route-level code splitting lazy-loads one chunk per page with React.lazy and dynamic import at the router, giving the biggest, simplest win.…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-98.html">
+<meta property="og:title" content="How do you implement code splitting at the route level versus component level in React? | InterviewGearUp">
+<meta property="og:description" content="Route-level code splitting lazy-loads one chunk per page with React.lazy and dynamic import at the router, giving the biggest, simplest win.…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-98.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you implement code splitting at the route level versus component level in React?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 3 (Senior) · React · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Route-level code splitting lazy-loads one chunk per page with React.lazy and dynamic import at the router, giving the biggest, simplest win. Component-level splitting lazy-loads heavy widgets (charts, editors, modals) used only on interaction or below the fold. Wrap lazy components in Suspense with a fallback and add error boundaries.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why split</h4>
+<p>A single bundle makes every user download and parse code for pages they never visit. Splitting reduces initial JavaScript, improves LCP, TBT and INP, and keeps caches effective since unchanged chunks keep hashed names.</p>
+<h4>Route level</h4>
+<pre><code>import { lazy, Suspense } from &#39;react&#39;;
+import { createBrowserRouter, RouterProvider } from &#39;react-router-dom&#39;;
+
+const Dashboard = lazy(() =&gt; import(&#39;./pages/Dashboard&#39;));
+const Settings  = lazy(() =&gt; import(&#39;./pages/Settings&#39;));
+
+const router = createBrowserRouter([
+  { path: &#39;/&#39;, element: &lt;Home /&gt; },
+  { path: &#39;/dashboard&#39;, element: &lt;Suspense fallback={&lt;PageSkeleton /&gt;}&gt;&lt;Dashboard /&gt;&lt;/Suspense&gt; },
+  { path: &#39;/settings&#39;,  element: &lt;Suspense fallback={&lt;PageSkeleton /&gt;}&gt;&lt;Settings /&gt;&lt;/Suspense&gt; },
+]);</code></pre>
+<p>React Router&#39;s <code>route.lazy</code> and Next.js (file-system routes, App Router) split automatically per route, which is usually the best default. Components must be the <strong>default export</strong> for <code>React.lazy</code>.</p>
+<h4>Component level</h4>
+<p>Split large, conditionally used pieces: rich text editor, chart library, map, PDF viewer, syntax highlighter, admin-only panels, modal contents.</p>
+<pre><code>const Chart = lazy(() =&gt; import(&#39;./Chart&#39;));
+function Report({ show }) {
+  return show ? &lt;Suspense fallback={&lt;Spinner /&gt;}&gt;&lt;Chart /&gt;&lt;/Suspense&gt; : null;
+}</code></pre>
+<p>Also lazy import libraries inside handlers: <code>const { default: html2pdf } = await import(&#39;html2pdf.js&#39;)</code> when the user clicks &quot;Export&quot;.</p>
+<h4>Tuning</h4>
+<ul><li><strong>Preload on intent</strong>: call the import on hover, focus or when idle (<code>onMouseEnter={() =&gt; import(&#39;./pages/Settings&#39;)}</code>); bundlers supply magic comments (<code>/* webpackPrefetch: true */</code>, <code>webpackPreload</code>) and Vite has <code>modulepreload</code>.</li><li>Prefer <strong>skeleton fallbacks</strong> with the final dimensions to prevent layout shift; keep fallbacks light.</li><li>Use <strong>error boundaries</strong> to handle failed chunk loads (network, deploy changed hashes) with a retry or reload.</li><li>Use <code>startTransition</code> so navigation keeps the old screen visible while the new chunk loads instead of flashing the fallback.</li><li>Avoid <strong>waterfalls</strong>: a lazy component that fetches data after loading doubles latency; start data fetching in route loaders in parallel with the chunk.</li><li>Analyse the result with <code>source-map-explorer</code>, <code>webpack-bundle-analyzer</code> or <code>vite-bundle-visualizer</code>; extract shared vendor chunks sensibly (too many tiny chunks hurt over HTTP/1, fine over HTTP/2).</li></ul>
+<h4>Server components and SSR</h4>
+<p>With SSR, <code>lazy</code> components are supported with streaming Suspense (React 18+). Server Components reduce client JavaScript at the source by never shipping server-only code.</p>
+<h4>Pitfalls</h4>
+<p>Splitting tiny components (overhead exceeds savings), a fallback that appears for a blink and flickers, forgetting error handling on deploys, and importing a lazy module&#39;s code statically elsewhere which defeats splitting.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you preload chunks on hover to hide the loading delay?</li><li>How do React Router and Next.js handle splitting automatically?</li><li>How do you avoid layout shift and waterfalls with Suspense fallbacks?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-98">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-98%3A+How+do+you+implement+code+splitting+at+the+route+level+versus%E2%80%A6&amp;question-id=fe-98&amp;context=Frontend+engineer%2C+Gear+3%2C+topic%3A+React%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-98.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

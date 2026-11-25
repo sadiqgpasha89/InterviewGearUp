@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does `async`/`await` syntactic sugar work under the hood with generators and promises? | InterviewGearUp</title>
+<meta name="description" content="async/await is syntax over promises and generators: an async function runs like a generator that yields each awaited promise to a driver, which resumes…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-18.html">
+<meta property="og:title" content="How does `async`/`await` syntactic sugar work under the hood with generators and promises? | InterviewGearUp">
+<meta property="og:description" content="async/await is syntax over promises and generators: an async function runs like a generator that yields each awaited promise to a driver, which resumes…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-18.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does `async`/`await` syntactic sugar work under the hood with generators and promises?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · JavaScript · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>async/await is syntax over promises and generators: an async function runs like a generator that yields each awaited promise to a driver, which resumes it with the resolved value or throws the rejection into it. Each await therefore suspends the function and continues in a microtask.</p></div>
+<h4>Explained in depth</h4>
+<h4>What the language gives you</h4>
+<p>An <code>async function</code> always returns a <strong>promise</strong>. <code>await expr</code> pauses that function, converts <code>expr</code> to a promise (<code>Promise.resolve</code>), and schedules the continuation as a <strong>microtask</strong> when the promise settles. While paused the call stack is free, so the event loop keeps running.</p>
+<h4>The generator equivalent</h4>
+<p>Early transpilers (Babel&#39;s <code>regenerator</code>, TypeScript for ES2015) compiled async code into a generator plus a small runner:</p>
+<pre><code>function spawn(genFn) {
+  return new Promise((resolve, reject) =&gt; {
+    const gen = genFn();
+    function step(method, arg) {
+      let r;
+      try { r = gen[method](arg); } catch (e) { return reject(e); }
+      if (r.done) return resolve(r.value);
+      Promise.resolve(r.value).then(v =&gt; step(&#39;next&#39;, v), e =&gt; step(&#39;throw&#39;, e));
+    }
+    step(&#39;next&#39;);
+  });
+}
+
+// async function load() { const u = await getUser(); return u.name; }  is roughly:
+const load = () =&gt; spawn(function* () { const u = yield getUser(); return u.name; });</code></pre>
+<p><code>yield</code> plays the role of <code>await</code>: the generator hands a promise to the driver, which resumes it later with <code>next(value)</code> or <code>throw(error)</code>. A rejection becomes a normal exception at the <code>await</code>, so <code>try/catch</code> works.</p>
+<h4>Execution order</h4>
+<pre><code>console.log(1);
+(async () =&gt; { console.log(2); await null; console.log(4); })();
+console.log(3);          // prints 1 2 3 4</code></pre>
+<p>Code before the first <code>await</code> runs <strong>synchronously</strong>; the continuation runs after the current script finishes, in the microtask queue (before timers and rendering).</p>
+<h4>Error handling</h4>
+<p>A throw in an async function becomes a rejected promise. Forgetting to <code>await</code> or <code>.catch</code> a promise leads to an <strong>unhandled rejection</strong> (a warning in browsers, a crash by default in recent Node).</p>
+<h4>Practical rules</h4>
+<ul><li>Independent calls run in parallel with <code>await Promise.all([a(), b()])</code>, not sequential awaits.</li><li><code>await</code> in <code>forEach</code> does not wait; use <code>for...of</code> or <code>Promise.all(array.map(...))</code>.</li><li>Use <code>Promise.allSettled</code> when partial failure is acceptable, and <code>AbortController</code> to cancel.</li><li>Stack traces stay readable because modern engines (V8 async stack traces) stitch them together.</li></ul>
+<h4>Pitfalls</h4>
+<p><code>return await</code> is needed inside <code>try/catch</code> if you want the catch to see the rejection; accidentally serialising independent requests; and assuming <code>await</code> yields to rendering (microtasks run before the browser paints, so heavy loops still block UI).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How would you implement a spawn or co function that runs a generator like async/await?</li><li>What is the difference in timing between await on a non-promise value and a promise?</li><li>Why does an unawaited rejected promise from an async function cause an unhandled rejection?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-18">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-18%3A+How+does+%60async%60%2F%60await%60+syntactic+sugar+work+under+the+hood+with%E2%80%A6&amp;question-id=fe-18&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+JavaScript%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-18.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is the CSS `content-visibility: auto` property and how does it boost initial render speed? | InterviewGearUp</title>
+<meta name="description" content="content-visibility: auto lets the browser skip rendering work, including style, layout and paint, for off-screen elements until they are near the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-66.html">
+<meta property="og:title" content="What is the CSS `content-visibility: auto` property and how does it boost initial render speed? | InterviewGearUp">
+<meta property="og:description" content="content-visibility: auto lets the browser skip rendering work, including style, layout and paint, for off-screen elements until they are near the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-66.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is the CSS `content-visibility: auto` property and how does it boost initial render speed?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · CSS · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>content-visibility: auto lets the browser skip rendering work, including style, layout and paint, for off-screen elements until they are near the viewport. With contain-intrinsic-size reserving placeholder space, it can cut initial render time dramatically on long pages.</p></div>
+<h4>Explained in depth</h4>
+<h4>What it does</h4>
+<p>Large pages (feeds, documentation, long dashboards) force the browser to compute style, layout and paint for thousands of elements the user cannot yet see. <code>content-visibility: auto</code> tells the browser to <strong>skip rendering the subtree of an element while it is off-screen</strong>, doing the work only as it approaches the viewport. It is a built-in form of virtualisation for rendering cost (not for DOM size or memory).</p>
+<pre><code>.section {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 600px;     /* placeholder height until rendered */
+}</code></pre>
+<h4>Behind the scenes</h4>
+<p><code>auto</code> applies <code>contain: layout style paint</code> (and size containment while skipped). An element that is skipped renders no children, but they remain in the DOM, accessibility tree and find-in-page. When it nears the viewport, the browser renders it normally, and <strong>remembers</strong> the last real size when you use the <code>auto</code> keyword in <code>contain-intrinsic-size</code>.</p>
+<h4>Why contain-intrinsic-size matters</h4>
+<p>While content is skipped, the element is treated as having size containment and would collapse to zero height. That makes the scrollbar jump as sections render and causes layout shift. Provide an estimated size:</p>
+<ul><li><code>contain-intrinsic-size: 0 500px;</code> fixed guess</li><li><code>contain-intrinsic-size: auto 500px;</code> use the remembered rendered size once known, else 500 px</li></ul>
+<p>Good estimates keep the scrollbar thumb stable and reduce CLS.</p>
+<h4>Benefits</h4>
+<p>Google&#39;s case studies reported rendering-time reductions of several-fold on long pages; for typical article lists the initial render drops noticeably, improving LCP and interactivity. Updates inside off-screen sections are cheap too, because their layout is deferred.</p>
+<h4>Values</h4>
+<ul><li><code>visible</code>: default, render always.</li><li><code>auto</code>: skip when off-screen (relevant to the user), also <code>hidden</code> is similar to <code>display: none</code> but preserves rendered state.</li><li><code>hidden</code>: always skipped (cache rendering state for tabs or off-screen panels you toggle often).</li></ul>
+<h4>Caveats</h4>
+<ul><li>Anchor links, <code>scrollIntoView</code>, find in page and focus navigation work because the browser renders the target on demand, but there can be a brief layout adjustment.</li><li>Containment means children cannot paint outside or affect outside layout (<code>position: fixed</code> descendants and overflowing shadows get clipped).</li><li>Do not apply it to elements that are above the fold, or to tiny elements (overhead exceeds benefit).</li><li>Browser support is wide in Chromium and Safari; Firefox added it later, so use it as progressive enhancement.</li><li>Semantic content stays available, but verify with screen readers for custom widgets.</li></ul>
+<h4>Measurement</h4>
+<p>Use the Performance panel to compare &quot;Recalculate Style&quot; and &quot;Layout&quot; times, run Lighthouse, and enable the Rendering panel&#39;s paint flashing to see lazily rendered regions.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why do you need contain-intrinsic-size and what happens to scrollbars without it?</li><li>How does it interact with find-in-page, accessibility and anchor links?</li><li>How do you measure the improvement in DevTools?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-66">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-66%3A+What+is+the+CSS+%60content-visibility%3A+auto%60+property+and+how+does+it%E2%80%A6&amp;question-id=fe-66&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+CSS%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-66.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do Resource Hints (`preconnect`, `dns-prefetch`, `preload`, `prefetch`) optimize network waterfalls? | InterviewGearUp</title>
+<meta name="description" content="Resource hints let the browser start network work earlier. preconnect opens connections to an origin ahead of time, dns-prefetch only resolves DNS,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-73.html">
+<meta property="og:title" content="How do Resource Hints (`preconnect`, `dns-prefetch`, `preload`, `prefetch`) optimize network waterfalls? | InterviewGearUp">
+<meta property="og:description" content="Resource hints let the browser start network work earlier. preconnect opens connections to an origin ahead of time, dns-prefetch only resolves DNS,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-73.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do Resource Hints (`preconnect`, `dns-prefetch`, `preload`, `prefetch`) optimize network waterfalls?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · Performance · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Resource hints let the browser start network work earlier. preconnect opens connections to an origin ahead of time, dns-prefetch only resolves DNS, preload fetches a resource needed on this page with high priority, and prefetch fetches a resource likely needed on a future navigation at low priority.</p></div>
+<h4>Explained in depth</h4>
+<h4>The waterfall problem</h4>
+<p>The browser discovers resources as it parses HTML, CSS and JavaScript. A font referenced in CSS, or a hero image set by JS, is found late, so requests queue behind each other. Hints tell the browser about important resources early.</p>
+<h4>The hints</h4>
+<div class="md-table"><table><thead><tr><th>Hint</th><th>What it does</th><th>Use for</th></tr></thead><tbody><tr><td><code>dns-prefetch</code></td><td>resolves DNS only</td><td>third-party origins used later, as a cheap fallback</td></tr><tr><td><code>preconnect</code></td><td>DNS + TCP + TLS handshake</td><td>critical third-party origins (CDN, fonts, API)</td></tr><tr><td><code>preload</code></td><td>fetches a specific resource now, high priority, must be used on this page</td><td>LCP image, key font, critical CSS or script discovered late</td></tr><tr><td><code>prefetch</code></td><td>low-priority fetch for the <strong>next</strong> navigation, idle time</td><td>next route chunk, likely next page data</td></tr><tr><td><code>modulepreload</code></td><td>fetch and parse an ES module and its imports</td><td>route chunks and critical modules</td></tr><tr><td><code>prerender</code> / Speculation Rules</td><td>load and render the next page ahead</td><td>high-confidence next navigations</td></tr></tbody></table></div>
+<pre><code>&lt;link rel=&quot;preconnect&quot; href=&quot;https://cdn.example.com&quot; crossorigin&gt;
+&lt;link rel=&quot;dns-prefetch&quot; href=&quot;https://analytics.example.com&quot;&gt;
+&lt;link rel=&quot;preload&quot; href=&quot;/fonts/inter.woff2&quot; as=&quot;font&quot; type=&quot;font/woff2&quot; crossorigin&gt;
+&lt;link rel=&quot;preload&quot; as=&quot;image&quot; href=&quot;/hero.avif&quot; imagesrcset=&quot;hero-480.avif 480w, hero-960.avif 960w&quot; imagesizes=&quot;100vw&quot; fetchpriority=&quot;high&quot;&gt;
+&lt;link rel=&quot;prefetch&quot; href=&quot;/js/checkout.chunk.js&quot; as=&quot;script&quot;&gt;</code></pre>
+<h4>Rules of thumb</h4>
+<ul><li>Limit <code>preconnect</code> to about 2 to 4 origins; each open connection costs CPU and battery, and idle connections close.</li><li>Use <code>crossorigin</code> where the actual request is CORS (fonts always; <code>fetch</code> to APIs), otherwise the connection or preload is wasted and the resource is fetched twice.</li><li><code>preload</code> must match the later request&#39;s <code>as</code>, <code>type</code>, <code>crossorigin</code> and URL, or it is ignored. An unused preload triggers a console warning (&quot;preloaded but not used within a few seconds&quot;).</li><li>Over-preloading competes with truly critical resources and delays them. Preload only what is discovered late and on the critical path.</li><li>Prefer <code>fetchpriority=&quot;high&quot;</code> on an <code>&lt;img&gt;</code> in the HTML over preload when the tag is already visible to the parser.</li></ul>
+<h4>Earlier delivery</h4>
+<p><strong>103 Early Hints</strong>: the server sends <code>Link: &lt;...&gt;; rel=preload</code> headers before the full response is ready (while it builds HTML), so the browser can start fetches during server think time. Supported on major CDNs.</p>
+<h4>Verification</h4>
+<p>Lighthouse and DevTools Network waterfall show request start times, priority and &quot;initiator&quot;; test with throttled networks. Track LCP and TTFB in RUM.</p>
+<h4>Pitfalls</h4>
+<p>Preloading everything, forgetting <code>as</code>, using <code>prefetch</code> for current-page resources (low priority will delay them), and caching issues when hinted URLs have hashed names that change between deploys.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>When does preload cause harm and how do you detect an unused preload?</li><li>What is fetchpriority and how does it relate to preload?</li><li>How do 103 Early Hints improve on link tags in the HTML?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-73">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-73%3A+How+do+Resource+Hints+%28%60preconnect%60%2C+%60dns-prefetch%60%2C+%60preload%60%2C%E2%80%A6&amp;question-id=fe-73&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+Performance%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-73.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

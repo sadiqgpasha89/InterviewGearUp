@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is the `:has()` relational pseudo-class and how does it replace JavaScript parent selectors? | InterviewGearUp</title>
+<meta name="description" content="The :has() relational pseudo-class selects an element based on its descendants or following siblings, such as form:has(input:invalid). It is effectively…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-97.html">
+<meta property="og:title" content="What is the `:has()` relational pseudo-class and how does it replace JavaScript parent selectors? | InterviewGearUp">
+<meta property="og:description" content="The :has() relational pseudo-class selects an element based on its descendants or following siblings, such as form:has(input:invalid). It is effectively…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-97.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is the `:has()` relational pseudo-class and how does it replace JavaScript parent selectors?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · CSS · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>The :has() relational pseudo-class selects an element based on its descendants or following siblings, such as form:has(input:invalid). It is effectively a CSS parent selector, replacing JavaScript that toggled classes on parents, and enables state-driven styling and quantity queries with no scripting.</p></div>
+<h4>Explained in depth</h4>
+<h4>Syntax</h4>
+<p><code>:has(&lt;relative-selector-list&gt;)</code> matches an element if at least one relative selector matches starting from it.</p>
+<pre><code>/* Parent that contains an image */
+.card:has(img) { display: grid; grid-template-columns: 120px 1fr; }
+
+/* Form group containing an invalid input */
+.field:has(input:invalid) label { color: crimson; }
+
+/* Previous sibling selection: h2 immediately followed by a paragraph */
+h2:has(+ p) { margin-block-end: 0; }
+
+/* Page-level state: lock scroll when a dialog is open */
+html:has(dialog[open]) { overflow: hidden; }
+
+/* Quantity query: layout changes when a list has 4 or more items */
+ul:has(li:nth-child(4)) { columns: 2; }
+
+/* Highlight a label when its checkbox is checked, no JS */
+label:has(input:checked) { background: #e0f2fe; }</code></pre>
+<h4>What it replaces</h4>
+<p>Previously you needed JavaScript to add a <code>has-image</code> or <code>is-invalid</code> class to ancestors, observers for dialog state, or tricks with sibling combinators (which only look forward). Now CSS reacts to state directly, keeping markup clean, working with server-rendered HTML and avoiding hydration flashes.</p>
+<h4>Combining</h4>
+<pre><code>.menu:has(&gt; li.active:not(.disabled)) { ... }
+:is(.card, .tile):has(:focus-visible) { outline: 2px solid; }   /* focus-within style on any descendant */
+section:not(:has(h2)) { border-top: 1px solid; }                /* sections without a heading */</code></pre>
+<p><code>:has()</code> accepts the child <code>&gt;</code> and sibling <code>+</code> and <code>~</code> combinators.</p>
+<h4>Limitations and notes</h4>
+<ul><li><strong>Specificity</strong> is that of the most specific selector in its argument.</li><li><code>:has()</code> cannot be nested inside another <code>:has()</code>, and pseudo-elements (<code>::before</code>) are not valid inside it.</li><li>It is <strong>forgiving-free</strong>: one invalid selector in the list invalidates the whole rule (unlike <code>:is()</code> and <code>:where()</code>).</li><li>Performance: browsers optimise it, but selectors like <code>body:has(.x)</code> or <code>:has(*)</code> on a huge, frequently mutating DOM require wider invalidation. Scope to the nearest ancestor (<code>.card:has(...)</code>) and avoid broad universal parts.</li><li>Support: all current evergreen browsers (Chrome 105, Safari 15.4, Firefox 121 and later). Use <code>@supports selector(:has(a))</code> for progressive enhancement.</li></ul>
+<h4>Accessibility</h4>
+<p>CSS cannot change semantics; do not use <code>:has()</code> to hide or reveal information only visually. Keep state in real elements (inputs, <code>details</code>, <code>dialog</code>) so assistive technology sees the same state.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What are the performance considerations of :has() on large DOMs?</li><li>How do you combine :has() with :not() and :is()?</li><li>What are the limitations such as nesting :has() and pseudo-elements?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-97">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-97%3A+What+is+the+%60%3Ahas%28%29%60+relational+pseudo-class+and+how+does+it+replace%E2%80%A6&amp;question-id=fe-97&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+CSS%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-97.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

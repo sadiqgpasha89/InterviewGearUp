@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does `ResizeObserver` observe element dimension changes without triggering infinite layout loops? | InterviewGearUp</title>
+<meta name="description" content="ResizeObserver notifies you when an element&#39;s content or border box size changes, from any cause, so you can respond without polling or window resize…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-54.html">
+<meta property="og:title" content="How does `ResizeObserver` observe element dimension changes without triggering infinite layout loops? | InterviewGearUp">
+<meta property="og:description" content="ResizeObserver notifies you when an element&#39;s content or border box size changes, from any cause, so you can respond without polling or window resize…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-54.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does `ResizeObserver` observe element dimension changes without triggering infinite layout loops?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · Browser APIs · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>ResizeObserver notifies you when an element&#39;s content or border box size changes, from any cause, so you can respond without polling or window resize listeners. The browser delivers notifications after layout and before paint, and stops infinite loops by only processing deeper elements in each pass and reporting an error if they continue.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why it exists</h4>
+<p><code>window.resize</code> only covers the viewport. Components often need to react to <strong>their own</strong> size, which changes with sidebar toggles, font loading, content changes, CSS animations or layout shifts. Polling <code>offsetWidth</code> every frame forces layout and wastes battery.</p>
+<h4>API</h4>
+<pre><code>const ro = new ResizeObserver((entries) =&gt; {
+  for (const entry of entries) {
+    const { width, height } = entry.contentRect;                 // content box
+    const box = entry.borderBoxSize?.[0];                        // { inlineSize, blockSize }
+    chart.resize(width, height);
+  }
+});
+ro.observe(document.querySelector(&#39;#chart-container&#39;));
+// later: ro.unobserve(el) or ro.disconnect() on cleanup</code></pre>
+<p>The <code>box</code> option (<code>content-box</code> default, <code>border-box</code>, <code>device-pixel-content-box</code>) picks which size is observed.</p>
+<h4>When the callback runs</h4>
+<p>Observations are gathered after layout and before paint in each frame. If a callback changes the size of an <strong>observed element at a shallower or equal depth</strong> (so earlier results are invalidated), the browser would loop forever. The spec avoids that: each pass processes only elements <strong>deeper in the DOM than those handled in the previous pass</strong>; if more notifications remain, it defers them to the next frame and fires an <code>error</code> event with the message &quot;ResizeObserver loop completed with undelivered notifications&quot;. This message is usually benign but signals a feedback loop in your logic.</p>
+<h4>Avoiding loops</h4>
+<ul><li>Do not resize an element that you also observe, based on its own size (for example setting height from width repeatedly).</li><li>Observe the <strong>container</strong> and change the <strong>child</strong>.</li><li>Defer layout-changing writes to <code>requestAnimationFrame</code>.</li><li>Batch reads then writes; avoid forcing synchronous layout inside the callback.</li><li>Guard with comparisons (<code>if (newWidth !== lastWidth)</code>).</li></ul>
+<h4>Typical uses</h4>
+<p>Responsive charts and canvases (re-rendering at correct pixel ratio), virtualised lists measuring row heights, auto-growing textareas, truncating text with &quot;show more&quot;, editors, and custom layout libraries.</p>
+<h4>Container queries</h4>
+<p>For purely visual changes, CSS <strong>container queries</strong> (<code>container-type: inline-size; @container (min-width: 400px) { ... }</code>) respond to container size with no JavaScript. Use ResizeObserver when the logic must run in JS (canvas redraw, measurement, analytics).</p>
+<h4>Pitfalls</h4>
+<p>Forgetting to disconnect in React effects (use cleanup), assuming the first callback is after a resize (it also fires initially on <code>observe</code>), expensive work on every pixel of a drag (throttle with rAF), and observing too many elements.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the &#39;ResizeObserver loop completed with undelivered notifications&#39; error and how do you avoid it?</li><li>How do container queries reduce the need for ResizeObserver?</li><li>How do you debounce or batch work in the callback?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-54">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-54%3A+How+does+%60ResizeObserver%60+observe+element+dimension+changes+without%E2%80%A6&amp;question-id=fe-54&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+Browser+APIs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-54.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

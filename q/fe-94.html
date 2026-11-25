@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are JavaScript Symbols and how do Well-Known Symbols (`Symbol.iterator`) customize object behavior? | InterviewGearUp</title>
+<meta name="description" content="A Symbol is a unique, immutable primitive often used as a collision-free property key. Well-known symbols such as Symbol.iterator, Symbol.asyncIterator,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-94.html">
+<meta property="og:title" content="What are JavaScript Symbols and how do Well-Known Symbols (`Symbol.iterator`) customize object behavior? | InterviewGearUp">
+<meta property="og:description" content="A Symbol is a unique, immutable primitive often used as a collision-free property key. Well-known symbols such as Symbol.iterator, Symbol.asyncIterator,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-94.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are JavaScript Symbols and how do Well-Known Symbols (`Symbol.iterator`) customize object behavior?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · JavaScript · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A Symbol is a unique, immutable primitive often used as a collision-free property key. Well-known symbols such as Symbol.iterator, Symbol.asyncIterator, Symbol.toPrimitive, Symbol.hasInstance and Symbol.toStringTag are hooks the language calls so objects can customise iteration, conversion, instanceof and more.</p></div>
+<h4>Explained in depth</h4>
+<h4>Symbol basics</h4>
+<pre><code>const a = Symbol(&#39;id&#39;);
+const b = Symbol(&#39;id&#39;);
+a === b;                         // false, always unique
+const user = { name: &#39;Ada&#39;, [a]: 42 };
+user[a];                         // 42
+Object.keys(user);               // [&#39;name&#39;]  (symbols are not enumerated by keys, for-in, JSON.stringify)
+Object.getOwnPropertySymbols(user); // [Symbol(id)]
+Symbol.for(&#39;app.key&#39;) === Symbol.for(&#39;app.key&#39;); // true, global registry shared across realms</code></pre>
+<p>Use cases: private-ish metadata keys that cannot clash with string keys from other libraries, internal protocol markers, and enum-like constants.</p>
+<h4>Well-known symbols</h4>
+<p>The language looks them up on objects to customise built-in behaviour:</p>
+<ul><li><strong><code>Symbol.iterator</code></strong> makes an object iterable (works with <code>for...of</code>, spread, destructuring, <code>Array.from</code>, <code>Map</code> and <code>Set</code> constructors):</li></ul>
+<pre><code>class Range {
+  constructor(from, to) { this.from = from; this.to = to; }
+  *[Symbol.iterator]() { for (let i = this.from; i &lt;= this.to; i++) yield i; }
+}
+console.log([...new Range(1, 4)]);   // [1, 2, 3, 4]</code></pre>
+<p>The method must return an iterator with <code>next()</code> returning <code>{ value, done }</code>. Generators provide this for free.</p>
+<ul><li><strong><code>Symbol.asyncIterator</code></strong> for <code>for await...of</code> streams.</li><li><strong><code>Symbol.toPrimitive</code></strong> controls coercion: <code>obj[Symbol.toPrimitive] = (hint) =&gt; hint === &#39;number&#39; ? 42 : &#39;text&#39;</code> (hints: <code>number</code>, <code>string</code>, <code>default</code>).</li><li><strong><code>Symbol.toStringTag</code></strong> changes <code>Object.prototype.toString.call(x)</code> output (<code>[object MyType]</code>).</li><li><strong><code>Symbol.hasInstance</code></strong> customises <code>instanceof</code>: <code>static [Symbol.hasInstance](x) { return Array.isArray(x); }</code>.</li><li><strong><code>Symbol.species</code></strong>, <strong><code>Symbol.isConcatSpreadable</code></strong>, <strong><code>Symbol.match</code></strong>, <strong><code>Symbol.replace</code></strong>, <strong><code>Symbol.split</code></strong> adjust built-in method behaviour.</li></ul>
+<h4>Notes</h4>
+<ul><li>Symbols are not fully private: reflection reveals them. For real privacy use <code>#private</code> class fields or closures.</li><li>Symbol descriptions are for debugging only (<code>sym.description</code>).</li><li>Implicit conversion to string throws a <code>TypeError</code>; call <code>.toString()</code> or <code>String(sym)</code> explicitly.</li><li><code>JSON.stringify</code> ignores symbol-keyed properties and symbol values.</li></ul>
+<h4>Where it matters</h4>
+<p>Frameworks and libraries (Redux Observable, Observable proposals, React&#39;s <code>$$typeof</code> markers for elements) use symbols to tag objects safely, and iterator protocols underpin generators, spread and modern collection APIs.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does a generator implement Symbol.iterator concisely?</li><li>What does Symbol.for do and how does it differ from Symbol()?</li><li>Why are symbol keys skipped by JSON.stringify and for-in?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-94">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-94%3A+What+are+JavaScript+Symbols+and+how+do+Well-Known+Symbols%E2%80%A6&amp;question-id=fe-94&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+JavaScript%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-94.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

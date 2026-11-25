@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Design an optimistic UI mutation system with automatic rollback on network failure. | InterviewGearUp</title>
+<meta name="description" content="An optimistic mutation updates the UI immediately as if the server call had succeeded, keeps a snapshot of the previous state, sends the request, and…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-83.html">
+<meta property="og:title" content="Design an optimistic UI mutation system with automatic rollback on network failure. | InterviewGearUp">
+<meta property="og:description" content="An optimistic mutation updates the UI immediately as if the server call had succeeded, keeps a snapshot of the previous state, sends the request, and…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-83.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Design an optimistic UI mutation system with automatic rollback on network failure.</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 3 (Senior) · Architecture · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>An optimistic mutation updates the UI immediately as if the server call had succeeded, keeps a snapshot of the previous state, sends the request, and rolls back (or reconciles with the server response) on failure. Needs a client-side cache, per-entity versioning, ordering of concurrent mutations and clear error feedback.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why</h4>
+<p>Waiting for a round trip makes likes, toggles, reorders and todo edits feel slow. Optimistic updates give instant feedback and are correct most of the time, so you pay a complexity cost only for the failures.</p>
+<h4>Lifecycle of one mutation</h4>
+<ol start="1"><li><strong>Cancel</strong> queries that could overwrite the optimistic state.</li><li><strong>Snapshot</strong> the affected cache entries.</li><li><strong>Apply</strong> the optimistic change locally, marking the item <code>pending</code>.</li><li><strong>Send</strong> the request with an <strong>idempotency key</strong> so retries cannot duplicate effects.</li><li>On <strong>success</strong>, replace the temporary data with the server response (real ids, timestamps).</li><li>On <strong>failure</strong>, restore the snapshot (or re-apply remaining queued mutations), show an error with a retry action.</li><li>Always <strong>revalidate</strong> (refetch) afterwards to converge to the server truth.</li></ol>
+<pre><code>// TanStack Query style
+useMutation({
+  mutationFn: (todo) =&gt; api.updateTodo(todo),
+  onMutate: async (todo) =&gt; {
+    await qc.cancelQueries({ queryKey: [&#39;todos&#39;] });
+    const previous = qc.getQueryData([&#39;todos&#39;]);
+    qc.setQueryData([&#39;todos&#39;], (old) =&gt; old.map(t =&gt; t.id === todo.id ? { ...t, ...todo, pending: true } : t));
+    return { previous };                                    // context for rollback
+  },
+  onError: (_err, _todo, ctx) =&gt; qc.setQueryData([&#39;todos&#39;], ctx.previous),
+  onSettled: () =&gt; qc.invalidateQueries({ queryKey: [&#39;todos&#39;] }),
+});</code></pre>
+<h4>Hard parts</h4>
+<ul><li><strong>Concurrency</strong>: two quick edits to one item. Rolling back to a stale snapshot can erase the second edit. Better: keep a <strong>queue of pending mutations per entity</strong> and derive the visible state as server state plus pending operations, replaying remaining ones after a failure (the pattern used by Redux Toolkit entity adapters and local-first stores).</li><li><strong>Ordering</strong>: serialise mutations to the same entity (scope keys) or use version numbers or ETags; the server rejects stale versions with 409 and the client rebases.</li><li><strong>Temporary ids</strong>: creating items needs client ids (UUID) mapped to server ids after success; avoid navigation to urls with temp ids.</li><li><strong>Offline</strong>: persist the queue (IndexedDB) and replay on reconnect; background sync.</li><li><strong>Failure UX</strong>: distinguish validation errors (show on the field), transient network errors (auto retry with backoff), and permanent errors (roll back with a toast and undo option).</li><li><strong>Server push</strong>: WebSocket events may arrive before the HTTP response; dedupe by version.</li></ul>
+<h4>When not to use</h4>
+<p>Payments, irreversible actions, operations with likely server-side rejection (permission, uniqueness) or where the result depends on server computation. Show a pending state instead.</p>
+<h4>Testing</h4>
+<p>Simulate delays and failures with MSW, test rollback and concurrent edits, and assert the UI never shows both old and new data inconsistently.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you handle several in-flight mutations touching the same entity?</li><li>How does TanStack Query implement onMutate, onError and onSettled?</li><li>When is optimistic UI the wrong choice?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-83">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-83%3A+Design+an+optimistic+UI+mutation+system+with+automatic+rollback+on%E2%80%A6&amp;question-id=fe-83&amp;context=Frontend+engineer%2C+Gear+3%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-83.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

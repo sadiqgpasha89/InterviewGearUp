@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does `AbortController` cancel inflight fetch requests and async operations? | InterviewGearUp</title>
+<meta name="description" content="AbortController creates a signal that you pass to fetch and other APIs; calling abort() rejects the pending operation with an AbortError and lets the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-64.html">
+<meta property="og:title" content="How does `AbortController` cancel inflight fetch requests and async operations? | InterviewGearUp">
+<meta property="og:description" content="AbortController creates a signal that you pass to fetch and other APIs; calling abort() rejects the pending operation with an AbortError and lets the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-64.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does `AbortController` cancel inflight fetch requests and async operations?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · JavaScript · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>AbortController creates a signal that you pass to fetch and other APIs; calling abort() rejects the pending operation with an AbortError and lets the browser stop the network work. It prevents stale responses overwriting newer state, wasted bandwidth and updates after unmount.</p></div>
+<h4>Explained in depth</h4>
+<h4>Basic usage</h4>
+<pre><code>const controller = new AbortController();
+fetch(&#39;/api/search?q=react&#39;, { signal: controller.signal })
+  .then(r =&gt; r.json())
+  .then(render)
+  .catch(err =&gt; { if (err.name !== &#39;AbortError&#39;) showError(err); });   // abort is not an error
+
+controller.abort();                    // cancels the request; promise rejects with AbortError</code></pre>
+<p><code>signal</code> is an <code>AbortSignal</code> with <code>aborted</code>, <code>reason</code> and an <code>abort</code> event. A signal can be aborted only once. <code>abort(reason)</code> lets you attach a custom reason (<code>signal.reason</code>).</p>
+<h4>Race conditions in search-as-you-type</h4>
+<p>Without cancellation, response order is not guaranteed: the answer for &quot;rea&quot; can arrive after &quot;react&quot; and overwrite the right results.</p>
+<pre><code>useEffect(() =&gt; {
+  const c = new AbortController();
+  (async () =&gt; {
+    try {
+      const res = await fetch(`/api/search?q=${q}`, { signal: c.signal });
+      setResults(await res.json());
+    } catch (e) { if (e.name !== &#39;AbortError&#39;) setError(e); }
+  })();
+  return () =&gt; c.abort();               // cleanup: runs on re-run and unmount
+}, [q]);</code></pre>
+<h4>Timeouts and combining signals</h4>
+<pre><code>fetch(url, { signal: AbortSignal.timeout(5000) });                         // aborts with TimeoutError
+fetch(url, { signal: AbortSignal.any([userSignal, AbortSignal.timeout(5000)]) });</code></pre>
+<h4>Making your own function abortable</h4>
+<pre><code>function sleep(ms, signal) {
+  return new Promise((resolve, reject) =&gt; {
+    if (signal?.aborted) return reject(signal.reason);
+    const id = setTimeout(resolve, ms);
+    signal?.addEventListener(&#39;abort&#39;, () =&gt; { clearTimeout(id); reject(signal.reason); }, { once: true });
+  });
+}</code></pre>
+<p>Also used with <code>addEventListener(..., { signal })</code> to remove many listeners at once, with streams, <code>Request</code>, and Node APIs.</p>
+<h4>What cancellation does and does not do</h4>
+<p>Aborting a fetch closes the connection from the client side. The server may still have processed the request, so <strong>abort is not rollback</strong>: non-idempotent writes need idempotency keys. It also frees browser connection slots (a limit of about six per host on HTTP/1.1).</p>
+<h4>Pitfalls</h4>
+<p>Treating AbortError as a failure, reusing an aborted controller, not aborting on route change or unmount, forgetting that awaiting an already resolved promise ignores later aborts, and aborting while reading the body stream (it rejects the body read).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you cancel on timeout using AbortSignal.timeout and combine several signals?</li><li>How do you use it in React effects to avoid race conditions in search-as-you-type?</li><li>How can you make your own async functions abortable?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-64">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-64%3A+How+does+%60AbortController%60+cancel+inflight+fetch+requests+and+async%E2%80%A6&amp;question-id=fe-64&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+JavaScript%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-64.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

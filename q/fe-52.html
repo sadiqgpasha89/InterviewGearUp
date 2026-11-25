@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare client-side storage mechanisms: LocalStorage versus SessionStorage versus IndexedDB versus Cookies. | InterviewGearUp</title>
+<meta name="description" content="Cookies are small, sent with every HTTP request and can be HttpOnly; localStorage is a synchronous, persistent 5 to 10 MB string store per origin;…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-52.html">
+<meta property="og:title" content="Compare client-side storage mechanisms: LocalStorage versus SessionStorage versus IndexedDB versus Cookies. | InterviewGearUp">
+<meta property="og:description" content="Cookies are small, sent with every HTTP request and can be HttpOnly; localStorage is a synchronous, persistent 5 to 10 MB string store per origin;…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-52.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare client-side storage mechanisms: LocalStorage versus SessionStorage versus IndexedDB versus Cookies.</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · Browser APIs · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Cookies are small, sent with every HTTP request and can be HttpOnly; localStorage is a synchronous, persistent 5 to 10 MB string store per origin; sessionStorage is the same but per tab and cleared on close; IndexedDB is an asynchronous transactional object database for large structured data, even blobs.</p></div>
+<h4>Explained in depth</h4>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th></th><th>Cookies</th><th>localStorage</th><th>sessionStorage</th><th>IndexedDB</th></tr></thead><tbody><tr><td>Capacity</td><td>about 4 KB each</td><td>about 5 to 10 MB</td><td>about 5 to 10 MB</td><td>hundreds of MB to GBs (quota based)</td></tr><tr><td>Sent to server</td><td>yes, automatically</td><td>no</td><td>no</td><td>no</td></tr><tr><td>Lifetime</td><td>expiry or session</td><td>until cleared</td><td>tab session</td><td>until cleared (may be evicted)</td></tr><tr><td>API</td><td>string, <code>document.cookie</code> or header</td><td>synchronous key/value strings</td><td>synchronous key/value strings</td><td>asynchronous, transactions, indexes, cursors</td></tr><tr><td>Accessible from JS</td><td>unless <code>HttpOnly</code></td><td>yes</td><td>yes</td><td>yes (also in workers)</td></tr><tr><td>Scope</td><td>domain and path, with <code>SameSite</code></td><td>origin</td><td>origin and tab</td><td>origin</td></tr></tbody></table></div>
+<h4>When to use which</h4>
+<ul><li><strong>Cookies</strong>: server-managed sessions and anything the server must read on every request. Use <code>HttpOnly; Secure; SameSite</code> so scripts cannot read the session token.</li><li><strong>localStorage</strong>: small, non-sensitive preferences (theme, UI state, feature hints). It blocks the main thread because it is synchronous, so avoid large or frequent writes.</li><li><strong>sessionStorage</strong>: per-tab wizard state, drafts that should not leak across tabs.</li><li><strong>IndexedDB</strong>: offline data, caches of API results, large documents, files and blobs, queued writes for sync (via wrappers such as <code>idb</code>, Dexie, localForage). Works in Web Workers and service workers.</li></ul>
+<pre><code>localStorage.setItem(&#39;theme&#39;, &#39;dark&#39;);                      // strings only: JSON.stringify objects
+const db = await openDB(&#39;app&#39;, 1, { upgrade(db) { db.createObjectStore(&#39;notes&#39;, { keyPath: &#39;id&#39; }); } });
+await db.put(&#39;notes&#39;, { id: 1, text: &#39;hello&#39; });</code></pre>
+<h4>Security</h4>
+<p>Anything JavaScript can read is exposed to <strong>XSS</strong>, so do not store session tokens or secrets in <code>localStorage</code> or <code>sessionStorage</code>. Prefer <code>HttpOnly</code> cookies or short-lived in-memory tokens. Storage is per origin and plain text; do not store personal data unencrypted unless needed. Private browsing and user settings may clear or block storage, and Safari&#39;s intelligent tracking prevention limits script-written storage for sites not visited recently.</p>
+<h4>Operations</h4>
+<ul><li>Handle <code>QuotaExceededError</code> and <code>navigator.storage.estimate()</code>; request persistence with <code>navigator.storage.persist()</code> for important data.</li><li>Version your schemas and migrate in <code>onupgradeneeded</code>.</li><li>Listen to the <code>storage</code> event to sync tabs (or use <code>BroadcastChannel</code>).</li><li>Other options: <strong>Cache Storage</strong> (request/response pairs for service workers) and the <strong>Origin Private File System</strong> for file-like high-performance storage.</li></ul>
+<h4>Pitfalls</h4>
+<p>Synchronous storage jank, storing large JSON blobs repeatedly, parsing failures on corrupted values, and forgetting that cookies add bytes to every request.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why should authentication tokens not be stored in localStorage?</li><li>How does the Cache Storage API or the Origin Private File System fit into this picture?</li><li>How do you handle storage quota errors and eviction?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-52">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-52%3A+Compare+client-side+storage+mechanisms%3A+LocalStorage+versus%E2%80%A6&amp;question-id=fe-52&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+Browser+APIs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-52.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do CSS transitions, animations, and `@keyframes` perform when animating `transform` versus `top/left`? | InterviewGearUp</title>
+<meta name="description" content="Animating transform and opacity runs on the compositor thread using the GPU, avoiding layout and paint, so it stays smooth even when the main thread is…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-96.html">
+<meta property="og:title" content="How do CSS transitions, animations, and `@keyframes` perform when animating `transform` versus `top/left`? | InterviewGearUp">
+<meta property="og:description" content="Animating transform and opacity runs on the compositor thread using the GPU, avoiding layout and paint, so it stays smooth even when the main thread is…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-96.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do CSS transitions, animations, and `@keyframes` perform when animating `transform` versus `top/left`?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · CSS · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Animating transform and opacity runs on the compositor thread using the GPU, avoiding layout and paint, so it stays smooth even when the main thread is busy. Animating top, left, width or height triggers layout (reflow) every frame, then paint and composite, causing jank and dropped frames.</p></div>
+<h4>Explained in depth</h4>
+<h4>Rendering pipeline</h4>
+<p>Style, then <strong>Layout</strong> (geometry), <strong>Paint</strong> (pixels in layers), <strong>Composite</strong> (assemble layers on the GPU). Cheaper properties skip earlier stages.</p>
+<div class="md-table"><table><thead><tr><th>Property type</th><th>Stages triggered</th><th>Examples</th></tr></thead><tbody><tr><td>Layout properties</td><td>layout + paint + composite</td><td><code>top</code>, <code>left</code>, <code>width</code>, <code>height</code>, <code>margin</code>, <code>padding</code>, <code>font-size</code></td></tr><tr><td>Paint-only</td><td>paint + composite</td><td><code>color</code>, <code>background-color</code>, <code>box-shadow</code>, <code>border-radius</code></td></tr><tr><td>Composite-only</td><td>composite</td><td><code>transform</code>, <code>opacity</code>, <code>filter</code> (mostly)</td></tr></tbody></table></div>
+<p>At 60 fps there are about 16 ms per frame (8 ms at 120 Hz). Layout of a large DOM can exceed that, so each frame janks.</p>
+<h4>transitions, animations and keyframes</h4>
+<pre><code>.card { transition: transform 200ms ease-out, opacity 200ms; }
+.card:hover { transform: translateY(-4px) scale(1.02); }
+
+@keyframes slide-in { from { transform: translateX(-100%); opacity: 0; } to { transform: none; opacity: 1; } }
+.panel { animation: slide-in 300ms cubic-bezier(.2, .8, .2, 1) both; }</code></pre>
+<p>Transitions run between two states when a property changes; animations with <code>@keyframes</code> run multi-step sequences, loop, and start automatically. Both are declarative and can be hardware accelerated when limited to compositor properties.</p>
+<h4>Why <code>top/left</code> is worse</h4>
+<p>Changing <code>left</code> forces the browser to recompute layout for the element and possibly siblings and descendants, repaint, then composite, every frame, and positions snap to whole pixels. <code>transform: translate()</code> moves a promoted layer without touching layout, supports sub-pixel interpolation, and does not affect other elements.</p>
+<h4>Practical guidance</h4>
+<ul><li>Animate with <code>transform</code> and <code>opacity</code>; fake size changes with <code>scale</code> or clip with <code>clip-path</code>; for FLIP animations (First, Last, Invert, Play), measure positions once and animate the inverted transform.</li><li><strong><code>will-change: transform</code></strong> hints the browser to promote a layer in advance; use it sparingly and remove after the animation, because each layer consumes GPU memory.</li><li>Respect <code>@media (prefers-reduced-motion: reduce)</code> by disabling or simplifying motion.</li><li>Animate height with <code>grid-template-rows: 0fr</code> to <code>1fr</code>, <code>interpolate-size: allow-keywords</code>, or the Web Animations API; avoid animating <code>height: auto</code> with JavaScript reads inside rAF.</li><li>Use the Web Animations API (<code>element.animate</code>) or scroll-driven animations (<code>animation-timeline: scroll()</code>) for complex sequences off the main thread.</li></ul>
+<h4>Measuring</h4>
+<p>DevTools Performance panel (frames, layout and paint flashing), Rendering tab &quot;Layers&quot; and &quot;Paint flashing&quot;, and <code>PerformanceObserver</code> for long animation frames.</p>
+<h4>Pitfalls</h4>
+<p>Promoting too many layers, blurry text from fractional transforms (use whole pixel values at rest), animating <code>box-shadow</code> on many elements (animate an <code>opacity</code> pseudo-element instead), and mixing JS-driven layout reads and writes in the same frame.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the rendering pipeline and which properties trigger layout, paint or only composite?</li><li>When should you use will-change and why can it hurt?</li><li>How do you animate height auto smoothly without layout thrash?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-96">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-96%3A+How+do+CSS+transitions%2C+animations%2C+and+%60%40keyframes%60+perform+when%E2%80%A6&amp;question-id=fe-96&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+CSS%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-96.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

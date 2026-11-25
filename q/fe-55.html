@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does `BroadcastChannel` synchronize application state across multiple browser tabs in real time? | InterviewGearUp</title>
+<meta name="description" content="BroadcastChannel is a same-origin pub/sub channel between tabs, windows, iframes and workers. A tab posts a structured-clone message and every other…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-55.html">
+<meta property="og:title" content="How does `BroadcastChannel` synchronize application state across multiple browser tabs in real time? | InterviewGearUp">
+<meta property="og:description" content="BroadcastChannel is a same-origin pub/sub channel between tabs, windows, iframes and workers. A tab posts a structured-clone message and every other…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-55.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does `BroadcastChannel` synchronize application state across multiple browser tabs in real time?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 3 (Senior) · Browser APIs · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>BroadcastChannel is a same-origin pub/sub channel between tabs, windows, iframes and workers. A tab posts a structured-clone message and every other context listening on the same channel name receives it, which makes logout propagation, theme and cart sync simple, with no server round trip.</p></div>
+<h4>Explained in depth</h4>
+<h4>API</h4>
+<pre><code>const channel = new BroadcastChannel(&#39;app-state&#39;);
+
+// sender
+channel.postMessage({ type: &#39;LOGOUT&#39; });
+channel.postMessage({ type: &#39;CART_UPDATED&#39;, items: cart });
+
+// receiver (every OTHER context with the same name and origin)
+channel.onmessage = (e) =&gt; {
+  if (e.data.type === &#39;LOGOUT&#39;) { clearSession(); location.assign(&#39;/login&#39;); }
+  if (e.data.type === &#39;CART_UPDATED&#39;) store.setState({ cart: e.data.items });
+};
+// cleanup: channel.close();</code></pre>
+<p>Properties: same-origin only, a sender does not receive its own messages, messages use structured clone (objects, arrays, Maps, typed arrays; no functions or DOM nodes), delivery is asynchronous and best effort within a running browser (not persisted for tabs opened later).</p>
+<h4>Typical use cases</h4>
+<ul><li><strong>Logout and login propagation</strong> so all tabs update immediately.</li><li><strong>Theme, language and preference changes.</strong></li><li><strong>Cart, draft or notification counts</strong> staying consistent.</li><li><strong>Cache invalidation</strong> after a mutation (tell other tabs to refetch).</li><li><strong>Leader election</strong>: tabs announce themselves, and one becomes leader to hold a single WebSocket or run a polling job; others receive updates over the channel. The Web Locks API (<code>navigator.locks.request(&#39;leader&#39;, ...)</code>) is a more robust way to pick one leader.</li></ul>
+<h4>Syncing a store</h4>
+<pre><code>const bc = new BroadcastChannel(&#39;store&#39;);
+store.subscribe((state, origin) =&gt; { if (origin !== &#39;remote&#39;) bc.postMessage(state); });
+bc.onmessage = (e) =&gt; store.setState(e.data, &#39;remote&#39;);   // tag remote updates to avoid echo loops</code></pre>
+<p>Zustand, Redux middleware and <code>redux-state-sync</code> implement this pattern.</p>
+<h4>Alternatives</h4>
+<div class="md-table"><table><thead><tr><th>Mechanism</th><th>Notes</th></tr></thead><tbody><tr><td><code>storage</code> event</td><td>fires in other tabs when localStorage changes, works in old browsers, string-only, noisy</td></tr><tr><td><code>SharedWorker</code></td><td>one shared script instance across tabs, can own a connection and state; less supported on mobile</td></tr><tr><td><code>postMessage</code></td><td>targeted messaging between known windows or iframes, possibly cross-origin</td></tr><tr><td>Service worker <code>Client.postMessage</code></td><td>broadcast from a service worker to its controlled pages</td></tr><tr><td>Server push</td><td>needed for cross-device sync</td></tr></tbody></table></div>
+<h4>Concurrency and consistency</h4>
+<p>Messages are not transactional. When two tabs change the same value, use timestamps, version counters or CRDT-like merging; send <strong>events</strong> (what happened) rather than whole state when possible, and let the source of truth (server or IndexedDB) reconcile.</p>
+<h4>Pitfalls</h4>
+<p>Echo loops, closing channels on unmount, assuming delivery to tabs that load later (read persisted state on startup), sending sensitive data over an origin-wide channel (any same-origin script can listen, including compromised ones), and heavy payloads.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you elect a leader tab so only one tab runs a websocket or timer?</li><li>How do BroadcastChannel, the storage event and SharedWorker compare?</li><li>How do you resolve conflicts when two tabs update the same state at once?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-55">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-55%3A+How+does+%60BroadcastChannel%60+synchronize+application+state+across%E2%80%A6&amp;question-id=fe-55&amp;context=Frontend+engineer%2C+Gear+3%2C+topic%3A+Browser+APIs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-55.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

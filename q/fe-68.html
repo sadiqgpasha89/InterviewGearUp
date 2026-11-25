@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you design reusable React compound components using React Context? | InterviewGearUp</title>
+<meta name="description" content="Compound components are a set of components that share implicit state through Context, such as Tabs, Tabs.List, Tabs.Tab and Tabs.Panel. The parent owns…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-68.html">
+<meta property="og:title" content="How do you design reusable React compound components using React Context? | InterviewGearUp">
+<meta property="og:description" content="Compound components are a set of components that share implicit state through Context, such as Tabs, Tabs.List, Tabs.Tab and Tabs.Panel. The parent owns…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-68.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you design reusable React compound components using React Context?</h1>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · React · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Compound components are a set of components that share implicit state through Context, such as Tabs, Tabs.List, Tabs.Tab and Tabs.Panel. The parent owns state, children read it from context, giving consumers flexible composition and clean APIs instead of a single component with a dozen props.</p></div>
+<h4>Explained in depth</h4>
+<h4>The problem with prop-heavy components</h4>
+<p><code>&lt;Tabs tabs={[...]} activeIndex={1} renderPanel={...} tabClassName=... /&gt;</code> accumulates props for every variation and hides structure. Consumers cannot reorder, wrap or insert elements between parts.</p>
+<h4>The compound API</h4>
+<pre><code>&lt;Tabs defaultValue=&quot;profile&quot; onChange={log}&gt;
+  &lt;Tabs.List&gt;
+    &lt;Tabs.Tab value=&quot;profile&quot;&gt;Profile&lt;/Tabs.Tab&gt;
+    &lt;Tabs.Tab value=&quot;billing&quot;&gt;Billing&lt;/Tabs.Tab&gt;
+  &lt;/Tabs.List&gt;
+  &lt;Tabs.Panel value=&quot;profile&quot;&gt;&lt;ProfileForm /&gt;&lt;/Tabs.Panel&gt;
+  &lt;Tabs.Panel value=&quot;billing&quot;&gt;&lt;Billing /&gt;&lt;/Tabs.Panel&gt;
+&lt;/Tabs&gt;</code></pre>
+<h4>Implementation with Context</h4>
+<pre><code>const TabsContext = createContext(null);
+function useTabs() {
+  const ctx = useContext(TabsContext);
+  if (!ctx) throw new Error(&#39;Tabs.* must be rendered inside &lt;Tabs&gt;&#39;);
+  return ctx;
+}
+
+function Tabs({ defaultValue, value, onChange, children }) {
+  const [inner, setInner] = useState(defaultValue);
+  const current = value !== undefined ? value : inner;          // controlled or uncontrolled
+  const select = useCallback((v) =&gt; { if (value === undefined) setInner(v); onChange?.(v); }, [value, onChange]);
+  const ctx = useMemo(() =&gt; ({ current, select }), [current, select]);
+  return &lt;TabsContext.Provider value={ctx}&gt;{children}&lt;/TabsContext.Provider&gt;;
+}
+Tabs.List = ({ children }) =&gt; &lt;div role=&quot;tablist&quot;&gt;{children}&lt;/div&gt;;
+Tabs.Tab = ({ value, children }) =&gt; {
+  const { current, select } = useTabs();
+  return &lt;button role=&quot;tab&quot; aria-selected={current === value} onClick={() =&gt; select(value)}&gt;{children}&lt;/button&gt;;
+};
+Tabs.Panel = ({ value, children }) =&gt; {
+  const { current } = useTabs();
+  return current === value ? &lt;div role=&quot;tabpanel&quot;&gt;{children}&lt;/div&gt; : null;
+};</code></pre>
+<p><code>Context</code> replaces <code>React.Children.map</code> + <code>cloneElement</code>, which breaks when children are wrapped in other components or fragments.</p>
+<h4>Design points</h4>
+<ul><li><strong>Controlled and uncontrolled</strong> support (as above) mirrors native inputs.</li><li><strong>Accessibility</strong> is encapsulated: roles, <code>aria-selected</code>, <code>aria-controls</code>/<code>id</code> pairing (generate ids with <code>useId</code>), roving <code>tabindex</code> and arrow key handling in the list. Consumers get correct behaviour for free.</li><li><strong>Memoise the context value</strong> so unrelated parent renders do not re-render all parts.</li><li>Provide helpful errors when parts are used outside the parent.</li><li>Offer styling hooks (<code>className</code>, <code>asChild</code> pattern, data attributes like <code>data-state=&quot;active&quot;</code>).</li></ul>
+<h4>Where it is used</h4>
+<p>Radix UI, Reach UI, Headless UI, MUI and Chakra build menus, accordions, selects and dialogs this way.</p>
+<h4>Trade-offs</h4>
+<p>More flexible and readable markup, but more internal code, the implicit contract between parts must be documented, TypeScript typing of static members needs care, and Server Components cannot use context directly (parts are client components).</p>
+<h4>Pitfalls</h4>
+<p>Relying on children order or <code>cloneElement</code>, recreating the context value each render, hidden state coupling, and exposing too much of the internal state to consumers.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you make a compound component work with controlled and uncontrolled state?</li><li>What are the trade-offs versus a render-props or configuration-array API?</li><li>How would you add keyboard navigation and accessibility roles?</li></ul>
+<p><a class="btn primary" href="../#/q/fe-68">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-68%3A+How+do+you+design+reusable+React+compound+components+using+React%E2%80%A6&amp;question-id=fe-68&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+React%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-68.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>
