@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you automate mobile deep link testing and push notification receipt on iOS and Android? | InterviewGearUp</title>
+<meta name="description" content="Automate deep links by launching the app with a URL through adb or xcrun simctl and asserting the landing screen, covering cold and warm start,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-67.html">
+<meta property="og:title" content="How do you automate mobile deep link testing and push notification receipt on iOS and Android? | InterviewGearUp">
+<meta property="og:description" content="Automate deep links by launching the app with a URL through adb or xcrun simctl and asserting the landing screen, covering cold and warm start,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-67.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you automate mobile deep link testing and push notification receipt on iOS and Android?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 3 (Senior) · Mobile · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Automate deep links by launching the app with a URL through adb or xcrun simctl and asserting the landing screen, covering cold and warm start, logged-out redirect and invalid links. For push, use FCM and APNs test payloads, simulator push files or the vendor console, then assert the notification in the tray and that tapping it routes correctly, using Appium or Detox with real devices for final validation.</p></div>
+<h4>Explained in depth</h4>
+<h4>Deep links: types and what to verify</h4>
+<ol start="1"><li><strong>URI schemes</strong> (<code>myapp://orders/123</code>): simple but unverified and hijackable.</li><li><strong>Android App Links</strong> (HTTPS with <code>assetlinks.json</code>) and <strong>iOS Universal Links</strong> (HTTPS with <code>apple-app-site-association</code>): verified, fall back to the website when the app is missing.</li><li><strong>Deferred deep links</strong>: the link survives installation via App Store or Play Store (Branch, AppsFlyer, Firebase Dynamic Links successors), then routes on first open.</li></ol>
+<p>Verify: correct destination screen and parameters, <strong>state handling</strong> (app killed, backgrounded, foreground), <strong>authentication</strong> (logged-out users go to login then continue to the target), invalid or expired ids (graceful error screen), unknown paths (fallback to home), parameter injection and encoding, duplicate navigation stack, back button behaviour, analytics and campaign attribution (UTM), and that links open the app and not the browser.</p>
+<h4>Launching links in automation</h4>
+<pre><code># Android
+adb shell am start -W -a android.intent.action.VIEW -d &quot;https://shop.example.com/orders/123&quot; com.example.shop
+adb shell pm get-app-links com.example.shop             # verification state of App Links
+# iOS simulator
+xcrun simctl openurl booted &quot;https://shop.example.com/orders/123&quot;
+xcrun simctl openurl booted &quot;myapp://orders/123&quot;</code></pre>
+<pre><code>// Appium (WebdriverIO): start from a deep link, then assert
+await driver.execute(&#39;mobile: deepLink&#39;, { url: &#39;https://shop.example.com/orders/123&#39;, package: &#39;com.example.shop&#39; }); // Android
+await driver.url(&#39;myapp://orders/123&#39;);                                                                               // iOS (XCUITest)
+await expect($(&#39;~order-details-title&#39;)).toBeDisplayed();
+await expect($(&#39;~order-id&#39;)).toHaveText(&#39;123&#39;);
+// Detox: await device.openURL({ url: &#39;myapp://orders/123&#39; });</code></pre>
+<p>Test <strong>cold start</strong> (terminate app then open link, using <code>launchApp</code> with <code>url</code>), <strong>warm</strong> (app in background), and <strong>hot</strong> (app on a different screen). Validate server files: <code>https://domain/.well-known/assetlinks.json</code> and <code>apple-app-site-association</code> return <code>200</code>, <code>application/json</code>, correct app IDs and paths, no redirects.</p>
+<h4>Push notifications</h4>
+<p>Flow: app registers with APNs (iOS) or FCM (Android), sends token to backend, backend sends a payload, OS displays notification, user taps, app handles routing.</p>
+<p>Automate in layers:</p>
+<ol start="1"><li><strong>Backend</strong>: unit and API tests that sending an event produces the correct FCM or APNs request (mock the provider), token registration and invalidation, topic subscriptions, payload size limits, localisation, quiet hours and preferences, rate limiting.</li><li><strong>Simulator and emulator</strong>: iOS simulator supports <code>xcrun simctl push booted com.example.app payload.apns</code> with a JSON payload file; Android emulator receives real FCM through Google Play images, or use <code>adb shell am broadcast</code> for local handling; call the FCM HTTP v1 API from test code using a service account for test devices.</li><li><strong>UI assertions</strong>: open the notification shade (<code>driver.openNotifications()</code> on Android; XCUITest <code>springboard</code> app for iOS), assert title and body, tap, and verify the destination screen (same routing as deep link). Handle <strong>permission prompts</strong> (<code>autoGrantPermissions</code>, <code>autoAcceptAlerts</code>, or interact with the system alert).</li><li><strong>Real devices</strong> (BrowserStack, Sauce Labs, Firebase Test Lab, a device lab) for end-to-end delivery through real APNs and FCM: foreground vs background vs killed state, silent and data-only notifications, notification channels (Android 8+), Do Not Disturb and battery optimisation, rich notifications with images and actions, badge counts, token refresh after reinstall.</li></ol>
+<h4>Pitfalls</h4>
+<p>Testing only a warm start, ignoring logged-out state, not verifying <code>.well-known</code> files after infrastructure changes, assuming simulator delivery equals production APNs behaviour, flaky waits for notification arrival (poll with timeout), and hard-coded device tokens.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you test universal links and app links, including the associated domain verification files?</li><li>How do you automate notification permission prompts and receipt on real devices?</li><li>How do you handle deferred deep links after install?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-67">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-67%3A+How+do+you+automate+mobile+deep+link+testing+and+push+notification%E2%80%A6&amp;question-id=qa-67&amp;context=QA+%2F+SDET%2C+Gear+3%2C+topic%3A+Mobile%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-67.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

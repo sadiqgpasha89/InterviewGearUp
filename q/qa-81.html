@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you test Single Page Applications (SPA) with client-side routing to avoid stale element references? | InterviewGearUp</title>
+<meta name="description" content="Avoid stale element references in SPAs by never caching element handles. Use locators that re-query the DOM on every action, wait for the specific route,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-81.html">
+<meta property="og:title" content="How do you test Single Page Applications (SPA) with client-side routing to avoid stale element references? | InterviewGearUp">
+<meta property="og:description" content="Avoid stale element references in SPAs by never caching element handles. Use locators that re-query the DOM on every action, wait for the specific route,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-81.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you test Single Page Applications (SPA) with client-side routing to avoid stale element references?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 2 (Mid-level) · UI Automation · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Avoid stale element references in SPAs by never caching element handles. Use locators that re-query the DOM on every action, wait for the specific route, element state or network completion after navigation, and assert on user-visible outcomes. Playwright and Cypress retry automatically, while Selenium needs explicit waits and re-finding elements after each re-render.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why SPAs break naive tests</h4>
+<p>In a single page application the browser does not load a new document on navigation. The framework (React, Angular, Vue, Svelte) changes the URL with the History API and <strong>replaces or re-creates DOM nodes</strong>. A reference to a node found before the re-render points to a <strong>detached element</strong>, so using it throws <code>StaleElementReferenceException</code> (Selenium) or acts on nothing. Also, there is no <code>load</code> event to wait for, and data arrives asynchronously after the route change, so tests race against rendering.</p>
+<h4>Core rules</h4>
+<ol start="1"><li><strong>Never store element handles across actions.</strong> Store <strong>locators</strong> (selectors) and let the tool resolve them on every action.</li></ol>
+<pre><code>// Playwright: locator is lazy and re-queried each time; actions auto-wait for actionability
+const save = page.getByRole(&#39;button&#39;, { name: &#39;Save&#39; });
+await save.click();
+await expect(page.getByText(&#39;Saved&#39;)).toBeVisible();      // retries until timeout</code></pre>
+<pre><code>// Selenium: re-find inside a wait, or use a retrying helper
+new WebDriverWait(driver, Duration.ofSeconds(10))
+  .ignoring(StaleElementReferenceException.class)
+  .until(d -&gt; { d.findElement(By.cssSelector(&quot;[data-testid=save]&quot;)).click(); return true; });</code></pre>
+<pre><code>// Cypress retries queries; avoid saving results to variables: chain from cy.get each time
+cy.get(&#39;[data-testid=save]&#39;).click();
+cy.contains(&#39;Saved&#39;).should(&#39;be.visible&#39;);</code></pre>
+<ol start="2"><li><strong>Wait for the right signal, not time.</strong> After a click that triggers routing, wait for one or more of: URL change (<code>page.waitForURL(&#39;**/orders/*&#39;)</code>, <code>cy.location(&#39;pathname&#39;).should(&#39;eq&#39;, ...)</code>), a unique element of the new view (heading, test id), loading indicators to disappear, or a specific network response (<code>page.waitForResponse(r =&gt; r.url().includes(&#39;/api/orders&#39;) &amp;&amp; r.ok())</code>). Combine with <code>expect(...).toBeVisible()</code> web-first assertions.</li><li><strong>Assert state, then act.</strong> Wait for the element to be attached, visible, stable (not animating), enabled, and receiving events before interaction (auto-wait does this; with Selenium use <code>ExpectedConditions.elementToBeClickable</code> and re-find).</li><li><strong>Use stable selectors</strong>: <code>data-testid</code>, roles, labels. Avoid index-based and auto-generated class names (CSS modules, styled-components hashes), and keys that change on re-render.</li><li><strong>Control data timing</strong>: mock or stub API responses for UI tests (<code>page.route</code>), or seed data first, to remove nondeterminism; wait for skeleton loaders to finish before asserting list contents.</li><li><strong>Disable animations</strong> in test mode (<code>prefers-reduced-motion</code>, CSS to zero transition) to avoid clicking moving targets.</li><li><strong>Handle optimistic UI and debounce</strong>: wait for server confirmation or the final DOM state, not the optimistic one; for debounced search inputs, wait for the request.</li></ol>
+<h4>Routing-specific tests</h4>
+<ul><li><strong>Deep links</strong>: open <code>/orders/123</code> directly in a fresh context; the app boots, authenticates, fetches data and renders; unknown route shows 404 view; server must serve <code>index.html</code> for client routes (refresh on <code>/orders/123</code> does not return 404).</li><li><strong>History</strong>: <code>page.goBack()</code> and <code>goForward()</code> restore view and state (filters, scroll position, form values), page title and focus management update per route (accessibility: announce route change, focus moves to main heading).</li><li><strong>Route guards and redirects</strong>: unauthenticated users redirect to login and return to the original path after login; permissions; lazy-loaded chunks load (simulate slow network and chunk failure with <code>route.abort()</code> and check error boundaries).</li><li><strong>Query parameters and state in the URL</strong>: filters, pagination, sorting persist and are shareable.</li><li><strong>Memory and leaks over long navigation sequences</strong>, event listener cleanup (soak test of repeated navigation).</li></ul>
+<h4>Debugging tips</h4>
+<p>Use trace viewers (Playwright trace, Cypress time travel) to see DOM at each step; log <code>framenavigated</code> and network events; check whether the element was re-created (MutationObserver). When a component is replaced mid-action, retry the <strong>whole user action</strong> from the locator, not only the last step.</p>
+<h4>Pitfalls</h4>
+<p><code>Thread.sleep</code>, storing <code>WebElement</code> in page object fields for later use, waiting for <code>document.readyState</code> in an SPA, asserting before data loads, and relying on CSS classes generated at build time.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does a React or Vue re-render cause StaleElementReferenceException in Selenium?</li><li>How do you reliably wait for client-side route changes that do not trigger a page load?</li><li>How do you test deep links, back and forward buttons and history state in an SPA?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-81">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-81%3A+How+do+you+test+Single+Page+Applications+%28SPA%29+with+client-side%E2%80%A6&amp;question-id=qa-81&amp;context=QA+%2F+SDET%2C+Gear+2%2C+topic%3A+UI+Automation%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-81.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you use WireMock or Mockoon to stub third-party payment and identity APIs in integration tests? | InterviewGearUp</title>
+<meta name="description" content="WireMock and Mockoon run a local HTTP server that returns canned responses for configured requests, so integration tests do not call real payment or…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-29.html">
+<meta property="og:title" content="How do you use WireMock or Mockoon to stub third-party payment and identity APIs in integration tests? | InterviewGearUp">
+<meta property="og:description" content="WireMock and Mockoon run a local HTTP server that returns canned responses for configured requests, so integration tests do not call real payment or…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-29.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you use WireMock or Mockoon to stub third-party payment and identity APIs in integration tests?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 2 (Mid-level) · Mocking · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>WireMock and Mockoon run a local HTTP server that returns canned responses for configured requests, so integration tests do not call real payment or identity providers. Define stubs by method, URL, headers and body, simulate delays, faults and error codes, verify the calls your app made, and point the system under test at the mock through configuration.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why stub third-party APIs</h4>
+<p>Real Stripe, PayPal, Okta or KYC services in tests are slow, rate-limited, nondeterministic, cost money, may have side effects (real charges), cannot easily produce failures on demand, and are unavailable offline or in CI sandboxes. A <strong>stub server</strong> gives fast, deterministic, repeatable, free tests and lets you reproduce hard cases (card declined, webhook retries, expired tokens).</p>
+<h4>WireMock</h4>
+<p>Java library or standalone server (also Docker, WireMock Cloud) with a JSON or Java DSL.</p>
+<pre><code>{
+  &quot;request&quot;: { &quot;method&quot;: &quot;POST&quot;, &quot;urlPath&quot;: &quot;/v1/payment_intents&quot;,
+               &quot;headers&quot;: { &quot;Authorization&quot;: { &quot;matches&quot;: &quot;Bearer sk_test_.*&quot; } },
+               &quot;bodyPatterns&quot;: [ { &quot;matchesJsonPath&quot;: &quot;$[?(@.amount == 5000)]&quot; } ] },
+  &quot;response&quot;: { &quot;status&quot;: 200, &quot;headers&quot;: { &quot;Content-Type&quot;: &quot;application/json&quot; },
+                &quot;jsonBody&quot;: { &quot;id&quot;: &quot;pi_123&quot;, &quot;status&quot;: &quot;requires_confirmation&quot;, &quot;amount&quot;: 5000 },
+                &quot;fixedDelayMilliseconds&quot;: 150 }
+}</code></pre>
+<pre><code>// JUnit with WireMockExtension
+stubFor(post(urlEqualTo(&quot;/v1/charges&quot;)).willReturn(aResponse().withStatus(402)
+        .withBody(&quot;{\&quot;error\&quot;:{\&quot;code\&quot;:\&quot;card_declined\&quot;}}&quot;)));
+stubFor(get(&quot;/identity/verify/42&quot;).willReturn(aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER)));
+// verify the app made the right request
+verify(1, postRequestedFor(urlEqualTo(&quot;/v1/charges&quot;)).withRequestBody(matchingJsonPath(&quot;$.currency&quot;, equalTo(&quot;usd&quot;))));</code></pre>
+<p>Features: request matching (URL, headers, query, JSON path, XPath, regex), <strong>response templating</strong> (echo request values, dates), <strong>stateful scenarios</strong>, <strong>faults</strong> (connection reset, empty response, random data), <strong>delays and chunked/slow responses</strong>, proxying and <strong>record and playback</strong> from the real API, priority and stub mappings files, request journal and verification, extensions (webhook callbacks).</p>
+<h4>Mockoon</h4>
+<p>Desktop app and CLI (<code>@mockoon/cli</code>) with a UI to define routes and rules, import <strong>OpenAPI</strong> specs, templating (Handlebars/Faker), rules based on headers, query or body to choose among multiple responses, latency and failure injection, proxy mode, and Docker images for CI. Good for quick mock servers shared across teams as JSON environment files in the repo.</p>
+<pre><code>mockoon-cli start --data ./mocks/payments.json --port 3001</code></pre>
+<h4>Wiring into tests</h4>
+<ul><li>Make the base URL <strong>configurable</strong> (<code>PAYMENT_API_URL</code>) so test environments point at <code>http://localhost:8089</code> while production uses the real host; avoid hardcoded endpoints.</li><li>Start mocks in the test lifecycle (Testcontainers <code>wiremock/wiremock</code>, Docker Compose, or JUnit extension), reset stubs between tests, and use random free ports in parallel runs.</li><li>Test <strong>failure modes</strong> explicitly: <code>402 card_declined</code>, <code>429</code> with <code>Retry-After</code>, <code>500</code>, malformed JSON, timeouts (delay greater than client timeout), expired tokens, duplicate idempotency keys.</li><li>Simulate <strong>webhooks</strong>: have the test call your webhook endpoint with a payload signed using the test secret (or use WireMock webhooks extension to call back).</li><li><strong>Stateful flows</strong>: scenario states (<code>Started → Authorised → Captured</code>) so repeated calls return different responses.</li></ul>
+<h4>Keeping mocks honest</h4>
+<p>Mocks drift from reality. Mitigate with <strong>contract tests</strong> (Pact, or validate stub responses against the provider&#39;s OpenAPI schema), periodic <strong>record from sandbox</strong> refreshes, a small set of <strong>sandbox/real integration tests</strong> (Stripe test mode) in a separate pipeline, and provider-supplied test tools (Stripe CLI, <code>stripe-mock</code>).</p>
+<h4>Pitfalls</h4>
+<p>Over-mocking so tests prove nothing, stubs that accept everything, forgetting to verify requests sent (silent wrong calls), shared mutable stubs breaking parallel tests, and mocking your own internal services unnecessarily.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you simulate declines, 5xx errors, timeouts and slow responses?</li><li>How do you keep stubs faithful to the real provider API and avoid drift?</li><li>How do you use stateful scenarios for multi-step flows like authenticate then capture?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-29">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-29%3A+How+do+you+use+WireMock+or+Mockoon+to+stub+third-party+payment+and%E2%80%A6&amp;question-id=qa-29&amp;context=QA+%2F+SDET%2C+Gear+2%2C+topic%3A+Mocking%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-29.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

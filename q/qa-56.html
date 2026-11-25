@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you automate responsive web design verification across desktop, tablet, and mobile viewport sizes? | InterviewGearUp</title>
+<meta name="description" content="Automate responsive checks by running the same flows in a matrix of viewport sizes and device profiles, asserting layout behaviour such as visible…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-56.html">
+<meta property="og:title" content="How do you automate responsive web design verification across desktop, tablet, and mobile viewport sizes? | InterviewGearUp">
+<meta property="og:description" content="Automate responsive checks by running the same flows in a matrix of viewport sizes and device profiles, asserting layout behaviour such as visible…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-56.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you automate responsive web design verification across desktop, tablet, and mobile viewport sizes?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 2 (Mid-level) · UI Automation · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Automate responsive checks by running the same flows in a matrix of viewport sizes and device profiles, asserting layout behaviour such as visible navigation, wrapping, overflow and touch target sizes, and comparing screenshots per breakpoint. Use Playwright device descriptors or setViewportSize, Cypress viewport commands or Selenium window size, with tests parameterised by breakpoint.</p></div>
+<h4>Explained in depth</h4>
+<h4>What to verify</h4>
+<p>Responsive design means layouts adapt to screen width, orientation and input type. Defects include horizontal scrolling, clipped or overlapping content, unreachable buttons, navigation menus not collapsing into a hamburger, tables overflowing, images not scaling, tiny tap targets and text too small.</p>
+<h4>Choose breakpoints and devices</h4>
+<p>Base the matrix on your <strong>CSS breakpoints</strong> and <strong>analytics</strong> (top devices, resolutions, browsers), for example:</p>
+<div class="md-table"><table><thead><tr><th>Class</th><th>Viewport examples</th></tr></thead><tbody><tr><td>Mobile small</td><td>320×568, 360×740</td></tr><tr><td>Mobile</td><td>390×844 (iPhone 14), 412×915 (Pixel)</td></tr><tr><td>Tablet</td><td>768×1024, 820×1180 (portrait and landscape)</td></tr><tr><td>Laptop</td><td>1280×720, 1440×900</td></tr><tr><td>Desktop wide</td><td>1920×1080, 2560×1440</td></tr></tbody></table></div>
+<p>Test <strong>just below and above each breakpoint</strong> (767, 768), orientation changes, zoom, and browser text scaling.</p>
+<h4>Parameterised tests</h4>
+<pre><code>// Playwright
+import { test, expect, devices } from &#39;@playwright/test&#39;;
+const viewports = [
+  { name: &#39;mobile&#39;, width: 375, height: 667 }, { name: &#39;tablet&#39;, width: 768, height: 1024 }, { name: &#39;desktop&#39;, width: 1440, height: 900 },
+];
+for (const vp of viewports) {
+  test.describe(`layout @${vp.name}`, () =&gt; {
+    test.use({ viewport: { width: vp.width, height: vp.height } });
+    test(&#39;navigation adapts&#39;, async ({ page }) =&gt; {
+      await page.goto(&#39;/&#39;);
+      if (vp.width &lt; 768) {
+        await expect(page.locator(&#39;#hamburger&#39;)).toBeVisible();
+        await expect(page.locator(&#39;nav .links&#39;)).toBeHidden();
+        await page.click(&#39;#hamburger&#39;); await expect(page.locator(&#39;nav .links&#39;)).toBeVisible();
+      } else {
+        await expect(page.locator(&#39;nav .links&#39;)).toBeVisible();
+      }
+    });
+    test(&#39;no horizontal overflow&#39;, async ({ page }) =&gt; {
+      await page.goto(&#39;/&#39;);
+      const overflow = await page.evaluate(() =&gt; document.documentElement.scrollWidth &gt; document.documentElement.clientWidth);
+      expect(overflow).toBe(false);
+    });
+    test(&#39;visual baseline&#39;, async ({ page }) =&gt; { await page.goto(&#39;/&#39;); await expect(page).toHaveScreenshot(`home-${vp.name}.png`, { fullPage: true }); });
+  });
+}
+// device emulation: projects with devices[&#39;iPhone 14&#39;], devices[&#39;Pixel 7&#39;], devices[&#39;iPad Pro 11&#39;] (includes UA, touch, deviceScaleFactor)</code></pre>
+<p>Cypress: <code>cy.viewport(&#39;iphone-x&#39;)</code> or <code>cy.viewport(375, 667)</code>; Selenium: <code>driver.manage().window().setSize(new Dimension(375, 667))</code> or Chrome <code>mobileEmulation</code> options.</p>
+<h4>Automated layout checks</h4>
+<ul><li><strong>Overflow</strong>: <code>scrollWidth &gt; clientWidth</code>, elements whose bounding box exceeds the viewport (<code>getBoundingClientRect().right &gt; window.innerWidth</code>).</li><li><strong>Overlap and clipping</strong>: compare bounding boxes of key elements; check that important elements are within viewport and not covered (<code>elementFromPoint</code>).</li><li><strong>Touch target size</strong>: at least 44×44 CSS pixels (WCAG 2.2 target size and platform guidance).</li><li><strong>Font size and readability</strong>, image sizing (<code>srcset</code>, <code>sizes</code>), <code>meta viewport</code> present, no fixed widths.</li><li><strong>Media queries active</strong>: assert computed styles (<code>display</code>, <code>grid-template-columns</code>) at breakpoints.</li><li>Use <strong>visual regression</strong> per breakpoint, <strong>axe</strong> accessibility checks per viewport, and Lighthouse for mobile performance.</li><li>Include <strong>touch interactions</strong> (tap, swipe) with <code>hasTouch</code> and <code>isMobile</code> emulation.</li></ul>
+<h4>Emulation versus real devices</h4>
+<p>Browser emulation (Chrome DevTools device mode, Playwright) reproduces viewport, pixel ratio, user agent and touch events, and is fast and deterministic, but does <strong>not</strong> reproduce real mobile browser behaviour: iOS Safari quirks (viewport units with dynamic toolbars, 100vh, safe areas, rubber-banding), keyboard overlays, performance, fonts, GPU rendering. Run <strong>critical flows on real devices or cloud device farms</strong> (BrowserStack, Sauce Labs, LambdaTest) for release confidence.</p>
+<h4>Practices</h4>
+<p>Keep responsive tests in a <strong>small, focused suite</strong> (not every functional test at every size), run the matrix nightly and a mobile + desktop pair on PRs, store baselines per viewport, wait for fonts and images, test with long text and translated strings (expansion), and test landscape, dark mode and zoom.</p>
+<h4>Pitfalls</h4>
+<p>Testing only desktop sizes, fixed-size screenshots that hide overflow below the fold, hardcoded pixel assertions that break with design updates, and treating emulation as proof of Safari behaviour.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Which breakpoints and devices should you prioritise based on analytics?</li><li>How do you detect horizontal overflow and overlapping elements automatically?</li><li>How is emulation different from testing on real devices?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-56">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-56%3A+How+do+you+automate+responsive+web+design+verification+across%E2%80%A6&amp;question-id=qa-56&amp;context=QA+%2F+SDET%2C+Gear+2%2C+topic%3A+UI+Automation%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-56.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

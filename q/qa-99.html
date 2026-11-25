@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you automate interactions with native OS file dialogs and authentication popups in Playwright? | InterviewGearUp</title>
+<meta name="description" content="Playwright does not drive native OS dialogs, so avoid them by using browser-level APIs: file chooser events or setInputFiles for uploads, httpCredentials…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-99.html">
+<meta property="og:title" content="How do you automate interactions with native OS file dialogs and authentication popups in Playwright? | InterviewGearUp">
+<meta property="og:description" content="Playwright does not drive native OS dialogs, so avoid them by using browser-level APIs: file chooser events or setInputFiles for uploads, httpCredentials…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-99.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you automate interactions with native OS file dialogs and authentication popups in Playwright?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 2 (Mid-level) · UI Automation · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Playwright does not drive native OS dialogs, so avoid them by using browser-level APIs: file chooser events or setInputFiles for uploads, httpCredentials in the context for HTTP basic or NTLM auth, dialog events for alert and confirm, and download events for save prompts. For anything truly native, use OS-level tools or a different driver sparingly.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why native dialogs are a problem</h4>
+<p>Browser automation protocols (CDP, WebDriver BiDi) control <strong>web content</strong>. Operating system file pickers, HTTP authentication prompts, print dialogs and some permission bubbles are <strong>browser chrome or OS windows</strong> outside the page, so selectors cannot reach them. Playwright provides <strong>purpose-built hooks</strong> that bypass the UI while triggering the same application behaviour.</p>
+<h4>File dialogs</h4>
+<pre><code>// 1) Set files directly on the input, even if hidden
+await page.setInputFiles(&#39;input[type=file]&#39;, &#39;fixtures/report.pdf&#39;);
+// 2) When the page opens a chooser from a custom button (no visible input)
+const [chooser] = await Promise.all([page.waitForEvent(&#39;filechooser&#39;), page.getByRole(&#39;button&#39;, { name: &#39;Upload&#39; }).click()]);
+await chooser.setFiles([&#39;fixtures/a.png&#39;, &#39;fixtures/b.png&#39;]);
+// 3) Directory upload and in-memory files
+await page.setInputFiles(&#39;input[webkitdirectory]&#39;, &#39;fixtures/folder&#39;);
+await page.setInputFiles(&#39;input[type=file]&#39;, { name: &#39;x.txt&#39;, mimeType: &#39;text/plain&#39;, buffer: Buffer.from(&#39;data&#39;) });
+// Save-as: use download events, not the dialog
+const [dl] = await Promise.all([page.waitForEvent(&#39;download&#39;), page.click(&#39;text=Export&#39;)]);
+await dl.saveAs(&#39;tmp/export.csv&#39;);</code></pre>
+<p>The File System Access API (<code>showOpenFilePicker</code>, <code>showSaveFilePicker</code>) is not controllable via <code>filechooser</code>; stub it with <code>page.addInitScript</code> to return in-memory handles in tests.</p>
+<h4>Authentication popups</h4>
+<p>Basic, Digest and NTLM/Negotiate challenges trigger a browser prompt. Supply credentials ahead of time:</p>
+<pre><code>const context = await browser.newContext({ httpCredentials: { username: &#39;qa&#39;, password: process.env.BASIC_PASS!, origin: &#39;https://intranet.example.com&#39; } });</code></pre>
+<p>Alternatives: embed credentials in the URL (<code>https://user:pass@host</code>, deprecated and often blocked), or send an <code>Authorization</code> header via <code>page.setExtraHTTPHeaders</code> or <code>route.continue({ headers })</code>. For <strong>Windows integrated auth (Kerberos or NTLM)</strong> configure the browser (<code>--auth-server-allowlist</code> for Chromium, Firefox policies) and run on an authenticated machine, or bypass authentication in test environments with API tokens. SSO popups are normal web pages: use <code>waitForEvent(&#39;popup&#39;)</code> or API-based login with <code>storageState</code>.</p>
+<h4>JavaScript dialogs</h4>
+<p><code>alert</code>, <code>confirm</code>, <code>prompt</code> and <code>beforeunload</code> are exposed as events: register the handler <strong>before</strong> the triggering action, otherwise Playwright auto-dismisses.</p>
+<pre><code>page.once(&#39;dialog&#39;, async d =&gt; { expect(d.message()).toContain(&#39;Delete this item?&#39;); await d.accept(); });
+await page.click(&#39;text=Delete&#39;);</code></pre>
+<h4>Permission prompts and other browser UI</h4>
+<ul><li><strong>Camera, microphone, geolocation, notifications, clipboard</strong>: grant or deny through the context (<code>permissions: [&#39;geolocation&#39;]</code>, <code>context.grantPermissions</code>, <code>clearPermissions</code>), and use Chromium fake media flags (<code>--use-fake-device-for-media-stream --use-fake-ui-for-media-stream --use-file-for-fake-video-capture=clip.y4m</code>).</li><li><strong>Print dialog</strong> (<code>window.print()</code>): stub <code>window.print</code> and assert it was called, or generate PDFs with <code>page.pdf()</code> (Chromium headless) and validate content.</li><li><strong>Download bubbles and &quot;open with&quot; prompts</strong>: use the download event; configure the browser profile to avoid prompts.</li><li><strong>Popups and new tabs</strong>: <code>popup</code> event; <strong>new windows</strong>: <code>context.on(&#39;page&#39;)</code>.</li><li><strong>Certificate errors</strong>: <code>ignoreHTTPSErrors: true</code> in test environments; client certificates via <code>clientCertificates</code> option.</li><li><strong>Autofill, password manager and save-card prompts</strong>: disabled in clean contexts; test through the web form logic instead.</li><li><strong>Extensions and browser settings pages</strong> (<code>chrome://</code>): launch persistent contexts with flags or preconfigure profiles.</li></ul>
+<h4>When native automation is unavoidable</h4>
+<p>Desktop applications, Electron app menus, OS-level dialogs in hybrid apps, and legacy plugins may require <strong>AutoIt, pywinauto, WinAppDriver or Windows Application Driver successors, xdotool, robotjs, SikuliX, macOS Accessibility APIs, or Appium desktop drivers</strong>. Playwright also supports Electron (<code>_electron.launch</code>) and exposes its main process and windows. Drawbacks of OS-level automation: needs a real display (virtual framebuffer Xvfb in CI), timing and focus fragility, platform-specific code, slower runs, harder parallelism, and weak reporting. Isolate it in a <strong>small adapter layer</strong> and prefer test hooks or alternative app paths first.</p>
+<h4>Pitfalls</h4>
+<p>Registering the dialog handler after the click, using <code>sleep</code> instead of waiting for events, testing real SSO prompts in every test, relying on headed mode in CI, and hard-coding absolute paths for upload fixtures.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you handle HTTP basic and NTLM authentication prompts without a dialog?</li><li>How do you deal with the browser&#39;s print dialog, permission prompts and download bubbles?</li><li>When is it acceptable to use OS-level automation such as AutoIt or robotjs, and what are the drawbacks?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-99">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-99%3A+How+do+you+automate+interactions+with+native+OS+file+dialogs+and%E2%80%A6&amp;question-id=qa-99&amp;context=QA+%2F+SDET%2C+Gear+2%2C+topic%3A+UI+Automation%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-99.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

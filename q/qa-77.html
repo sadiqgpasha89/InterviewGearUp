@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you automate interaction with dynamic iframes, shadow DOM elements, and multi-window popups? | InterviewGearUp</title>
+<meta name="description" content="Interact with iframes through frame handles or frameLocator, with shadow DOM through piercing selectors or open shadowRoot access, and with popups by…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-77.html">
+<meta property="og:title" content="How do you automate interaction with dynamic iframes, shadow DOM elements, and multi-window popups? | InterviewGearUp">
+<meta property="og:description" content="Interact with iframes through frame handles or frameLocator, with shadow DOM through piercing selectors or open shadowRoot access, and with popups by…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-77.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you automate interaction with dynamic iframes, shadow DOM elements, and multi-window popups?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 2 (Mid-level) · UI Automation · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Interact with iframes through frame handles or frameLocator, with shadow DOM through piercing selectors or open shadowRoot access, and with popups by waiting for the new page or window handle event. Playwright pierces open shadow roots and offers frameLocator and popup events by default, while Selenium needs explicit switchTo and shadowRoot calls.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why they are tricky</h4>
+<ul><li><strong>iframes</strong> are separate documents; locators in the main page cannot see inside, and frames can be added, reloaded, or removed dynamically (ads, payment fields, embedded widgets, rich text editors).</li><li><strong>Shadow DOM</strong> encapsulates a component&#39;s internals (web components, Salesforce, Ionic, Material Web); normal CSS and XPath selectors do not cross the boundary in some tools.</li><li><strong>Popups and new windows</strong> are different browsing contexts (OAuth, payment confirmation, print preview, <code>target=_blank</code>).</li></ul>
+<h4>iframes</h4>
+<pre><code>// Playwright: locators auto-wait and re-resolve, no manual switching
+const card = page.frameLocator(&#39;iframe[title=&quot;Secure card number&quot;]&#39;);
+await card.locator(&#39;input[name=&quot;cardnumber&quot;]&#39;).fill(&#39;4242 4242 4242 4242&#39;);
+await page.frameLocator(&#39;#editor-frame&#39;).locator(&#39;body&#39;).fill(&#39;Hello&#39;);
+// nested
+page.frameLocator(&#39;#outer&#39;).frameLocator(&#39;#inner&#39;).getByRole(&#39;button&#39;, { name: &#39;Pay&#39; }).click();
+// wait for a dynamically added frame
+const frame = await page.waitForEvent(&#39;frameattached&#39;);</code></pre>
+<pre><code>// Selenium: switch context explicitly, and switch back
+wait.until(ExpectedConditions.frameToBeAvailableAndSwitchToIt(By.cssSelector(&quot;iframe[title=&#39;Secure card number&#39;]&quot;)));
+driver.findElement(By.name(&quot;cardnumber&quot;)).sendKeys(&quot;4242424242424242&quot;);
+driver.switchTo().defaultContent();                 // always return to the main document</code></pre>
+<p>Tips: select frames by stable attributes (title, name, src pattern), not index; wait for frame load; after navigation or re-render the frame element is <strong>stale</strong>, so re-acquire it; in Cypress, use <code>cy.get(&#39;iframe&#39;).its(&#39;0.contentDocument.body&#39;)</code> or the <code>cypress-iframe</code> plugin (cross-origin iframes need <code>cy.origin</code> or Chrome security flags and are limited). <strong>Cross-origin iframes</strong> (Stripe Elements, reCAPTCHA) cannot be scripted from page JavaScript, but WebDriver and Playwright can drive them through the browser protocol; for third-party widgets prefer test modes or mocking.</p>
+<h4>Shadow DOM</h4>
+<pre><code>// Playwright CSS and text locators pierce OPEN shadow roots automatically
+await page.locator(&#39;my-date-picker input.day-3&#39;).click();
+await page.getByRole(&#39;button&#39;, { name: &#39;Save&#39; }).click();        // role locators also pierce</code></pre>
+<pre><code>// Selenium 4: access shadowRoot, then search within it
+SearchContext root = driver.findElement(By.cssSelector(&quot;my-component&quot;)).getShadowRoot();
+root.findElement(By.cssSelector(&quot;button.primary&quot;)).click();</code></pre>
+<pre><code>// Cypress: includeShadowDom config or .shadow()
+cy.get(&#39;my-component&#39;).shadow().find(&#39;button.primary&#39;).click();   // or { includeShadowDom: true } in config</code></pre>
+<p>Limits: <strong>closed shadow roots</strong> are not reachable by design; ask developers for test hooks (<code>data-testid</code> on the host, exposed attributes, a test-only mode with open roots), or interact via the host element and public API. XPath does not pierce shadow roots. Prefer <strong>accessible roles and visible text</strong> over implementation selectors so tests survive refactors.</p>
+<h4>Popups and multiple windows</h4>
+<pre><code>// Playwright: wait for the popup event while clicking
+const [popup] = await Promise.all([page.waitForEvent(&#39;popup&#39;), page.click(&#39;text=Sign in with Google&#39;)]);
+await popup.waitForLoadState();
+await popup.fill(&#39;#email&#39;, user); await popup.click(&#39;#next&#39;);
+await popup.waitForEvent(&#39;close&#39;);                          // popup closes after authentication
+await expect(page.locator(&#39;#profile-name&#39;)).toHaveText(&#39;Ada&#39;);</code></pre>
+<pre><code>// Selenium: track handles
+String main = driver.getWindowHandle();
+driver.findElement(By.id(&quot;open&quot;)).click();
+wait.until(d -&gt; d.getWindowHandles().size() &gt; 1);
+for (String h : driver.getWindowHandles()) if (!h.equals(main)) driver.switchTo().window(h);
+// ...interact...; driver.close(); driver.switchTo().window(main);</code></pre>
+<p>Handle <strong>JavaScript dialogs</strong> (<code>alert</code>, <code>confirm</code>, <code>prompt</code>, <code>beforeunload</code>) with <code>page.on(&#39;dialog&#39;)</code> or <code>switchTo().alert()</code>, and <strong>OS-level dialogs</strong> separately (file chooser events, basic-auth via <code>httpCredentials</code> in the context).</p>
+<h4>Robustness</h4>
+<p>Use auto-waiting locators instead of sleeps, assert the popup URL and title, close extra windows in teardown so they do not leak into the next test, prefer API-based authentication for most tests and keep popup flows in dedicated tests, and run on all target browsers because popup blockers and iframe cookie policies (third-party cookie restrictions, SameSite) behave differently.</p>
+<h4>Pitfalls</h4>
+<p>Forgetting to switch back to the default content, indexing frames by position, trying to pierce closed shadow roots with scripts, missing the popup event because the listener is registered after the click, and testing third-party widgets live instead of mocking.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you handle closed shadow roots or cross-origin iframes that cannot be accessed directly?</li><li>How do you wait for dynamically injected iframes and avoid stale frame references?</li><li>How do you test OAuth or payment popups that open and close a new window?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-77">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-77%3A+How+do+you+automate+interaction+with+dynamic+iframes%2C+shadow+DOM%E2%80%A6&amp;question-id=qa-77&amp;context=QA+%2F+SDET%2C+Gear+2%2C+topic%3A+UI+Automation%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-77.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

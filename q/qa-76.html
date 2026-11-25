@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you test cookie consent banners and verify that tracking scripts are blocked before consent? | InterviewGearUp</title>
+<meta name="description" content="Test cookie consent by loading the site in a clean browser context and asserting that no non-essential cookies are set and no tracker requests are sent…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-76.html">
+<meta property="og:title" content="How do you test cookie consent banners and verify that tracking scripts are blocked before consent? | InterviewGearUp">
+<meta property="og:description" content="Test cookie consent by loading the site in a clean browser context and asserting that no non-essential cookies are set and no tracker requests are sent…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-76.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you test cookie consent banners and verify that tracking scripts are blocked before consent?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 2 (Mid-level) · Compliance · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Test cookie consent by loading the site in a clean browser context and asserting that no non-essential cookies are set and no tracker requests are sent before the user acts. Then accept, reject and customise choices, and verify cookies, network calls and tags match the chosen categories, that the choice persists and can be withdrawn, and that the banner follows regional rules.</p></div>
+<h4>Explained in depth</h4>
+<h4>Rules being tested</h4>
+<p>Under <strong>GDPR and ePrivacy</strong>, non-essential cookies and trackers (analytics, advertising, social pixels) need <strong>prior, informed, specific, freely given consent</strong>; strictly necessary cookies (session, security, load balancing) do not. Rejecting must be as easy as accepting, with no pre-ticked boxes, and consent must be withdrawable and <strong>recorded</strong>. CCPA and CPRA use an opt-out model (Do Not Sell or Share, Global Privacy Control signals). Test for the regulations that apply to your markets with legal input.</p>
+<h4>Baseline test: nothing fires before consent</h4>
+<pre><code>test(&#39;no trackers or non-essential cookies before consent&#39;, async ({ browser }) =&gt; {
+  const context = await browser.newContext();           // fresh: no cookies, no storage
+  const page = await context.newPage();
+  const blocked = [/google-analytics\.com/, /googletagmanager\.com\/gtag/, /facebook\.net/, /doubleclick\.net/, /hotjar\.com/, /linkedin\.com\/px/];
+  const trackerCalls: string[] = [];
+  page.on(&#39;request&#39;, r =&gt; { if (blocked.some(rx =&gt; rx.test(r.url()))) trackerCalls.push(r.url()); });
+  await page.goto(&#39;/&#39;);
+  await expect(page.locator(&#39;#cookie-banner&#39;)).toBeVisible();
+  await page.waitForLoadState(&#39;networkidle&#39;);
+  expect(trackerCalls).toEqual([]);
+  const names = (await context.cookies()).map(c =&gt; c.name);
+  expect(names).not.toEqual(expect.arrayContaining([&#39;_ga&#39;, &#39;_fbp&#39;, &#39;_gid&#39;]));
+  const ls = await page.evaluate(() =&gt; Object.keys(localStorage));
+  expect(ls.filter(k =&gt; /^(_ga|ajs_|amplitude)/.test(k))).toEqual([]);
+});</code></pre>
+<p>Also scroll, click and navigate: some scripts fire on interaction, and <strong>consent must also be honoured on subsequent pages</strong>, iframes (YouTube, maps), and tag-manager containers.</p>
+<h4>Banner behaviour scenarios</h4>
+<ol start="1"><li><strong>Accept all</strong>: banner closes, consent stored (cookie or localStorage and a server-side record with timestamp, version and choices), trackers now load, analytics events fire.</li><li><strong>Reject all / Decline</strong>: banner closes, <strong>still no non-essential cookies or trackers</strong>; rejection button is equally prominent.</li><li><strong>Customise (granular categories)</strong>: enable only analytics; marketing remains blocked; verify each category toggles the right scripts and cookies.</li><li><strong>Persistence</strong>: reload and revisit; banner stays hidden; consent respected across subdomains if designed; <strong>re-prompt</strong> after expiry (typically 6 to 12 months) or when the policy or vendor list changes (consent version bump).</li><li><strong>Withdrawal</strong>: a persistent &quot;Cookie settings&quot; link reopens preferences; withdrawing removes the corresponding cookies, stops tracking calls, and informs vendors (consent management platform APIs).</li><li><strong>Accessibility</strong>: keyboard focus trap, screen reader labels, focus returns after close, readable at zoom, not blocking content unfairly (no cookie wall unless allowed).</li><li><strong>Localisation</strong>: language by locale, links to privacy and cookie policy, vendor lists.</li></ol>
+<h4>Region logic</h4>
+<p>Set the geolocation through proxy or header mocking (<code>context.setGeolocation</code> does not change IP geolocation; use CDN test headers such as <code>CF-IPCountry</code>, a staging flag, or a geo-IP stub) and verify: EU or UK users see the opt-in banner, California users see the opt-out and &quot;Do Not Sell&quot; link, and <strong>Global Privacy Control</strong> (<code>Sec-GPC: 1</code> header, <code>navigator.globalPrivacyControl</code>) is honoured automatically.</p>
+<h4>Consent signals and tag managers</h4>
+<ul><li><strong>Google Consent Mode v2</strong>: assert <code>dataLayer</code> entries <code>gtag(&#39;consent&#39;,&#39;default&#39;,{ad_storage:&#39;denied&#39;,analytics_storage:&#39;denied&#39;,ad_user_data:&#39;denied&#39;,ad_personalization:&#39;denied&#39;})</code> before tags and an <code>update</code> after choice; verify pings carry <code>gcs</code> parameters.</li><li><strong>IAB TCF</strong> string (<code>__tcfapi(&#39;getTCData&#39;)</code>) reflects choices.</li><li>Tag manager triggers are conditioned on consent state; no hard-coded tags bypass the manager (scan HTML and scripts).</li></ul>
+<h4>Auditing</h4>
+<p>Run periodic scans with tools (Cookiebot scanner, OneTrust, Ketch, <code>cookie-audit</code> scripts, Lighthouse, Blacklight) comparing <strong>actual cookies and trackers</strong> to the declared cookie policy; include third-party iframes and new marketing tags added by non-engineers. Store evidence (HAR files, screenshots) for compliance audits.</p>
+<h4>Pitfalls</h4>
+<p>Testing with a browser profile that already has consent, only checking the banner&#39;s presence, ignoring server-side set cookies and first-party analytics, missing tags added later by marketing, and assuming accept-all coverage equals compliance.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you detect third-party trackers loading before consent using network interception?</li><li>How do you test consent withdrawal and consent mode signals for Google tags?</li><li>How do you handle region-specific behaviour such as GDPR, CCPA and ePrivacy in tests?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-76">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-76%3A+How+do+you+test+cookie+consent+banners+and+verify+that+tracking%E2%80%A6&amp;question-id=qa-76&amp;context=QA+%2F+SDET%2C+Gear+2%2C+topic%3A+Compliance%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-76.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you verify Cross-Origin Resource Sharing (CORS) configurations in automated API tests? | InterviewGearUp</title>
+<meta name="description" content="Test CORS by sending requests with an Origin header and, for non-simple requests, a preflight OPTIONS with Access-Control-Request-Method and Headers,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-91.html">
+<meta property="og:title" content="How do you verify Cross-Origin Resource Sharing (CORS) configurations in automated API tests? | InterviewGearUp">
+<meta property="og:description" content="Test CORS by sending requests with an Origin header and, for non-simple requests, a preflight OPTIONS with Access-Control-Request-Method and Headers,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-91.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you verify Cross-Origin Resource Sharing (CORS) configurations in automated API tests?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 2 (Mid-level) · Security · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Test CORS by sending requests with an Origin header and, for non-simple requests, a preflight OPTIONS with Access-Control-Request-Method and Headers, then assert the Access-Control-Allow-* response headers. Verify allowed origins are an explicit allow-list, credentials are never combined with a wildcard, disallowed origins get no allow headers, and Vary: Origin is set.</p></div>
+<h4>Explained in depth</h4>
+<h4>What CORS is</h4>
+<p><strong>Cross-Origin Resource Sharing</strong> relaxes the browser&#39;s same-origin policy. A page at <code>https://app.example.com</code> may call <code>https://api.example.com</code> only if the API&#39;s response headers permit it. The <strong>browser enforces</strong> the policy; servers only send headers. Misconfigurations (wildcards, reflected origins) can let malicious sites read authenticated responses.</p>
+<h4>Flows to test</h4>
+<ol start="1"><li><strong>Simple requests</strong> (GET, HEAD, POST with simple content types and headers): the browser sends the request with <code>Origin</code>; the response must contain <code>Access-Control-Allow-Origin</code> matching the origin or <code>*</code>, otherwise the browser blocks reading it.</li><li><strong>Preflighted requests</strong> (methods like PUT, DELETE, PATCH, custom headers such as <code>Authorization</code>, <code>Content-Type: application/json</code>): the browser first sends <code>OPTIONS</code> with <code>Origin</code>, <code>Access-Control-Request-Method</code>, <code>Access-Control-Request-Headers</code>. The server must answer <code>204</code> or <code>200</code> with <code>Access-Control-Allow-Origin</code>, <code>Access-Control-Allow-Methods</code>, <code>Access-Control-Allow-Headers</code>, optionally <code>Access-Control-Max-Age</code>.</li><li><strong>Credentialed requests</strong> (cookies, HTTP auth): require <code>Access-Control-Allow-Credentials: true</code> and an <strong>explicit origin</strong> (never <code>*</code>).</li></ol>
+<h4>Automated API tests (header assertions)</h4>
+<pre><code>import requests
+API = &quot;https://api.staging.example.com&quot;
+ALLOWED = &quot;https://app.example.com&quot;
+EVIL = &quot;https://evil.example.net&quot;
+
+def test_preflight_allowed_origin():
+    r = requests.options(f&quot;{API}/orders&quot;, headers={&quot;Origin&quot;: ALLOWED, &quot;Access-Control-Request-Method&quot;: &quot;PUT&quot;,
+                                                    &quot;Access-Control-Request-Headers&quot;: &quot;authorization,content-type&quot;})
+    assert r.status_code in (200, 204)
+    assert r.headers[&quot;Access-Control-Allow-Origin&quot;] == ALLOWED
+    assert &quot;PUT&quot; in r.headers[&quot;Access-Control-Allow-Methods&quot;]
+    assert &quot;authorization&quot; in r.headers[&quot;Access-Control-Allow-Headers&quot;].lower()
+    assert &quot;Origin&quot; in r.headers.get(&quot;Vary&quot;, &quot;&quot;)
+
+def test_disallowed_origin_gets_no_cors_headers():
+    r = requests.get(f&quot;{API}/orders&quot;, headers={&quot;Origin&quot;: EVIL, &quot;Authorization&quot;: TOKEN})
+    assert &quot;Access-Control-Allow-Origin&quot; not in r.headers
+
+def test_no_wildcard_with_credentials():
+    r = requests.get(f&quot;{API}/me&quot;, headers={&quot;Origin&quot;: ALLOWED})
+    if r.headers.get(&quot;Access-Control-Allow-Credentials&quot;) == &quot;true&quot;:
+        assert r.headers[&quot;Access-Control-Allow-Origin&quot;] != &quot;*&quot;</code></pre>
+<p>Cases: exact allow-list match, <strong>subdomain and scheme tricks</strong> (<code>https://app.example.com.evil.net</code>, <code>http://app.example.com</code>, <code>https://evilapp.example.com</code>, <code>null</code> origin from sandboxed iframes and <code>file://</code>), case sensitivity, trailing slash or port differences, <strong>regex bugs</strong> in origin matching (unescaped dots, missing anchors), reflected origin without validation, internal-network origins, and requests <strong>without</strong> <code>Origin</code> (non-browser clients still work).</p>
+<h4>Browser-level tests</h4>
+<p>A server-side client ignores CORS enforcement, so verify real behaviour in a browser (Playwright):</p>
+<pre><code>await page.goto(&#39;https://app.example.com&#39;);
+const result = await page.evaluate(async () =&gt; {
+  try { const r = await fetch(&#39;https://api.example.com/orders&#39;, { credentials: &#39;include&#39; }); return { ok: r.ok, status: r.status }; }
+  catch (e) { return { error: String(e) }; }
+});
+expect(result.ok).toBe(true);
+// from an untrusted origin page the same fetch must fail with a CORS error (&quot;TypeError: Failed to fetch&quot;)</code></pre>
+<p>Also assert console errors, preflight request counts (<code>page.on(&#39;request&#39;)</code> shows <code>OPTIONS</code>), and that preflight responses are cached per <code>Access-Control-Max-Age</code> (browser caps apply: Chrome 2 hours, Firefox 24 hours).</p>
+<h4>Other checks</h4>
+<ul><li><code>Access-Control-Expose-Headers</code> lists headers JavaScript may read (pagination, rate-limit headers).</li><li>Preflight must not require authentication cookies (browsers send none) and must not redirect.</li><li>Error responses (<code>401</code>, <code>403</code>, <code>500</code>) also include CORS headers so the client can read the error.</li><li>CORS headers consistent across API gateway, CDN and application layers; no duplicate or conflicting headers (two <code>Access-Control-Allow-Origin</code> values break the browser).</li><li>Private network access, WebSocket origin checks (separate: CORS does not apply to WebSockets; the server must validate <code>Origin</code>).</li><li><strong>CORS is not authentication</strong>: sensitive endpoints still enforce auth and CSRF protections.</li><li>Scan with OWASP ZAP and tools like <code>corsy</code> or <code>CORScanner</code> as a supplementary check.</li></ul>
+<h4>Pitfalls</h4>
+<p>Using <code>Access-Control-Allow-Origin: *</code> on authenticated APIs, reflecting any origin with credentials, forgetting <code>Vary: Origin</code> (cache poisoning at CDNs), testing only with curl, and allowing the <code>null</code> origin.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why can&#39;t you test CORS enforcement with a server-side HTTP client alone?</li><li>Why is reflecting the Origin header with credentials allowed dangerous?</li><li>How do you test preflight caching with Access-Control-Max-Age?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-91">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-91%3A+How+do+you+verify+Cross-Origin+Resource+Sharing+%28CORS%29%E2%80%A6&amp;question-id=qa-91&amp;context=QA+%2F+SDET%2C+Gear+2%2C+topic%3A+Security%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-91.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

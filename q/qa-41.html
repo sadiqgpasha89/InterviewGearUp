@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you generate comprehensive test execution reports with screenshots and videos using Allure Framework? | InterviewGearUp</title>
+<meta name="description" content="Allure collects results from your test framework through adapters, then generates an HTML report with steps, history, categories, attachments,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-41.html">
+<meta property="og:title" content="How do you generate comprehensive test execution reports with screenshots and videos using Allure Framework? | InterviewGearUp">
+<meta property="og:description" content="Allure collects results from your test framework through adapters, then generates an HTML report with steps, history, categories, attachments,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-41.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you generate comprehensive test execution reports with screenshots and videos using Allure Framework?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 2 (Mid-level) · Reporting · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Allure collects results from your test framework through adapters, then generates an HTML report with steps, history, categories, attachments, screenshots and videos. Add the Allure adapter for your runner, attach screenshots and traces on failure, annotate tests with epics, features and severity, run tests to produce allure-results, then generate and publish the report in CI.</p></div>
+<h4>Explained in depth</h4>
+<h4>What Allure provides</h4>
+<p>A flexible reporting framework supporting JUnit, TestNG, pytest, Playwright, Cypress, WebdriverIO, Cucumber, Jest, Mocha and more. Tests write JSON files and attachments to an <code>allure-results</code> directory; the Allure CLI turns them into a rich single-page report with:</p>
+<ul><li>Overview dashboards (pass, fail, broken, skipped, duration graphs).</li><li><strong>Suites and behaviours</strong> views: by package or by Epic → Feature → Story.</li><li>Per-test pages with <strong>steps</strong>, parameters, timings, <strong>attachments</strong> (screenshots, videos, logs, HTTP requests, traces), environment info, links to issues and test cases.</li><li><strong>Categories</strong> that classify failures (product defects, test defects, infrastructure), <strong>history and trends</strong> across runs, <strong>retries</strong> and <strong>flaky</strong> marking.</li></ul>
+<h4>Setup (Java and Maven example)</h4>
+<pre><code>&lt;dependency&gt;&lt;groupId&gt;io.qameta.allure&lt;/groupId&gt;&lt;artifactId&gt;allure-testng&lt;/artifactId&gt;&lt;version&gt;2.29.0&lt;/version&gt;&lt;/dependency&gt;
+&lt;!-- plus aspectj weaver as javaagent in surefire for @Step support --&gt;</code></pre>
+<pre><code>@Epic(&quot;Checkout&quot;) @Feature(&quot;Payments&quot;) @Story(&quot;Card payment&quot;)
+public class PaymentTest {
+    @Test(description = &quot;Pay with valid card&quot;) @Severity(SeverityLevel.CRITICAL)
+    @Link(name = &quot;JIRA&quot;, url = &quot;https://jira/browse/PAY-123&quot;)
+    public void payWithCard() {
+        step(&quot;Open cart&quot;, () -&gt; cartPage.open());
+        step(&quot;Pay&quot;, () -&gt; checkoutPage.payWith(card));
+    }
+    @Step(&quot;Enter card number {card}&quot;) void enterCard(String card) { ... }
+    @Attachment(value = &quot;Screenshot&quot;, type = &quot;image/png&quot;)
+    public byte[] screenshot() { return ((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES); }
+}</code></pre>
+<p>Playwright and pytest use <code>allure-playwright</code> and <code>allure-pytest</code>:</p>
+<pre><code>// playwright.config.ts
+reporter: [[&#39;allure-playwright&#39;, { outputFolder: &#39;allure-results&#39;, detail: true }]],
+use: { screenshot: &#39;only-on-failure&#39;, video: &#39;retain-on-failure&#39;, trace: &#39;retain-on-failure&#39; }</code></pre>
+<pre><code>import allure
+@allure.feature(&quot;Login&quot;); @allure.severity(allure.severity_level.BLOCKER)
+def test_login(driver):
+    with allure.step(&quot;Open login page&quot;): driver.get(URL)
+    allure.attach(driver.get_screenshot_as_png(), name=&quot;after login&quot;, attachment_type=allure.attachment_type.PNG)</code></pre>
+<p>Attach screenshots in a <strong>failure hook</strong> (<code>@AfterMethod</code> with <code>ITestResult</code>, pytest <code>pytest_runtest_makereport</code> hook, Playwright built-in), plus browser console logs, network HAR, page source, API request and response (via RestAssured or requests filters <code>AllureRestAssured</code>), and <strong>videos</strong> (record on retry or failure to limit size).</p>
+<h4>Generating and viewing</h4>
+<pre><code>allure generate allure-results --clean -o allure-report     # static HTML
+allure open allure-report                                   # local server (needed because of browser file restrictions)
+allure serve allure-results                                 # generate and open temporary</code></pre>
+<p><strong>History and trends</strong>: copy the previous report&#39;s <code>history</code> folder into <code>allure-results/history</code> before generating, so Allure shows trend graphs and flags new failures and flaky tests (<code>allure-report-action</code> and <code>simple-elf/allure-report-action</code> automate this).</p>
+<h4>CI publishing</h4>
+<ul><li>Upload <code>allure-results</code> or <code>allure-report</code> as an <strong>artifact</strong> (GitHub Actions, Jenkins Allure plugin, GitLab pages).</li><li>Publish to <strong>GitHub Pages</strong> or S3 per branch and run id, and link the report in PR comments or Slack notifications.</li><li><strong>Allure TestOps / Allure Report 3</strong> offer a hosted platform with test case management, analytics and launch history.</li><li>Keep results from <strong>parallel shards</strong> in one directory (merge <code>allure-results</code> from each shard before generating).</li></ul>
+<h4>Good practices</h4>
+<p>Meaningful step names (business language), minimal but useful attachments (storage cost), environment properties file (<code>environment.properties</code> with browser, build, URL), categories JSON to separate product defects from infrastructure noise, tags for severity and owner, retention policy for old reports, and clean results directory at the start of runs to avoid mixing.</p>
+<h4>Pitfalls</h4>
+<p>Forgetting the AspectJ agent so <code>@Step</code> does nothing, serving the report with <code>file://</code> (blank page), losing history by not copying it forward, attaching huge videos for every passing test, and ignoring flaky markers.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you attach screenshots, videos and logs only on failure?</li><li>How does Allure show trends and flaky tests across runs?</li><li>How do you publish reports from CI such as GitHub Pages or Allure TestOps?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-41">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-41%3A+How+do+you+generate+comprehensive+test+execution+reports+with%E2%80%A6&amp;question-id=qa-41&amp;context=QA+%2F+SDET%2C+Gear+2%2C+topic%3A+Reporting%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-41.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

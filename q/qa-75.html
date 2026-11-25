@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you inject Chaos Engineering faults (network latency, service drops) during integration testing? | InterviewGearUp</title>
+<meta name="description" content="Inject faults in a controlled way using tools such as Toxiproxy, Chaos Mesh, Litmus, Gremlin or AWS FIS: add latency, drop or reset connections, kill…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-75.html">
+<meta property="og:title" content="How do you inject Chaos Engineering faults (network latency, service drops) during integration testing? | InterviewGearUp">
+<meta property="og:description" content="Inject faults in a controlled way using tools such as Toxiproxy, Chaos Mesh, Litmus, Gremlin or AWS FIS: add latency, drop or reset connections, kill…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-75.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you inject Chaos Engineering faults (network latency, service drops) during integration testing?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 3 (Senior) · Reliability · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Inject faults in a controlled way using tools such as Toxiproxy, Chaos Mesh, Litmus, Gremlin or AWS FIS: add latency, drop or reset connections, kill services and exhaust resources while a steady load or functional suite runs. Start with a steady-state hypothesis, small blast radius and abort conditions, then assert that timeouts, retries, fallbacks and alerts behave as designed.</p></div>
+<h4>Explained in depth</h4>
+<h4>Purpose</h4>
+<p>Chaos engineering tests <strong>resilience assumptions</strong> by deliberately causing failure and observing whether the system keeps meeting its service-level objectives. In integration testing, it verifies that timeouts, retries with backoff, circuit breakers, bulkheads, fallbacks, idempotency and graceful degradation actually work, rather than assuming so.</p>
+<h4>Experiment structure (scientific method)</h4>
+<ol start="1"><li><strong>Steady state</strong>: measurable normal behaviour, such as checkout success rate above 99.5 percent, p95 latency under 400 ms, queue depth stable.</li><li><strong>Hypothesis</strong>: &quot;If the payment service has 2 seconds of added latency, checkout still succeeds through the fallback, and p95 stays under 1 s.&quot;</li><li><strong>Inject the fault</strong> with a limited <strong>blast radius</strong> (one instance, one environment, a percentage of traffic, a test tenant).</li><li><strong>Observe</strong> metrics, traces, logs and user-visible outcomes; compare with steady state.</li><li><strong>Abort conditions</strong>: automatic rollback if error rate or latency passes a guardrail.</li><li><strong>Learn and fix</strong>: file defects, add alerts and runbooks, rerun until the hypothesis holds.</li></ol>
+<h4>Faults to inject</h4>
+<ul><li><strong>Network</strong>: latency and jitter, packet loss, bandwidth limits, connection resets, black-holed dependency, DNS failure, partitions between services.</li><li><strong>Service</strong>: kill a pod or instance, crash loops, slow responses, error responses (500, 429), corrupted payloads, dependency outage (database failover, cache flush, message broker down).</li><li><strong>Resources</strong>: CPU stress, memory pressure, disk full, file descriptor exhaustion, clock skew.</li><li><strong>Platform</strong>: node loss, zone outage, certificate expiry, configuration or feature flag changes, rolling deployment during load.</li><li><strong>Data and messaging</strong>: duplicate, delayed and reordered messages, poison messages, consumer lag.</li></ul>
+<h4>Tooling and automation</h4>
+<ul><li><strong>Toxiproxy</strong> (a TCP proxy for tests): ideal for integration tests in CI because faults are scripted per test.</li></ul>
+<pre><code>from toxiproxy import Toxiproxy
+tp = Toxiproxy(); proxy = tp.create(name=&quot;db&quot;, listen=&quot;0.0.0.0:6543&quot;, upstream=&quot;postgres:5432&quot;)
+def test_checkout_survives_slow_database(client):
+    with proxy.toxic(type=&quot;latency&quot;, attributes={&quot;latency&quot;: 3000, &quot;jitter&quot;: 500}):
+        r = client.post(&quot;/checkout&quot;, json=cart, timeout=10)
+        assert r.status_code in (200, 202)               # degraded but available
+        assert r.elapsed.total_seconds() &lt; 5             # timeout and fallback respected
+    assert client.get(&quot;/health&quot;).json()[&quot;db&quot;] == &quot;ok&quot;      # recovers after the fault is removed</code></pre>
+<ul><li><strong>Kubernetes</strong>: Chaos Mesh, LitmusChaos, Chaos Toolkit; <code>kubectl delete pod</code> in CI; Istio fault injection (<code>delay</code>, <code>abort</code> in VirtualService) for service mesh tests.</li><li><strong>Cloud</strong>: AWS Fault Injection Service, Azure Chaos Studio, Gremlin.</li><li>Combine with a <strong>steady load generator</strong> (k6) and <strong>assertions on metrics</strong> via the Prometheus API, so the experiment passes or fails automatically.</li><li>Add faults to the <strong>normal test pipeline</strong> as a &quot;resilience&quot; stage (nightly) and run larger &quot;game days&quot; with people.</li></ul>
+<h4>What to assert</h4>
+<p>Requests fail fast (bounded timeouts) rather than hanging; <strong>retry storms</strong> are prevented (backoff with jitter, retry budgets); circuit breakers open and close; fallbacks return useful degraded results; <strong>no data loss or duplication</strong> (idempotent operations, at-least-once handling); queues drain after recovery; autoscaling and restart policies work; alerts fire and dashboards show the cause; <strong>recovery time</strong> meets targets; error messages to users are clear.</p>
+<h4>Safety rules</h4>
+<p>Begin in a test environment, move to staging, and only later production with approvals; announce experiments; keep an <strong>emergency stop</strong>; exclude critical tenants; run when on-call is ready; limit experiment duration; ensure backups; require observability before chaos (no metrics means no learning).</p>
+<h4>Pitfalls</h4>
+<p>Breaking things without a hypothesis, a large blast radius on the first try, testing only single failures (also combine failures), no automated verification, and ignoring cascading effects such as retries doubling load.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you define a steady-state hypothesis and abort conditions for a chaos experiment?</li><li>How do you use Toxiproxy in an automated integration test pipeline?</li><li>How do you keep chaos tests safe in shared or production-like environments?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-75">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-75%3A+How+do+you+inject+Chaos+Engineering+faults+%28network+latency%2C+service%E2%80%A6&amp;question-id=qa-75&amp;context=QA+%2F+SDET%2C+Gear+3%2C+topic%3A+Reliability%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-75.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you test outgoing webhooks: Verifying HMAC cryptographic signatures and delivery retry backoff? | InterviewGearUp</title>
+<meta name="description" content="For outgoing webhooks, run a receiver you control that records requests, then verify headers, payload schema, event types, and the HMAC signature by…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-86.html">
+<meta property="og:title" content="How do you test outgoing webhooks: Verifying HMAC cryptographic signatures and delivery retry backoff? | InterviewGearUp">
+<meta property="og:description" content="For outgoing webhooks, run a receiver you control that records requests, then verify headers, payload schema, event types, and the HMAC signature by…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-86.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you test outgoing webhooks: Verifying HMAC cryptographic signatures and delivery retry backoff?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 3 (Senior) · APIs · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>For outgoing webhooks, run a receiver you control that records requests, then verify headers, payload schema, event types, and the HMAC signature by recomputing it with the shared secret over the raw body plus timestamp, using constant-time comparison. Force the receiver to fail to assert retry count, exponential backoff with jitter, max attempts, dead-lettering, idempotency IDs and ordering.</p></div>
+<h4>Explained in depth</h4>
+<h4>The system under test</h4>
+<p>Your platform sends HTTP POST callbacks to customer endpoints when events occur (payment succeeded, order shipped). Contract: <strong>authenticity</strong> (signature), <strong>reliability</strong> (retries and replay), <strong>consistent payloads</strong> (schema and versioning), <strong>security</strong> (SSRF protection, secrets, TLS) and <strong>observability</strong> (delivery logs).</p>
+<h4>Test receiver</h4>
+<p>Run a controllable endpoint in tests: a small server (Express, FastAPI), <strong>WireMock</strong>, <strong>MockServer</strong>, webhook.site, <strong>Hookdeck CLI</strong>, or <code>ngrok</code> tunnel to local when the sender is hosted. It records requests and can be programmed to return <code>200</code>, <code>500</code>, <code>410</code>, slow responses, or hang.</p>
+<h4>HMAC signature verification</h4>
+<p>Typical scheme (Stripe, GitHub, Shopify style): header <code>X-Signature: t=1700000000,v1=&lt;hex&gt;</code> where <code>v1 = HMAC_SHA256(secret, f&quot;{t}.{raw_body}&quot;)</code>. Verify in the test:</p>
+<pre><code>import hmac, hashlib, time
+def verify(raw_body: bytes, header: str, secret: str, tolerance=300):
+    parts = dict(p.split(&quot;=&quot;, 1) for p in header.split(&quot;,&quot;))
+    ts, sig = int(parts[&quot;t&quot;]), parts[&quot;v1&quot;]
+    expected = hmac.new(secret.encode(), f&quot;{ts}.&quot;.encode() + raw_body, hashlib.sha256).hexdigest()
+    assert hmac.compare_digest(expected, sig)                  # constant-time comparison
+    assert abs(time.time() - ts) &lt;= tolerance                  # timestamp freshness
+def test_webhook_signature(receiver, platform):
+    platform.trigger(&quot;order.shipped&quot;, order_id=&quot;o-1&quot;)
+    req = receiver.wait_for_request(timeout=10)
+    verify(req.raw_body, req.headers[&quot;X-Signature&quot;], WEBHOOK_SECRET)
+    assert req.headers[&quot;Content-Type&quot;] == &quot;application/json&quot;
+    assert req.json[&quot;type&quot;] == &quot;order.shipped&quot; and req.json[&quot;id&quot;].startswith(&quot;evt_&quot;)</code></pre>
+<p>Key points: sign the <strong>exact raw bytes</strong> (re-serialising JSON changes whitespace and key order and breaks the signature); include a <strong>timestamp</strong> in the signed payload so captured requests cannot be replayed later; use per-endpoint secrets and support <strong>secret rotation</strong> (accept two signatures during the overlap window); never use <code>==</code> for comparison (timing attacks). Negative tests on the receiving side: tampered body, wrong secret, missing header, stale timestamp, duplicate delivery must all be rejected or handled.</p>
+<h4>Payload and headers</h4>
+<p>Validate against a JSON Schema or OpenAPI webhook definition: event <code>id</code> (unique), <code>type</code>, <code>created</code>, <code>api_version</code>, <code>data.object</code>, no sensitive data beyond contract, UTF-8 and size limits, version compatibility (old endpoints keep getting old versions), and delivery attempt number or <code>X-Delivery-Id</code> headers.</p>
+<h4>Delivery semantics and retries</h4>
+<p>Webhooks are <strong>at-least-once</strong>, so duplicates and reordering happen. Test:</p>
+<ol start="1"><li><strong>Success</strong>: any <code>2xx</code> marks delivered, response body ignored, timeout (for example 10 s) enforced.</li><li><strong>Retry policy</strong>: for <code>5xx</code>, timeouts, connection errors: attempts follow the documented schedule (for example 1 min, 5 min, 30 min, 2 h, 12 h up to 72 hours) with <strong>jitter</strong>; <code>4xx</code> such as <code>410 Gone</code> disables the endpoint; <code>429</code> honours <code>Retry-After</code>; redirects policy; maximum attempts then <strong>dead letter</strong> and alert to the customer.</li><li><strong>Time control</strong>: inject a <strong>fake clock</strong> or configurable delays (scale backoff to seconds in test config), or inspect the scheduler&#39;s stored <code>next_attempt_at</code> values instead of waiting.</li></ol>
+<pre><code>receiver.respond_with(500, times=3, then=200)
+platform.trigger(&quot;invoice.paid&quot;)
+attempts = receiver.wait_for_requests(count=4, timeout=30)
+gaps = [b.ts - a.ts for a, b in zip(attempts, attempts[1:])]
+assert all(g2 &gt; g1 * 1.5 for g1, g2 in zip(gaps, gaps[1:]))        # exponential growth (scaled config)
+assert len({a.headers[&quot;X-Event-Id&quot;] for a in attempts}) == 1        # same event id on every retry (idempotency)</code></pre>
+<ol start="4"><li><strong>Idempotency and ordering</strong>: each retry carries the same event ID; ordering is not guaranteed unless documented, so include sequence numbers or timestamps and test the receiver logic (apply latest, ignore stale). Manual <strong>replay</strong> from the dashboard re-sends with the same ID and a fresh signature timestamp.</li><li><strong>Isolation</strong>: a slow or failing endpoint must not block deliveries to others (per-endpoint queues, concurrency limits), and <strong>circuit-break</strong> repeatedly failing endpoints.</li></ol>
+<h4>Security</h4>
+<p><strong>SSRF</strong>: platform blocks private IP ranges, localhost, link-local and cloud metadata addresses in customer URLs (also after DNS resolution and redirects); HTTPS required; certificate validation; secrets stored encrypted and not logged; endpoint ownership verification (challenge request) before sending; rate limits.</p>
+<h4>Observability</h4>
+<p>Delivery logs show attempts, response codes, latency, and payload; metrics for success rate and queue depth; alerting for delivery failure spikes.</p>
+<h4>Pitfalls</h4>
+<p>Verifying a re-serialised body, non-constant-time compare, testing only success, waiting real hours for backoff, and not testing duplicate and out-of-order handling at the consumer.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why must the signature be computed over the raw request body and what attacks do timestamps prevent?</li><li>How do you test retry schedules without waiting hours in real time?</li><li>How do you verify that receivers can deduplicate events and handle out-of-order delivery?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-86">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-86%3A+How+do+you+test+outgoing+webhooks%3A+Verifying+HMAC+cryptographic%E2%80%A6&amp;question-id=qa-86&amp;context=QA+%2F+SDET%2C+Gear+3%2C+topic%3A+APIs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-86.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you test microservice resilience patterns like circuit breakers and fallbacks under failure conditions? | InterviewGearUp</title>
+<meta name="description" content="Test resilience patterns by injecting dependency failures and slowness, then asserting observable behaviour. Circuit breakers should open after the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-84.html">
+<meta property="og:title" content="How do you test microservice resilience patterns like circuit breakers and fallbacks under failure conditions? | InterviewGearUp">
+<meta property="og:description" content="Test resilience patterns by injecting dependency failures and slowness, then asserting observable behaviour. Circuit breakers should open after the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-84.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you test microservice resilience patterns like circuit breakers and fallbacks under failure conditions?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 3 (Senior) · Resilience · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Test resilience patterns by injecting dependency failures and slowness, then asserting observable behaviour. Circuit breakers should open after the failure threshold, fail fast and return fallbacks, move to half-open after the wait period, and close on success. Also check timeouts, retries with backoff, bulkheads and metrics, using fault proxies, simulators and library-level unit tests.</p></div>
+<h4>Explained in depth</h4>
+<h4>Patterns and the behaviours to prove</h4>
+<ul><li><strong>Timeout</strong>: calls to a slow dependency are cut off at a bounded time.</li><li><strong>Retry with exponential backoff and jitter</strong>: only for idempotent or safe operations and transient errors, with a limited attempt budget.</li><li><strong>Circuit breaker</strong>: states <strong>closed</strong> (normal), <strong>open</strong> (fail fast, no calls), <strong>half-open</strong> (limited probe calls). Opens when failure rate or slow-call rate exceeds a threshold over a window, stays open for a wait duration, then probes.</li><li><strong>Bulkhead</strong>: isolate resources (thread pools, semaphores, connection pools) so one slow dependency cannot exhaust capacity for others.</li><li><strong>Fallback</strong>: cached data, default value, degraded feature, or queue for later.</li><li><strong>Rate limiter and load shedding</strong> protect against overload.</li></ul>
+<h4>Test levels</h4>
+<ol start="1"><li><strong>Unit tests of the policy configuration</strong> (Resilience4j, Polly, Hystrix successors, Istio, Envoy): with a fake clock and a stubbed dependency, assert state transitions.</li></ol>
+<pre><code>// Resilience4j-style test with a controllable failing supplier
+CircuitBreaker cb = CircuitBreaker.of(&quot;payments&quot;, CircuitBreakerConfig.custom()
+    .failureRateThreshold(50).minimumNumberOfCalls(10).slidingWindowSize(10)
+    .waitDurationInOpenState(Duration.ofSeconds(30)).permittedNumberOfCallsInHalfOpenState(3).build());
+for (int i = 0; i &lt; 10; i++) callFailing(cb);
+assertEquals(CircuitBreaker.State.OPEN, cb.getState());
+assertThrows(CallNotPermittedException.class, () -&gt; cb.executeSupplier(remote::call));   // fails fast, no remote call
+clock.advance(Duration.ofSeconds(31)); cb.transitionToHalfOpenState();
+for (int i = 0; i &lt; 3; i++) callSucceeding(cb);
+assertEquals(CircuitBreaker.State.CLOSED, cb.getState());</code></pre>
+<ol start="2"><li><strong>Component and integration tests with simulated dependencies</strong>: WireMock or Toxiproxy produce delays (<code>fixedDelay</code>), <code>503</code>, connection resets, malformed bodies, and intermittent failures. Verify HTTP responses of your service (fallback payload with a degraded flag, <code>503</code> with <code>Retry-After</code>), that downstream is <strong>not called</strong> while open (verify request counts on the stub), and that the circuit <strong>recovers</strong> after the dependency heals.</li><li><strong>Environment-level chaos tests</strong> (staging): kill or throttle a real dependency under steady load (k6) and watch dashboards: error rate, latency, breaker state transitions, thread pool saturation. Service mesh policies (Istio outlier detection, Envoy circuit breaking, <code>maxConnections</code>, <code>maxPendingRequests</code>) are verified by loading beyond limits and asserting <code>503</code> overflow responses and ejection of unhealthy hosts.</li></ol>
+<h4>Scenarios checklist</h4>
+<ul><li>Failures hit threshold exactly (boundary: below minimum calls the breaker stays closed).</li><li><strong>Slow calls</strong> count as failures (slow call duration threshold) and timeouts fire before the caller&#39;s own timeout (timeouts must nest: client timeout greater than service timeout greater than dependency timeout, or a deadline propagated).</li><li>Retries: count of attempts, backoff intervals with jitter, no retries on <code>4xx</code> or non-idempotent POST without idempotency key; <strong>retry budget</strong> prevents multiplying load (3 layers each retrying 3 times means 27 calls).</li><li>Half-open: only N probe calls permitted, concurrent calls rejected, one failure reopens, successes close.</li><li>Fallback correctness: cached value freshness labelled, no wrong data (never return another user&#39;s cached response), fallback of the fallback fails safely.</li><li><strong>Bulkhead</strong>: saturate dependency A and prove dependency B&#39;s endpoint latency is unchanged.</li><li><strong>Data integrity under failures</strong>: no duplicate side effects when retries occur after partial success (idempotency keys), compensating actions for sagas.</li><li><strong>Recovery behaviour</strong>: after dependency returns, traffic ramps without a thundering herd (jitter, gradual probing).</li><li><strong>User experience</strong>: clear messages, degraded UI flags, no infinite spinners.</li></ul>
+<h4>Observability assertions</h4>
+<p>Metrics: breaker state gauge, call counts by outcome (<code>success</code>, <code>failure</code>, <code>not_permitted</code>, <code>slow</code>), fallback invocation counter, bulkhead queue depth, retry attempts histogram. Logs and traces annotate fallback paths. Tests query Prometheus or the actuator endpoint (<code>/actuator/circuitbreakers</code>) and fail if counts do not match expected transitions. Alerts fire when a breaker stays open longer than a threshold.</p>
+<h4>Pitfalls</h4>
+<p>Unit-testing the library instead of your configuration, sleeping real seconds for wait durations (inject clocks), retrying non-idempotent calls, ignoring client timeouts that exceed upstream limits, and fallbacks that mask outages without alerting.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you test the half-open state and the transition back to closed deterministically?</li><li>How do you make sure retries combined with circuit breakers do not amplify load?</li><li>Which metrics and logs prove that fallbacks are working in production-like environments?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-84">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-84%3A+How+do+you+test+microservice+resilience+patterns+like+circuit%E2%80%A6&amp;question-id=qa-84&amp;context=QA+%2F+SDET%2C+Gear+3%2C+topic%3A+Resilience%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-84.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

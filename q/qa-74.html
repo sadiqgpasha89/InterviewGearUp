@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you automate data pipeline testing: Validating row counts, schema consistency, and data drift? | InterviewGearUp</title>
+<meta name="description" content="Automate pipeline tests in layers: unit tests for transformation logic, contract checks on schema, and data quality assertions on real or synthetic runs,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-74.html">
+<meta property="og:title" content="How do you automate data pipeline testing: Validating row counts, schema consistency, and data drift? | InterviewGearUp">
+<meta property="og:description" content="Automate pipeline tests in layers: unit tests for transformation logic, contract checks on schema, and data quality assertions on real or synthetic runs,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-74.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you automate data pipeline testing: Validating row counts, schema consistency, and data drift?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 3 (Senior) · Data · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Automate pipeline tests in layers: unit tests for transformation logic, contract checks on schema, and data quality assertions on real or synthetic runs, including row-count reconciliation between source and target, null, uniqueness and range checks, referential integrity, and drift monitoring on distributions. Use dbt tests, Great Expectations or Soda in CI and in production runs with alerts.</p></div>
+<h4>Explained in depth</h4>
+<h4>What can go wrong</h4>
+<p>Pipelines silently produce wrong data: dropped or duplicated rows, truncated values, type coercion, timezone shifts, join fan-out, late data, schema changes upstream, null explosions, stale tables, and distribution shifts. Unlike application bugs, there may be no exception.</p>
+<h4>Test layers</h4>
+<ol start="1"><li><strong>Unit tests for transformations</strong>: run SQL or Spark or pandas logic on small handcrafted inputs with known outputs (<code>dbt</code> unit tests, <code>pytest</code> with local Spark, SQL tests in DuckDB). Cover edge cases: nulls, duplicates, empty input, extreme values, unicode, DST boundaries, negative amounts, late events.</li><li><strong>Schema and contract tests</strong>: expected columns, types, nullability, and primary keys on sources and outputs; <strong>fail on unexpected schema change</strong> (data contracts, Protobuf and Avro schema registry compatibility checks, <code>dbt</code> model contracts).</li><li><strong>Data quality tests (assertions)</strong> on real batches: <code>not_null</code>, <code>unique</code>, <code>accepted_values</code>, <code>relationships</code> (foreign key integrity), value ranges, regex formats, freshness (latest event within SLA), completeness (non-null ratio above threshold), and business rules (<code>order_total = sum(line_items)</code>).</li><li><strong>Reconciliation</strong> between stages:</li></ol>
+<ul><li><strong>Row counts</strong> source versus staged versus target, within a tolerance when filters apply; explain differences (rejects table with reason codes).</li><li><strong>Aggregates and checksums</strong>: sum of amounts, distinct keys, min and max dates, hash of key columns per partition.</li><li><strong>Key-level diff</strong> for samples (anti-join both directions) to find missing and extra records.</li></ul>
+<pre><code>-- reconciliation: records in source not in target (and vice versa)
+SELECT &#39;missing_in_target&#39; AS issue, s.id FROM src.orders s LEFT JOIN dwh.fact_orders t ON t.order_id = s.id WHERE t.order_id IS NULL AND s.load_date = :d
+UNION ALL
+SELECT &#39;unexpected_in_target&#39;, t.order_id FROM dwh.fact_orders t LEFT JOIN src.orders s ON s.id = t.order_id WHERE s.id IS NULL AND t.load_date = :d;</code></pre>
+<ol start="5"><li><strong>End-to-end pipeline tests</strong> in an ephemeral environment with synthetic or masked data: run the orchestrator (Airflow DAG test, <code>dbt build</code>), assert final tables and metrics.</li></ol>
+<h4>Drift detection</h4>
+<ul><li><strong>Schema drift</strong>: columns added, removed, renamed, type changed. Detect by comparing the current schema with a stored contract on every run (Great Expectations, Soda, Monte Carlo, Databricks Delta expectations); decide policy (fail, quarantine, or evolve with approval).</li><li><strong>Data drift</strong> (statistical): distribution changes in values (mean, null rate, cardinality, category proportions, time-of-arrival patterns). Use statistical measures such as <strong>PSI</strong>, Kolmogorov-Smirnov, chi-square, Jensen-Shannon, or simple control bands (rolling mean ± 3 sigma, row count versus the same weekday last week). Tools: <strong>Evidently</strong>, <strong>whylogs</strong>, Great Expectations profiling, Soda anomaly detection. Alert with context (affected column, change size) and route to owners.</li></ul>
+<h4>Special pipeline scenarios</h4>
+<ul><li><strong>Idempotency</strong>: run the same load twice and verify no duplicates (merge or upsert keys, partition overwrite); <strong>backfills</strong> and reprocessing produce identical results; <strong>incremental loads</strong> with watermark and late-arriving data windows; exactly-once semantics for streaming (Kafka offsets, deduplication keys); <strong>replay</strong> after failure resumes correctly.</li><li><strong>Slowly changing dimensions</strong> (SCD2) history correct; surrogate keys stable; <strong>time zones</strong> and daylight saving; currency conversions and rounding.</li><li><strong>Performance and scale</strong>: volume tests with representative data size, skew (hot keys), small files problem, partition pruning, cost per run.</li><li><strong>Failure handling</strong>: bad records routed to dead-letter storage with reasons, partial failure recovery, retries and alerting, schema registry outages.</li><li><strong>Security and privacy</strong>: PII masking, row-level access, deletion requests propagate (GDPR).</li></ul>
+<h4>CI/CD and operations</h4>
+<p>Run unit and contract tests on every PR; run quality assertions as <strong>pipeline gates</strong> (blocking publication of bad data with circuit breaker patterns); schedule monitors for freshness and volume; publish data quality dashboards and SLAs; store test results and lineage (OpenLineage) for debugging.</p>
+<h4>Pitfalls</h4>
+<p>Comparing only row counts (same count, wrong values), testing with tiny unrealistic data, no handling for legitimate drift (alert fatigue), tests that read production without masking, and non-deterministic ordering in assertions.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you reconcile row counts and aggregates when late-arriving data or deduplication changes counts?</li><li>What is the difference between schema drift and data drift and how do you detect each?</li><li>How do you test pipelines that process incremental loads and backfills idempotently?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-74">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-74%3A+How+do+you+automate+data+pipeline+testing%3A+Validating+row+counts%2C%E2%80%A6&amp;question-id=qa-74&amp;context=QA+%2F+SDET%2C+Gear+3%2C+topic%3A+Data%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-74.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

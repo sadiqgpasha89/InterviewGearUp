@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you test large-scale batch ETL pipelines with deterministic synthetic data fixtures? | InterviewGearUp</title>
+<meta name="description" content="Test batch ETL with small deterministic synthetic fixtures generated from seeded generators that cover business rules and edge cases, plus a scaled…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-90.html">
+<meta property="og:title" content="How do you test large-scale batch ETL pipelines with deterministic synthetic data fixtures? | InterviewGearUp">
+<meta property="og:description" content="Test batch ETL with small deterministic synthetic fixtures generated from seeded generators that cover business rules and edge cases, plus a scaled…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-90.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you test large-scale batch ETL pipelines with deterministic synthetic data fixtures?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 3 (Senior) · Data · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Test batch ETL with small deterministic synthetic fixtures generated from seeded generators that cover business rules and edge cases, plus a scaled dataset for volume tests. Run the pipeline end to end in an isolated environment, compare outputs to expected golden tables or computed oracles, and verify idempotency, reconciliation, late data, schema changes and performance.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why synthetic fixtures</h4>
+<p>Production data is large, non-deterministic, sensitive (PII), and constantly changing, so tests built on it are slow, unrepeatable and risky. Hand-copied samples miss edge cases. <strong>Deterministic synthetic datasets</strong> give small, version-controlled inputs with known expected outputs and let you prove each business rule.</p>
+<h4>Fixture design</h4>
+<ol start="1"><li><strong>Rule-driven</strong>: list transformation rules (deduplication, currency conversion, joins, aggregations, SCD2 history, status mapping, filtering) and create <strong>at least one record that triggers each branch</strong>, plus boundaries: nulls, empty strings, whitespace, max and min values, negative amounts, duplicates, orphan foreign keys, late-arriving and out-of-order events, different time zones and DST transitions, unicode, very long text, malformed rows and invalid enums.</li><li><strong>Named scenarios</strong>: keep rows with meaningful identifiers (<code>cust_late_event</code>, <code>order_duplicate_key</code>) so failures are understandable.</li><li><strong>Seeded generation</strong>: use a fixed random seed and fixed reference date so data is identical on every run.</li></ol>
+<pre><code>from faker import Faker
+import random, pandas as pd
+SEED, TODAY = 20260101, pd.Timestamp(&quot;2026-01-15&quot;)
+fake = Faker(); Faker.seed(SEED); rnd = random.Random(SEED)
+
+def make_orders(n):
+    rows = []
+    for i in range(n):
+        rows.append({&quot;order_id&quot;: f&quot;o{i:06d}&quot;, &quot;customer_id&quot;: f&quot;c{rnd.randint(1, n//5):05d}&quot;,
+                     &quot;amount&quot;: round(rnd.uniform(1, 500), 2), &quot;currency&quot;: rnd.choice([&quot;USD&quot;, &quot;EUR&quot;, &quot;JPY&quot;]),
+                     &quot;created_at&quot;: TODAY - pd.Timedelta(minutes=rnd.randint(0, 60*24*30))})
+    # inject targeted edge cases
+    rows += [{&quot;order_id&quot;: &quot;o_dup&quot;, &quot;customer_id&quot;: &quot;c00001&quot;, &quot;amount&quot;: 10.0, &quot;currency&quot;: &quot;USD&quot;, &quot;created_at&quot;: TODAY}] * 2   # duplicate
+    rows.append({&quot;order_id&quot;: &quot;o_null_amt&quot;, &quot;customer_id&quot;: &quot;c00002&quot;, &quot;amount&quot;: None, &quot;currency&quot;: &quot;USD&quot;, &quot;created_at&quot;: TODAY})
+    return pd.DataFrame(rows)</code></pre>
+<p>Libraries: Faker, Mimesis, SDV (statistical, preserves distributions), Hypothesis (property-based generation), <code>dbt seed</code>, Great Expectations sample batches, dbmate and <code>dbt</code> unit tests with <code>given/expect</code> fixtures.</p>
+<ol start="4"><li><strong>Store fixtures as versioned files</strong> (CSV, Parquet, JSON) next to tests, or generate in CI from code with the seed; record <strong>schema versions</strong> and regenerate deliberately.</li></ol>
+<h4>Expected results (oracles)</h4>
+<ul><li><strong>Golden outputs</strong>: hand-reviewed expected tables committed to the repo; compare with an order-independent diff (sort by key, tolerance for floats and timestamps, ignore audit columns).</li><li><strong>Independent oracle</strong>: compute expected values with simple, separate logic (pandas or SQL in a different engine) and compare with the pipeline result; good for aggregates and reconciliation (<code>sum(amount_usd)</code>).</li><li><strong>Property checks</strong>: invariants that must hold regardless of data: row counts after dedup equal distinct keys, totals preserved across joins, no negative inventory, referential integrity, monotonic SCD2 validity ranges without gaps or overlaps.</li><li><strong>Metamorphic tests</strong>: shuffling input order, splitting into several batches, or running twice yields the same final result.</li></ul>
+<h4>Running the pipeline in tests</h4>
+<p>Isolated environment: containerised Spark or Flink in local mode, DuckDB or an ephemeral Postgres, <code>dbt</code> with a CI schema, Airflow DAG tests (<code>dag.test()</code>), and temporary cloud storage prefixes per run. Steps: load fixtures → run extract, transform, load → assert tables → clean up. Test <strong>incremental behaviour</strong>: first run (full load), second run with changes (inserts, updates, deletes), a re-run of the same batch (idempotent), a backfill, and a failure mid-run followed by restart.</p>
+<h4>Non-functional tests</h4>
+<ul><li><strong>Volume and skew</strong>: scale the generator (millions of rows) with realistic distributions (Zipf-like hot keys, many small partitions) to expose shuffle, memory and join issues; compare runtime and cost against baselines and set budgets.</li><li><strong>Schema evolution</strong>: add a column, change a type, drop a field in upstream fixtures and verify contract checks and handling.</li><li><strong>Data quality gates</strong> run against fixtures to prove that bad data is quarantined with reasons.</li><li><strong>Privacy</strong>: generated data contains no real PII; masking transformations verified (format-preserving, irreversible).</li></ul>
+<h4>Pitfalls</h4>
+<p>Random unseeded data, fixtures too small to trigger partitioning or join issues, expected outputs generated by the pipeline itself (circular validation), order-dependent comparisons, copying production snapshots into git, and never updating fixtures after upstream schema changes.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you make a seeded data generator reproducible across environments and versions?</li><li>How do you build an independent oracle to compute expected ETL results?</li><li>How do you scale synthetic data for volume and skew tests without losing realism?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-90">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-90%3A+How+do+you+test+large-scale+batch+ETL+pipelines+with+deterministic%E2%80%A6&amp;question-id=qa-90&amp;context=QA+%2F+SDET%2C+Gear+3%2C+topic%3A+Data%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-90.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

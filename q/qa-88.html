@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is Behavior-Driven Development (BDD) and how do Gherkin Given-When-Then scenarios connect to test code? | InterviewGearUp</title>
+<meta name="description" content="BDD is a collaborative practice that expresses behaviour as concrete examples before development. Teams write scenarios in Gherkin, a plain-language…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-88.html">
+<meta property="og:title" content="What is Behavior-Driven Development (BDD) and how do Gherkin Given-When-Then scenarios connect to test code? | InterviewGearUp">
+<meta property="og:description" content="BDD is a collaborative practice that expresses behaviour as concrete examples before development. Teams write scenarios in Gherkin, a plain-language…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-88.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is Behavior-Driven Development (BDD) and how do Gherkin Given-When-Then scenarios connect to test code?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 2 (Mid-level) · BDD · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>BDD is a collaborative practice that expresses behaviour as concrete examples before development. Teams write scenarios in Gherkin, a plain-language Given-When-Then format, and a framework such as Cucumber, SpecFlow or behave matches each step to code via step definitions that drive the UI, API or domain layer, making the scenarios executable documentation.</p></div>
+<h4>Explained in depth</h4>
+<h4>What BDD is</h4>
+<p><strong>Behaviour-Driven Development</strong> grew out of TDD to improve communication. The core is <strong>conversation</strong>: business, development and QA (the &quot;three amigos&quot;) discuss a feature and capture <strong>examples</strong> of expected behaviour, using a shared ubiquitous language. The examples become scenarios, which can be automated and kept as living documentation. Tools are secondary; the value is shared understanding and early discovery of ambiguity.</p>
+<h4>Gherkin structure</h4>
+<pre><code>@checkout @regression
+Feature: Discount codes at checkout
+  As a shopper I want to apply a discount code so that I pay less.
+
+  Background:
+    Given the catalogue contains a &quot;Trail Shoe&quot; priced at 100.00
+
+  Scenario: Valid percentage code reduces the total
+    Given I have &quot;Trail Shoe&quot; in my basket
+    When I apply the discount code &quot;SAVE10&quot;
+    Then my basket total should be 90.00
+    And I should see the message &quot;Discount applied&quot;
+
+  Scenario Outline: Invalid codes are rejected
+    Given I have &quot;Trail Shoe&quot; in my basket
+    When I apply the discount code &quot;&lt;code&gt;&quot;
+    Then my basket total should be 100.00
+    And I should see the message &quot;&lt;message&gt;&quot;
+
+    Examples:
+      | code    | message                |
+      | EXPIRED | This code has expired  |
+      | WRONG   | Code not recognised    |
+      |         | Enter a code           |</code></pre>
+<ul><li><strong>Feature</strong>: a capability with a description and business value.</li><li><strong>Scenario</strong>: one concrete example. <strong>Given</strong> sets context, <strong>When</strong> is the action or event, <strong>Then</strong> states the observable outcome (<code>And</code> and <code>But</code> continue a keyword).</li><li><strong>Background</strong>: shared Given steps for every scenario in the file; <strong>Scenario Outline</strong> with an <strong>Examples</strong> table for data variations; <strong>tags</strong> (<code>@smoke</code>) to select and organise; doc strings and data tables for larger inputs.</li></ul>
+<h4>Connecting to code</h4>
+<p>A framework reads the feature file and finds the <strong>step definition</strong> whose pattern matches each line.</p>
+<pre><code>// Cucumber.js with TypeScript
+import { Given, When, Then } from &#39;@cucumber/cucumber&#39;;
+Given(&#39;I have {string} in my basket&#39;, async function (product: string) { await this.api.addToBasket(this.user, product); });
+When(&#39;I apply the discount code {string}&#39;, async function (code: string) { this.result = await this.basketPage.applyCode(code); });
+Then(&#39;my basket total should be {float}&#39;, async function (expected: number) { expect(await this.basketPage.total()).toBeCloseTo(expected, 2); });</code></pre>
+<p>Equivalents: <strong>SpecFlow/Reqnroll</strong> (.NET), <strong>Cucumber-JVM</strong> (Java, Kotlin), <strong>behave</strong> and <strong>pytest-bdd</strong> (Python), <strong>Behat</strong> (PHP), <strong>Godog</strong> (Go). The shared <code>World</code> (<code>this</code>) holds per-scenario state; hooks (<code>Before</code>, <code>After</code>) set up and clean up. Steps call a <strong>domain-level automation layer</strong> (API clients, page objects, or service calls) rather than containing raw selectors, so UI changes affect one place.</p>
+<h4>Good practices</h4>
+<ol start="1"><li>Write scenarios in <strong>business language</strong> about behaviour and rules, not UI mechanics (&quot;When I apply the discount code&quot; instead of &quot;When I click the field with id coupon and type&quot;).</li><li>One scenario, one behaviour, about 3 to 7 steps; declarative over imperative; independent scenarios with own data.</li><li>Reuse steps carefully; avoid giant generic step libraries and steps with too many parameters.</li><li>Automate at the <strong>lowest level that expresses the rule</strong> (service or API layer), reserving UI for a few journeys.</li><li>Treat feature files as <strong>specifications</strong>: review them with product owners, keep them current, link them to stories, and run them in CI with readable reports (Cucumber HTML, Allure, Serenity).</li><li>Use Scenario Outline for rule variations and boundary values, with meaningful example names.</li></ol>
+<h4>Relationship to other practices</h4>
+<p><strong>TDD</strong> drives design at unit level; <strong>ATDD</strong> (acceptance test-driven development) is close to BDD; <strong>specification by example</strong> is the same family. BDD does not replace unit or exploratory testing.</p>
+<h4>Pitfalls to avoid</h4>
+<p>Written after the fact by testers alone, long UI-script scenarios, duplicated step phrasing, tests coupled to implementation, and Gherkin used merely as a syntax over a conventional test framework with no collaboration.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do step definitions bind Gherkin text to code using regular expressions or Cucumber expressions?</li><li>What makes a good Gherkin scenario compared with a script of UI clicks?</li><li>How do Background, Scenario Outline and tags help organise feature files?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-88">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-88%3A+What+is+Behavior-Driven+Development+%28BDD%29+and+how+do+Gherkin%E2%80%A6&amp;question-id=qa-88&amp;context=QA+%2F+SDET%2C+Gear+2%2C+topic%3A+BDD%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-88.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you test internationalization (i18n), right-to-left (RTL) layouts, and locale date formats? | InterviewGearUp</title>
+<meta name="description" content="Test i18n by checking that no strings are hard-coded and that translations, plurals, dates, numbers and currencies follow the locale, then run UI tests…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-66.html">
+<meta property="og:title" content="How do you test internationalization (i18n), right-to-left (RTL) layouts, and locale date formats? | InterviewGearUp">
+<meta property="og:description" content="Test i18n by checking that no strings are hard-coded and that translations, plurals, dates, numbers and currencies follow the locale, then run UI tests…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-66.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you test internationalization (i18n), right-to-left (RTL) layouts, and locale date formats?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 2 (Mid-level) · Localization · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Test i18n by checking that no strings are hard-coded and that translations, plurals, dates, numbers and currencies follow the locale, then run UI tests per locale. For RTL set dir to rtl and verify mirrored layout, icons, text alignment and bidirectional text, using pseudo-localisation to expose truncation and missing keys, plus visual diffs and native-speaker review.</p></div>
+<h4>Explained in depth</h4>
+<h4>i18n vs l10n</h4>
+<p><strong>Internationalisation (i18n)</strong> is engineering the product so it can support many locales without code changes (externalised strings, locale-aware formatting, flexible layouts, Unicode). <strong>Localisation (l10n)</strong> is adapting content for a specific locale (translations, formats, images, legal text). QA tests both.</p>
+<h4>Static and unit checks (cheap, early)</h4>
+<ul><li><strong>Lint for hard-coded strings</strong> (eslint-plugin-i18next, <code>formatjs</code> lint) and missing keys; check translation files for placeholders consistency (<code>{name}</code>, <code>%s</code>), valid ICU syntax, duplicate keys and empty values; ensure every key exists in every supported locale (fallback behaviour defined).</li><li>Unit tests for formatting functions with <code>Intl</code>: <code>new Intl.NumberFormat(&#39;de-DE&#39;, {style:&#39;currency&#39;, currency:&#39;EUR&#39;}).format(1234.5)</code> gives <code>1.234,50 €</code>; dates <code>en-US</code> 12/31/2026 vs <code>en-GB</code> 31/12/2026 vs <code>ja-JP</code> 2026/12/31; first day of week; decimal and thousands separators; percent; relative time.</li><li><strong>Pluralisation</strong>: English has 2 forms, Russian 3, Arabic 6, Japanese 1; test ICU plural messages <code>{count, plural, one {# item} other {# items}}</code> with 0, 1, 2, 5, 11, 21, 100.</li></ul>
+<h4>Pseudo-localisation</h4>
+<p>Replace strings automatically with accented, expanded text such as <code>[Ĥéļļö Ŵöŕļð !!!]</code>. It shows: untranslated hard-coded text (not transformed), truncation and overflow (text expansion of 30 to 50 percent, German and Finnish are long), concatenated strings, encoding bugs, and layout assumptions. Run the pseudo locale in CI visual tests.</p>
+<h4>UI tests per locale</h4>
+<pre><code>for (const locale of [&#39;en-US&#39;, &#39;de-DE&#39;, &#39;ja-JP&#39;, &#39;ar-EG&#39;, &#39;he-IL&#39;]) {
+  test.describe(locale, () =&gt; {
+    test.use({ locale, timezoneId: &#39;Europe/Berlin&#39; });
+    test(&#39;checkout renders localised&#39;, async ({ page }) =&gt; {
+      await page.goto(&#39;/checkout&#39;);
+      await expect(page.locator(&#39;html&#39;)).toHaveAttribute(&#39;lang&#39;, locale.split(&#39;-&#39;)[0]);
+      await expect(page.locator(&#39;.total&#39;)).toHaveText(expectedTotalFor(locale));
+      await expect(page).toHaveScreenshot(`checkout-${locale}.png`, { fullPage: true });
+    });
+  });
+}</code></pre>
+<p>Set browser locale, <code>Accept-Language</code>, and the app&#39;s language switcher; verify language persistence, URL structure (<code>/de/</code>), <code>hreflang</code>, <code>&lt;html lang&gt;</code>, content language fallbacks, and that user-generated content is not translated incorrectly.</p>
+<h4>RTL (Arabic, Hebrew, Persian, Urdu)</h4>
+<ul><li><code>&lt;html dir=&quot;rtl&quot;&gt;</code> or <code>dir</code> attribute set based on locale; CSS uses <strong>logical properties</strong> (<code>margin-inline-start</code>, <code>padding-inline</code>, <code>text-align: start</code>) instead of left/right.</li><li><strong>Mirroring</strong>: navigation order, sidebars, progress bars, breadcrumbs, back and forward arrows, carousels, sliders and form layouts mirror; <strong>do not mirror</strong> media controls, charts&#39; time axes in some cases, phone numbers, brand logos, or icons with real-world meaning (clock, check mark).</li><li><strong>Bidirectional text</strong>: Latin words, numbers and URLs inside RTL sentences render in the correct order, punctuation positions, mixed-direction input fields (<code>dir=&quot;auto&quot;</code>), CSV exports and PDFs.</li><li>Keyboard and caret behaviour, scrollbars on the left, tooltips and dropdown placement, animation direction, and automated checks via screenshot comparison against an RTL baseline.</li></ul>
+<h4>Locale-specific data</h4>
+<p>Names (family name first), addresses and postal codes, phone formats, <strong>calendars</strong> (Hijri, Buddhist, Japanese eras), time zones and DST changes, currencies with different decimals (JPY has none, KWD has three), sorting and collation (<code>Intl.Collator</code>, Swedish <code>ä</code> after <code>z</code>), case conversion (Turkish dotted İ), Unicode normalisation, emoji and combining characters, fonts with CJK and Arabic glyph coverage, input methods (IME composition events), legal and tax rules.</p>
+<h4>Process</h4>
+<p>Context for translators (screenshots, comments), translation memory and glossary, <strong>native-speaker linguistic review</strong>, continuous localisation pipeline (TMS such as Crowdin or Lokalise) with automated checks on every sync, locale in test data generation, and fixed clocks and time zones so tests are deterministic.</p>
+<h4>Pitfalls</h4>
+<p>Translating by string concatenation, testing only English layouts, assuming two plural forms, relying on machine translation without review, and visual diffs without per-locale baselines.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is pseudo-localisation and how does it find i18n bugs early?</li><li>How do you test pluralisation, gender and ICU message formats across languages?</li><li>How do you handle time zones, calendars and number formats in tests without flakiness?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-66">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-66%3A+How+do+you+test+internationalization+%28i18n%29%2C+right-to-left+%28RTL%29%E2%80%A6&amp;question-id=qa-66&amp;context=QA+%2F+SDET%2C+Gear+2%2C+topic%3A+Localization%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-66.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

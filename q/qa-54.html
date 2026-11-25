@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you perform test impact analysis to select only relevant regression tests following code changes? | InterviewGearUp</title>
+<meta name="description" content="Test impact analysis maps code changes to the tests that exercise them, so a pull request runs only the affected tests plus a safety set. Build the map…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-54.html">
+<meta property="og:title" content="How do you perform test impact analysis to select only relevant regression tests following code changes? | InterviewGearUp">
+<meta property="og:description" content="Test impact analysis maps code changes to the tests that exercise them, so a pull request runs only the affected tests plus a safety set. Build the map…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-54.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you perform test impact analysis to select only relevant regression tests following code changes?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 2 (Mid-level) · Strategy · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Test impact analysis maps code changes to the tests that exercise them, so a pull request runs only the affected tests plus a safety set. Build the map from coverage data, module dependency graphs or build-system graphs, select tests from the diff, always run critical smoke tests, and periodically run the full suite to catch gaps and validate the selection.</p></div>
+<h4>Explained in depth</h4>
+<h4>Problem</h4>
+<p>As suites grow, running every regression test on every commit becomes slow and expensive (hours), delaying feedback and encouraging people to skip or ignore tests. Most changes touch a small part of the system, so most tests add no information for that change.</p>
+<h4>How test impact analysis (TIA) works</h4>
+<ol start="1"><li><strong>Determine the change set</strong>: <code>git diff</code> between the PR and the base branch (files, functions, lines, config changes, dependency bumps).</li><li><strong>Map changes to tests</strong> using one of:</li></ol>
+<ul><li><strong>Dynamic coverage mapping</strong>: record which source files or methods each test executes (run coverage per test, store a mapping: <code>test → files</code>). Select tests whose coverage intersects the changed code. Microsoft Visual Studio Test Impact Analysis, Launchable, Wallaby, <code>pytest-testmon</code>, NCrunch, Develocity predictive test selection work this way.</li><li><strong>Static dependency analysis</strong>: use the module or import graph to find dependents of changed modules (<code>jest --changedSince=main</code>, <code>nx affected:test</code>, Bazel <code>bazel query rdeps</code>, Gradle/Maven module dependencies, Pants).</li><li><strong>Heuristics and machine learning</strong>: predictive test selection ranks tests by failure likelihood given change features and history (Launchable, Develocity, Facebook&#39;s approach).</li></ul>
+<ol start="3"><li><strong>Add a safety net</strong>: always include smoke or critical-path tests, tests that failed recently, flaky-quarantine monitoring, and tests tagged for shared infrastructure or configuration changes.</li><li><strong>Run selected tests first and the rest later</strong>: prioritisation gives fast signals, with the <strong>full suite</strong> executing nightly or post-merge to catch missed dependencies.</li></ol>
+<pre><code># examples
+npx jest --changedSince=origin/main                # run tests related to changed files
+pytest --testmon                                    # re-run only tests affected by code changes
+npx nx affected -t test --base=origin/main          # monorepo project graph
+bazel test //... --test_tag_filters=-slow $(bazel query &quot;rdeps(//..., set($(git diff --name-only origin/main)))&quot;)</code></pre>
+<h4>Handling edge cases</h4>
+<ul><li><strong>Non-code dependencies</strong>: configuration, database migrations, feature flags, environment variables, build scripts, shared fixtures, infrastructure code; map them to broader test sets or run everything when such files change.</li><li><strong>Reflection, dynamic dispatch, microservices and runtime wiring</strong> hide dependencies from static analysis; end-to-end tests that cross services need <strong>service-level mapping</strong> (contract tests identify consumers affected by an API change).</li><li><strong>Dependency upgrades</strong>: run the full suite or all tests that import the package.</li><li><strong>New or renamed tests/files</strong> should always run.</li><li>Keep the mapping fresh: regenerate coverage maps periodically (nightly) and on code moves; store in a cache or service; handle branch divergence.</li></ul>
+<h4>Risks and controls</h4>
+<ul><li><strong>Missed regressions</strong> if the mapping is incomplete. Mitigation: post-merge and nightly full runs, track &quot;escaped by TIA&quot; failures (tests that fail in the full run but were skipped), tune the selection threshold, add conservative rules for risky areas.</li><li><strong>Flaky tests</strong> distort failure history for predictive models; quarantine and fix them.</li><li><strong>Complexity and trust</strong>: show developers why tests were chosen and make it easy to run all tests on demand.</li></ul>
+<h4>Metrics to track</h4>
+<p>Average CI duration before and after, percentage of tests executed per PR, <strong>change-failure detection rate</strong> (defects caught compared with the full suite), escaped defects, selection accuracy (recall of failing tests), cost savings in compute minutes.</p>
+<h4>Related techniques</h4>
+<p>Test <strong>parallelisation and sharding</strong>, splitting by historical duration, test <strong>prioritisation</strong> (run fast, high-failure-probability tests first), fail-fast gates, and risk-based testing guided by change size, author history and component criticality.</p>
+<h4>Pitfalls</h4>
+<p>Selecting only unit tests and ignoring integration impacts, stale coverage maps, no full-suite backstop, ignoring config changes, and treating TIA as a replacement for fixing slow or redundant tests.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you build and keep the test-to-code mapping accurate?</li><li>What risks does selective testing introduce and how do you mitigate them?</li><li>How do tools like Bazel, Nx, Launchable or Jest --changedSince help?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-54">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-54%3A+How+do+you+perform+test+impact+analysis+to+select+only+relevant%E2%80%A6&amp;question-id=qa-54&amp;context=QA+%2F+SDET%2C+Gear+2%2C+topic%3A+Strategy%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-54.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

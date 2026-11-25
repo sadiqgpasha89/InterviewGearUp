@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you test for Broken Object-Level Authorization (BOLA/IDOR) in automated API suites? | InterviewGearUp</title>
+<meta name="description" content="Test BOLA/IDOR by creating at least two users or tenants with their own objects, then replaying requests with user A&#39;s token against user B&#39;s object IDs…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-69.html">
+<meta property="og:title" content="How do you test for Broken Object-Level Authorization (BOLA/IDOR) in automated API suites? | InterviewGearUp">
+<meta property="og:description" content="Test BOLA/IDOR by creating at least two users or tenants with their own objects, then replaying requests with user A&#39;s token against user B&#39;s object IDs…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-69.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you test for Broken Object-Level Authorization (BOLA/IDOR) in automated API suites?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 3 (Senior) · Security · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Test BOLA/IDOR by creating at least two users or tenants with their own objects, then replaying requests with user A&#39;s token against user B&#39;s object IDs across every method and endpoint, asserting 403 or 404 and no data change. Automate by walking the OpenAPI spec, swapping identifiers in paths, query, body and nested references, and include role and tenant variations.</p></div>
+<h4>Explained in depth</h4>
+<h4>The vulnerability</h4>
+<p><strong>Broken Object Level Authorization (OWASP API1)</strong> happens when an API accepts an object identifier from the client and returns or modifies the object without checking that the caller <strong>owns or may access that specific object</strong>. Authentication may be perfect and the endpoint may check roles, but <code>GET /api/orders/1002</code> still returns someone else&#39;s order. Because APIs expose many object IDs, it is the most common and most damaging API flaw.</p>
+<h4>Test design</h4>
+<ol start="1"><li><strong>Create isolated actors</strong> through APIs in test setup: user A and user B (same role, different tenants), an admin, a support user, an unauthenticated caller, a user with an expired or revoked token. Each actor creates objects (orders, invoices, files, messages, addresses).</li><li><strong>Inventory identifiers</strong>: from the OpenAPI/Postman collection or traffic capture, list every place an ID appears: path (<code>/users/{id}</code>), query (<code>?accountId=</code>), body (<code>{&quot;ownerId&quot;: ...}</code>), headers, nested references (<code>{&quot;orderId&quot;, &quot;itemIds&quot;:[...]}</code>), GraphQL arguments, file URLs, batch endpoints, search filters, export jobs.</li><li><strong>Cross-actor requests</strong>: use A&#39;s token with B&#39;s object IDs for <strong>every HTTP method</strong> (GET, PUT, PATCH, DELETE, POST actions such as <code>/orders/{id}/cancel</code>) and assert:</li></ol>
+<ul><li>Expected <code>403</code> or <code>404</code> (consistent policy; 404 avoids confirming existence).</li><li><strong>Response body contains no data</strong> of B (not even in an error message).</li><li><strong>No state change</strong>: re-read B&#39;s object as B and verify it is unchanged; check side effects (emails, charges, events).</li></ul>
+<ol start="4"><li><strong>Horizontal vs vertical</strong>: horizontal (same role, other user&#39;s data), vertical (a normal user calling admin-only object operations, BFLA), and <strong>tenant isolation</strong> in multi-tenant systems.</li><li><strong>Indirect references</strong>: IDs inside bodies that link objects (attach B&#39;s file to A&#39;s order, add B&#39;s address as A&#39;s shipping address), mass assignment of <code>ownerId</code>, <code>tenantId</code>, <code>userId</code>, and listing endpoints that filter by client-supplied owner.</li></ol>
+<pre><code>import pytest, requests
+@pytest.mark.parametrize(&quot;method,path_tpl,body&quot;, [
+  (&quot;GET&quot;, &quot;/orders/{id}&quot;, None), (&quot;PATCH&quot;, &quot;/orders/{id}&quot;, {&quot;note&quot;: &quot;x&quot;}), (&quot;DELETE&quot;, &quot;/orders/{id}&quot;, None),
+  (&quot;POST&quot;, &quot;/orders/{id}/cancel&quot;, None), (&quot;GET&quot;, &quot;/orders/{id}/invoice.pdf&quot;, None)])
+def test_user_a_cannot_touch_user_b_order(api, user_a, user_b, method, path_tpl, body):
+    order_id = user_b.create_order()[&quot;id&quot;]
+    r = requests.request(method, api + path_tpl.format(id=order_id), headers=user_a.auth, json=body)
+    assert r.status_code in (403, 404)
+    assert str(user_b.email) not in r.text
+    assert user_b.get_order(order_id)[&quot;status&quot;] == &quot;NEW&quot;        # unchanged</code></pre>
+<h4>Unpredictable identifiers (UUIDs)</h4>
+<p>UUIDs reduce guessing but are <strong>not authorisation</strong>. They leak through logs, URLs, referrer headers, emails, shared links, and list endpoints. Tests should still use leaked or known IDs (obtained as another user) and assert the check holds. Also test sequential IDs enumeration, ID reuse after deletion, and predictable tokens in signed URLs (expiry, tamper detection).</p>
+<h4>Automation at scale</h4>
+<ul><li><strong>Spec-driven generation</strong>: parse OpenAPI, identify parameters named <code>id</code>, <code>*Id</code>, and resource paths, then generate A-on-B requests automatically.</li><li>Tools: <strong>Autorize</strong> and <strong>AuthMatrix</strong> (Burp extensions), <strong>OWASP ZAP</strong> with access-control scripts, <strong>Schemathesis</strong> with custom checks, Postman or Newman collections with per-user environments, <strong>Nuclei</strong> templates, custom pytest or REST Assured suites in CI.</li><li>Maintain an <strong>authorisation matrix</strong> (role × endpoint × ownership) as data, with expected outcomes, and run it on every release; include GraphQL (<code>node(id:)</code>, nested resolvers), WebSocket channels and file download URLs.</li><li>Add <strong>negative controls</strong>: owner access still works (avoid false confidence from endpoints that always return 404).</li></ul>
+<h4>Fix verification</h4>
+<p>Authorisation enforced centrally (policy layer, query scoped by <code>tenant_id</code> and <code>owner_id</code>, row-level security) rather than per-endpoint conditionals; tests then focus on a shared policy plus a regression matrix. Log denied attempts and alert on enumeration patterns (many 403 or 404 in sequence).</p>
+<h4>Pitfalls</h4>
+<p>Testing only GET, one role pair, authorisation at the UI only, trusting UUIDs, checking only the status code without verifying no data leak, and ignoring batch and export endpoints.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is object-level authorization the top API risk in the OWASP API Security Top 10?</li><li>How do you test for IDOR with unpredictable identifiers such as UUIDs?</li><li>How do you automate the testing of every endpoint and every identifier location?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-69">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-69%3A+How+do+you+test+for+Broken+Object-Level+Authorization+%28BOLA%2FIDOR%29+in%E2%80%A6&amp;question-id=qa-69&amp;context=QA+%2F+SDET%2C+Gear+3%2C+topic%3A+Security%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-69.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

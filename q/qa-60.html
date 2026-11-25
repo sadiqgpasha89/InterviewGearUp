@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you automate verification of transactional email delivery using tools like MailHog or Inbucket? | InterviewGearUp</title>
+<meta name="description" content="Use a local SMTP sink such as MailHog, Mailpit or Inbucket in test environments. Point the application&#39;s SMTP settings at it, trigger the action, then…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-60.html">
+<meta property="og:title" content="How do you automate verification of transactional email delivery using tools like MailHog or Inbucket? | InterviewGearUp">
+<meta property="og:description" content="Use a local SMTP sink such as MailHog, Mailpit or Inbucket in test environments. Point the application&#39;s SMTP settings at it, trigger the action, then…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-60.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you automate verification of transactional email delivery using tools like MailHog or Inbucket?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 2 (Mid-level) · Testing · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Use a local SMTP sink such as MailHog, Mailpit or Inbucket in test environments. Point the application&#39;s SMTP settings at it, trigger the action, then poll the sink&#39;s HTTP API for the message and assert recipient, subject, body, links and attachments, extract tokens or links for follow-up steps, clear the inbox between tests, and keep a separate check against the real provider.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why a mail sink</h4>
+<p>Real email is slow, unreliable, rate-limited, pollutes real inboxes and risks sending test messages to customers. A <strong>fake SMTP server</strong> accepts any message, stores it in memory, and exposes a <strong>web UI and REST API</strong> so tests can inspect it. Common tools: <strong>MailHog</strong> (Go, older), <strong>Mailpit</strong> (actively maintained successor with search and API), <strong>Inbucket</strong>, <strong>MailCatcher</strong>, <strong>Ethereal</strong> (hosted fake SMTP), and SaaS options (Mailosaur, MailSlurp, Mailtrap) for team and CI use.</p>
+<h4>Setup</h4>
+<pre><code># docker-compose.yml
+services:
+  app:
+    environment: { SMTP_HOST: mailpit, SMTP_PORT: 1025, SMTP_TLS: &quot;false&quot; }
+  mailpit:
+    image: axllent/mailpit
+    ports: [&quot;1025:1025&quot;, &quot;8025:8025&quot;]      # SMTP and web UI/API</code></pre>
+<p>The application must read SMTP configuration from environment so test environments send to the sink and production to the real provider (SES, SendGrid).</p>
+<h4>Assertions via API</h4>
+<pre><code>import requests, time
+MAIL = &quot;http://localhost:8025/api/v1&quot;
+def wait_for_email(to, subject_contains, timeout=15):
+    deadline = time.time() + timeout
+    while time.time() &lt; deadline:
+        msgs = requests.get(f&quot;{MAIL}/search&quot;, params={&quot;query&quot;: f&quot;to:{to} subject:\&quot;{subject_contains}\&quot;&quot;}).json()[&quot;messages&quot;]
+        if msgs: return requests.get(f&quot;{MAIL}/message/{msgs[0][&#39;ID&#39;]}&quot;).json()
+        time.sleep(0.5)
+    raise AssertionError(&quot;email not received&quot;)
+
+def test_password_reset_email(client):
+    email = f&quot;user-{uuid4()}@test.local&quot;
+    client.post(&quot;/forgot-password&quot;, json={&quot;email&quot;: email})
+    msg = wait_for_email(email, &quot;Reset your password&quot;)
+    assert msg[&quot;From&quot;][&quot;Address&quot;] == &quot;no-reply@example.com&quot;
+    link = re.search(r&#39;https?://[^\s&quot;]+/reset\?token=([A-Za-z0-9_-]+)&#39;, msg[&quot;HTML&quot;]).group(0)
+    assert client.get(link).status_code == 200                 # follow the link and complete the flow</code></pre>
+<p>MailHog API: <code>GET /api/v2/messages</code>, <code>DELETE /api/v1/messages</code> (clear). Playwright or Cypress can open the Mailpit UI, but API-based assertions are faster and more stable.</p>
+<h4>What to verify</h4>
+<ul><li><strong>Delivery and trigger</strong>: exactly one email sent for the event (no duplicates), not sent when it should not be (opt-out, invalid email).</li><li><strong>Headers</strong>: from, reply-to, to, cc/bcc, subject (localised), <code>List-Unsubscribe</code>, message ID.</li><li><strong>Content</strong>: dynamic data (name, order number, totals, dates and time zones), <strong>links</strong> (correct domain, tracking parameters, tokens valid and single-use), images and alt text, plain-text alternative alongside HTML, attachments (name, type, size, content such as PDF invoice).</li><li><strong>Templates</strong>: rendering across clients (Litmus, Email on Acid, or HTML validation), responsive layout, dark mode, character encoding for unicode, long names, missing optional fields, right-to-left languages.</li><li><strong>Localisation</strong>: user&#39;s language and regional formats.</li><li><strong>Flows</strong>: verification links activate accounts, OTP codes extracted by regex then used in the UI, invitation links, receipts after payment.</li><li><strong>Deliverability checks (staging with real provider)</strong>: SPF, DKIM, DMARC alignment, spam score (SpamAssassin, mail-tester), bounce and complaint handling, rate limits.</li><li><strong>Security</strong>: tokens expire, links do not leak sensitive data, password not sent in plain text, email enumeration protections (same response for unknown email).</li></ul>
+<h4>Handling async and parallelism</h4>
+<p>Emails are usually sent by background workers: <strong>poll with timeout</strong> instead of fixed sleeps, and give each test a <strong>unique recipient address</strong> (<code>test-{uuid}@example.test</code>, or plus-addressing) so parallel tests do not read each other&#39;s mail; clear mailboxes in setup or use per-test search filters; for message queues, wait for the job to complete or assert the queue.</p>
+<h4>Pitfalls</h4>
+<p>Using one shared inbox without unique addresses, <code>sleep</code> waits, testing only that an email was sent but not its links, running the sink with production credentials, and assuming a fake SMTP test proves real-world deliverability.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you extract verification links or OTP codes from emails in automated flows?</li><li>How do you test email templates for rendering, localisation and spam signals?</li><li>How do you handle asynchronous delivery delays and parallel tests sharing one mailbox?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-60">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-60%3A+How+do+you+automate+verification+of+transactional+email+delivery%E2%80%A6&amp;question-id=qa-60&amp;context=QA+%2F+SDET%2C+Gear+2%2C+topic%3A+Testing%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-60.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you load test a WebSocket server sustaining 50,000 concurrent connected users? | InterviewGearUp</title>
+<meta name="description" content="Load testing 50,000 concurrent WebSocket users needs a distributed generator such as k6, Artillery or Gatling spread over many machines, with ramped…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-62.html">
+<meta property="og:title" content="How do you load test a WebSocket server sustaining 50,000 concurrent connected users? | InterviewGearUp">
+<meta property="og:description" content="Load testing 50,000 concurrent WebSocket users needs a distributed generator such as k6, Artillery or Gatling spread over many machines, with ramped…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-62.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you load test a WebSocket server sustaining 50,000 concurrent connected users?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 3 (Senior) · Performance · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Load testing 50,000 concurrent WebSocket users needs a distributed generator such as k6, Artillery or Gatling spread over many machines, with ramped connection growth, realistic message mixes and heartbeats. Watch file descriptors, ephemeral ports, memory per connection, event loop lag, fan-out latency and reconnect storms, and correlate client metrics with server and load balancer telemetry.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why it differs from HTTP load testing</h4>
+<p>HTTP load tests focus on requests per second. A WebSocket server holds <strong>long-lived stateful connections</strong>: capacity is bounded by memory per connection, file descriptors, CPU used for fan-out and serialisation, and network bandwidth for broadcasts. A server that handles 50,000 idle connections may collapse when 5,000 of them receive a broadcast simultaneously.</p>
+<h4>Define the workload model first</h4>
+<ul><li><strong>Connection profile</strong>: how fast users connect (ramp 500 to 1,000 per second, not all at once), session length, think time.</li><li><strong>Message profile</strong>: messages per user per minute, size distribution (for example 200 bytes median, 5 KB p99), proportion of broadcast, room, and one-to-one messages, percentage of active senders (often 5 to 10 percent), heartbeat interval.</li><li><strong>Targets (SLOs)</strong>: for example p95 end-to-end delivery under 200 ms, connection success over 99.9 percent, error rate under 0.1 percent, no memory growth over 1 hour.</li></ul>
+<h4>Tooling</h4>
+<ul><li><strong>k6</strong> (<code>k6/experimental/websockets</code>), <strong>Artillery</strong> (WebSocket engine), <strong>Gatling</strong>, <strong>Locust</strong> with WebSocket clients, <strong>Tsung</strong>, custom Node or Go clients (Go is efficient at 50k connections per machine).</li></ul>
+<pre><code>// k6 sketch
+import ws from &#39;k6/ws&#39;; import { check } from &#39;k6&#39;; import { Trend } from &#39;k6/metrics&#39;;
+const latency = new Trend(&#39;msg_latency&#39;, true);
+export const options = { scenarios: { users: { executor: &#39;ramping-vus&#39;, stages: [
+  { duration: &#39;10m&#39;, target: 50000 }, { duration: &#39;30m&#39;, target: 50000 }, { duration: &#39;2m&#39;, target: 0 }] } },
+  thresholds: { msg_latency: [&#39;p(95)&lt;200&#39;], ws_connecting: [&#39;p(95)&lt;1000&#39;], checks: [&#39;rate&gt;0.999&#39;] } };
+export default function () {
+  const res = ws.connect(`wss://load.example.com/ws?token=${__ENV.TOKEN}`, {}, (socket) =&gt; {
+    socket.on(&#39;open&#39;, () =&gt; socket.setInterval(() =&gt; socket.send(JSON.stringify({ t: Date.now(), type: &#39;ping&#39; })), 25000));
+    socket.on(&#39;message&#39;, (m) =&gt; { const d = JSON.parse(m); if (d.ts) latency.add(Date.now() - d.ts); });
+    socket.setTimeout(() =&gt; socket.close(), 30 * 60 * 1000);
+  });
+  check(res, { &#39;status is 101&#39;: (r) =&gt; r &amp;&amp; r.status === 101 });
+}</code></pre>
+<h4>Generating 50k connections</h4>
+<ul><li>One machine usually cannot hold 50k connections to a <strong>single IP and port</strong>: each connection uses an ephemeral source port (about 28,000 by default per source IP and destination tuple). Use <strong>several load generator hosts</strong> (5 to 10), multiple source IPs, widen <code>net.ipv4.ip_local_port_range</code>, and raise <code>ulimit -n</code> and <code>fs.file-max</code>.</li><li>Run generators in the same region and network as the system under test to avoid measuring WAN latency, or deliberately place them geographically for realism; ensure the generators themselves are not the bottleneck (CPU below 70 percent, no clock drift; synchronise via NTP).</li><li>Use distributed execution (k6 operator on Kubernetes, Artillery on AWS Fargate or Lambda, Gatling Enterprise).</li></ul>
+<h4>Server and infrastructure tuning to verify</h4>
+<ul><li>File descriptor limits, <code>net.core.somaxconn</code>, TCP buffer sizes, keepalive settings; load balancer idle timeouts (ALB defaults to 60 seconds, so heartbeats must be shorter), connection limits and sticky sessions or a pub/sub backplane (Redis, NATS, Kafka) for cross-node broadcast.</li><li>Memory per connection (buffers, session objects), garbage collection pauses, event loop lag (Node), goroutine count (Go), thread pools (Java Netty), backpressure and slow-consumer handling (drop, buffer cap, disconnect).</li><li>Horizontal scaling: autoscaling triggers on connection count, graceful draining on deploy.</li></ul>
+<h4>What to measure</h4>
+<ul><li><strong>Client side</strong>: connection time, handshake failures, close codes, message round-trip and fan-out latency (embed server timestamps and clock-sync, or use a dedicated probe client with a known send time), throughput, dropped messages and duplicates.</li><li><strong>Server side</strong>: active connections per node, CPU, memory trend, GC, network in and out, queue depths, pub/sub lag, error logs, database or cache load generated by messages.</li><li>Correlate by time with dashboards (Prometheus and Grafana, Datadog), traces for slow paths.</li></ul>
+<h4>Test types</h4>
+<ol start="1"><li><strong>Ramp to target and hold (soak)</strong> 1 to 4 hours to catch leaks.</li><li><strong>Spike</strong>: sudden surges (match start, push notification) and <strong>broadcast storms</strong> to all rooms.</li><li><strong>Reconnect storm</strong>: kill a node or deploy and verify clients reconnect with jittered backoff, without a thundering herd taking down authentication or the database.</li><li><strong>Capacity or breakpoint test</strong>: increase until SLOs break and record the limit and failure mode.</li><li><strong>Failure injection</strong>: drop a backplane node, throttle network, expire tokens mid-session.</li></ol>
+<h4>Pitfalls</h4>
+<p>Opening all connections at once, no heartbeats (so idle timeouts mask problems), measuring only connect success, load generator saturation, ignoring fan-out costs, and testing a single node while production runs behind a load balancer.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you tune OS and load balancer limits such as file descriptors and ephemeral ports for 50k connections?</li><li>How do you model a realistic message mix and measure end-to-end fan-out latency?</li><li>How do you test reconnect storms after a deployment or failover?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-62">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-62%3A+How+do+you+load+test+a+WebSocket+server+sustaining+50%2C000+concurrent%E2%80%A6&amp;question-id=qa-62&amp;context=QA+%2F+SDET%2C+Gear+3%2C+topic%3A+Performance%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-62.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

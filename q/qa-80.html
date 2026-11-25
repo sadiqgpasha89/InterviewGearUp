@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Design a scalable test automation framework from scratch: Directory layout, utilities, and runners. | InterviewGearUp</title>
+<meta name="description" content="Design the framework in layers: tests that read as business intent, page or screen objects and API clients below them, core utilities for configuration,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-80.html">
+<meta property="og:title" content="Design a scalable test automation framework from scratch: Directory layout, utilities, and runners. | InterviewGearUp">
+<meta property="og:description" content="Design the framework in layers: tests that read as business intent, page or screen objects and API clients below them, core utilities for configuration,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-80.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Design a scalable test automation framework from scratch: Directory layout, utilities, and runners.</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 3 (Senior) · Architecture · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Design the framework in layers: tests that read as business intent, page or screen objects and API clients below them, core utilities for configuration, data, waits, logging and reporting, and a runner that handles tagging, parallelism and retries. Keep tests independent, data created through APIs, config per environment, and CI integration, with clear folder conventions and ownership.</p></div>
+<h4>Explained in depth</h4>
+<h4>Requirements first</h4>
+<p>Clarify scope: web, API, mobile, performance; languages the team knows; CI system; browsers and devices; parallelism and runtime target; reporting needs; who writes tests (SDETs, developers, manual QA); and maintenance expectations. A framework exists to make <strong>tests cheap to write, reliable to run and easy to diagnose</strong>.</p>
+<h4>Layered architecture</h4>
+<pre><code>tests/                         # what: readable scenarios, no selectors or HTTP details
+  web/ checkout.spec.ts  login.spec.ts
+  api/ orders.spec.ts
+  e2e/ journeys.spec.ts
+src/
+  pages/                       # page objects: locators + actions + page-level assertions
+    LoginPage.ts  CartPage.ts
+  components/                  # reusable UI parts: DatePicker, DataTable, Modal
+  api/                         # typed API clients (generated from OpenAPI), request builders
+    OrdersClient.ts  AuthClient.ts
+  fixtures/                    # test-scoped setup/teardown: authenticated user, seeded order
+    index.ts
+  data/                        # builders and factories, static reference data, schemas
+    userBuilder.ts  orderFactory.ts
+  utils/                       # waits, retry helpers, random, date, logger, assertions, file helpers
+  config/                      # env.ts, environments (dev, staging), feature flags, timeouts
+reports/                       # generated artefacts (screens, traces, JUnit, Allure)
+ci/                            # pipeline definitions, docker, shard scripts
+docs/                          # conventions, onboarding, ADRs</code></pre>
+<h4>Design principles</h4>
+<ol start="1"><li><strong>Separation of concerns</strong>: tests state intent (<code>await checkout.payWith(card)</code>); page objects own locators; clients own HTTP details; utilities have no test logic.</li><li><strong>Independence and isolation</strong>: each test creates its own data through <strong>APIs or direct seeding</strong> (fast, deterministic), does not depend on order, and cleans up (fixtures with teardown, tagged data, TTL purge). Parallel safe by default (unique emails, order IDs).</li><li><strong>Stable locators</strong>: <code>data-testid</code> or accessibility roles agreed with developers; no XPath indexes; locators defined once.</li><li><strong>Smart waiting</strong>: use framework auto-waiting and condition-based waits, never fixed sleeps.</li><li><strong>Configuration over code</strong>: environment, base URLs, credentials from env vars or a secret store, browser matrix, timeouts and feature flags in config; one command to run per environment.</li><li><strong>Test pyramid</strong>: most coverage in unit and API tests; UI tests only for journeys; shared helpers for authentication reuse (<code>storageState</code>, tokens).</li><li><strong>Observability of failures</strong>: screenshots, video, traces, console and network logs, request and response logging with correlation IDs, clear assertion messages, links to build artefacts.</li><li><strong>Conventions and reviews</strong>: naming, tags (<code>@smoke</code>, <code>@regression</code>, <code>@slow</code>), linting, code review for tests, dependency pinning, documentation and examples.</li></ol>
+<h4>Runner and execution</h4>
+<ul><li><strong>Tagging and selection</strong> for suites; <strong>parallel and sharded execution</strong> (<code>--shard=1/4</code>, workers per CPU), retries limited to CI and recorded; test timeouts; fail-fast on smoke; ordering randomisation.</li><li><strong>Environment management</strong>: containers (Docker Compose) for dependencies and browsers, ephemeral preview environments per PR, cloud grids for cross-browser and device coverage.</li><li><strong>Reporting</strong>: JUnit XML for CI, HTML report (Playwright report, Allure), trend dashboards, flake tracking, notifications with owners.</li><li><strong>CI/CD</strong>: PR gate (lint, unit, smoke), merge gate (API and selected UI), nightly full regression, post-deploy smoke; cache dependencies; run as the same Docker image as developers use locally.</li></ul>
+<h4>Choosing tools</h4>
+<p>Use proven building blocks instead of inventing a runner: <strong>Playwright Test</strong> or Cypress for web (built-in runner, fixtures, tracing), REST Assured or Supertest or pytest with <code>requests</code> for APIs, Appium or Detox for mobile, k6 for load, Pact for contracts. Build only the thin layer your organisation needs (fixtures, clients, data builders, reporting adapters). Prefer the language developers already use to share code and review.</p>
+<h4>Evolution and governance</h4>
+<p>Version the framework, deprecate old helpers with migration guides, track metrics (pass rate, flake rate, duration, maintenance hours), assign ownership per suite, schedule dependency updates, and review the test portfolio regularly to delete low-value tests.</p>
+<h4>Pitfalls</h4>
+<p>God page objects with business logic, tests that depend on each other, shared mutable test data, over-engineering abstractions before real needs, a custom DSL nobody understands, and a UI-heavy suite with no API layer.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you structure page objects, components and fixtures to avoid duplication and keep tests readable?</li><li>How do you design test data management and environment configuration for parallel runs?</li><li>How do you decide between building a framework and using an existing one?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-80">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-80%3A+Design+a+scalable+test+automation+framework+from+scratch%3A+Directory%E2%80%A6&amp;question-id=qa-80&amp;context=QA+%2F+SDET%2C+Gear+3%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-80.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

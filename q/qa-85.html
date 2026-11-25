@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you verify database transaction rollback behavior during unexpected application errors? | InterviewGearUp</title>
+<meta name="description" content="Verify rollback by forcing an error part-way through a multi-statement operation and then asserting that the database is unchanged: no partial rows,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-85.html">
+<meta property="og:title" content="How do you verify database transaction rollback behavior during unexpected application errors? | InterviewGearUp">
+<meta property="og:description" content="Verify rollback by forcing an error part-way through a multi-statement operation and then asserting that the database is unchanged: no partial rows,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-85.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you verify database transaction rollback behavior during unexpected application errors?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 2 (Mid-level) · Database · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Verify rollback by forcing an error part-way through a multi-statement operation and then asserting that the database is unchanged: no partial rows, counters or balances moved, and no committed side effects. Inject failures with test hooks, constraint violations, exceptions or killed connections, and test both application-managed transactions and the isolation behaviour around them.</p></div>
+<h4>Explained in depth</h4>
+<h4>What must hold (ACID)</h4>
+<p>A transaction is <strong>atomic</strong>: either all its changes commit or none do. If the application crashes, throws an exception, hits a constraint violation, or loses the connection part-way, the database must show the state <strong>before</strong> the transaction. Typical bugs: auto-commit left on, exceptions swallowed so commit still runs, wrong transaction boundary (each repository call commits separately), unchecked exceptions that do not roll back (Spring rolls back only on runtime exceptions by default), partial updates across two databases, and side effects (email, message publish) happening before commit.</p>
+<h4>Test pattern</h4>
+<ol start="1"><li><strong>Arrange</strong>: seed known state (accounts A=100 and B=50).</li><li><strong>Act</strong>: execute the operation with a <strong>forced failure at a precise step</strong>.</li><li><strong>Assert</strong>: read the data <strong>through a separate connection</strong> (so you see only committed state) and compare with the original; assert the API error response and that no events were emitted.</li></ol>
+<pre><code>def test_transfer_rolls_back_on_failure_after_debit(app, db_conn_fresh, monkeypatch):
+    seed(accounts={&quot;A&quot;: 100, &quot;B&quot;: 50})
+    def boom(*a, **k): raise RuntimeError(&quot;credit failed&quot;)
+    monkeypatch.setattr(&quot;bank.repo.credit&quot;, boom)             # failure after debit executed
+    resp = app.post(&quot;/transfer&quot;, json={&quot;from&quot;: &quot;A&quot;, &quot;to&quot;: &quot;B&quot;, &quot;amount&quot;: 30})
+    assert resp.status_code == 500
+    with db_conn_fresh() as c:                                 # new connection sees committed data only
+        assert balance(c, &quot;A&quot;) == 100 and balance(c, &quot;B&quot;) == 50
+        assert count(c, &quot;ledger_entries&quot;) == 0                # audit rows rolled back too
+    assert outbox.published() == []                           # no event leaked</code></pre>
+<h4>Ways to inject failures</h4>
+<ul><li><strong>Test seams</strong>: fault flags or injectable dependencies that throw at chosen steps (preferred, deterministic).</li><li><strong>Database-level</strong>: violate a constraint on the last statement (unique, foreign key, <code>CHECK</code>), insert oversized data, trigger a deadlock between two sessions, set <code>statement_timeout</code> or <code>lock_timeout</code> low, use <code>pg_terminate_backend</code> or kill the connection mid-transaction, restart the DB container.</li><li><strong>Infrastructure</strong>: Toxiproxy cuts the connection between application and database after N bytes; simulate failover and read-only replicas.</li><li><strong>Application</strong>: out-of-memory or process kill (<code>SIGKILL</code>) in a subprocess while the transaction is open; verify recovery on restart (no half-written state, idempotent retry).</li></ul>
+<h4>Specific checks</h4>
+<ul><li><strong>Atomicity across tables and aggregates</strong>: parent and child rows, derived counters, inventory and orders, outbox rows.</li><li><strong>Isolation</strong>: concurrent transactions do not see uncommitted data (dirty reads), no lost updates (use <code>SELECT ... FOR UPDATE</code>, optimistic version columns), deadlocks are retried with backoff, serialisation failures (<code>40001</code>) handled.</li><li><strong>Savepoints and nested transactions</strong>: inner failure rolls back to the savepoint while the outer continues if designed (<code>REQUIRES_NEW</code> vs <code>REQUIRED</code> propagation in Spring), and that swallowing an exception inside a <code>REQUIRED</code> transaction marks it rollback-only.</li><li><strong>Auto-increment sequences</strong> may skip (acceptable) but business invariants hold.</li><li><strong>DDL and migrations</strong>: failed migration leaves schema consistent (transactional DDL in PostgreSQL; not in MySQL), rollback scripts tested.</li><li><strong>Outbox and sagas</strong>: side effects published only after commit (transactional outbox); failure between DB commit and message publish is recovered; compensating transactions for distributed workflows; idempotent consumers.</li><li><strong>Resource cleanup</strong>: connections returned to the pool, locks released, no leaked open transactions (<code>idle in transaction</code> monitoring).</li></ul>
+<h4>Test infrastructure caveats</h4>
+<p>Do not rely on the common &quot;wrap every test in a transaction and roll back&quot; fixture for these tests: it nests transactions or prevents real commits and cannot observe true commit behaviour. Use a real database (Testcontainers with the production engine and version) and clean state by truncation or recreate schema per test class. Use separate connections for assertions and enable the same isolation level as production.</p>
+<h4>Pitfalls</h4>
+<p>Asserting through the same transaction (sees uncommitted data), testing with an in-memory database that differs in locking and DDL behaviour, swallowed exceptions in tests, and failing to test crash-recovery paths and external side effects.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you inject a failure between two statements in a transaction to prove atomicity?</li><li>Why can tests that wrap each case in a rolled-back transaction hide real commit and rollback bugs?</li><li>How do you test savepoints, nested transactions and distributed operations that span a database and a message broker?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-85">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-85%3A+How+do+you+verify+database+transaction+rollback+behavior+during%E2%80%A6&amp;question-id=qa-85&amp;context=QA+%2F+SDET%2C+Gear+2%2C+topic%3A+Database%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-85.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

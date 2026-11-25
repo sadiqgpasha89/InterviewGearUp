@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you bypass or handle CAPTCHA and Two-Factor Authentication (2FA) in automated regression suites? | InterviewGearUp</title>
+<meta name="description" content="Do not automate against real CAPTCHA or production 2FA. In test environments disable or bypass them through configuration, use provider test keys that…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-52.html">
+<meta property="og:title" content="How do you bypass or handle CAPTCHA and Two-Factor Authentication (2FA) in automated regression suites? | InterviewGearUp">
+<meta property="og:description" content="Do not automate against real CAPTCHA or production 2FA. In test environments disable or bypass them through configuration, use provider test keys that…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-52.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you bypass or handle CAPTCHA and Two-Factor Authentication (2FA) in automated regression suites?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 2 (Mid-level) · Automation · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Do not automate against real CAPTCHA or production 2FA. In test environments disable or bypass them through configuration, use provider test keys that always pass, whitelist test accounts or IPs, and for 2FA generate TOTP codes from a known seed, read OTPs from a test mailbox or SMS API, or use backdoor endpoints. Keep a small manual or staged check for the real flow.</p></div>
+<h4>Explained in depth</h4>
+<h4>Principle</h4>
+<p>CAPTCHA exists to <strong>stop automation</strong>; 2FA exists to stop unauthorised login. Trying to defeat them in tests is fragile, slow and often against provider terms. The right approach is to <strong>change the environment or inputs</strong>, not break the control, while still verifying that the controls work somewhere appropriate.</p>
+<h4>CAPTCHA strategies</h4>
+<ol start="1"><li><strong>Provider test keys</strong>: reCAPTCHA v2 has official test site and secret keys that always pass (<code>6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI</code> / <code>...AGb-OfeXcPDhV9vA9wCBS9Hh9Jw5N8N</code>); hCaptcha and Cloudflare Turnstile offer test keys/sitekeys that always pass or fail. Configure staging to use them.</li><li><strong>Feature flag or environment config</strong>: disable CAPTCHA when <code>ENV=test</code>, or require a header or secret that the backend honours only in non-production.</li><li><strong>IP or account allow-listing</strong> for CI runners and test users (risk-based challenges skip trusted sources).</li><li><strong>Bypass at API level</strong>: seed users or sessions through APIs, create authenticated browser state (<code>storageState</code>) once, and avoid UI login in most tests.</li><li><strong>Mock the verification endpoint</strong> in component and integration tests (stub the call to <code>siteverify</code>).</li><li>Keep a <strong>separate small suite</strong> (manual or staged with real keys) to confirm the CAPTCHA widget loads, blocks without a token, and the backend rejects invalid tokens.</li></ol>
+<p>Avoid paid CAPTCHA-solving services and vision hacks: unreliable, ethically and legally questionable, and they hide real problems.</p>
+<h4>2FA strategies</h4>
+<ol start="1"><li><strong>TOTP (authenticator apps)</strong>: store the base32 <strong>secret seed</strong> for the test account in a secrets manager and generate the 6-digit code in the test:</li></ol>
+<pre><code>import pyotp
+def current_totp(): return pyotp.TOTP(os.environ[&quot;TEST_USER_TOTP_SECRET&quot;]).now()
+page.fill(&quot;#otp&quot;, current_totp()); page.click(&quot;#verify&quot;)</code></pre>
+<p>   Handle the 30 second window: if the code is about to roll over (less than 3 seconds left), wait for the next period; keep CI clocks in sync (NTP); allow the server&#39;s ±1 step tolerance.</p>
+<pre><code>// Node: otplib
+import { authenticator } from &#39;otplib&#39;; const code = authenticator.generate(process.env.TOTP_SECRET);</code></pre>
+<ol start="2"><li><strong>Email or SMS OTP</strong>: use test inboxes (<strong>MailHog, Mailpit, Mailosaur, MailSlurp, Ethereal</strong>) and SMS test numbers (Twilio test credentials, Mailosaur SMS, provider sandbox) and poll for the message with a timeout, then parse the code with a regex.</li><li><strong>Backdoors in non-production</strong>: fixed OTP such as <code>000000</code> for test accounts or an internal endpoint <code>/test/otp/{user}</code> guarded by environment and secret; <strong>never</strong> enabled in production.</li><li><strong>Disable 2FA for most test users</strong> and keep a few accounts with 2FA enabled for dedicated tests; or create sessions via API (token endpoint with the OTP) once.</li><li><strong>Push-based or hardware keys</strong>: use WebAuthn virtual authenticators (Chrome DevTools Protocol <code>WebAuthn.addVirtualAuthenticator</code>, Playwright via CDP) to automate passkeys; mock push approval services.</li><li><strong>Recovery codes</strong>: verify one-time use and regeneration.</li></ol>
+<h4>Test the controls too</h4>
+<p>Dedicated tests (in a controlled environment): wrong or expired OTP rejected, lockout or throttling after repeated failures, OTP single-use, OTP bound to session, resend cooldown, brute-force limits, 2FA enrolment and removal flows, remember-this-device cookie expiry, fallback methods, step-up auth for sensitive actions.</p>
+<h4>Governance</h4>
+<p>Treat seeds and test credentials as secrets (vault, masked in logs), rotate them, scope test accounts to non-production, and ensure bypass switches cannot be enabled in production (config validation, deployment checks, security review).</p>
+<h4>Pitfalls</h4>
+<p>Using production CAPTCHA keys in tests, hardcoding OTP seeds in the repo, flaky tests from time window rollover, enabling a bypass flag in production, and never testing the real flow.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why should you not try to solve CAPTCHAs with third-party solving services in tests?</li><li>How do you generate TOTP codes in tests and avoid clock drift issues?</li><li>How do you test that CAPTCHA and 2FA themselves are correctly enforced in production-like environments?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-52">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-52%3A+How+do+you+bypass+or+handle+CAPTCHA+and+Two-Factor+Authentication%E2%80%A6&amp;question-id=qa-52&amp;context=QA+%2F+SDET%2C+Gear+2%2C+topic%3A+Automation%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-52.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

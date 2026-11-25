@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you automate testing of OAuth 2.0 and JWT token authentication, refreshes, and expirations? | InterviewGearUp</title>
+<meta name="description" content="Automate OAuth 2.0 and JWT testing by obtaining tokens through the real grant flow against a test authorization server, then asserting claims, scopes,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-31.html">
+<meta property="og:title" content="How do you automate testing of OAuth 2.0 and JWT token authentication, refreshes, and expirations? | InterviewGearUp">
+<meta property="og:description" content="Automate OAuth 2.0 and JWT testing by obtaining tokens through the real grant flow against a test authorization server, then asserting claims, scopes,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-31.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you automate testing of OAuth 2.0 and JWT token authentication, refreshes, and expirations?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 2 (Mid-level) · API Testing · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Automate OAuth 2.0 and JWT testing by obtaining tokens through the real grant flow against a test authorization server, then asserting claims, scopes, signature, expiry and audience. Cover refresh token rotation, expired and tampered tokens, wrong audience or scope, revoked tokens, and that protected endpoints return 401 or 403 correctly without relying on the UI.</p></div>
+<h4>Explained in depth</h4>
+<h4>Test environment</h4>
+<p>Use a <strong>dedicated test tenant or realm</strong> (Keycloak, Auth0 test tenant, Okta dev org, Cognito pool, or a local mock like <code>mock-oauth2-server</code>) with test clients and users, short token lifetimes configurable for tests, and secrets in CI vault. Avoid driving the login UI for every test: use <strong>direct grants</strong> where allowed in test (client credentials, resource owner password, token exchange) or API-based auth helpers, and keep one or two end-to-end browser flows for the authorization code with PKCE.</p>
+<h4>Obtaining tokens in tests</h4>
+<pre><code>def get_token(scope=&quot;read:orders&quot;):
+    r = requests.post(f&quot;{AUTH}/oauth/token&quot;, data={&quot;grant_type&quot;: &quot;client_credentials&quot;, &quot;client_id&quot;: ID,
+                      &quot;client_secret&quot;: SECRET, &quot;audience&quot;: &quot;https://api.example.com&quot;, &quot;scope&quot;: scope})
+    r.raise_for_status(); return r.json()</code></pre>
+<p>Cache tokens per scope for the run (until near expiry) to avoid hammering the server.</p>
+<h4>What to assert</h4>
+<ol start="1"><li><strong>Happy path</strong>: valid access token → <code>200</code>; response respects the user&#39;s identity.</li><li><strong>Missing or malformed token</strong> → <code>401</code> with <code>WWW-Authenticate: Bearer</code> header; no data leakage.</li><li><strong>Insufficient scope or role</strong> → <code>403 Forbidden</code> (token valid but not authorised).</li><li><strong>Expired token</strong> → <code>401</code> (<code>invalid_token</code>, &quot;expired&quot;). Generate expired tokens by signing with the test key and a past <code>exp</code>, using a very short lifetime (5 seconds) configured on the test auth server, or a controllable clock.</li><li><strong>JWT validation</strong>: decode and assert claims (<code>iss</code>, <code>aud</code>, <code>sub</code>, <code>exp</code>, <code>iat</code>, <code>scope</code>/<code>scp</code>, custom claims); verify the signature algorithm (RS256 with JWKS), <code>kid</code> handling, JWKS rotation.</li><li><strong>Tampering and attacks</strong>: payload edited without re-signing; <strong><code>alg: none</code></strong>; algorithm confusion (HS256 signed with the public key); wrong <strong>issuer</strong> or <strong>audience</strong>; <code>nbf</code> in the future; clock skew limits; token reuse across tenants; very large tokens.</li></ol>
+<pre><code>def test_rejects_wrong_audience(api):
+    t = make_jwt(claims={&quot;aud&quot;: &quot;https://other-api&quot;, &quot;sub&quot;: &quot;u1&quot;, &quot;exp&quot;: now()+300}, key=TEST_PRIVATE_KEY)
+    assert api.get(&quot;/orders&quot;, headers=bearer(t)).status_code == 401
+def test_rejects_alg_none(api):
+    t = b64({&quot;alg&quot;: &quot;none&quot;}) + &quot;.&quot; + b64({&quot;sub&quot;: &quot;admin&quot;, &quot;exp&quot;: now()+300}) + &quot;.&quot;
+    assert api.get(&quot;/admin&quot;, headers=bearer(t)).status_code == 401</code></pre>
+<ol start="7"><li><strong>Refresh flow</strong>: use the refresh token to get a new access token; assert new <code>exp</code>; test <strong>refresh token rotation</strong> (the old refresh token becomes invalid; <strong>reuse of a rotated token</strong> triggers revocation of the token family); expired or revoked refresh token → <code>invalid_grant</code>; client authentication errors; scope downgrade on refresh not upgrade.</li><li><strong>Revocation and logout</strong>: after revoking a token (RFC 7009) or logging out, protected endpoints reject it (immediately for introspection-based, eventually for stateless JWT based on design), session invalidation after password change.</li><li><strong>Authorization code with PKCE</strong>: wrong <code>code_verifier</code>, reused authorization code, wrong <code>redirect_uri</code>, missing <code>state</code> (CSRF) must fail.</li><li><strong>Token storage and transport</strong>: HTTPS only, tokens not logged, not in URLs, cookies flags (HttpOnly, Secure, SameSite) if cookie-based.</li><li><strong>Rate limits and brute force</strong> on token endpoints.</li><li><strong>Concurrency</strong>: simultaneous refresh requests from several tabs handled safely.</li></ol>
+<h4>Time control</h4>
+<p>Prefer injecting time: configure the service to use a clock the test can advance (<code>Clock</code> abstraction), use libraries like <code>freezegun</code>, or create tokens with explicit <code>iat/exp</code>. Avoid sleeps.</p>
+<h4>Tools</h4>
+<p>Postman/Newman with pre-request scripts, REST Assured OAuth2 helpers, Playwright API request contexts, k6 for load on token endpoints, <code>jwt.io</code>/<code>jose</code>/<code>PyJWT</code> for crafting tokens, OWASP ZAP and JWT_Tool for security tests.</p>
+<h4>Pitfalls</h4>
+<p>Using production identity providers, hardcoding long-lived tokens in repos, only testing happy paths, trusting <code>exp</code> checks in tests without verifying signature validation, and ignoring refresh token reuse.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you test token expiry without waiting for real time to pass?</li><li>What negative JWT cases (alg none, wrong signature, wrong audience) should the suite include?</li><li>How do you handle refresh token rotation and reuse detection in tests?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-31">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-31%3A+How+do+you+automate+testing+of+OAuth+2.0+and+JWT+token%E2%80%A6&amp;question-id=qa-31&amp;context=QA+%2F+SDET%2C+Gear+2%2C+topic%3A+API+Testing%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-31.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

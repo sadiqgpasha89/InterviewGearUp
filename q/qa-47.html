@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is Shift-Left Testing and how does introducing QA early in requirements prevent defect leakage? | InterviewGearUp</title>
+<meta name="description" content="Shift-left testing moves quality activities earlier in the lifecycle: reviewing requirements for testability, writing acceptance criteria and test ideas…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-47.html">
+<meta property="og:title" content="What is Shift-Left Testing and how does introducing QA early in requirements prevent defect leakage? | InterviewGearUp">
+<meta property="og:description" content="Shift-left testing moves quality activities earlier in the lifecycle: reviewing requirements for testability, writing acceptance criteria and test ideas…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-47.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is Shift-Left Testing and how does introducing QA early in requirements prevent defect leakage?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 2 (Mid-level) · Strategy · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Shift-left testing moves quality activities earlier in the lifecycle: reviewing requirements for testability, writing acceptance criteria and test ideas before coding, automating unit and API tests alongside development, and running checks on every commit. Defects found at requirement or design time cost a fraction of those found in production, so early QA involvement reduces rework and defect leakage.</p></div>
+<h4>Explained in depth</h4>
+<h4>The idea</h4>
+<p>Traditional waterfall-style testing happens <strong>after</strong> development: QA receives a build, finds defects, and sends it back. Problems that originate in unclear requirements or poor design are discovered late, when fixing them costs 10 to 100 times more (Boehm&#39;s cost-of-change curve) and delays releases. <strong>Shift-left</strong> pushes testing <strong>earlier</strong> (leftwards on the timeline) so defects are prevented or found where they are cheapest to fix.</p>
+<h4>Practices across the lifecycle</h4>
+<ol start="1"><li><strong>Requirements and design</strong></li></ol>
+<ul><li>QA reviews user stories for <strong>testability and ambiguity</strong>: missing acceptance criteria, conflicting rules, undefined error cases, non-functional requirements (performance, security, accessibility).</li><li><strong>Three amigos</strong> (product, developer, tester) discuss each story, write <strong>examples</strong> and <strong>Given-When-Then</strong> scenarios (specification by example), and agree on a definition of ready and done.</li><li>Risk analysis and <strong>threat modelling</strong>; testability reviews of architecture (observable systems, seams for mocking, feature flags).</li></ul>
+<ol start="2"><li><strong>Development</strong></li></ol>
+<ul><li>Developers write <strong>unit tests</strong> and use TDD where suitable; QA coaches on test design, coverage of boundaries, negative paths and mutation testing.</li><li><strong>Contract and API tests</strong> written in parallel with services (OpenAPI first), service virtualisation so teams test before dependencies exist.</li><li><strong>Static analysis, linters, type checks, secret and dependency scanning</strong> in the IDE and pre-commit hooks.</li><li>Peer <strong>code and test review</strong> with QA participation.</li></ul>
+<ol start="3"><li><strong>CI pipeline</strong></li></ol>
+<ul><li>Fast tests on every commit (unit, component, smoke), PR gates, ephemeral preview environments for exploratory testing during development, test data on demand.</li></ul>
+<ol start="4"><li><strong>Acceptance and release</strong></li></ol>
+<ul><li>Automated acceptance and regression suites, exploratory sessions on small increments, non-functional tests (performance budgets, accessibility checks) built into the pipeline rather than a late phase.</li></ul>
+<h4>Example impact</h4>
+<p>A story says &quot;users can reset their password&quot;. Early QA questions: What if the email is unknown (do we reveal account existence)? Token lifetime? Reuse of link? Rate limits? Localised emails? Answers become acceptance criteria and automated tests before coding starts, avoiding rework and security gaps that would otherwise surface in system testing or production.</p>
+<h4>Benefits</h4>
+<ul><li><strong>Lower cost of defects</strong> and less rework; fewer late surprises.</li><li><strong>Faster feedback</strong> and shorter cycle time; smaller batch sizes.</li><li>Shared quality ownership (whole team responsible), better requirements and design, more stable automation because tests are designed with the code.</li><li>Reduced <strong>defect leakage</strong> (defects escaping to later phases or production).</li></ul>
+<h4>Measuring</h4>
+<p>Track <strong>defect detection by phase</strong> (percentage found in requirements, development, QA, production), <strong>defect escape rate</strong> (production defects per release or per KLOC), <strong>cost of fix by phase</strong>, rework percentage, requirement changes late in sprint, lead time and change failure rate (DORA), automation coverage of acceptance criteria, escaped-defect root cause analysis (requirement, design, code, test gap).</p>
+<h4>Shift-right complement</h4>
+<p>Shift-left is paired with <strong>shift-right</strong> (testing in production safely): observability, feature flags, canary releases, synthetic monitoring, A/B tests, chaos experiments and real-user monitoring, because some issues only appear at scale and in real environments.</p>
+<h4>Pitfalls</h4>
+<p>Treating shift-left as &quot;QA writes more tests earlier&quot; while developers remain uninvolved, adding review meetings without outcomes, ignoring exploratory testing, automating unstable requirements too early, and not measuring improvement.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What concrete QA activities happen during backlog refinement and three amigos sessions?</li><li>How do you measure the effect of shifting left on defect leakage and escaped defects?</li><li>What is shift-right and how does it complement shift-left?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-47">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-47%3A+What+is+Shift-Left+Testing+and+how+does+introducing+QA+early+in%E2%80%A6&amp;question-id=qa-47&amp;context=QA+%2F+SDET%2C+Gear+2%2C+topic%3A+Strategy%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-47.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

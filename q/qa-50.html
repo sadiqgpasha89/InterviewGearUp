@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you automate testing of file uploads, drag-and-drop, and multipart form submissions? | InterviewGearUp</title>
+<meta name="description" content="Automate uploads by setting the file on the input element directly instead of driving the OS dialog, such as setInputFiles in Playwright or sendKeys with…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-50.html">
+<meta property="og:title" content="How do you automate testing of file uploads, drag-and-drop, and multipart form submissions? | InterviewGearUp">
+<meta property="og:description" content="Automate uploads by setting the file on the input element directly instead of driving the OS dialog, such as setInputFiles in Playwright or sendKeys with…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-50.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you automate testing of file uploads, drag-and-drop, and multipart form submissions?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 2 (Mid-level) · UI Automation · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Automate uploads by setting the file on the input element directly instead of driving the OS dialog, such as setInputFiles in Playwright or sendKeys with a path in Selenium. For drag-and-drop use the framework&#39;s drag APIs or dispatch drag events for custom widgets, and verify multipart requests by asserting on the network call or the server-side result such as stored file, size and checksum.</p></div>
+<h4>Explained in depth</h4>
+<h4>File uploads</h4>
+<p>Native file pickers are operating system dialogs that browser automation cannot control reliably. Instead, set the file path directly on the <code>&lt;input type=&quot;file&quot;&gt;</code> element (even if it is hidden), which triggers the same <code>change</code> event.</p>
+<pre><code>// Playwright
+await page.setInputFiles(&#39;input[type=file]&#39;, &#39;fixtures/invoice.pdf&#39;);                  // single
+await page.setInputFiles(&#39;input[type=file]&#39;, [&#39;fixtures/a.png&#39;, &#39;fixtures/b.png&#39;]);    // multiple
+await page.setInputFiles(&#39;input[type=file]&#39;, { name: &#39;note.txt&#39;, mimeType: &#39;text/plain&#39;, buffer: Buffer.from(&#39;hello&#39;) });   // in-memory
+await page.setInputFiles(&#39;input[type=file]&#39;, []);                                      // clear
+// when the app opens the chooser via a button:
+const [chooser] = await Promise.all([page.waitForEvent(&#39;filechooser&#39;), page.click(&#39;#upload-button&#39;)]);
+await chooser.setFiles(&#39;fixtures/invoice.pdf&#39;);</code></pre>
+<pre><code>// Selenium: send the absolute path to the input (make it visible if hidden via JS)
+driver.findElement(By.cssSelector(&quot;input[type=file]&quot;)).sendKeys(new File(&quot;src/test/resources/invoice.pdf&quot;).getAbsolutePath());</code></pre>
+<pre><code>// Cypress with cypress-file-upload or built-in selectFile
+cy.get(&#39;input[type=file]&#39;).selectFile(&#39;cypress/fixtures/invoice.pdf&#39;, { force: true });</code></pre>
+<p>Remote Selenium grids need <code>setFileDetector(new LocalFileDetector())</code> so the file is transferred to the node.</p>
+<h4>What to verify</h4>
+<ul><li>Success state, filename and size shown, <strong>progress bar</strong> reaching 100 percent, thumbnail previews.</li><li><strong>Validation</strong>: allowed and blocked <strong>types</strong> (extension and MIME sniffing: rename <code>.exe</code> to <code>.jpg</code>), <strong>maximum size</strong> (just below, at, above the limit), empty files, long or unicode filenames, duplicate names, many files, path traversal names (<code>../../x</code>), zero-byte and corrupt files, and server-side virus scanning responses.</li><li><strong>Backend result</strong>: call the API or storage to confirm the file exists with the correct size, content type and checksum (SHA-256 of fixture equals stored object), and metadata and permissions.</li><li><strong>Errors and resilience</strong>: network interruption (route abort or offline mode), server <code>413</code>, <code>415</code>, <code>500</code>, retries and resumable or chunked uploads, cancellation, large files (generate on the fly instead of storing in the repo).</li><li><strong>Multipart assertions</strong>: intercept the request (<code>page.waitForRequest</code>), check method, <code>Content-Type: multipart/form-data; boundary=...</code>, part names, filename, and fields; in API tests send multipart directly (<code>requests.post(files=...)</code>, REST Assured <code>.multiPart(...)</code>).</li></ul>
+<pre><code>const [req] = await Promise.all([page.waitForRequest(r =&gt; r.url().includes(&#39;/upload&#39;) &amp;&amp; r.method() === &#39;POST&#39;),
+                                 page.setInputFiles(&#39;#file&#39;, &#39;fixtures/invoice.pdf&#39;)]);
+expect(req.headers()[&#39;content-type&#39;]).toContain(&#39;multipart/form-data&#39;);</code></pre>
+<h4>Drag and drop</h4>
+<ol start="1"><li><strong>Native HTML5 drag and drop</strong> or file drop zones: Playwright <code>locator.dragTo(target)</code> or <code>page.dragAndDrop(source, target)</code>; to drop <strong>files</strong> on a zone, dispatch a <code>drop</code> event with a <code>DataTransfer</code> built in the page:</li></ol>
+<pre><code>const dt = await page.evaluateHandle(() =&gt; { const d = new DataTransfer(); d.items.add(new File([&#39;x&#39;], &#39;a.txt&#39;, { type: &#39;text/plain&#39; })); return d; });
+await page.dispatchEvent(&#39;#dropzone&#39;, &#39;drop&#39;, { dataTransfer: dt });</code></pre>
+<ol start="2"><li><strong>Libraries using mouse events</strong> (react-beautiful-dnd, SortableJS, dnd-kit): simulate low-level actions with small steps: <code>mouse.move</code>, <code>mouse.down</code>, several <code>mouse.move</code> calls (with <code>steps</code>), <code>mouse.up</code>; Selenium <code>Actions().clickAndHold().moveToElement().release()</code>; add small pauses so animations settle.</li><li>Assert the <strong>resulting order or state</strong> (DOM order, API call, persisted value) rather than animation details; reload to confirm persistence; test keyboard alternatives (accessibility).</li></ol>
+<h4>Practices</h4>
+<p>Keep fixtures small and deterministic; generate large files in temp directories; clean uploaded test objects by tag; avoid tests that depend on external storage latency (use waits for completion indicators); run on all browsers since drag events differ.</p>
+<h4>Pitfalls</h4>
+<p>Trying to automate the OS file dialog, using relative paths that fail on CI, not testing server-side validation (client-side only), flaky drags without intermediate mouse moves, and leaving test files in buckets.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you handle custom drag-and-drop libraries that need low-level mouse events?</li><li>How do you test upload validation like size, type and virus scanning?</li><li>How do you verify multipart form requests and progress indicators?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-50">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-50%3A+How+do+you+automate+testing+of+file+uploads%2C+drag-and-drop%2C+and%E2%80%A6&amp;question-id=qa-50&amp;context=QA+%2F+SDET%2C+Gear+2%2C+topic%3A+UI+Automation%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-50.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

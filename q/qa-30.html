@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you write automated tests to verify API idempotency, network timeouts, and HTTP 429 rate limits? | InterviewGearUp</title>
+<meta name="description" content="Test idempotency by sending the same request with the same Idempotency-Key repeatedly and asserting one side effect and an identical response. Test…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-30.html">
+<meta property="og:title" content="How do you write automated tests to verify API idempotency, network timeouts, and HTTP 429 rate limits? | InterviewGearUp">
+<meta property="og:description" content="Test idempotency by sending the same request with the same Idempotency-Key repeatedly and asserting one side effect and an identical response. Test…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-30.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you write automated tests to verify API idempotency, network timeouts, and HTTP 429 rate limits?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 2 (Mid-level) · API Testing · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Test idempotency by sending the same request with the same Idempotency-Key repeatedly and asserting one side effect and an identical response. Test timeouts by stubbing slow upstreams and checking client timeouts and retries with backoff, and test rate limits by exceeding a quota and asserting 429 with Retry-After, recovery after the window, and that clients back off correctly.</p></div>
+<h4>Explained in depth</h4>
+<h4>1. Idempotency</h4>
+<p>An operation is <strong>idempotent</strong> if repeating it has the same effect as doing it once. <code>GET</code>, <code>PUT</code> and <code>DELETE</code> should be idempotent by definition; <code>POST</code> operations such as payments or order creation use an <strong>idempotency key</strong> header so client retries (after a timeout) never double-charge. Test cases:</p>
+<ol start="1"><li><strong>Same key, same payload, twice</strong> → one resource created; second response equals the first (same status and body, often with header <code>Idempotent-Replayed: true</code>); database has exactly one record and one side effect (one charge, one email).</li><li><strong>Same key, different payload</strong> → rejected (<code>409 Conflict</code> or <code>422</code>) to prevent misuse.</li><li><strong>Different key, same payload</strong> → treated as separate operations (per business rules).</li><li><strong>Concurrent requests with the same key</strong> (race): fire N requests in parallel; assert exactly one executes and others wait or get the stored result, with no duplicates.</li><li><strong>Key expiry</strong> (for example 24 hours) and key scoping per customer or endpoint.</li><li><strong>Failure handling</strong>: if the first attempt failed with 5xx before commit, retry executes; if it succeeded but the response was lost, retry returns the original result.</li></ol>
+<pre><code>def test_idempotent_payment(client, db):
+    key = str(uuid4()); body = {&quot;amount&quot;: 5000, &quot;currency&quot;: &quot;usd&quot;, &quot;source&quot;: &quot;tok_visa&quot;}
+    r1 = client.post(&quot;/payments&quot;, json=body, headers={&quot;Idempotency-Key&quot;: key})
+    r2 = client.post(&quot;/payments&quot;, json=body, headers={&quot;Idempotency-Key&quot;: key})
+    assert r1.status_code == 201 and r2.status_code == 201 and r1.json() == r2.json()
+    assert db.count(&quot;payments&quot;) == 1
+def test_concurrent_same_key(client):
+    with ThreadPoolExecutor(10) as ex:
+        results = list(ex.map(lambda _: client.post(&quot;/payments&quot;, json=body, headers={&quot;Idempotency-Key&quot;: &quot;k1&quot;}), range(10)))
+    assert len({r.json()[&quot;id&quot;] for r in results}) == 1</code></pre>
+<h4>2. Network timeouts</h4>
+<p>Verify both sides: <strong>your service as a client</strong> of slow dependencies, and <strong>clients of your API</strong>.</p>
+<ul><li>Use a stub (WireMock fixed delay, Toxiproxy latency toxic) so the dependency responds slower than the configured timeout; assert the call fails fast with a proper error (<code>504 Gateway Timeout</code>, fallback response), threads and connections are released, and <strong>no partial state</strong> remains.</li><li>Verify distinct <strong>connect timeout</strong> versus <strong>read timeout</strong> values, overall request deadlines, and that <strong>retries</strong> occur only for safe or idempotent operations with <strong>exponential backoff and jitter</strong> and a maximum attempt count.</li><li>To avoid slow tests, make timeouts configurable (small values in test) or use a fake clock.</li><li>Verify that a timed-out client retry with the same idempotency key does not duplicate work.</li></ul>
+<h4>3. Rate limiting and HTTP 429</h4>
+<ul><li>Send requests exceeding the limit (for example 100 per minute) and assert the next returns <strong>429 Too Many Requests</strong> with <code>Retry-After</code> and informative headers (<code>X-RateLimit-Limit</code>, <code>-Remaining</code>, <code>-Reset</code> or the IETF <code>RateLimit</code> headers) and a clear error body.</li><li>Assert <strong>remaining decrements</strong>, resets after the window, and <strong>access recovers</strong> after waiting (use short windows in test configs or a controllable clock).</li><li>Check the <strong>scope</strong>: per API key, per user, per IP, per endpoint, global; one tenant&#39;s burst must not block others; authenticated versus anonymous limits; burst (token bucket) versus sustained behaviour.</li><li>Verify your <strong>client</strong> honours <code>Retry-After</code>, applies backoff with jitter, and does not retry in a tight loop; circuit breakers open after repeated failures.</li><li>Do rate-limit tests in an isolated environment so they do not throttle other tests; use dedicated API keys.</li></ul>
+<pre><code>test(&#39;returns 429 after limit&#39;, async () =&gt; {
+  const results = await Promise.all(Array.from({ length: 120 }, () =&gt; api.get(&#39;/search?q=a&#39;)));
+  const limited = results.filter(r =&gt; r.status === 429);
+  expect(limited.length).toBeGreaterThan(0);
+  expect(Number(limited[0].headers[&#39;retry-after&#39;])).toBeGreaterThan(0);
+});</code></pre>
+<h4>Pitfalls</h4>
+<p>Sleeping real minutes for windows, asserting only status codes without checking side effects count, ignoring concurrency races, shared rate-limit state across parallel tests, and retrying non-idempotent calls without keys.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you test concurrent duplicate requests with the same key racing each other?</li><li>How do you verify retry policy, jitter and maximum attempts without long waits?</li><li>How do you test per-user versus global rate limits and headers?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-30">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-30%3A+How+do+you+write+automated+tests+to+verify+API+idempotency%2C+network%E2%80%A6&amp;question-id=qa-30&amp;context=QA+%2F+SDET%2C+Gear+2%2C+topic%3A+API+Testing%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-30.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

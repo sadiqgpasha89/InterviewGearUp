@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do QA engineers integrate automated basic security tests (SQLi, XSS, auth bypass) into CI suites? | InterviewGearUp</title>
+<meta name="description" content="Add automated security checks to the pipeline at several layers: static analysis and dependency scanning on commit, targeted API and UI tests for SQL…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-45.html">
+<meta property="og:title" content="How do QA engineers integrate automated basic security tests (SQLi, XSS, auth bypass) into CI suites? | InterviewGearUp">
+<meta property="og:description" content="Add automated security checks to the pipeline at several layers: static analysis and dependency scanning on commit, targeted API and UI tests for SQL…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-45.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do QA engineers integrate automated basic security tests (SQLi, XSS, auth bypass) into CI suites?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 2 (Mid-level) · Security · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Add automated security checks to the pipeline at several layers: static analysis and dependency scanning on commit, targeted API and UI tests for SQL injection, XSS and authentication or authorisation bypass using payload lists, and a DAST scan such as OWASP ZAP against a staging build. Fail the build on high-severity findings and keep a triaged baseline.</p></div>
+<h4>Explained in depth</h4>
+<h4>QA&#39;s role</h4>
+<p>Security is shared work, but QA engineers can build a <strong>safety net of repeatable, automated checks</strong> for the most common web vulnerabilities (OWASP Top 10) and run them on every build, complementing penetration tests and security reviews.</p>
+<h4>Layered pipeline</h4>
+<div class="md-table"><table><thead><tr><th>Stage</th><th>Tool types</th><th>Catches</th></tr></thead><tbody><tr><td>Commit and PR</td><td><strong>SAST</strong> (Semgrep, CodeQL, SonarQube), secret scanning (gitleaks), IaC scan (tfsec, Checkov)</td><td>injection patterns, hardcoded secrets, insecure configs</td></tr><tr><td>Build</td><td><strong>SCA</strong> (Dependabot, Snyk, OWASP Dependency-Check, Trivy)</td><td>vulnerable libraries and container images</td></tr><tr><td>Deploy to test</td><td><strong>Functional security tests</strong> (your suite), <strong>DAST</strong> (OWASP ZAP baseline)</td><td>runtime injection, XSS, missing headers, auth issues</td></tr><tr><td>Nightly</td><td>ZAP full scan, fuzzing (Schemathesis, ffuf), authenticated crawling</td><td>deeper findings</td></tr></tbody></table></div>
+<h4>Targeted automated tests</h4>
+<ol start="1"><li><strong>SQL injection</strong>: send payloads to every input (query, path, body, headers) and assert that the app returns a safe error or the same result as a benign value, no SQL errors in responses, no extra rows, no timing differences.</li></ol>
+<pre><code>SQLI = [&quot;&#39; OR &#39;1&#39;=&#39;1&quot;, &quot;1; DROP TABLE users;--&quot;, &quot;&#39; UNION SELECT null,version()--&quot;, &quot;1&#39; AND SLEEP(5)--&quot;]
+@pytest.mark.parametrize(&quot;payload&quot;, SQLI)
+def test_search_not_injectable(api, payload):
+    r = api.get(&quot;/products&quot;, params={&quot;q&quot;: payload})
+    assert r.status_code in (200, 400)
+    assert &quot;SQL&quot; not in r.text and &quot;syntax&quot; not in r.text.lower()
+    assert len(r.json().get(&quot;items&quot;, [])) == 0</code></pre>
+<ol start="2"><li><strong>XSS</strong>: submit <code>&lt;script&gt;alert(1)&lt;/script&gt;</code>, <code>&quot;&gt;&lt;img src=x onerror=alert(1)&gt;</code>, <code>javascript:</code> URLs into stored and reflected inputs; in a browser test (Playwright) assert that no dialog fires and output is HTML-encoded; check <strong>Content-Security-Policy</strong>, <code>X-Content-Type-Options</code>, <code>Referrer-Policy</code>, and cookie flags.</li></ol>
+<pre><code>page.on(&#39;dialog&#39;, d =&gt; { throw new Error(&#39;XSS executed: &#39; + d.message()); });
+await page.fill(&#39;#comment&#39;, &#39;&quot;&gt;&lt;img src=x onerror=alert(1)&gt;&#39;); await page.click(&#39;#submit&#39;); await page.reload();</code></pre>
+<ol start="3"><li><strong>Authentication and session</strong>: access protected endpoints without a token, with an expired token, as another user (IDOR/BOLA), with a forged JWT; test brute-force lockout, password reset token reuse, session fixation, logout invalidation, cookie <code>HttpOnly/Secure/SameSite</code>, <strong>CSRF</strong> protection on state-changing requests.</li><li><strong>Authorisation bypass</strong>: role-based access tests matrix (user, admin, anonymous) for each endpoint, forced browsing of admin URLs, parameter tampering (<code>role=admin</code>, <code>userId=2</code>), mass assignment.</li><li><strong>Other checks</strong>: open redirects, SSRF parameters, file upload restrictions (type, size, path traversal), security headers, TLS settings, verbose errors and stack traces, CORS misconfiguration, rate limiting on login.</li></ol>
+<h4>DAST in CI with OWASP ZAP</h4>
+<pre><code>- name: ZAP baseline scan
+  uses: zaproxy/action-baseline@v0.12.0
+  with: { target: &#39;https://staging.example.com&#39;, rules_file_name: &#39;.zap/rules.tsv&#39;, fail_action: true }</code></pre>
+<p>Baseline scan is passive (fast, safe); full or API scans (OpenAPI import) are active and run against disposable test environments only, with authentication configured (scripts or context). Treat findings with a <strong>triage file</strong> marking accepted false positives.</p>
+<h4>Operating practices</h4>
+<ul><li><strong>Authorisation</strong>: only test systems you own or are permitted to test; use test data and non-production environments.</li><li><strong>Fail criteria</strong>: block on high and critical new findings; track medium in a backlog.</li><li>Convert each fixed vulnerability into a <strong>regression test</strong>.</li><li>Educate developers via secure coding checklists, abuse-case stories in refinement, threat modelling for new features.</li><li>Keep tools and payload lists updated; measure time-to-fix and recurring classes.</li></ul>
+<h4>Pitfalls</h4>
+<p>Running intrusive scans on production, ignoring authenticated areas, noisy results nobody triages, assuming scanners find logic flaws (they do not), and skipping manual review for critical flows.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you write a regression test that proves an injection or XSS fix stays fixed?</li><li>Where do SAST, SCA, DAST and IAST fit in the pipeline and what does each catch?</li><li>How do you reduce false positives so developers trust the results?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-45">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-45%3A+How+do+QA+engineers+integrate+automated+basic+security+tests+%28SQLi%2C%E2%80%A6&amp;question-id=qa-45&amp;context=QA+%2F+SDET%2C+Gear+2%2C+topic%3A+Security%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-45.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

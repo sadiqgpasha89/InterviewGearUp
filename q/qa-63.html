@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you build an automated flaky test detector that quarantines unstable tests automatically? | InterviewGearUp</title>
+<meta name="description" content="A flaky test detector ingests every CI result, flags tests that give different outcomes on the same commit or pass after retry, scores them by flake rate…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-63.html">
+<meta property="og:title" content="How do you build an automated flaky test detector that quarantines unstable tests automatically? | InterviewGearUp">
+<meta property="og:description" content="A flaky test detector ingests every CI result, flags tests that give different outcomes on the same commit or pass after retry, scores them by flake rate…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-63.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you build an automated flaky test detector that quarantines unstable tests automatically?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 3 (Senior) · Reliability · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A flaky test detector ingests every CI result, flags tests that give different outcomes on the same commit or pass after retry, scores them by flake rate over a window, and then quarantines them by tagging or skipping them in the blocking run while still executing them. It opens a ticket with an owner and deadline, and releases the test after a streak of passes.</p></div>
+<h4>Explained in depth</h4>
+<h4>Definition and detection signals</h4>
+<p>A test is <strong>flaky</strong> when it produces different results for the same code and environment. Signals:</p>
+<ol start="1"><li><strong>Pass after retry</strong>: a failure followed by success on an automatic rerun of the same commit.</li><li><strong>Mixed results on the same commit</strong> across jobs or reruns.</li><li><strong>Failure on a commit that did not touch related code</strong> and later passes on rerun.</li><li><strong>Historical failure rate</strong> over a sliding window (for example failed in 3 of last 50 runs on main with no code change in the area).</li><li><strong>Dedicated stress runs</strong>: run new or suspicious tests 20 to 100 times, in parallel, in random order, with CPU throttling to expose timing and ordering problems.</li></ol>
+<p>A real regression fails <strong>consistently</strong> from a commit onward; flakiness fails <strong>intermittently</strong>. Use bisecting on main: if the test fails at commit N and passes at N again, it is flaky.</p>
+<h4>Architecture</h4>
+<ol start="1"><li><strong>Collect</strong>: parse JUnit XML or reporter JSON from every CI run (branch, commit, test ID, duration, status, retry count, runner, browser, shard, error message and stack).</li><li><strong>Store</strong>: a database or warehouse (Postgres, BigQuery) keyed by test ID with run history.</li><li><strong>Score</strong>: compute <code>flake_rate = flaky_outcomes / runs</code> over 14 to 30 days, plus a Bayesian or confidence rule to avoid labelling tests with little data. Cluster by <strong>failure signature</strong> (normalised error text) to find shared causes.</li><li><strong>Classify</strong>: flaky, consistently failing (broken), or slow.</li><li><strong>Act</strong> automatically.</li><li><strong>Report</strong> dashboards: top flaky tests, flake rate per suite, time lost to reruns, trend over time.</li></ol>
+<pre><code># simplified scoring job
+rows = db.query(&quot;&quot;&quot;
+  SELECT test_id,
+         COUNT(*) AS runs,
+         SUM(CASE WHEN status=&#39;failed&#39; THEN 1 ELSE 0 END) AS fails,
+         SUM(CASE WHEN status=&#39;passed&#39; AND retries&gt;0 THEN 1 ELSE 0 END) AS passed_on_retry
+  FROM test_results WHERE branch=&#39;main&#39; AND ts &gt; now() - interval &#39;14 days&#39; GROUP BY test_id&quot;&quot;&quot;)
+for r in rows:
+    flake = (r.fails + r.passed_on_retry) / r.runs
+    if r.runs &gt;= 20 and 0.02 &lt;= flake &lt; 0.9: quarantine(r.test_id, reason=f&quot;flake rate {flake:.1%}&quot;)</code></pre>
+<h4>Quarantine mechanics</h4>
+<ul><li>Keep a <strong>quarantine list</strong> in the repository (reviewed, versioned) or a service queried at runtime; the test runner applies a tag or skip (<code>@quarantine</code>, <code>test.fixme</code>, <code>@pytest.mark.quarantine</code>, JUnit <code>@Tag</code>).</li><li><strong>Still run quarantined tests</strong> in a non-blocking job so the data continues to flow; do not fail the build on them.</li><li>Auto-create a ticket with owner (code owners or last editor), failure examples and links; notify the team channel.</li><li><strong>SLA</strong>: fix or delete within a fixed time (for example 14 days). Escalate when overdue; limit quarantine size (a budget, such as below 2 percent of tests).</li><li><strong>Auto-release</strong>: after N consecutive passes (for example 50 runs) and a fix commit, remove from quarantine.</li><li>Tools: Datadog CI Visibility, BuildKite Test Analytics, Launchable, Trunk Flaky Tests, GitHub reruns plus custom scripts, Jenkins Flaky Test Handler.</li></ul>
+<h4>Smart retries</h4>
+<p>Retries (<code>--retries=1</code>) improve pipeline stability but <strong>hide</strong> flakiness; always record that a retry occurred, count it as a flake signal, and cap retries. Never retry whole pipelines silently.</p>
+<h4>Common root causes</h4>
+<p>Race conditions and async waits (sleep instead of waiting for state), shared mutable state or test order dependence, unclean data and parallel tests colliding, time and time zone dependence, randomness without seeds, external services and network, resource limits on CI (CPU starvation), animations and rendering timing, non-deterministic selectors, leaking processes, unstable environments. Diagnose with video and trace artefacts, running in isolation versus the whole suite, ordering randomisation (<code>pytest-randomly</code>), and resource constraints.</p>
+<h4>Pitfalls</h4>
+<p>Quarantining without ownership, letting the list grow forever, deleting failure signal by retrying silently, treating infrastructure outages as test flakiness (separate infra failures by detecting many unrelated tests failing together), and blaming tests when the product has a real race condition.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you distinguish a flaky test from a real regression automatically?</li><li>What policies stop quarantine from becoming a graveyard of ignored tests?</li><li>What are the most common root causes of flakiness and how do you diagnose them?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-63">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-63%3A+How+do+you+build+an+automated+flaky+test+detector+that+quarantines%E2%80%A6&amp;question-id=qa-63&amp;context=QA+%2F+SDET%2C+Gear+3%2C+topic%3A+Reliability%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-63.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

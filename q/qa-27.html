@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you validate JSON Schemas (Draft-07, Draft-2020-12) automatically within API regression suites? | InterviewGearUp</title>
+<meta name="description" content="Validate responses against a JSON Schema in every API test using a validator library such as Ajv, jsonschema or the RestAssured JSON schema matcher. Keep…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-27.html">
+<meta property="og:title" content="How do you validate JSON Schemas (Draft-07, Draft-2020-12) automatically within API regression suites? | InterviewGearUp">
+<meta property="og:description" content="Validate responses against a JSON Schema in every API test using a validator library such as Ajv, jsonschema or the RestAssured JSON schema matcher. Keep…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-27.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you validate JSON Schemas (Draft-07, Draft-2020-12) automatically within API regression suites?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 2 (Mid-level) · API Testing · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Validate responses against a JSON Schema in every API test using a validator library such as Ajv, jsonschema or the RestAssured JSON schema matcher. Keep schemas versioned next to the contract, choose the matching draft, mark required fields and disallow unexpected properties, and run the checks in CI so contract changes fail fast, ideally generated from the OpenAPI specification.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why schema validation</h4>
+<p>Asserting a few fields misses missing properties, wrong types, null values or extra fields that break clients. A JSON Schema describes the <strong>shape and constraints</strong> of the payload (types, required properties, formats, ranges, enums, patterns, array limits), so one assertion verifies the whole contract, and the test suite doubles as contract documentation.</p>
+<h4>Example schema (Draft-07)</h4>
+<pre><code>{
+  &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;,
+  &quot;$id&quot;: &quot;https://api.example.com/schemas/user.json&quot;,
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;required&quot;: [&quot;id&quot;, &quot;email&quot;, &quot;status&quot;, &quot;createdAt&quot;],
+  &quot;properties&quot;: {
+    &quot;id&quot;: { &quot;type&quot;: &quot;string&quot;, &quot;format&quot;: &quot;uuid&quot; },
+    &quot;email&quot;: { &quot;type&quot;: &quot;string&quot;, &quot;format&quot;: &quot;email&quot; },
+    &quot;status&quot;: { &quot;enum&quot;: [&quot;active&quot;, &quot;suspended&quot;, &quot;closed&quot;] },
+    &quot;age&quot;: { &quot;type&quot;: [&quot;integer&quot;, &quot;null&quot;], &quot;minimum&quot;: 0, &quot;maximum&quot;: 130 },
+    &quot;roles&quot;: { &quot;type&quot;: &quot;array&quot;, &quot;items&quot;: { &quot;type&quot;: &quot;string&quot; }, &quot;uniqueItems&quot;: true, &quot;minItems&quot;: 1 },
+    &quot;createdAt&quot;: { &quot;type&quot;: &quot;string&quot;, &quot;format&quot;: &quot;date-time&quot; }
+  },
+  &quot;additionalProperties&quot;: false
+}</code></pre>
+<h4>Draft differences to know</h4>
+<ul><li><strong>Draft-07</strong> (2018): <code>definitions</code>, <code>$ref</code> with siblings ignored, <code>items</code> as a schema or array, <code>if/then/else</code>, <code>readOnly</code>.</li><li><strong>2019-09 and 2020-12</strong>: <code>$defs</code> replaces <code>definitions</code>; <code>$ref</code> can have sibling keywords; <code>prefixItems</code> replaces tuple-style <code>items</code> array (and <code>items</code> then applies to the remaining elements); <code>unevaluatedProperties</code> and <code>unevaluatedItems</code> give precise strictness with composition (<code>allOf</code>); <code>$dynamicRef</code>; vocabularies and <code>$schema</code> identifiers <code>https://json-schema.org/draft/2020-12/schema</code>.</li></ul>
+<p>Pick the validator and draft your API uses; OpenAPI 3.0 uses an <strong>extended subset of Draft-05 style</strong> (with <code>nullable</code>), while <strong>OpenAPI 3.1 aligns with JSON Schema 2020-12</strong>.</p>
+<h4>Automating validation</h4>
+<pre><code>// JavaScript with Ajv (supports draft-07; use Ajv2020 for 2020-12)
+import Ajv2020 from &#39;ajv/dist/2020&#39;; import addFormats from &#39;ajv-formats&#39;;
+const ajv = new Ajv2020({ allErrors: true, strict: true }); addFormats(ajv);
+const validate = ajv.compile(require(&#39;./schemas/user.json&#39;));
+test(&#39;GET /users/{id} matches schema&#39;, async () =&gt; {
+  const res = await request.get(`/users/${id}`);
+  expect(res.status).toBe(200);
+  expect(validate(res.body)).toBe(true) || console.error(validate.errors);   // better: throw readable errors
+});</code></pre>
+<pre><code># Python
+from jsonschema import Draft202012Validator, FormatChecker
+Draft202012Validator(schema, format_checker=FormatChecker()).validate(response.json())</code></pre>
+<pre><code>// RestAssured
+given().get(&quot;/users/42&quot;).then().statusCode(200).body(matchesJsonSchemaInClasspath(&quot;schemas/user.json&quot;));</code></pre>
+<p>Use <code>allErrors</code> and print the path and message of every violation (<code>/roles/0 must be string</code>) to speed up diagnosis.</p>
+<h4>Good practices</h4>
+<ol start="1"><li><strong>Single source of truth</strong>: generate schemas from the <strong>OpenAPI specification</strong> (or validate responses against the spec with tools like Schemathesis, Dredd, openapi-response-validator, Prism proxy, Spectral for linting) so tests and docs do not drift.</li><li><strong>Strictness policy</strong>: <code>additionalProperties: false</code> catches accidental leaks (for example password hash) and unannounced fields, but makes additive, backward-compatible changes break tests; for consumers, validate <strong>only what you use</strong> (consumer-driven contracts with Pact) while provider tests use strict schemas.</li><li>Validate <strong>error responses</strong> too (<code>400</code>, <code>404</code>, <code>422</code>, <code>500</code> with problem+json shape) and <strong>request bodies</strong> before sending.</li><li>Reuse schema fragments with <code>$ref</code> for shared types (Money, Address, Pagination envelope); include negative tests where invalid payloads must be rejected.</li><li>Combine with <strong>semantic assertions</strong>: schema proves types and shape; add checks for business invariants (total equals sum of lines, status transitions).</li><li>Run on <strong>every environment</strong> in CI, store schemas in version control, and review schema changes as API changes (breaking change detection with <code>oasdiff</code>).</li><li>Handle <code>format</code> validation consciously (formats are annotations unless enabled).</li></ol>
+<h4>Pitfalls</h4>
+<p>Using the wrong draft keywords silently ignored, schemas written by hand that drift from reality, ignoring <code>null</code> versus missing, over-strict tests that fail on harmless additions, and not testing error shapes.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What are the key differences between Draft-07 and 2020-12 that affect validators?</li><li>How do you validate against OpenAPI schemas and avoid schema drift?</li><li>When should schema validation be strict versus tolerant of additional properties?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-27">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-27%3A+How+do+you+validate+JSON+Schemas+%28Draft-07%2C+Draft-2020-12%29%E2%80%A6&amp;question-id=qa-27&amp;context=QA+%2F+SDET%2C+Gear+2%2C+topic%3A+API+Testing%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-27.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

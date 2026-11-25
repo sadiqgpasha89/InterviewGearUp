@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are the common pitfalls of BDD adoption, and when does Cucumber add unnecessary maintenance overhead? | InterviewGearUp</title>
+<meta name="description" content="Common BDD pitfalls are treating Gherkin as test scripting by QA alone, imperative UI-level scenarios, a bloated and duplicated step library, slow…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-89.html">
+<meta property="og:title" content="What are the common pitfalls of BDD adoption, and when does Cucumber add unnecessary maintenance overhead? | InterviewGearUp">
+<meta property="og:description" content="Common BDD pitfalls are treating Gherkin as test scripting by QA alone, imperative UI-level scenarios, a bloated and duplicated step library, slow…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-89.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are the common pitfalls of BDD adoption, and when does Cucumber add unnecessary maintenance overhead?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 2 (Mid-level) · BDD · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Common BDD pitfalls are treating Gherkin as test scripting by QA alone, imperative UI-level scenarios, a bloated and duplicated step library, slow end-to-end execution, and feature files nobody reads. Cucumber adds overhead when no business stakeholder collaborates on the examples, so plain code-based tests are simpler there.</p></div>
+<h4>Explained in depth</h4>
+<h4>The cost model</h4>
+<p>Cucumber adds a <strong>translation layer</strong> between plain English and code: feature files, step definitions with regex or expressions, a shared world and hooks. That cost pays off only if the English is read, written and reviewed by non-programmers. If only engineers touch the files, you pay maintenance for indirection but receive little communication value.</p>
+<h4>Common pitfalls</h4>
+<ol start="1"><li><strong>Gherkin as a scripting language</strong>: scenarios say &quot;click the button with id X, type Y in field Z&quot;. They are brittle, long (20 plus steps), unreadable to business people, and break on every UI change. Fix: declarative language about intent and rules.</li></ol>
+<pre><code># Imperative (avoid)
+Given I open &quot;https://shop.test/login&quot;
+When I type &quot;ada@example.com&quot; into &quot;#email&quot;
+And I type &quot;secret&quot; into &quot;#password&quot;
+And I click &quot;#submit&quot;
+...
+# Declarative (prefer)
+Given Ada is a registered customer
+When she checks out with a valid discount code
+Then the order total reflects the discount</code></pre>
+<ol start="2"><li><strong>No collaboration</strong>: QA writes scenarios after development; product owners never read them. The main benefit (shared understanding and early questions) disappears and they become slow, expensive regression tests.</li><li><strong>Step definition sprawl</strong>: hundreds of near-duplicate steps (&quot;I click X&quot;, &quot;I press X&quot;), steps with regex complexity, steps calling other steps, global state in the world, hidden coupling between scenarios, and parameter-heavy generic steps that recreate a programming language in text.</li><li><strong>Testing through the UI by default</strong>: every scenario drives a browser, so the suite is slow and flaky. BDD says nothing about the UI; automate rules at the service or API layer.</li><li><strong>Scenario explosion</strong>: too many Scenario Outline rows testing combinatorics better handled by unit tests; scenarios as exhaustive test cases instead of key examples.</li><li><strong>Coupling to implementation</strong>: scenarios reference database tables, element IDs, or technical states.</li><li><strong>Poor data management</strong>: scenarios depend on pre-existing data, shared state, or ordering.</li><li><strong>Stale documentation</strong>: features not updated when behaviour changes; passing tests that no longer reflect requirements. Or the opposite: failing scenarios ignored.</li><li><strong>Cargo-cult adoption</strong>: mandating Gherkin everywhere, including technical or non-functional tests (performance, API contract tests, data pipelines) where it adds nothing.</li><li><strong>Misplaced responsibilities</strong>: assertions and logic in step definitions rather than in a reusable automation layer.</li></ol>
+<h4>When Cucumber is unnecessary</h4>
+<ul><li>Team is engineers only, with product intent captured elsewhere, and developers can read tests written in code.</li><li>Mostly low-level or technical testing (libraries, infrastructure, performance, security scans).</li><li>Rapid-changing UI with a small test team and no stakeholder participation.</li><li>When descriptive test names and a fluent test API already give readable tests (for example Playwright tests with good helper functions, or <code>describe/it</code> style in JUnit and pytest).</li></ul>
+<p>Alternatives: plain framework tests with domain-specific helper methods, <strong>example tables in code</strong>, approval tests, and lightweight spec documents.</p>
+<h4>When it earns its keep</h4>
+<p>Complex business rules (insurance, finance, pricing, compliance) where domain experts must validate behaviour, regulated environments needing traceable acceptance criteria, multiple teams needing a shared language, and long-lived products whose rules must stay documented.</p>
+<h4>Making BDD sustainable</h4>
+<ul><li>Hold <strong>three amigos</strong> sessions before development and write examples together; only automate a subset as executable specifications.</li><li>Create <strong>domain-specific automation layers</strong> (drivers, screenplay or page objects) with step definitions as thin glue.</li><li>Keep a <strong>glossary</strong> and style guide; lint feature files (gherkin-lint); limit steps per scenario and prune duplicates regularly.</li><li>Measure: scenario runtime, flake rate, number of unique steps, percentage of scenarios read in reviews, defects found by examples before coding.</li><li>Refactor: replace UI-heavy steps with API setup, extract common context into Background or fixtures, merge near-duplicates, and delete scenarios that duplicate unit tests.</li></ul>
+<h4>Pitfalls</h4>
+<p>Adopting the tool without the practice, believing BDD is a testing tool only, and assuming more Gherkin means more quality.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you refactor imperative Gherkin into declarative scenarios without losing coverage?</li><li>What signals tell you that Cucumber has become an unnecessary translation layer?</li><li>How do you keep step definitions maintainable as the feature suite grows?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-89">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-89%3A+What+are+the+common+pitfalls+of+BDD+adoption%2C+and+when+does+Cucumber%E2%80%A6&amp;question-id=qa-89&amp;context=QA+%2F+SDET%2C+Gear+2%2C+topic%3A+BDD%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-89.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

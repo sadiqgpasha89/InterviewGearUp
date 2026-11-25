@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you test service degradation under simulated low disk space and memory pressure? | InterviewGearUp</title>
+<meta name="description" content="Reproduce resource exhaustion deliberately in a controlled environment: fill disks or quotas, limit container memory and CPU cgroups, or use stress…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-98.html">
+<meta property="og:title" content="How do you test service degradation under simulated low disk space and memory pressure? | InterviewGearUp">
+<meta property="og:description" content="Reproduce resource exhaustion deliberately in a controlled environment: fill disks or quotas, limit container memory and CPU cgroups, or use stress…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-98.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you test service degradation under simulated low disk space and memory pressure?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 3 (Senior) · Resilience · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Reproduce resource exhaustion deliberately in a controlled environment: fill disks or quotas, limit container memory and CPU cgroups, or use stress tools, then assert graceful degradation. The service should return clear errors, avoid corrupting data, keep health signals accurate, shed load, log and alert, and recover automatically when resources are freed.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why test it</h4>
+<p>Resource exhaustion is a common cause of outages: full disks stop databases and logs, memory leaks trigger OOM kills, and nobody tested the failure mode. A healthy design <strong>degrades gracefully</strong>: it protects data, rejects or sheds work with clear errors, keeps critical paths alive, signals the problem early, and recovers without manual cleanup.</p>
+<h4>Creating the conditions safely</h4>
+<p>Run in isolated environments (containers, VMs, dedicated namespaces), never on shared hosts.</p>
+<ul><li><strong>Low disk</strong>: mount a small volume (<code>tmpfs</code> with <code>size=50m</code>, a loopback file system, Docker volume with quota, Kubernetes <code>emptyDir.sizeLimit</code>, ephemeral-storage limits), or fill it with <code>fallocate -l 900M filler.bin</code> (instant) or <code>dd</code>; keep reserve space for the OS. Also exhaust <strong>inodes</strong> (many small files) and test log directory growth.</li></ul>
+<pre><code>docker run -d --name svc --mount type=tmpfs,destination=/data,tmpfs-size=64m myapp
+docker exec svc fallocate -l 60M /data/filler        # leave a few MB to simulate &quot;almost full&quot;
+docker exec svc fallocate -l 70M /data/filler2       # then cross the line (fails: no space left on device)</code></pre>
+<ul><li><strong>Memory pressure</strong>: container limits (<code>docker run -m 256m --memory-swap 256m</code>, Kubernetes <code>resources.limits.memory</code>), <code>stress-ng --vm 2 --vm-bytes 80% --timeout 60s</code>, <code>cgroup</code> limits, JVM heap flags (<code>-Xmx</code>), and allocation-heavy requests (large payloads, big result sets). Observe OOM-kill events (<code>dmesg</code>, <code>kubectl describe pod</code> shows <code>OOMKilled</code>).</li><li><strong>CPU saturation</strong>: <code>stress-ng --cpu</code>, CPU quotas (<code>--cpus=0.5</code>).</li><li><strong>File descriptors, threads and connections</strong>: lower <code>ulimit -n</code>, small connection pools.</li><li>Tools: <strong>Chaos Mesh</strong> (StressChaos, IOChaos for disk faults and latency), <strong>LitmusChaos</strong>, <strong>Gremlin</strong>, <code>stress-ng</code>, <code>fio</code>, <code>libfiu</code>/<code>failpoints</code> for fault injection in code, <code>LD_PRELOAD</code> to return <code>ENOSPC</code>.</li></ul>
+<h4>Behaviours to assert</h4>
+<p><strong>Low disk</strong></p>
+<ul><li>Writes fail with a controlled error (<code>507 Insufficient Storage</code>, <code>503</code> with message), not a crash or hang; uploads and temp files are cleaned up; partially written files are not left as valid data (write to temp then atomic rename).</li><li><strong>Databases</strong>: transaction failure and rollback, WAL handling, read queries keep working, no corruption; after space is freed, normal service resumes (verify with consistency checks such as <code>PRAGMA integrity_check</code>, <code>pg_checksums</code>, or application-level reconciliation).</li><li><strong>Logging</strong>: log rotation and retention; the service does not block on a full log disk; critical logs keep working or drop gracefully; log volume protection.</li><li>Queues, caches and local buffers apply limits and backpressure; disk-based caches evict rather than fill.</li><li><strong>Monitoring</strong>: disk usage alerts fire at thresholds (80, 90 percent) <strong>before</strong> the failure; health endpoint reflects degraded state without flapping.</li></ul>
+<p><strong>Memory pressure</strong></p>
+<ul><li>Under load near the limit: bounded caches evict, request size limits reject oversized payloads with <code>413</code>, backpressure on queues and streaming, GC behaviour stays within SLO, no unbounded buffering.</li><li><strong>OOM kill</strong>: the process restarts (orchestrator policy), graceful shutdown hooks run when possible, in-flight work is retried safely (idempotency), no data loss for acknowledged writes, startup time and crash loop backoff are reasonable, other tenants or services are unaffected (noisy neighbour isolation with requests and limits and priority classes).</li><li>Memory leak detection in soak tests: heap growth trend (take heap dumps, <code>pprof</code>, <code>jcmd</code>, tracemalloc) and alerts on RSS growth.</li></ul>
+<p><strong>General</strong></p>
+<ul><li>Load shedding and circuit breakers keep critical endpoints healthy; error messages are meaningful to clients and logged with context; autoscaling or eviction behaves as designed; readiness probes remove the instance from rotation while recovering; <strong>no cascading failures</strong> (retries amplifying load).</li><li><strong>Recovery</strong>: free resources, verify automatic return to normal without restart where designed, and no stuck locks or poisoned queues.</li></ul>
+<h4>Verification approach</h4>
+<p>Combine functional probes (continuous synthetic requests during the fault), metrics queries (error rates, latency, queue depth), log assertions, and <strong>post-fault integrity checks</strong> (record counts, checksums, referential integrity, replay of the write-ahead log, backup restore test). Use a steady-state hypothesis, small blast radius and abort conditions as in chaos engineering.</p>
+<h4>Pitfalls</h4>
+<p>Filling the host disk and taking down the CI runner, testing only the application and not the database or log paths, assuming Kubernetes restarts mean recovery without checking data integrity, ignoring inode exhaustion, and no alert before the limit.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you fill a disk or limit memory in a containerised test without harming the host?</li><li>What signals should a service emit before and during resource exhaustion?</li><li>How do you verify there is no data corruption after an out-of-space or OOM-kill event?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-98">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-98%3A+How+do+you+test+service+degradation+under+simulated+low+disk+space%E2%80%A6&amp;question-id=qa-98&amp;context=QA+%2F+SDET%2C+Gear+3%2C+topic%3A+Resilience%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-98.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you integrate OWASP ZAP into automated CI/CD security regression test suites? | InterviewGearUp</title>
+<meta name="description" content="Run ZAP in CI as a Docker container against an ephemeral or staging deployment, starting with a baseline passive scan on every pull request and an…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-93.html">
+<meta property="og:title" content="How do you integrate OWASP ZAP into automated CI/CD security regression test suites? | InterviewGearUp">
+<meta property="og:description" content="Run ZAP in CI as a Docker container against an ephemeral or staging deployment, starting with a baseline passive scan on every pull request and an…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-93.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you integrate OWASP ZAP into automated CI/CD security regression test suites?</h1>
+<p class="muted small-text meta-line">QA / SDET · Gear 3 (Senior) · Security · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Run ZAP in CI as a Docker container against an ephemeral or staging deployment, starting with a baseline passive scan on every pull request and an authenticated active scan nightly. Drive it through the Automation Framework YAML with context, authentication, OpenAPI import and alert rules, then fail the pipeline on new findings above a threshold and publish SARIF or HTML reports.</p></div>
+<h4>Explained in depth</h4>
+<h4>Where ZAP fits</h4>
+<p><strong>OWASP ZAP</strong> is a dynamic application security testing (DAST) tool: it attacks a running application like a black-box tester. It complements SAST (source analysis), SCA (dependencies) and secrets scanning. Value in CI: catches missing security headers, XSS, SQL injection patterns, insecure cookies, information disclosure, misconfigurations and some access-control issues as regressions.</p>
+<h4>Scan types</h4>
+<ul><li><strong>Baseline (passive) scan</strong>: spiders a bit and analyses traffic without attacking (no payloads). Fast (1 to 5 minutes), safe for any environment. Run on every PR or deploy to preview.</li><li><strong>Full / active scan</strong>: sends attack payloads (injection, fuzzing); slow (tens of minutes to hours) and can create data or load, so run <strong>only against disposable or staging environments</strong> with test data, on a schedule or before release.</li><li><strong>API scan</strong>: imports OpenAPI, GraphQL or SOAP definitions to explore and attack endpoints.</li></ul>
+<h4>Quick start in CI (GitHub Actions)</h4>
+<pre><code>jobs:
+  zap-baseline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose up -d --wait                         # start app under test
+      - name: ZAP baseline
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          target: &#39;http://localhost:8080&#39;
+          rules_file_name: &#39;.zap/rules.tsv&#39;                      # tune: IGNORE / WARN / FAIL per rule id
+          cmd_options: &#39;-a -j&#39;                                    # include alpha rules, AJAX spider
+          fail_action: true
+  zap-api:
+    steps:
+      - run: docker run --network host -v $PWD:/zap/wrk ghcr.io/zaproxy/zaproxy:stable zap-api-scan.py -t http://localhost:8080/openapi.json -f openapi -r api-report.html -c .zap/api-rules.conf</code></pre>
+<h4>Automation Framework (recommended for repeatable control)</h4>
+<pre><code># zap-plan.yaml
+env:
+  contexts:
+    - name: app
+      urls: [&quot;https://staging.example.com&quot;]
+      includePaths: [&quot;https://staging.example.com/.*&quot;]
+      excludePaths: [&quot;.*logout.*&quot;]
+      authentication:
+        method: browser                  # or form/json/script
+        parameters: { loginPageUrl: &quot;https://staging.example.com/login&quot;, browserId: firefox-headless }
+        verification: { method: response, loggedInRegex: &quot;\\QLogout\\E&quot; }
+      users: [ { name: scanner, credentials: { username: &quot;${ZAP_USER}&quot;, password: &quot;${ZAP_PASS}&quot; } } ]
+jobs:
+  - type: openapi
+    parameters: { apiUrl: &quot;https://staging.example.com/openapi.json&quot; }
+  - type: spiderAjax
+    parameters: { maxDuration: 5 }
+  - type: passiveScan-wait
+  - type: activeScan
+    parameters: { context: app, user: scanner, maxScanDurationInMins: 30 }
+  - type: report
+    parameters: { template: sarif-json, reportDir: /zap/wrk, reportFile: zap.sarif }</code></pre>
+<pre><code>docker run --rm -v $PWD:/zap/wrk ghcr.io/zaproxy/zaproxy:stable zap.sh -cmd -autorun /zap/wrk/zap-plan.yaml</code></pre>
+<h4>Making it effective</h4>
+<ol start="1"><li><strong>Authenticate</strong>: most issues live behind login. Use a dedicated low-privilege test user (plus a second user for access-control tests), session management settings (cookie, header, token), logged-in/out indicators so ZAP re-authenticates, and exclude logout and destructive URLs.</li><li><strong>Coverage</strong>: import OpenAPI, feed Postman or Playwright traffic through the ZAP proxy (run your functional UI tests via ZAP as a proxy, then active-scan the recorded sites tree), enable the AJAX spider for SPAs.</li><li><strong>Environment safety</strong>: scan disposable stacks (Compose or ephemeral namespaces), never production; use limited-privilege credentials; throttle threads; reset data after active scans; get written approval before scanning shared systems.</li><li><strong>Tuning</strong>: classify rules per team: FAIL on high-confidence risks (SQLi, XSS, missing auth cookie flags), WARN for informational. Maintain <code>.zap/rules.tsv</code> with justified ignores and expiry dates; use a <strong>baseline of accepted findings</strong> so the pipeline fails only on <strong>new</strong> alerts.</li><li><strong>Reporting</strong>: HTML for people, <strong>SARIF</strong> for GitHub code scanning (alerts appear in the Security tab), JSON for dashboards and ticket creation (Jira); track time-to-fix and recurring findings.</li><li><strong>Cadence</strong>: PR baseline (minutes), nightly authenticated active scan, pre-release full scan plus manual penetration testing for logic flaws.</li></ol>
+<h4>Limits and complementary checks</h4>
+<p>ZAP does not understand business logic or most <strong>BOLA/IDOR</strong> issues unless scripted; add authorisation matrix tests. Use SAST, dependency scanning, container scanning, IaC scanning, and security unit tests (headers, cookie flags) for fast feedback.</p>
+<h4>Pitfalls</h4>
+<p>Running active scans against production or shared staging, unauthenticated scans giving a false sense of safety, letting findings pile up without owners, ignoring noise until the team disables the step, and scanning an app that is not representative of production configuration (TLS, headers set by the CDN).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you configure authenticated scans so ZAP can reach protected pages and APIs?</li><li>How do you tune false positives and manage a baseline of accepted findings?</li><li>What is the difference between passive and active scanning and where does each belong in the pipeline?</li></ul>
+<p><a class="btn primary" href="../#/q/qa-93">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-93%3A+How+do+you+integrate+OWASP+ZAP+into+automated+CI%2FCD+security%E2%80%A6&amp;question-id=qa-93&amp;context=QA+%2F+SDET%2C+Gear+3%2C+topic%3A+Security%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-93.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>
