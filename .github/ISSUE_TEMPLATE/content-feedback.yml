@@ -1,0 +1,42 @@
+name: Question or answer feedback
+description: Report a wrong, outdated or unclear answer, or offer to write a missing one.
+title: "[Answer feedback] "
+labels: ["content-feedback"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve InterviewGearUp. Please describe the problem in your own words and cite a source where you can.
+        Do not paste confidential interview material or anything covered by an NDA.
+  - type: input
+    id: question-id
+    attributes:
+      label: Question ID
+      description: For example `be-13`. It is pre-filled when you come from the site.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Role, gear, and link. Pre-filled when you come from the site.
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of problem is it?
+      options:
+        - "Factually wrong"
+        - "Outdated technology or advice"
+        - "Too shallow or misleading for this level"
+        - "Unclear or badly worded"
+        - "Duplicate of another question"
+        - "I would like to write the answer"
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: What should change?
+      description: What is wrong, what would be correct, and a source if you have one.
+    validations:
+      required: true

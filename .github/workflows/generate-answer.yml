@@ -4,9 +4,24 @@ on:
   issues:
     types: [opened, labeled]
 
+# Cost and abuse controls:
+# - Anyone can open an issue from the form (which applies `community-question`), so strangers do NOT trigger an LLM call by themselves.
+#   Maintainers, members and collaborators run automatically; for anyone else a maintainer adds the `approved` label.
+# - One run per issue at a time, and issues that already carry `ai-answered` are skipped.
+concurrency:
+  group: answer-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
 jobs:
   generate-answer:
-    if: contains(github.event.issue.labels.*.name, 'community-question')
+    if: >-
+      contains(github.event.issue.labels.*.name, 'community-question') &&
+      !contains(github.event.issue.labels.*.name, 'ai-answered') &&
+      (
+        contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.issue.author_association) ||
+        (github.event.action == 'labeled' && github.event.label.name == 'approved')
+      )
+    timeout-minutes: 5
     runs-on: ubuntu-latest
     permissions:
       issues: write
