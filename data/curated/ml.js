@@ -1305,6 +1305,68 @@
       ),
       follow: ["What do the M, efConstruction and efSearch parameters control?", "Why does HNSW use a lot of memory and how does it handle deletes?", "How does HNSW compare with IVF-based indexes?"],
       tags: ["hnsw", "vector search", "ann", "approximate nearest neighbor"]
+    }),
+    Object.assign(meta("hard"), {
+      id: "ml-93",
+      short: "Index documents with their access control lists as metadata, authenticate the user, and filter retrieval by the user's identity and groups before any text reaches the model. Enforce permissions at the retrieval layer, keep ACLs synced with the source systems, and never rely on the prompt to hide content. Log every retrieval for audit.",
+      detail: L(
+        "#### Core principle",
+        "The language model must only ever see content the **requesting user is already allowed to read**. The prompt cannot enforce this; the filter must happen in the search layer, before generation.",
+        "",
+        "#### Architecture",
+        "1. **Connectors** ingest from sources (SharePoint, Drive, Confluence, tickets) and capture each document's **permissions**: users, groups, and inheritance from folders.",
+        "2. **Chunking and embedding** produce vectors; each chunk stores metadata: document ID, source, and the **ACL** (a list of allowed principals, or an ID that resolves to one).",
+        "3. **Identity**: the user signs in through SSO. The service resolves their user ID and **group memberships** (including nested groups) at query time, from the identity provider or a cached directory.",
+        "4. **Retrieval with a pre-filter**: the vector or hybrid search runs with a metadata filter such as `allowed_principals ∩ user_principals ≠ ∅`. Filtering inside the search matters; retrieving top-k first and filtering afterwards can return empty or too-few results and wastes the budget.",
+        "5. **Generation** uses only the permitted chunks, with citations to the sources so the user can open the original.",
+        "",
+        "#### Keeping permissions correct",
+        "- **Sync changes quickly**: use webhooks or change feeds for permission changes and deletions, plus periodic full reconciliations. A revoked permission should disappear within minutes.",
+        "- For documents shared with huge groups, store a **group ID** and resolve it at query time rather than expanding to millions of users.",
+        "- Where a source cannot report permissions reliably, check access **live at query time** against the source API for the top candidates (a post-check as a second layer).",
+        "- Treat **deny rules** and inherited restrictions carefully; default to deny when the ACL is unknown.",
+        "",
+        "#### Additional protections",
+        "- Separate indexes or namespaces for highly sensitive collections (legal, HR) and per-tenant isolation.",
+        "- Guard against **prompt injection** in documents, and never include another user's cached answers.",
+        "- **Audit logs**: who asked, which chunks were returned, which sources were cited. Support deletion requests and retention rules.",
+        "- Test with red-team users: a user who should see nothing from a restricted folder must not be able to extract it through clever questions."
+      ),
+      follow: ["How do you keep ACLs in the index fresh when permissions change in the source system?", "Why is filtering after retrieval risky compared with filtering inside the search?", "How do you handle documents shared with very large groups?"],
+      tags: ["rag", "access control", "enterprise search", "security"]
+    }),
+    Object.assign(meta("hard"), {
+      id: "ml-96",
+      short: "A multi-tenant LLM gateway authenticates each tenant, enforces token and cost budgets with rate limits, serves repeated prompts from a cache, and routes each request to a suitable model by task, cost, latency and health. It tracks usage per tenant for billing, applies guardrails, and fails over between providers, with isolation so one tenant cannot starve others.",
+      detail: L(
+        "#### Request path",
+        "1. **Authentication and tenant identity**: API keys or JWTs mapped to a tenant, project and plan.",
+        "2. **Policy checks**: allowed models, regions, data-handling rules, input size limits, and safety filters (PII redaction, prompt injection checks).",
+        "3. **Budget and rate limits** (see below).",
+        "4. **Cache lookup**.",
+        "5. **Routing** to a model and provider.",
+        "6. **Call with retries, timeouts and streaming**, then output filters.",
+        "7. **Metering and logging**: record tokens in and out, latency, cost, model and cache hit.",
+        "",
+        "#### Token budgeting",
+        "- Limit both **requests per minute** and **tokens per minute or per day** per tenant, using token buckets in a shared store such as Redis.",
+        "- Output length is unknown before the call, so **reserve** an estimate (input tokens plus `max_tokens`), then **reconcile** with actual usage afterwards and refund the difference.",
+        "- Hard and soft quotas: warn at 80 percent, throttle or fall back to a cheaper model at 100 percent, with configurable overage rules.",
+        "- Use weighted fair queuing or per-tenant concurrency caps so one noisy tenant cannot consume the shared provider capacity.",
+        "",
+        "#### Caching",
+        "- **Exact-match cache**: hash of normalised prompt, model and parameters. Safe, and works well for repeated system prompts and deterministic calls.",
+        "- **Semantic cache**: embed the prompt and return a stored answer when similarity exceeds a threshold. It saves cost but risks wrong answers for near-duplicate questions, so apply it only to suitable use cases, with high thresholds, per-tenant keys and short expiry. Never share caches across tenants with private data.",
+        "- Support provider **prompt caching** by keeping long stable prefixes at the start of prompts.",
+        "",
+        "#### Semantic routing",
+        "Classify each request (a small model, rules or embeddings) by complexity and task type: send simple extraction or classification to a small cheap model and hard reasoning to a stronger one. Add **fallbacks** on errors or timeouts, health-aware load balancing across providers, and A/B routing for evaluation. Measure quality with offline evals so routing does not silently degrade answers.",
+        "",
+        "#### Operations",
+        "Per-tenant dashboards and cost alerts, audit logs, secrets isolation, and region pinning for data residency. Keep the gateway stateless, scale horizontally, and design for provider outages."
+      ),
+      follow: ["How would you design token-based rate limiting when output length is unknown in advance?", "What are the risks of semantic caching and how do you limit them?", "How would you route between a cheap and an expensive model?"],
+      tags: ["llm gateway", "multi-tenancy", "token budgeting", "semantic caching"]
     })
   ]);
 })();
