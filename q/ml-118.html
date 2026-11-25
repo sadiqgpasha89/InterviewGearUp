@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>After an economic downturn changes customer payment behaviour, how do you detect and handle drift in your ML and LLM collection pipelines? | InterviewGearUp</title>
+<meta name="description" content="Monitor three layers: input drift (PSI or similar on key features and score distribution), outcome drift (precision, recall and calibration once labels…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-118.html">
+<meta property="og:title" content="After an economic downturn changes customer payment behaviour, how do you detect and handle drift in your ML and LLM collection pipelines? | InterviewGearUp">
+<meta property="og:description" content="Monitor three layers: input drift (PSI or similar on key features and score distribution), outcome drift (precision, recall and calibration once labels…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-118.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>After an economic downturn changes customer payment behaviour, how do you detect and handle drift in your ML and LLM collection pipelines?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · MLOps · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Monitor three layers: input drift (PSI or similar on key features and score distribution), outcome drift (precision, recall and calibration once labels mature, plus early proxies), and LLM output quality (sampled evaluations for groundedness, policy compliance and tone). Alert on thresholds, then recalibrate, retrain on recent data or adjust thresholds, with a human review of the change.</p></div>
+<h4>Explained in depth</h4>
+<h4>1. Data drift (cheap, immediate)</h4>
+<ul><li>Track feature distributions weekly against a reference window: Population Stability Index (PSI) for binned features, Wasserstein or Kolmogorov-Smirnov for continuous ones, plus missing-value rates and new categories.</li><li>Watch the <strong>score distribution</strong> itself: if the share of accounts in the high-risk band doubles, investigate even before outcomes arrive.</li><li>Rules of thumb such as PSI above 0.2 being significant are starting points; set thresholds from your own history.</li></ul>
+<h4>2. Concept drift (the relation changed)</h4>
+<ul><li>Labels like &#39;60 days past due&#39; arrive late. Use early proxies (paid within 7 days of due date, promise-to-pay kept) and compute precision, recall and calibration on matured cohorts.</li><li>A downturn often keeps the ranking roughly right but shifts the base rate, so calibration breaks first. Recalibrating on recent data is a fast fix; a full retrain addresses changed relationships.</li></ul>
+<h4>3. LLM components</h4>
+<ul><li>Sample production outputs daily and score them with automated checks (policy terms correct, no invented amounts, tone rules) and an LLM judge calibrated against human labels; track refusal rate, escalation rate and agent edit rate.</li><li>Keep a fixed regression suite and run it on every prompt or model change; provider model updates are a drift source too.</li></ul>
+<h4>4. Response playbook</h4>
+<ul><li>Thresholds trigger an alert and an investigation, not an automatic redeploy.</li><li>Options: adjust decision thresholds, recalibrate, retrain with more weight on recent data, add macro features (rates, sector indicators), or fall back to rules for a segment.</li><li>Ship changes through the same validation and holdout process, and document them for model risk governance.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>Which would break first in a downturn: ranking or calibration?</li><li>How do you monitor a model whose labels arrive 90 days later?</li><li>Should retraining be fully automatic? Why or why not?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-118">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-118%3A+After+an+economic+downturn+changes+customer+payment+behaviour%2C+how%E2%80%A6&amp;question-id=ml-118&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+MLOps%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-118.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

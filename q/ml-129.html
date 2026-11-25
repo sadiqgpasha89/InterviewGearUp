@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What problem does the Model Context Protocol (MCP) solve, and how would you build a secure MCP server in front of a core insurance system? | InterviewGearUp</title>
+<meta name="description" content="MCP standardises how AI applications discover and call external tools and data, so each system is wrapped once as an MCP server and any MCP-capable agent…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-129.html">
+<meta property="og:title" content="What problem does the Model Context Protocol (MCP) solve, and how would you build a secure MCP server in front of a core insurance system? | InterviewGearUp">
+<meta property="og:description" content="MCP standardises how AI applications discover and call external tools and data, so each system is wrapped once as an MCP server and any MCP-capable agent…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-129.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What problem does the Model Context Protocol (MCP) solve, and how would you build a secure MCP server in front of a core insurance system?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · Agents · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>MCP standardises how AI applications discover and call external tools and data, so each system is wrapped once as an MCP server and any MCP-capable agent can use it, instead of custom glue per agent and system. It uses JSON-RPC 2.0 over stdio or Streamable HTTP and exposes tools, resources and prompts. A secure claims server uses OAuth, narrow tools, strict schemas, server-side authorisation and audit logs.</p></div>
+<h4>Explained in depth</h4>
+<h4>The problem</h4>
+<ul><li>With M agents or AI apps and N enterprise systems, custom integrations grow toward M x N. MCP turns that into M clients plus N servers that speak one protocol.</li><li>Compared with hand-written REST wrappers in each agent, MCP gives <strong>runtime discovery</strong> (the client lists tools and their JSON schemas), a common way to pass context, and a clear boundary where security is enforced on the server.</li></ul>
+<h4>Protocol basics</h4>
+<ul><li><strong>Host</strong> (the AI application) runs <strong>clients</strong>, each connected to one <strong>server</strong>. Messages are JSON-RPC 2.0.</li><li>Transports: <strong>stdio</strong> for local servers and <strong>Streamable HTTP</strong> for remote ones (it replaced the older HTTP plus SSE transport). Remote servers authorise with OAuth 2.1.</li><li>Server features: <strong>tools</strong> (actions with input schemas), <strong>resources</strong> (readable data addressed by URI) and <strong>prompts</strong> (reusable templates). Clients can offer features such as sampling and elicitation (asking the user for input).</li></ul>
+<h4>Designing the server for a claims system</h4>
+<ul><li><strong>Narrow, task-shaped tools</strong>: <code>get_policy_coverage(policy_id)</code>, <code>get_claim_status(claim_id)</code>, <code>create_fnol_draft(payload)</code>. No generic &#39;run query&#39; or &#39;call any endpoint&#39; tool.</li><li><strong>Resources</strong> for read-only content such as policy wording: <code>policy://{policy_id}/terms</code>.</li><li><strong>Strict schemas</strong> (Pydantic or Zod) with enums, ranges and formats; reject invalid input before it reaches the backend.</li></ul>
+<h4>Security</h4>
+<ul><li>Authenticate the caller and act <strong>on behalf of the end user</strong>, with their scopes, rather than one all-powerful service account.</li><li>Authorise every call on the server (can this user see this policy?); never rely on the model to respect limits.</li><li>Read and write tools separated; write tools create drafts or require confirmation; financial actions (payments) are not exposed to agents at all or go through human approval.</li><li>Treat data returned to the model as untrusted when it contains free text (claim notes can carry prompt injection).</li><li>Rate limits, timeouts, PII masking where the agent does not need raw values, and an audit log of every call with user, arguments and result.</li><li>Pin and review the servers you install; a malicious or compromised MCP server is a supply-chain risk.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How is an MCP resource different from a tool?</li><li>Why should authorisation live on the MCP server rather than in the prompt?</li><li>How would you version tool schemas without breaking clients?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-129">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-129%3A+What+problem+does+the+Model+Context+Protocol+%28MCP%29+solve%2C+and+how%E2%80%A6&amp;question-id=ml-129&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+Agents%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-129.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

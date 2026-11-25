@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Leadership wants an LLM-based recommendation system quickly, but the data pipelines it depends on are brittle and undocumented. What do you do? | InterviewGearUp</title>
+<meta name="description" content="Do not stop for a full rewrite, and do not build on sand silently. Name the risk in business terms, then build a clean, tested data layer only for the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/lead-124.html">
+<meta property="og:title" content="Leadership wants an LLM-based recommendation system quickly, but the data pipelines it depends on are brittle and undocumented. What do you do? | InterviewGearUp">
+<meta property="og:description" content="Do not stop for a full rewrite, and do not build on sand silently. Name the risk in business terms, then build a clean, tested data layer only for the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/lead-124.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Leadership wants an LLM-based recommendation system quickly, but the data pipelines it depends on are brittle and undocumented. What do you do?</h1>
+<p class="muted small-text meta-line">Tech lead / Engineering manager · Gear 4 (Lead / Staff) · Technical strategy · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Do not stop for a full rewrite, and do not build on sand silently. Name the risk in business terms, then build a clean, tested data layer only for the inputs the new system needs (data contracts, quality checks, a small feature store), next to the legacy pipelines. Migrate other consumers gradually, reserve fixed capacity for hardening, and ship the AI feature in stages.</p></div>
+<h4>Explained in depth</h4>
+<h4>1. Make the risk concrete</h4>
+<ul><li>Show what bad inputs would do: wrong balances in customer messages, recommendations based on stale data, a model silently degrading. Estimate the likelihood from recent incidents.</li><li>Offer options with timelines and risk: ship fast on legacy data with tight guardrails, or take a few extra weeks to harden the critical inputs.</li></ul>
+<h4>2. Strangler-fig approach</h4>
+<ul><li>Identify the <strong>minimum set of datasets</strong> the new system needs and build clean versions of those: documented schemas, data contracts with the producing teams, freshness and validity checks, lineage.</li><li>Run the new layer alongside the legacy pipelines; move other consumers over one by one and retire the old jobs when nothing depends on them.</li></ul>
+<h4>3. Ship the AI feature in stages</h4>
+<ul><li>v1 internal only, with humans approving recommendations, while the data quality checks prove themselves.</li><li>Block or degrade gracefully when checks fail (no recommendation is better than a wrong one).</li></ul>
+<h4>4. Protect capacity</h4>
+<ul><li>Agree a fixed share of each sprint (for example 15 to 20 percent) for data reliability, with visible metrics: incidents, freshness SLA met, tests added.</li></ul>
+<h4>5. Communicate</h4>
+<ul><li>Frame hardening as what makes the AI feature trustworthy and faster to extend, not as a separate cleanup project.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>What belongs in a data contract?</li><li>How do you choose which legacy pipeline to fix first?</li><li>What would you show leadership to justify a two-week delay?</li></ul>
+<p><a class="btn primary" href="../#/q/lead-124">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+lead-124%3A+Leadership+wants+an+LLM-based+recommendation+system+quickly%2C+but+the%E2%80%A6&amp;question-id=lead-124&amp;context=Tech+lead+%2F+Engineering+manager%2C+Gear+4%2C+topic%3A+Technical+strategy%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Flead-124.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How would you design communication between a claims intake agent and a fraud detection agent, and how is agent-to-agent communication different from tool calling? | InterviewGearUp</title>
+<meta name="description" content="Tool calling is a function call: fixed schema, synchronous, no autonomy. Agent-to-agent (for example the A2A protocol) delegates a task to another agent…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-130.html">
+<meta property="og:title" content="How would you design communication between a claims intake agent and a fraud detection agent, and how is agent-to-agent communication different from tool calling? | InterviewGearUp">
+<meta property="og:description" content="Tool calling is a function call: fixed schema, synchronous, no autonomy. Agent-to-agent (for example the A2A protocol) delegates a task to another agent…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-130.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How would you design communication between a claims intake agent and a fraud detection agent, and how is agent-to-agent communication different from tool calling?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 4 (Lead / Staff) · Agents · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Tool calling is a function call: fixed schema, synchronous, no autonomy. Agent-to-agent (for example the A2A protocol) delegates a task to another agent that has its own model, tools and permissions and may run long, stream progress or ask for input. Here the intake agent sends minimal claim context to an isolated fraud agent and gets a structured risk result, with hop limits, timeouts and terminal states.</p></div>
+<h4>Explained in depth</h4>
+<h4>Tool call versus agent delegation</h4>
+<div class="md-table"><table><thead><tr><th></th><th>Tool call</th><th>Agent-to-agent</th></tr></thead><tbody><tr><td>Callee</td><td>Deterministic function or API</td><td>Autonomous agent with its own reasoning</td></tr><tr><td>Duration</td><td>Usually short, synchronous</td><td>Can be long-running, asynchronous, streamed</td></tr><tr><td>Contract</td><td>Input and output schema</td><td>Task with states, messages and artifacts</td></tr><tr><td>Ownership</td><td>Same team or app</td><td>Often another team, vendor or trust boundary</td></tr></tbody></table></div>
+<p>The <strong>A2A protocol</strong> standardises the second case: an agent publishes an <strong>agent card</strong> describing its skills, endpoint and auth; clients send <strong>tasks</strong> that move through states (submitted, working, input-required, completed, failed) and return artifacts. It complements MCP, which connects an agent to tools and data.</p>
+<h4>Intake and fraud design</h4>
+<ol start="1"><li>The intake agent talks to the claimant and builds a <strong>minimal, sanitised</strong> <code>ClaimContext</code>: claim id, policy id, incident date and location, loss estimate, description.</li><li>It submits a task to the fraud agent asynchronously and continues collecting information.</li><li>The fraud agent runs in its own environment with its own credentials: claims history, watch lists, network analysis and deterministic scoring rules. None of this is exposed to the intake agent or the claimant.</li><li>It returns a structured artifact: <code>{ risk_band: &#39;LOW&#39; | &#39;MEDIUM&#39; | &#39;HIGH&#39;, reason_codes: [...], confidence, model_version }</code>.</li><li>On HIGH, the claim is flagged for the special investigations unit. The intake agent keeps a neutral tone and does not reveal the flag; the referral decision is made by people.</li></ol>
+<h4>Preventing loops and cascading failures</h4>
+<ul><li>Carry a <code>trace_id</code>, <code>hop_count</code> and <code>max_hops</code> in every message; stop and hand off to a person when the limit is reached.</li><li>Use explicit <strong>terminal states</strong> (approved, referred, needs human) and a state machine for the negotiation instead of open-ended agent conversation.</li><li>Timeouts, retries with backoff, and <strong>circuit breakers</strong>: if the fraud agent is down, the claim proceeds to manual triage rather than auto-approval.</li><li>Idempotency keys so a retried task is not scored twice.</li><li>End-to-end tracing across agents, and authentication between them (mutual TLS or OAuth), with each agent authorised only for its own data.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>When would you use a plain tool call instead of a second agent?</li><li>What should happen if the fraud agent times out?</li><li>How do you stop the intake agent from leaking fraud signals to the claimant?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-130">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-130%3A+How+would+you+design+communication+between+a+claims+intake+agent+and%E2%80%A6&amp;question-id=ml-130&amp;context=ML+%2F+AI+engineer%2C+Gear+4%2C+topic%3A+Agents%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-130.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

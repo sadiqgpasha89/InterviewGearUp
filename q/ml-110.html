@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How would you design a RAG system over 10 million enterprise documents? | InterviewGearUp</title>
+<meta name="description" content="Size it first: about 200M chunks, 100B tokens to embed, roughly 0.8 TB of FP32 vectors. Split an event-driven ingestion path (object store, queue, CPU…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-110.html">
+<meta property="og:title" content="How would you design a RAG system over 10 million enterprise documents? | InterviewGearUp">
+<meta property="og:description" content="Size it first: about 200M chunks, 100B tokens to embed, roughly 0.8 TB of FP32 vectors. Split an event-driven ingestion path (object store, queue, CPU…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-110.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How would you design a RAG system over 10 million enterprise documents?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 4 (Lead / Staff) · System design · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Size it first: about 200M chunks, 100B tokens to embed, roughly 0.8 TB of FP32 vectors. Split an event-driven ingestion path (object store, queue, CPU parsers, GPU embedders, idempotent writes to vector, BM25 and metadata stores) from a read path that runs hybrid dense plus BM25 search with ACL pre-filtering, fuses with RRF, reranks and generates with citations. Add CDC, blue/green re-indexing and evaluation.</p></div>
+<h4>Explained in depth</h4>
+<h4>1. Clarify before drawing boxes</h4>
+<ul><li><strong>Traffic and latency</strong>: queries per second at peak, and the target (for example p95 time to first token under 1.5 s).</li><li><strong>Freshness</strong>: must an edited document be searchable in a minute, an hour or a day?</li><li><strong>Security</strong>: single tenant or multi-tenant, and how fine-grained are permissions (per document, per folder, per group)?</li><li><strong>Content</strong>: PDFs, scans, slides, spreadsheets, code; languages; how many documents change per day.</li><li><strong>Budget</strong>: hosted APIs versus self-hosted models, and the ceiling on cost per query.</li></ul>
+<h4>2. Capacity model (state your assumptions)</h4>
+<div class="md-table"><table><thead><tr><th>Quantity</th><th>Assumption</th><th>Result</th></tr></thead><tbody><tr><td>Chunks</td><td>10M documents x 20 chunks</td><td>200M chunks</td></tr><tr><td>Tokens to embed</td><td>200M x 500 tokens</td><td>100B tokens</td></tr><tr><td>FP32 vectors</td><td>200M x 1024 dims x 4 bytes</td><td>about 819 GB</td></tr><tr><td>Int8 (scalar quantization)</td><td>1 byte per dim</td><td>about 205 GB</td></tr><tr><td>Binary quantization</td><td>1 bit per dim = 128 bytes</td><td>about 26 GB</td></tr><tr><td>HNSW links</td><td>M = 16, about 32 links x 4 bytes at layer 0</td><td>about 26 GB more</td></tr><tr><td>Raw chunk text for BM25</td><td>about 2 KB per chunk</td><td>about 400 GB before index overhead</td></tr></tbody></table></div>
+<ul><li>Multiply memory by the replica count (2 to 3 for availability and QPS). Full-precision in-RAM HNSW is therefore roughly 0.85 TB per replica, which is why quantization or disk-based indexes matter at this scale.</li><li><strong>Embedding time and cost</strong>: at an assumed 50k tokens per second per GPU, 100B tokens is about 560 GPU-hours, so about a day on 24 GPUs. A hosted embedding API priced at a few cents per million tokens costs a few thousand dollars per full pass. Measure your own throughput; the point is that a full re-embed is a planned project, not a button.</li><li><strong>Lever</strong>: Matryoshka-style embeddings let you store 256 or 512 dimensions instead of 1024 and cut memory again, at a small recall cost you measure.</li></ul>
+<h4>3. Ingestion (write) path</h4>
+<pre><code>Connectors / uploads -&gt; API gateway (auth, rate limits, presigned S3 URLs, returns job_id with 202)
+  -&gt; Object store (raw files = source of truth)
+  -&gt; Queue (Kafka, keyed by doc_id): ingest.live (high priority) | ingest.backfill (bulk)
+  -&gt; Parse workers (CPU: PDF layout, OCR, tables, chunking)  --3 failures--&gt; ingest.dlq
+  -&gt; Queue chunks.embed
+  -&gt; Embedding workers (GPU: TEI / Triton / vLLM, batches of 128-256)
+  -&gt; Idempotent upserts: vector DB | OpenSearch (BM25) | Postgres (metadata)</code></pre>
+<ul><li><strong>Keying by doc_id</strong> keeps all events for one document in order, so an update never races its own delete.</li><li><strong>Separate live and backfill lanes</strong> so the 10M-document initial load never delays a user&#39;s fresh upload.</li><li><strong>Decouple CPU parsing from GPU embedding</strong> with their own queues and autoscaling on queue lag; they bottleneck on different hardware.</li><li><strong>Deterministic ids</strong>: <code>chunk_id = hash(doc_id, doc_version, position)</code> and a <code>content_hash</code> per chunk. Re-processing becomes an idempotent upsert, and on an edit you only re-embed chunks whose hash changed, which is usually a small fraction of the document.</li><li><strong>Store the embedding model version with every vector.</strong> Mixing vectors from two models in one index silently ruins similarity scores.</li><li><strong>Keep the three stores consistent</strong>: write metadata (with <code>doc_version</code> and status) first, then vector and BM25, and mark the version live only when all succeed. Queries filter on the live version, so a half-written document is never served.</li><li><strong>Poison documents</strong>: hard CPU, memory and time limits per file, a circuit breaker, and the dead-letter queue with an alert, so one corrupt 2 GB scan cannot stall a worker pool.</li></ul>
+<h4>4. Chunking that survives real documents</h4>
+<ul><li>Structure-aware splitting on headings, sections and slides rather than fixed character counts; keep tables and code blocks whole.</li><li>Prepend a short contextual header (document title, section path, date, owner) to each chunk before embedding, so a chunk that says &#39;the limit is 30 days&#39; still knows which policy it belongs to.</li><li><strong>Small-to-big</strong>: index small chunks (about 200 tokens) for precise matching, store a pointer to the parent section (1,000 to 2,000 tokens), and send the parent to the LLM.</li></ul>
+<h4>5. Storage layer</h4>
+<div class="md-table"><table><thead><tr><th>Store</th><th>Example</th><th>Holds</th></tr></thead><tbody><tr><td>Object store</td><td>S3 / GCS</td><td>Raw files and parsed Markdown or JSON (replayable)</td></tr><tr><td>Metadata</td><td>Postgres, partitioned</td><td>doc and chunk ids, tenant, ACL principals, versions, status, parent links</td></tr><tr><td>Vector index</td><td>Qdrant / Milvus / OpenSearch k-NN / managed service</td><td>Sharded vectors, HNSW or DiskANN, quantized, with filterable payload</td></tr><tr><td>Lexical index</td><td>OpenSearch / Elasticsearch</td><td>BM25 for exact ids, part numbers, acronyms and rare terms</td></tr><tr><td>Cache</td><td>Redis</td><td>Query embeddings, retrieval results, optionally answers</td></tr></tbody></table></div>
+<p><strong>Memory strategy</strong>: keep compressed vectors (binary or product quantization) and the graph in RAM for candidate search, oversample (for example 4 to 10 times k), then rescore the shortlist with full-precision vectors read from NVMe. DiskANN-style indexes and on-disk vector storage follow the same idea and can cut RAM cost by most of the in-memory figure.</p>
+<p><strong>Sharding</strong>: very large tenants get their own shards or collections (isolation, smaller search space, easy deletion); small tenants share hash-partitioned shards with a tenant filter. Queries scatter to the relevant shards and gather the top results; replicas add read throughput.</p>
+<h4>6. Query (read) path</h4>
+<pre><code>Query -&gt; auth + resolve user&#39;s groups -&gt; cache check
+  -&gt; optional rewrite (coreference, multi-query or HyDE) using a small fast model
+  -&gt; in parallel: BM25 top 100 | dense ANN top 100   (both with ACL + tenant pre-filter)
+  -&gt; Reciprocal Rank Fusion -&gt; cross-encoder rerank top 50 -&gt; top 5 to 8 parent chunks
+  -&gt; LLM with citations, streamed -&gt; citation and grounding checks</code></pre>
+<p>RRF needs no score calibration between engines, only ranks:</p>
+<pre><code>RRF(d) = sum over engines m of  1 / (k + rank_m(d)),   k is about 60</code></pre>
+<p><strong>Illustrative latency budget</strong> (measure yours):</p>
+<div class="md-table"><table><thead><tr><th>Stage</th><th>Budget</th></tr></thead><tbody><tr><td>Auth, group resolution, cache</td><td>10 to 20 ms</td></tr><tr><td>Query rewrite (optional)</td><td>100 to 300 ms</td></tr><tr><td>Parallel BM25 + ANN</td><td>30 to 100 ms</td></tr><tr><td>Cross-encoder rerank of about 50 pairs on GPU</td><td>50 to 150 ms</td></tr><tr><td>LLM time to first token</td><td>300 to 800 ms</td></tr></tbody></table></div>
+<p>Skip the rewrite for short keyword queries, and route clearly structured questions (counts, dates, owners) to SQL over metadata instead of vector search.</p>
+<h4>7. Permissions without recall collapse</h4>
+<ul><li><strong>Post-filtering fails at scale</strong>: if the top 100 neighbours are documents the user cannot see, filtering afterwards returns nothing.</li><li><strong>Pre-filter inside the search</strong>: store allowed principals (users and groups) on every chunk in both the vector payload and the BM25 index, resolve the user&#39;s groups at query time, and use the engine&#39;s filtered search so the ANN traversal only considers allowed points.</li><li>When a filter is very selective (a user who can see 2,000 chunks), filtered graph search degrades; good engines switch to exact search over the small allowed set using a payload index. Test this case explicitly.</li><li>A permission change is a metadata update, not a re-embed. Sync ACLs from the source system with their own change feed.</li></ul>
+<h4>8. Caching, carefully</h4>
+<ul><li>A <strong>semantic cache</strong> (return a stored answer when a new query embedding is very close to a cached one) can leak data: two users with different permissions ask the same question and get the same answer. Key every cache entry by tenant, an ACL fingerprint and the corpus version, and invalidate on document change.</li><li>Tune the similarity threshold on labelled query pairs. &#39;Revenue in Q3 2025&#39; and &#39;revenue in Q3 2024&#39; are almost identical as embeddings but need different answers.</li><li>Caching retrieval results and query embeddings is safer and often gives most of the benefit.</li></ul>
+<h4>9. Document lifecycle</h4>
+<ul><li><strong>Change data capture</strong> from SharePoint, Google Drive, Confluence or databases (webhooks, Debezium) drives updates and deletes.</li><li><strong>Deletes</strong>: mark chunks as tombstoned (filtered out immediately), then let the engine purge and compact in the background; hard deletes one at a time are expensive in graph indexes. A deleted document must disappear from all stores and caches, which also matters for right-to-erasure requests.</li><li><strong>Embedding model upgrades</strong>: build a shadow index with the new model, dual-write new documents to both, backfill, compare offline and online metrics, then switch a read alias atomically and keep the old index for rollback.</li></ul>
+<h4>10. Evaluation and observability</h4>
+<ul><li><strong>Retrieval</strong>: a labelled set of a few hundred real queries with relevant chunks; track recall at k and nDCG per stage (BM25, dense, fused, reranked).</li><li><strong>Generation</strong>: faithfulness or groundedness, answer relevance, and citation accuracy (does each cited chunk actually support the sentence), using LLM judges calibrated against human labels.</li><li><strong>Online</strong>: thumbs up or down, &#39;no answer found&#39; rate, per-stage latency, cost per query, cache hit rate, ingestion lag and DLQ size.</li><li>Run the suite on every change to chunking, embedding model, reranker or prompt.</li></ul>
+<h4>11. Generation guardrails</h4>
+<ul><li>Wrap retrieved text in clear delimiters and instruct the model to treat it as data; documents can contain prompt injection.</li><li>Require citations, check that each citation id exists in the context and that the cited span supports the claim, and allow &#39;I could not find this&#39; as a valid answer.</li><li>Redact or mask PII where policy requires, and log which chunks produced each answer for audit.</li></ul>
+<h4>12. Beyond plain RAG (only if evaluation shows the need)</h4>
+<ul><li><strong>Multi-hop or comparison questions</strong> (&#39;compare changes across all vendors in Q3&#39;): query decomposition and an agent loop, or a corrective step that re-retrieves when the evidence is weak.</li><li><strong>Global questions over the whole corpus</strong>: precomputed summaries per collection or a knowledge graph of entities and relations (GraphRAG-style). These are expensive to build, so justify them with failing evaluation cases.</li></ul>
+<h4>Common mistakes</h4>
+<ul><li>Post-filtering permissions; a semantic cache shared across users.</li><li>Re-embedding whole documents on every edit instead of only changed chunks.</li><li>No evaluation set, so nobody can tell whether a new chunker or model helped.</li><li>Vectors from two embedding models in one index.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How would you re-embed 200M chunks with a new model without downtime?</li><li>A user can see only 0.01% of the corpus. What happens to filtered HNSW search and how do you fix it?</li><li>How do you decide between binary quantization with rescoring and a DiskANN-style index?</li><li>How would you measure whether hybrid search beats dense-only search for your users?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-110">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-110%3A+How+would+you+design+a+RAG+system+over+10+million+enterprise%E2%80%A6&amp;question-id=ml-110&amp;context=ML+%2F+AI+engineer%2C+Gear+4%2C+topic%3A+System+design%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-110.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

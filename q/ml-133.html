@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What telemetry and evaluation do you need to run AI agents in production, and how is it different from testing deterministic code? | InterviewGearUp</title>
+<meta name="description" content="Trace every run end to end (each LLM call, tool call, latency, tokens, cost, errors) under one trace id. Evaluate both the trajectory (right tools, right…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-133.html">
+<meta property="og:title" content="What telemetry and evaluation do you need to run AI agents in production, and how is it different from testing deterministic code? | InterviewGearUp">
+<meta property="og:description" content="Trace every run end to end (each LLM call, tool call, latency, tokens, cost, errors) under one trace id. Evaluate both the trajectory (right tools, right…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-133.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What telemetry and evaluation do you need to run AI agents in production, and how is it different from testing deterministic code?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · MLOps · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Trace every run end to end (each LLM call, tool call, latency, tokens, cost, errors) under one trace id. Evaluate both the trajectory (right tools, right order, no loops) and the outcome (correct, grounded, compliant) with golden datasets, deterministic checks and calibrated LLM judges. Unlike deterministic code, outputs vary, so you test statistically on many cases and keep monitoring after release.</p></div>
+<h4>Explained in depth</h4>
+<h4>Telemetry</h4>
+<ul><li><strong>Tracing</strong> with OpenTelemetry or an agent observability tool (LangSmith, a cloud platform&#39;s tracing): spans for each node, model call and tool call, linked by a trace id and tagged with model and prompt versions.</li><li><strong>Performance</strong>: latency per step and end to end (p50, p95, p99), time to first token, tokens and cost per run.</li><li><strong>Tool health</strong>: call error rate, schema validation failures, retries, and invalid arguments.</li><li><strong>Trajectory stats</strong>: steps per run, loops detected, recursion-limit hits, human handoff rate.</li><li><strong>Safety</strong>: guardrail triggers, PII redactions, prompt-injection detections, policy violations.</li><li><strong>Business outcomes</strong>: task completion, escalation rate, reviewer override rate, customer satisfaction.</li></ul>
+<h4>Evaluation</h4>
+<div class="md-table"><table><thead><tr><th>Layer</th><th>What to check</th><th>How</th></tr></thead><tbody><tr><td>Deterministic rules</td><td>Hard rules always hold (suspended licence is always flagged; payout arithmetic)</td><td>Unit tests, 100% pass</td></tr><tr><td>Tool use</td><td>Right tool, right arguments, right order</td><td>Compare with expected trajectories on a golden set</td></tr><tr><td>Retrieval</td><td>Relevant policy clauses found</td><td>Recall at k, context relevance</td></tr><tr><td>Answer</td><td>Correct, grounded in sources, complete, right tone</td><td>Reference answers, LLM-as-judge calibrated on human labels</td></tr><tr><td>Safety</td><td>Refuses or escalates adversarial and out-of-scope inputs</td><td>Red-team set</td></tr></tbody></table></div>
+<h4>Why it differs from deterministic testing</h4>
+<ul><li>The same input can produce different but acceptable outputs, so exact-match assertions fail. Test <strong>properties</strong> (fields, cited clause, decision) and score distributions over hundreds of cases.</li><li>Run each case several times to measure consistency, and gate releases on pass rates per category, not on one run.</li><li>Model or prompt changes from providers can shift behaviour, so evaluation continues in production: sample live traces, score them, and alert on drops.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you validate that an LLM judge agrees with human reviewers?</li><li>What is trajectory evaluation and why does it matter?</li><li>Which metrics would you put on the on-call dashboard?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-133">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-133%3A+What+telemetry+and+evaluation+do+you+need+to+run+AI+agents+in%E2%80%A6&amp;question-id=ml-133&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+MLOps%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-133.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

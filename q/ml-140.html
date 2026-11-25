@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>In UAT, business users complain the agent gives slightly different answers to the same policy question. How do you handle it? | InterviewGearUp</title>
+<meta name="description" content="Separate wording from substance. Agree with users that phrasing can vary but the coverage decision, cited clause and numbers must not, and test against a…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-140.html">
+<meta property="og:title" content="In UAT, business users complain the agent gives slightly different answers to the same policy question. How do you handle it? | InterviewGearUp">
+<meta property="og:description" content="Separate wording from substance. Agree with users that phrasing can vary but the coverage decision, cited clause and numbers must not, and test against a…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-140.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>In UAT, business users complain the agent gives slightly different answers to the same policy question. How do you handle it?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 2 (Mid-level) · Agents · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Separate wording from substance. Agree with users that phrasing can vary but the coverage decision, cited clause and numbers must not, and test against a golden set on those facts. Technically, lower temperature on decision steps, produce schema-validated structured output (status, clause, deductible), compute numbers in code, and render customer text from a template or check it against that result.</p></div>
+<h4>Explained in depth</h4>
+<h4>With stakeholders</h4>
+<ul><li>Explain that language models sample text, so wording varies even with identical inputs, and that setting temperature to zero reduces but does not guarantee identical output.</li><li>Agree what must be consistent: coverage status, the policy clause cited, amounts, required disclosures. Make those the UAT acceptance criteria, measured on a golden set, rather than word-for-word matching.</li><li>Show the evidence: run each golden question several times and report consistency on those fields.</li></ul>
+<h4>Technical fixes</h4>
+<ul><li><strong>Decoding</strong>: temperature 0 to 0.2 for decision and extraction steps.</li><li><strong>Structured output</strong>: the model returns validated JSON, for example:</li></ul>
+<pre><code>{ &quot;coverage_status&quot;: &quot;COVERED&quot;, &quot;policy_clause&quot;: &quot;4.1.A&quot;, &quot;deductible&quot;: 500, &quot;explanation&quot;: &quot;...&quot; }</code></pre>
+<ul><li><strong>Deterministic sources</strong>: deductibles and limits come from the policy system or rules engine, never from generated text.</li><li><strong>Templates</strong>: regulated wording and disclosures come from fixed templates filled with the structured fields; free text is limited to the explanation, and a check confirms it does not contradict the fields.</li><li><strong>Grounding</strong>: retrieve the exact clause and require it to be cited, so different runs anchor on the same source.</li><li><strong>Pin versions</strong>: fix the model version and prompt version so behaviour does not change between test and production.</li></ul>
+<h4>Keep checking</h4>
+<ul><li>Add the reported questions to the regression suite and track a consistency metric on every release.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does temperature 0 not guarantee identical outputs?</li><li>Which fields would you require to be identical across runs?</li><li>How do you check that free-text explanations do not contradict the structured result?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-140">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-140%3A+In+UAT%2C+business+users+complain+the+agent+gives+slightly+different%E2%80%A6&amp;question-id=ml-140&amp;context=ML+%2F+AI+engineer%2C+Gear+2%2C+topic%3A+Agents%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-140.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

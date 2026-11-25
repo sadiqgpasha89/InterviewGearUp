@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Using Google&#39;s Agent Development Kit, how would you route multi-line insurance questions between specialised sub-agents? | InterviewGearUp</title>
+<meta name="description" content="Build a coordinator agent with specialised sub-agents (auto, property, life, billing), each with its own instruction, tools and permissions. The…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-128.html">
+<meta property="og:title" content="Using Google&#39;s Agent Development Kit, how would you route multi-line insurance questions between specialised sub-agents? | InterviewGearUp">
+<meta property="og:description" content="Build a coordinator agent with specialised sub-agents (auto, property, life, billing), each with its own instruction, tools and permissions. The…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-128.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Using Google&#39;s Agent Development Kit, how would you route multi-line insurance questions between specialised sub-agents?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · Agents · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Build a coordinator agent with specialised sub-agents (auto, property, life, billing), each with its own instruction, tools and permissions. The coordinator classifies intent and delegates; shared session state carries identifiers like policy number so the user is not asked twice. Questions spanning lines go back to the coordinator, which runs the specialists in sequence or parallel and combines the results.</p></div>
+<h4>Explained in depth</h4>
+<h4>Structure in ADK</h4>
+<ul><li>An <code>LlmAgent</code> coordinator lists the specialists as <code>sub_agents</code>. The model can transfer control to the sub-agent whose description fits the request; clear, distinct descriptions make routing reliable.</li><li>Alternatively wrap a specialist as a tool (<code>AgentTool</code>) when the coordinator should call it and keep control, which is easier to reason about for combined answers.</li><li>Workflow agents (<code>SequentialAgent</code>, <code>ParallelAgent</code>, <code>LoopAgent</code>) give deterministic orchestration where the steps are known.</li></ul>
+<pre><code>auto = LlmAgent(name=&#39;auto_claims&#39;, description=&#39;Auto policy coverage and claims&#39;, tools=[...])
+home = LlmAgent(name=&#39;property&#39;, description=&#39;Home and property coverage&#39;, tools=[...])
+coordinator = LlmAgent(name=&#39;coordinator&#39;, model=&#39;gemini-...&#39;,
+    instruction=&#39;Identify the policy line and delegate. Ask for the policy number once.&#39;,
+    sub_agents=[auto, home, life, billing])</code></pre>
+<h4>Sharing context</h4>
+<ul><li>Store resolved entities (policy number, claimant id, verified identity) in <strong>session state</strong>; sub-agents read them instead of asking again.</li><li>Long-term facts about the customer can come from a memory service (on Google&#39;s Gemini Enterprise Agent Platform, Memory Bank).</li></ul>
+<h4>Cross-line requests</h4>
+<ul><li>&#39;I reversed into my own garage door&#39; touches auto and home. The coordinator splits the request, calls both specialists (in parallel if independent), and composes one answer that explains which policy covers what and whether one or two claims are needed.</li></ul>
+<h4>Guardrails</h4>
+<ul><li>Each specialist gets only its own tools and data scopes.</li><li>Low-confidence routing asks a clarifying question rather than guessing; repeated failure hands off to a person.</li><li>Evaluate routing accuracy on a labelled set of real questions, including ambiguous ones, and deploy and trace through a managed runtime with logging.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>When would you use AgentTool instead of sub-agent transfer?</li><li>How do you evaluate routing accuracy?</li><li>How do you stop a sub-agent from seeing data from another line of business?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-128">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-128%3A+Using+Google%27s+Agent+Development+Kit%2C+how+would+you+route+multi-line%E2%80%A6&amp;question-id=ml-128&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+Agents%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-128.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

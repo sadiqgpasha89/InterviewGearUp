@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Your delinquency model is usable now but you believe more work could improve it significantly. Do you ship or keep iterating? | InterviewGearUp</title>
+<meta name="description" content="Usually ship a guarded v1 if it beats the current process on the metric that matters and its mistakes are cheap or reviewable. First check the right…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-115.html">
+<meta property="og:title" content="Your delinquency model is usable now but you believe more work could improve it significantly. Do you ship or keep iterating? | InterviewGearUp">
+<meta property="og:description" content="Usually ship a guarded v1 if it beats the current process on the metric that matters and its mistakes are cheap or reviewable. First check the right…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-115.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Your delinquency model is usable now but you believe more work could improve it significantly. Do you ship or keep iterating?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 4 (Lead / Staff) · Strategy · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Usually ship a guarded v1 if it beats the current process on the metric that matters and its mistakes are cheap or reviewable. First check the right metric (with rare defaults, accuracy is misleading; use precision and recall at team capacity), the cost of each error type, and whether a human reviews actions. Launch behind a flag, in shadow mode or to a slice, and keep improving v2 with real feedback.</p></div>
+<h4>Explained in depth</h4>
+<h4>Check the number first</h4>
+<ul><li>If only about 2 percent of accounts default, a model that predicts &#39;never defaults&#39; is 98 percent accurate. A headline such as &#39;78 versus 85 percent accuracy&#39; says little; compare <strong>precision and recall at the number of accounts the team can act on</strong>, PR-AUC, and calibration.</li><li>Compare against the <strong>current baseline</strong> (rules or nothing), not against perfection. A model that lifts recovery over today&#39;s process creates value now.</li></ul>
+<h4>Weigh the cost of errors</h4>
+<ul><li><strong>False positive</strong>: a healthy customer gets an early reminder or a call. Cheap if the action is gentle; expensive if it means suspending service.</li><li><strong>False negative</strong>: a risky account is missed, which is the status quo.</li><li>If the actions triggered are soft and a person reviews the list, shipping early carries little risk. If the model blocks accounts automatically, the bar is much higher.</li></ul>
+<h4>Ship safely</h4>
+<ol start="1"><li><strong>Shadow mode</strong> for a few weeks: score in production, take no action, compare predictions with outcomes.</li><li><strong>Limited launch</strong>: one region or the top score band, behind a feature flag, with a randomized holdout to measure impact.</li><li><strong>Monitoring</strong>: input drift, score distribution, precision on matured outcomes, and a rollback path.</li></ol>
+<h4>Keep improving</h4>
+<ul><li>Production data (which accounts were contacted, what happened) is often the biggest source of improvement, and v1 is what produces it.</li><li>Timebox v2 work and estimate the value of the expected gain: if 7 more points of recall recover an extra amount per quarter, compare that with the cost of a quarter&#39;s delay.</li></ul>
+<p>Say clearly to stakeholders what v1 can and cannot do, and agree the criteria for v2 in advance.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What would make you refuse to ship despite pressure?</li><li>How do you measure a model in shadow mode when outcomes take 60 days to arrive?</li><li>How do you estimate the business value of an extra 5 points of recall?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-115">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-115%3A+Your+delinquency+model+is+usable+now+but+you+believe+more+work+could%E2%80%A6&amp;question-id=ml-115&amp;context=ML+%2F+AI+engineer%2C+Gear+4%2C+topic%3A+Strategy%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-115.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>
