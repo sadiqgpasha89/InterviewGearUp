@@ -173,12 +173,15 @@ test('parseIssue extracts AI generated answer from GitHub issues', () => {
     createDocumentFragment: () => new DocumentFragment(),
     createTextNode: () => new Node(),
     getElementById: () => createElement(),
-    querySelectorAll: () => []
+    querySelectorAll: () => [],
+    documentElement: createElement(),
+    addEventListener: () => {},
+    removeEventListener: () => {}
   };
   const testCtx = { window: {}, document: dummyDoc, location: { hash: '' }, addEventListener: () => {}, scrollTo: () => {}, URLSearchParams, Node, DocumentFragment };
   testCtx.window = testCtx;
   vm.createContext(testCtx);
-  ['js/config.js', 'js/util.js', 'js/engine.js', 'js/app.js'].forEach((f) => {
+  ['js/config.js', 'js/util.js', 'js/engine.js', 'js/stats.js', 'js/app.js'].forEach((f) => {
     vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), testCtx);
   });
   const issue = {
@@ -210,4 +213,64 @@ test('parseIssue extracts AI generated answer from GitHub issues', () => {
   assert.equal(testCtx.IGU.detectProvider({ key: 'AIzaSy123' }), 'gemini');
   assert.equal(testCtx.IGU.detectProvider({ key: 'sk-ant-api03' }), 'anthropic');
   assert.equal(testCtx.IGU.detectProvider({ key: 'sk-proj123' }), 'openai');
+});
+
+/* ---------- progress, streaks and backups (js/stats.js) ---------- */
+const statsCtx = {};
+statsCtx.window = statsCtx;
+vm.createContext(statsCtx);
+vm.runInContext(fs.readFileSync(path.join(root, 'js/stats.js'), 'utf8'), statsCtx);
+const S = statsCtx.IGU.stats;
+
+test('matrix counts prepared questions per role and gear', () => {
+  const first = bank[0];
+  const m = S.matrix(bank, { [first.id]: 1 }, meta);
+  assert.equal(m.total, bank.length);
+  assert.equal(m.done, 1);
+  assert.equal(m.rows.length, meta.roles.length);
+  const row = m.rows.find((r) => r.role === first.role);
+  assert.equal(row.cells.find((c) => c.level === first.level).done, 1);
+});
+
+test('drill outcomes feed the needs-practice pool', () => {
+  let p = S.record({}, 'be-1', 'again', 90);
+  p = S.record(p, 'be-2', 'ok', 30);
+  assert.deepEqual(Array.from(S.weak(p)), ['be-1']);
+  p = S.record(p, 'be-1', 'ok', 40);
+  assert.equal(S.weak(p).length, 0);
+  assert.equal(p['be-1'].n, 2);
+  assert.equal(p['be-1'].secs, 130);
+});
+
+test('streak counts consecutive study days and survives until end of today', () => {
+  const now = Date.parse('2026-11-25T10:00:00Z');
+  assert.equal(S.streak(['2026-11-23', '2026-11-24', '2026-11-25'], now), 3);
+  assert.equal(S.streak(['2026-11-23', '2026-11-24'], now), 2);
+  assert.equal(S.streak(['2026-11-20', '2026-11-25'], now), 1);
+  assert.equal(S.streak([], now), 0);
+  assert.deepEqual(Array.from(S.touch(['2026-11-25'], now)), ['2026-11-25']);
+});
+
+test('backups round-trip and never include API keys', () => {
+  const store = { done: { 'be-1': 1 }, notes: { 'be-1': 'story' }, settings: { key: 'sk-secret' }, activity: ['2026-11-25'] };
+  const b = S.makeBackup((k) => (k in store ? store[k] : null));
+  assert.ok(!JSON.stringify(b).includes('sk-secret'), 'API key leaked into backup');
+  const back = S.readBackup(JSON.parse(JSON.stringify(b)));
+  assert.equal(back.error, undefined);
+  assert.equal(back.data.notes['be-1'], 'story');
+  assert.ok(S.readBackup({ app: 'Other', data: {} }).error);
+  assert.ok(S.readBackup({ app: 'InterviewGearUp', data: { done: [] } }).error);
+  const injected = S.readBackup({ app: 'InterviewGearUp', data: { settings: { key: 'x' }, done: {} } });
+  assert.ok(!('settings' in injected.data), 'backup must not be able to overwrite settings');
+});
+
+test('service worker precaches every file the page loads', () => {
+  const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const loaded = [...html.matchAll(/(?:src|href)="((?:js|data|css)\/[^"]+|favicon\.svg|manifest\.webmanifest)"/g)].map((m) => m[1]);
+  assert.ok(loaded.length > 10);
+  loaded.forEach((f) => {
+    assert.ok(sw.includes("'" + f + "'"), 'sw.js does not precache ' + f);
+    assert.ok(fs.existsSync(path.join(root, f)), f + ' is missing');
+  });
 });

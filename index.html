@@ -3,10 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src https://api.github.com https://api.anthropic.com https://generativelanguage.googleapis.com https://api.openai.com; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src https://api.github.com https://api.anthropic.com https://generativelanguage.googleapis.com https://api.openai.com; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'self'">
 <title>InterviewGearUp</title>
 <meta name="description" content="Interview questions with detailed answers for IT roles at every level, plus a community board of questions asked at real companies.">
 <meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#111A23">
+<meta property="og:title" content="InterviewGearUp: IT interview prep by level">
+<meta property="og:description" content="900+ interview questions with 30-second and in-depth answers for 9 IT roles, from junior to staff. Drill mode, progress tracking and a community board.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="manifest.webmanifest">
+<script src="js/theme.js"></script>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="css/style.css">
 </head>
@@ -26,16 +34,18 @@
     <nav class="tabs" aria-label="Sections" id="tabs">
       <a href="#/questions" data-tab="questions">Question bank</a>
       <a href="#/drill" data-tab="drill">Drill</a>
+      <a href="#/progress" data-tab="progress">Progress</a>
       <a href="#/community" data-tab="community">Community</a>
       <a href="#/post" data-tab="post">Post<span class="wide"> a question</span></a>
     </nav>
-    <a class="btn ghost small" href="https://sadiqgpasha89.github.io" target="_blank" rel="noopener noreferrer" style="margin-right: 6px;">Portfolio</a>
+    <a class="btn ghost small hide-narrow" href="https://sadiqgpasha89.github.io" target="_blank" rel="noopener noreferrer">Portfolio</a>
+    <button class="btn ghost small" id="theme-toggle" type="button" aria-label="Colour theme">Auto</button>
     <button class="btn ghost small" id="open-settings" type="button">Settings</button>
   </div>
 </header>
 
 <main id="app" tabindex="-1">
-  <noscript><p class="notice">InterviewGearUp needs JavaScript to filter and search questions.</p></noscript>
+  <noscript><p class="notice">InterviewGearUp needs JavaScript to filter and search questions. The question source files are browsable on <a href="https://github.com/sadiqgpasha89/InterviewGearUp/tree/main/data">GitHub</a>.</p></noscript>
 </main>
 
 <footer class="foot">
@@ -55,9 +65,16 @@
     </select>
     <label for="set-key">API key</label>
     <input id="set-key" type="password" autocomplete="off" spellcheck="false" placeholder="AIzaSy... or sk-ant-... or sk-...">
-    <label for="set-model">Model <span class="hint">(optional)</span></label>
+    <label for="set-model">Model <span class="hint">(optional, leave blank for the default shown)</span></label>
     <input id="set-model" type="text" autocomplete="off" spellcheck="false" placeholder="Default for selected provider">
-    <p class="muted small-text">The key is stored locally in this browser and only sent to the selected provider. Google AI Studio provides free Gemini API keys without requiring credit cards.</p>
+    <div class="notice small-text">
+      <strong>Before you paste a key:</strong>
+      <ul>
+        <li>It is stored in this browser's local storage and sent only to the provider you pick. Anyone with access to this browser profile can read it.</li>
+        <li>Calls are billed to your account at the provider's rates. Use a dedicated key with a low spending limit, and revoke it when you are done.</li>
+        <li>Gemini offers a free tier through Google AI Studio; check its current limits before relying on it.</li>
+      </ul>
+    </div>
     <div class="dlg-actions">
       <button class="btn danger-ghost" type="button" id="wipe">Delete my local data</button>
       <span class="grow"></span>
@@ -70,6 +87,7 @@
 <script src="js/config.js"></script>
 <script src="js/util.js"></script>
 <script src="js/engine.js"></script>
+<script src="js/stats.js"></script>
 <script src="data/general.js"></script>
 <script src="data/frontend.js"></script>
 <script src="data/backend.js"></script>

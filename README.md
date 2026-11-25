@@ -14,11 +14,17 @@ Interview preparation for IT roles, organised by **gear**:
 ## Highlights
 
 - **Question bank**: 900+ in-depth questions across 9 tech roles (100+ questions per role across Junior, Mid-level, Senior, and Lead/Staff gears). Every entry provides a 30-second summary answer, deep technical breakdown, pitfalls & trade-offs, and likely follow-up questions tailored to that level.
-- **Drill mode**: Practice out loud with random questions and a timer. Questions marked as prepared automatically appear less frequently.
+- **Drill mode**: Practice out loud with random questions and a timer. Grade yourself after each answer; questions you struggle with go into a **Needs practice** pool. Keyboard shortcuts: `N` next, `R` reveal, `Y` confident, `P` practise again.
+- **Save, annotate, filter**: Star questions for later, keep personal notes on any question, and filter the bank by To prepare / Prepared / Saved / Needs practice / With notes. Press `/` to jump to search.
+- **Progress page**: Overall %, study streak, and a role × gear coverage matrix. **Backup and restore** your progress as a JSON file (API keys are never exported).
+- **Works offline**: Installable as an app (PWA); the question bank keeps working without a connection.
+- **Light / Dark / Auto theme** toggle.
 - **Community board**: Real interview questions asked at top companies, filterable by company, role, gear, and business domain.
 - **Auto-generated LLM answers**: Community questions are automatically answered by an LLM (Google Gemini, Anthropic Claude, or OpenAI) calibrated for the stated role, company domain, and gear level.
 - **Post a question**: Register locally with a display name, write questions you were asked in real interviews, and receive an instant answer.
 - **Zero bloat**: Static site built with vanilla HTML, modern CSS, and lightweight JavaScript. No frameworks, no build steps, no tracking, and no external dependencies.
+
+See **[ROADMAP.md](ROADMAP.md)** for the product scope, what shipped in each release, and what is planned next.
 
 ---
 
@@ -86,7 +92,7 @@ When you fork or deploy this repository, enable the automated AI answer workflow
    - Go to your repository on GitHub: **Settings > Secrets and variables > Actions**.
    - Create a new repository secret:
      - `GEMINI_API_KEY` *(Default model: `gemini-2.5-flash`)*, or
-     - `ANTHROPIC_API_KEY` *(Default model: `claude-3-5-sonnet-20241022`)*, or
+     - `ANTHROPIC_API_KEY` *(Default model: `claude-sonnet-5-5`)*, or
      - `OPENAI_API_KEY` *(Default model: `gpt-4o-mini`)*
 
 3. **Verify the Action**:
@@ -184,8 +190,10 @@ Run `npm test` after adding questions to verify that IDs are unique, fields meet
   - `https://generativelanguage.googleapis.com`
   - `https://api.anthropic.com`
   - `https://api.openai.com`
+  - `manifest-src` and `worker-src` are limited to `self` for the offline service worker.
 - **Safe Link Rendering**: The built-in markdown parser only allows internal hash routes (`#/`) and secure external links (`https://`).
-- **Local Data Control**: User profiles, saved drafts, preparation progress, and stored API keys can be deleted anytime using **Settings > Delete my local data**.
+- **Local Data Control**: User profiles, saved drafts, preparation progress, notes, and stored API keys can be deleted anytime using **Settings > Delete my local data**.
+- **API keys**: Keys in browser storage can be read by anyone with access to that browser profile, and calls are billed to the key owner. Use a dedicated key with a low spending limit.
 
 ---
 

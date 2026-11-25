@@ -5,7 +5,7 @@
  * Can be run in GitHub Actions on issue events (opened, labeled), or locally.
  * Supported LLM providers:
  *   - Google Gemini (via GEMINI_API_KEY) - default model: gemini-2.5-flash
- *   - Anthropic Claude (via ANTHROPIC_API_KEY) - default model: claude-3-5-sonnet-20241022
+ *   - Anthropic Claude (via ANTHROPIC_API_KEY) - default model: claude-sonnet-5-5
  *   - OpenAI (via OPENAI_API_KEY) - default model: gpt-4o-mini
  *   - GitHub Models (via GITHUB_MODELS_TOKEN or GITHUB_TOKEN if enabled)
  *   - Offline fallback scaffold (if no API keys are present)
@@ -112,7 +112,7 @@ async function callGemini(apiKey, model, systemPrompt, userPrompt) {
  * Calls Anthropic Claude API
  */
 async function callAnthropic(apiKey, model, systemPrompt, userPrompt) {
-  const m = model || process.env.ANTHROPIC_MODEL || 'claude-3-5-sonnet-20241022';
+  const m = model || process.env.ANTHROPIC_MODEL || 'claude-sonnet-5-5';
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
