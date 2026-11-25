@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you establish automated code quality gates in CI/CD without creating development friction? | InterviewGearUp</title>
+<meta name="description" content="Establish automated quality gates that are fast, targeted and trusted: linting and formatting, unit tests, coverage on changed code, static analysis,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/lead-55.html">
+<meta property="og:title" content="How do you establish automated code quality gates in CI/CD without creating development friction? | InterviewGearUp">
+<meta property="og:description" content="Establish automated quality gates that are fast, targeted and trusted: linting and formatting, unit tests, coverage on changed code, static analysis,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/lead-55.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you establish automated code quality gates in CI/CD without creating development friction?</h1>
+<p class="muted small-text meta-line">Tech lead / Engineering manager · Gear 3 (Senior) · Quality · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Establish automated quality gates that are fast, targeted and trusted: linting and formatting, unit tests, coverage on changed code, static analysis, dependency and secret scanning, and required reviews. Start in report-only mode, tune rules, keep CI quick, apply gates to new code first, give clear fixes and an escape hatch, and measure friction so gates help rather than frustrate.</p></div>
+<h4>Explained in depth</h4>
+<h4>Goal</h4>
+<p>Quality gates should <strong>catch defects and risks early, cheaply and consistently</strong>, so humans can focus review on design and logic. They fail when they are slow, noisy, inconsistent or arbitrary, because developers learn to work around them.</p>
+<h4>Layers of gates</h4>
+<ol start="1"><li><strong>Pre-commit and editor feedback</strong> (seconds): formatters (Prettier, Black, gofmt), linters (ESLint, Ruff, golangci-lint), type checking, commit message checks via pre-commit hooks or IDE plugins. Shift as much as possible left, but also enforce in CI, because local hooks can be skipped.</li><li><strong>Pull request checks</strong> (minutes): build, <strong>unit tests</strong>, quick integration tests, static analysis (SonarQube, CodeQL, Semgrep), <strong>coverage on new or changed code</strong> (for example 80 percent for the diff, not an absolute global number), <strong>dependency vulnerability scan</strong> (Dependabot, Snyk, <code>npm audit</code>, Trivy), <strong>secret scanning</strong> (gitleaks, GitHub secret scanning), licence checks, IaC scanning (Checkov, tfsec), container image scans, API contract and schema compatibility checks, bundle-size or performance budgets for sensitive paths.</li><li><strong>Branch protection and review policy</strong>: required status checks, at least one approving review, CODEOWNERS for critical areas, linear history, signed commits where required, and no direct pushes to main.</li><li><strong>Pre-deploy and post-deploy gates</strong>: end-to-end smoke tests, canary analysis, SLO-based promotion checks, security review for high-risk changes, change approvals only where required.</li><li><strong>Periodic and deeper scans</strong>: nightly full test suites, mutation testing, DAST, fuzzing, and licence audits that do not block every PR.</li></ol>
+<h4>Introducing gates without friction</h4>
+<ol start="1"><li><strong>Involve the team</strong>: agree the purpose and criteria in an RFC; choose rules by consensus, starting with high-value, low-controversy checks (formatting, secret scanning, critical vulnerabilities, failing tests).</li><li><strong>Start in report-only (warn) mode</strong>, collect data on false positives and effort, tune, then <strong>enforce progressively</strong>.</li><li><strong>Gate new code, not the whole legacy debt</strong>: use &quot;clean as you code&quot; (SonarQube new code period) or baselines/suppression files so existing issues are tracked, not blocking; set a ratchet that prevents the situation from getting worse and burn down debt over time (see coverage baselines).</li><li><strong>Make failures actionable</strong>: clear messages with the rule, explanation, <strong>how to fix</strong>, and links; auto-fix where possible (<code>eslint --fix</code>, formatter bots, Renovate PRs); comment on the PR rather than requiring digging in logs.</li><li><strong>Keep CI fast</strong>: target under 10 minutes for PR feedback. Use caching, parallelisation, test selection (run only affected tests), incremental builds, remote caches (Bazel, Nx, Turborepo), faster runners, and split slow suites to nightly. Slow gates tempt people to batch big PRs.</li><li><strong>Eliminate flaky tests</strong>: quarantine and track flaky tests, fix root causes, require flakiness SLAs, and never normalise &quot;just re-run&quot;. A flaky gate destroys trust.</li><li><strong>Provide an escape hatch with accountability</strong>: allow a documented override (for example a label with justification and a second approver) for emergencies, tracked and reviewed later, rather than forcing people to bypass the system silently.</li><li><strong>Right-size by risk</strong>: stricter gates for critical services (payments, security) and lighter for prototypes and internal tools; allow teams to add stricter rules for themselves.</li><li><strong>Maintain the rules</strong>: assign ownership of the quality platform, review rule sets quarterly, remove rules that generate noise, and update thresholds as the codebase improves. Treat the pipeline as a product with users.</li></ol>
+<h4>Measure the impact</h4>
+<p>Track <strong>PR cycle time and CI duration, flaky test rate, gate failure reasons, override rate, escaped defects and change failure rate, time spent fixing gate failures, developer satisfaction</strong> (survey), and the trend in new-code issues. If lead time rises and defects do not fall, adjust.</p>
+<h4>Example configuration</h4>
+<pre><code># GitHub Actions: required checks on pull requests
+jobs:
+  verify:
+    steps:
+      - run: npm ci --prefer-offline
+      - run: npm run lint &amp;&amp; npm run typecheck
+      - run: npm test -- --changedSince=origin/main --coverage
+      - uses: github/codeql-action/analyze@v3
+      - run: npx gitleaks detect --no-banner</code></pre>
+<h4>Pitfalls</h4>
+<p>Imposing global coverage numbers that drive meaningless tests, enforcing everything at once on legacy code, slow pipelines, noisy tools nobody trusts, and no ownership of the rules.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you introduce a quality gate to a legacy codebase without blocking all work immediately?</li><li>How do you keep CI fast and avoid flaky checks that destroy trust in gates?</li><li>What metrics show a gate is helping rather than creating friction?</li></ul>
+<p><a class="btn primary" href="../#/q/lead-55">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+lead-55%3A+How+do+you+establish+automated+code+quality+gates+in+CI%2FCD+without%E2%80%A6&amp;question-id=lead-55&amp;context=Tech+lead+%2F+Engineering+manager%2C+Gear+3%2C+topic%3A+Quality%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Flead-55.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

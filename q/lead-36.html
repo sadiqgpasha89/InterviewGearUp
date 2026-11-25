@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you track operational health metrics like MTTR, MTTD, change failure rate, and deployment frequency? | InterviewGearUp</title>
+<meta name="description" content="Track the four DORA metrics: deployment frequency, lead time for changes, change failure rate and time to restore service, plus detection and response…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/lead-36.html">
+<meta property="og:title" content="How do you track operational health metrics like MTTR, MTTD, change failure rate, and deployment frequency? | InterviewGearUp">
+<meta property="og:description" content="Track the four DORA metrics: deployment frequency, lead time for changes, change failure rate and time to restore service, plus detection and response…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/lead-36.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you track operational health metrics like MTTR, MTTD, change failure rate, and deployment frequency?</h1>
+<p class="muted small-text meta-line">Tech lead / Engineering manager · Gear 3 (Senior) · Operations · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Track the four DORA metrics: deployment frequency, lead time for changes, change failure rate and time to restore service, plus detection and response measures such as MTTD and MTTR. Automate collection from CI/CD, version control and incident tools, review trends and distributions rather than single averages, and use the metrics to improve systems, not to rank individuals.</p></div>
+<h4>Explained in depth</h4>
+<h4>The metrics and definitions</h4>
+<div class="md-table"><table><thead><tr><th>Metric</th><th>What it shows</th><th>How to measure</th></tr></thead><tbody><tr><td><strong>Deployment frequency</strong></td><td>how often code reaches production</td><td>count of successful production deployments per day or week (from CI/CD or deployment events)</td></tr><tr><td><strong>Lead time for changes</strong></td><td>speed from commit to running in production</td><td>time between first commit (or PR merge) and production deployment, per change</td></tr><tr><td><strong>Change failure rate</strong></td><td>quality and stability of releases</td><td>percentage of deployments causing a degraded service needing remediation (rollback, hotfix, patch, incident)</td></tr><tr><td><strong>Time to restore service (MTTR)</strong></td><td>resilience and recovery speed</td><td>time from the start of a user-impacting failure to restoration (from incident opened to resolved)</td></tr><tr><td><strong>MTTD</strong> (mean time to detect)</td><td>monitoring effectiveness</td><td>time from failure start to detection or alert</td></tr><tr><td>MTTA / MTTI</td><td>response speed</td><td>time to acknowledge and to identify cause</td></tr></tbody></table></div>
+<p>The DORA research (Accelerate, State of DevOps reports) links high performance (frequent deploys, short lead time, low failure rate, fast recovery) with better organisational outcomes. Newer DORA work also adds <strong>reliability</strong> (SLO attainment) and rework rate.</p>
+<h4>Collecting data</h4>
+<ol start="1"><li><strong>Define terms once</strong> across the org: what counts as a deployment (production only, per service), a failure (customer impact, rollback, hotfix, incident severity ≥ some level), start of incident (first customer-impacting time, not ticket creation), and restoration.</li><li><strong>Automate</strong> from systems of record: Git provider (commits, PRs), CI/CD (GitHub Actions, GitLab, Jenkins, ArgoCD events), incident tools (PagerDuty, Opsgenie, incident.io, FireHydrant), monitoring (Datadog, Prometheus, Grafana), issue tracker. Link deployments to incidents using change IDs or deployment markers. Tools: <strong>Four Keys</strong> (Google open source), <strong>Sleuth, LinearB, Jellyfish, Swarmia, Faros, Haystack, DX, Backstage plugins</strong>, or custom dashboards via data warehouse.</li></ol>
+<pre><code>-- median lead time per week, from first commit to production deploy
+SELECT date_trunc(&#39;week&#39;, deployed_at) AS week,
+       percentile_cont(0.5) WITHIN GROUP (ORDER BY deployed_at - first_commit_at) AS median_lead_time
+FROM change_events GROUP BY 1 ORDER BY 1;</code></pre>
+<ol start="3"><li><strong>Use percentiles</strong>: report <strong>median and p90</strong> instead of mean, since incident durations and lead times have long tails (one 3-day outage distorts an average). Segment by service, team and incident severity.</li><li><strong>Add reliability context</strong>: SLO compliance and error budget burn, availability, customer-reported incidents, and on-call load (pages per shift, after-hours pages), alert quality (percentage actionable).</li></ol>
+<h4>Improving each metric</h4>
+<ul><li><strong>Deployment frequency and lead time</strong>: trunk-based development, small batches, feature flags, automated tests, fast CI, pre-approved changes, removing manual gates and long-lived branches, parallelising builds, reducing code review wait time.</li><li><strong>Change failure rate</strong>: stronger automated tests, canary and progressive delivery, contract tests, better staging parity, code review quality, and static analysis.</li><li><strong>MTTD</strong>: SLO-based alerting, synthetic monitoring, distributed tracing, good dashboards, anomaly detection, deployment markers.</li><li><strong>MTTR</strong>: <strong>runbooks</strong>, one-click rollback, feature flag kill switches, clear on-call ownership and escalation, incident commander practice, chaos exercises and <strong>blameless postmortems</strong> with tracked action items.</li></ul>
+<h4>Using metrics well</h4>
+<ul><li>Treat them as <strong>team-level system indicators</strong> for finding bottlenecks, <strong>not individual performance scores</strong> (Goodhart&#39;s law: when a measure becomes a target, it ceases to be a good measure). Avoid league tables across dissimilar teams.</li><li>Review monthly or quarterly in operational reviews with context (migrations, incidents, headcount). Combine with qualitative signals (developer survey, SPACE framework).</li><li>Set <strong>improvement goals</strong> (for example reduce p90 lead time from 5 days to 2) with experiments, not mandates.</li><li>Watch for gaming: splitting deployments artificially, reclassifying incidents, hiding failures, rushing to restore with bad fixes. Counter with definitions, audits, and focus on outcomes (customer impact, SLOs).</li></ul>
+<h4>Reporting</h4>
+<p>A simple dashboard shows trends over time with benchmarks (elite, high, medium, low from DORA), top incidents and linked improvements. Share wins and learn from regressions.</p>
+<h4>Pitfalls</h4>
+<p>Inconsistent definitions, using averages only, measuring output (commit counts) rather than outcomes, using metrics for individual rankings, and ignoring reliability and developer experience.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you define and measure change failure rate and MTTR consistently across teams with different tooling?</li><li>Why are medians and distributions better than averages for MTTR and lead time?</li><li>What anti-patterns arise when teams are judged by these metrics and how do you prevent gaming?</li></ul>
+<p><a class="btn primary" href="../#/q/lead-36">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+lead-36%3A+How+do+you+track+operational+health+metrics+like+MTTR%2C+MTTD%2C+change%E2%80%A6&amp;question-id=lead-36&amp;context=Tech+lead+%2F+Engineering+manager%2C+Gear+3%2C+topic%3A+Operations%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Flead-36.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

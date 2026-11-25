@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you establish equitable on-call compensation, secondary escalation paths, and paging policies? | InterviewGearUp</title>
+<meta name="description" content="Design on-call to be sustainable and fair: schedule rotations with enough people for a safe frequency, define primary and secondary roles with clear…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/lead-62.html">
+<meta property="og:title" content="How do you establish equitable on-call compensation, secondary escalation paths, and paging policies? | InterviewGearUp">
+<meta property="og:description" content="Design on-call to be sustainable and fair: schedule rotations with enough people for a safe frequency, define primary and secondary roles with clear…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/lead-62.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you establish equitable on-call compensation, secondary escalation paths, and paging policies?</h1>
+<p class="muted small-text meta-line">Tech lead / Engineering manager · Gear 3 (Senior) · Operations · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Design on-call to be sustainable and fair: schedule rotations with enough people for a safe frequency, define primary and secondary roles with clear escalation paths, compensate through pay, time off or both, set paging policies that page only on actionable user-impacting alerts, track toil and alert quality, and invest in reliability work to reduce pages.</p></div>
+<h4>Explained in depth</h4>
+<h4>Principles</h4>
+<p>On-call is <strong>real work</strong> that constrains personal time and carries stress; it must be <strong>voluntary where possible, fairly distributed, compensated, supported by good tooling and runbooks, and continuously improved</strong>. Google SRE guidance suggests limiting on-call to about <strong>25 percent of an engineer&#39;s time</strong>, with no more than two incidents per shift on average so each can be handled properly and followed up.</p>
+<h4>Rotation design</h4>
+<ol start="1"><li><strong>Team size and frequency</strong>: for 24x7 coverage with primary and secondary, aim for at least <strong>8 engineers</strong> in a rotation (one week of primary every 8 weeks), or consider follow-the-sun across regions (each region covers local daytime) to avoid night pages. Small teams can pool into a shared rotation across related services.</li><li><strong>Roles</strong>:</li></ol>
+<ul><li><strong>Primary</strong>: first responder, acknowledges within the target (for example 5 minutes), triages and mitigates.</li><li><strong>Secondary / backup</strong>: automatically paged if primary does not acknowledge, and available for escalation or pairing.</li><li><strong>Escalation path</strong>: subject matter experts, engineering manager, incident commander for major incidents, executive for customer-impacting severity 1.</li><li>Ensure <strong>shadowing and training</strong> for new on-call engineers (shadow, then reverse-shadow), plus access, tooling and documentation checks before they are scheduled.</li></ul>
+<ol start="3"><li><strong>Scheduling fairness</strong>: publish schedules weeks ahead, allow <strong>swaps</strong> easily, respect holidays and personal constraints, account for time zones, and avoid back-to-back weeks. Handoff meetings or notes at rotation change to review ongoing issues. Exempt people temporarily for health, parental leave or after a heavy shift.</li><li><strong>Rest after incidents</strong>: if paged overnight, allow a <strong>late start or day off</strong>; require rest periods (for example 11 hours between shifts) and limit consecutive nights.</li></ol>
+<h4>Compensation</h4>
+<p>Options (often combined):</p>
+<ul><li><strong>On-call stipend</strong>: fixed pay per week or per day (for example a weekend premium and a smaller weekday amount), recognising availability constraints.</li><li><strong>Incident pay</strong>: hourly or per-page pay for time worked outside hours, possibly at overtime rates (check labour law: in some countries on-call time and callouts have legal requirements, such as the EU Working Time Directive, UK and Germany rules).</li><li><strong>Time off in lieu</strong>: compensatory days after heavy shifts or weekends.</li><li><strong>Career and recognition</strong>: include on-call contribution in performance and promotion criteria, and don&#39;t penalise those who go on leave to recover.</li></ul>
+<p>Choose based on culture and law, keep rules <strong>transparent and consistent</strong>, and apply to everyone, including senior engineers and managers who join rotations to model fairness. Budget for it, because underfunded on-call becomes unpaid overtime.</p>
+<h4>Paging policy and alert quality</h4>
+<ul><li><strong>Page only for urgent, actionable, user-impacting problems</strong> (SLO burn, outage, data loss, security events). Everything else becomes a ticket or a business-hours notification. Use <strong>severity levels</strong> with matching notification channels.</li><li>Alert on <strong>symptoms (SLOs, error budget burn rates)</strong> instead of causes (CPU), include a runbook link, dashboard, and context in each alert, deduplicate and group related alerts, and use maintenance windows.</li><li>Define <strong>acknowledge and escalate timers</strong> (for example page, then re-page after 5 minutes, then secondary after 10, then manager).</li><li>Review alerts weekly: delete or tune noisy ones, measure <strong>pages per shift, off-hours pages, actionable percentage, mean time to acknowledge and resolve</strong>, and repeat offenders. Set targets such as &quot;fewer than 2 pages per shift&quot; and treat violations as reliability work.</li><li>Provide <strong>good tooling</strong>: PagerDuty, Opsgenie or incident.io, ChatOps, runbooks and automation (auto-remediation for common issues), access to logs and traces, and a clear incident process (incident commander, comms lead).</li><li>Run <strong>blameless postmortems</strong> and track action items; allocate sprint capacity to fix root causes.</li></ul>
+<h4>Culture</h4>
+<p>Encourage asking for help, no hero culture, and escalate early. Provide support after tough incidents and mental health resources. Rotate <strong>ownership of reliability improvements</strong> so the burden is shared. Managers should take their turn on-call or the escalation role.</p>
+<h4>Pitfalls</h4>
+<p>Tiny rotations, paging on every anomaly, no secondary, unpaid weekends, no rest after incidents, and ignoring alert fatigue until engineers leave.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What compensation models are common for on-call and how do you choose between stipends, per-page pay and time off in lieu?</li><li>How do you design alerting and paging policies so that people are paged only when action is needed?</li><li>How do you prevent on-call from burning out engineers and discouraging people from owning production?</li></ul>
+<p><a class="btn primary" href="../#/q/lead-62">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+lead-62%3A+How+do+you+establish+equitable+on-call+compensation%2C+secondary%E2%80%A6&amp;question-id=lead-62&amp;context=Tech+lead+%2F+Engineering+manager%2C+Gear+3%2C+topic%3A+Operations%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Flead-62.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

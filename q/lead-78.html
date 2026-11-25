@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you secure a dedicated percentage of sprint capacity (e.g. 20 percent) for ongoing technical debt? | InterviewGearUp</title>
+<meta name="description" content="Secure sustained tech debt capacity by making debt visible and tied to business outcomes: inventory and quantify it with cost of delay and risk,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/lead-78.html">
+<meta property="og:title" content="How do you secure a dedicated percentage of sprint capacity (e.g. 20 percent) for ongoing technical debt? | InterviewGearUp">
+<meta property="og:description" content="Secure sustained tech debt capacity by making debt visible and tied to business outcomes: inventory and quantify it with cost of delay and risk,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/lead-78.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you secure a dedicated percentage of sprint capacity (e.g. 20 percent) for ongoing technical debt?</h1>
+<p class="muted small-text meta-line">Tech lead / Engineering manager · Gear 3 (Senior) · Strategy · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Secure sustained tech debt capacity by making debt visible and tied to business outcomes: inventory and quantify it with cost of delay and risk, translate it into delivery speed, incident and security impact, propose a standing allocation such as 15 to 20 percent agreed with product, track results with metrics, and show wins so the agreement holds under pressure.</p></div>
+<h4>Explained in depth</h4>
+<h4>Reframe technical debt</h4>
+<p>Debt is not &quot;code we dislike&quot;. Define it as <strong>deliberate or accidental design and implementation shortcuts that increase the cost of future change or the risk of failure</strong>. Like financial debt, it carries <strong>interest</strong> (slower delivery, bugs, incidents, onboarding time) and sometimes <strong>principal</strong> (the cost to fix). Some debt is wise (shipping an MVP). Unmanaged debt compounds. The goal is <strong>a conscious, sustainable policy</strong>, not zero debt.</p>
+<h4>Build the evidence</h4>
+<ol start="1"><li><strong>Create a debt register</strong>: list items with description, affected systems, <strong>category</strong> (code quality, architecture, test gaps, infrastructure, security, dependencies, documentation), owner, estimated effort, and the <strong>impact</strong> it causes. Gather input from engineers, SRE and support. Use tools to help: SonarQube technical debt estimates, CodeScene hotspots (change frequency times complexity), dependency age reports, DORA metrics, incident data.</li><li><strong>Quantify interest</strong> in business terms:</li></ol>
+<ul><li><strong>Delivery drag</strong>: extra days per feature in a fragile module (&quot;changes to billing take 3x longer; 40 percent of its PRs need hotfixes&quot;).</li><li><strong>Incidents and downtime</strong>: number, duration and customer impact traced to specific debt; revenue or SLA credits lost.</li><li><strong>Security and compliance exposure</strong>: unsupported versions, unpatched dependencies, audit findings.</li><li><strong>Support and operational cost</strong>: manual deploys, toil hours per week, on-call pages.</li><li><strong>Onboarding and attrition</strong>: time to productivity, developer survey results (engineers citing tooling and debt as top frustration).</li><li><strong>Opportunity cost</strong>: features that cannot be built until a refactor is done.</li></ul>
+<p>   Example: &quot;Manual releases cost 6 engineer-hours per week and cause 1 incident per quarter; automating takes 3 weeks and pays back in 5 months.&quot;</p>
+<ol start="3"><li><strong>Prioritise</strong> with a simple model: <strong>impact (interest cost and risk) x likelihood / effort</strong>, or a 2x2 (high-impact low-effort first; high-impact high-effort planned as projects). Consider <strong>blast radius</strong>, proximity to upcoming roadmap work (fix debt in areas you are about to change), and compounding.</li></ol>
+<h4>Propose a policy</h4>
+<ul><li><strong>Standing capacity allocation</strong> (commonly 15 to 25 percent per sprint or a rotating quarter slice) agreed with product and leadership as part of planning, like paying a mortgage. Frame it as <strong>protecting future velocity and reliability</strong>, supported by data.</li><li><strong>Embed debt in feature work</strong> (the &quot;boy scout rule&quot; and refactoring as part of delivery) for small items, with <strong>dedicated projects</strong> for larger ones (platform upgrades, service decomposition).</li><li>Alternatives: <strong>Error budget policy</strong> (when SLOs are breached, reliability and debt work takes priority), <strong>debt sprints/fix-it weeks</strong> quarterly, or a dedicated platform team for shared debt.</li><li><strong>Define &quot;debt&quot; work types and acceptance criteria</strong> with outcome metrics (build time, change failure rate, incidents), not just refactor tasks.</li><li>Write down the agreement (team charter or planning rules) and review it quarterly with data.</li></ul>
+<h4>Make it stick</h4>
+<ol start="1"><li><strong>Track and report outcomes</strong>: before and after metrics (lead time, defect rate, CI time, incident count, cloud cost) and share wins in sprint reviews and updates (&quot;Upgrading the framework reduced build time from 25 to 9 minutes and cut flaky tests by 60 percent&quot;).</li><li><strong>Make debt visible in planning</strong>: put items on the same backlog with product, show a <strong>debt burndown</strong> or health score, and include debt KRs in OKRs.</li><li><strong>Tie to business risk</strong>: security debt linked to audit or customer requirements, reliability debt to churn or SLA penalties.</li><li><strong>Negotiate trade-offs honestly</strong>: when deadlines require taking on debt intentionally, <strong>record it</strong> (ticket with owner, expected payoff date, &quot;debt acceptance&quot; note) and schedule repayment. Track &quot;debt incurred versus repaid&quot;.</li><li><strong>Protect the allocation</strong>: when pressure rises, make trade-offs explicit with leadership (&quot;Cutting the 20 percent for two sprints increases the risk of X; if we do, we repay in the next quarter&quot;). Avoid silent erosion.</li><li><strong>Build alliances</strong>: partner with product, SRE and security who benefit; share the story with executives; use incidents as teaching moments (postmortem actions linked to debt).</li></ol>
+<h4>Pitfalls</h4>
+<p>Presenting debt as engineers&#39; preference, huge rewrites with unclear value, no measurement of results, fixing debt in rarely changed code, and letting the allocation vanish after the first deadline.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you quantify the cost of technical debt in language product managers and executives accept?</li><li>How do you decide which debt items to pay first, and when to defer or accept them?</li><li>What do you do when a launch deadline erodes the agreed 20 percent allocation?</li></ul>
+<p><a class="btn primary" href="../#/q/lead-78">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+lead-78%3A+How+do+you+secure+a+dedicated+percentage+of+sprint+capacity+%28e.g.+20%E2%80%A6&amp;question-id=lead-78&amp;context=Tech+lead+%2F+Engineering+manager%2C+Gear+3%2C+topic%3A+Strategy%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Flead-78.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

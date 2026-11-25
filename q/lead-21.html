@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you cultivate an RFC (Request for Comments) culture for collaborative technical proposals? | InterviewGearUp</title>
+<meta name="description" content="An RFC culture makes technical decisions visible and collaborative by having authors write a proposal with context, goals, alternatives and trade-offs,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/lead-21.html">
+<meta property="og:title" content="How do you cultivate an RFC (Request for Comments) culture for collaborative technical proposals? | InterviewGearUp">
+<meta property="og:description" content="An RFC culture makes technical decisions visible and collaborative by having authors write a proposal with context, goals, alternatives and trade-offs,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/lead-21.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you cultivate an RFC (Request for Comments) culture for collaborative technical proposals?</h1>
+<p class="muted small-text meta-line">Tech lead / Engineering manager · Gear 3 (Senior) · Strategy · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>An RFC culture makes technical decisions visible and collaborative by having authors write a proposal with context, goals, alternatives and trade-offs, circulating it for time-boxed asynchronous review, recording decisions and rationale in a searchable repository, and defining who decides. Keep it lightweight, scale it by risk, and reward feedback so it informs rather than blocks.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why RFCs</h4>
+<p>Without a written process, decisions happen in hallway conversations and Slack threads, affected teams learn too late, rationale is lost, and loud voices win. An <strong>RFC (Request for Comments)</strong> or design document gives <strong>transparency, early feedback, shared context, institutional memory</strong> (a decision log), and a way for quieter and remote engineers to contribute. Examples: Rust RFCs, Python PEPs, Uber and Google design docs, ADRs (Architecture Decision Records).</p>
+<h4>Core components</h4>
+<ol start="1"><li><strong>Template</strong> (short, one to five pages): title, author, status, reviewers, and date; <strong>context and problem</strong>; <strong>goals and non-goals</strong>; <strong>proposal</strong> (design, diagrams, API changes); <strong>alternatives considered</strong> with trade-offs; <strong>impact</strong> (security, cost, performance, operations, migration, rollout, testing, compatibility); <strong>risks and open questions</strong>; <strong>decision and rationale</strong> section filled at the end.</li><li><strong>Lifecycle</strong> with explicit states: Draft, In Review, Accepted, Rejected, Implemented, Superseded. Keep RFCs in a <strong>Git repository or wiki</strong> with numbered documents and search.</li><li><strong>Process</strong>:</li></ol>
+<ul><li>Author discusses the idea informally first, then writes the RFC.</li><li>Circulate to affected teams, security, SRE and data owners with a <strong>review period</strong> (for example 5 business days; shorter for small changes) and a named <strong>decision maker</strong> or approvers (tech lead, architecture group, or consensus-with-decision-owner using the &quot;disagree and commit&quot; principle).</li><li>Comments happen asynchronously on the document or PR; a <strong>synchronous review meeting</strong> is held only for unresolved contentious points.</li><li>Record the outcome, update status, and link implementation tickets and ADRs.</li></ul>
+<ol start="4"><li><strong>Thresholds</strong>: require RFCs for changes that are <strong>hard to reverse or cross team boundaries</strong>: new services or datastores, public API changes, major dependencies, security-sensitive designs, migrations, org-wide standards. Skip them for local, easily reversible changes (a short ADR or PR description is enough). Scale by risk: &quot;one-way doors&quot; get thorough review, &quot;two-way doors&quot; decide quickly (Bezos).</li></ol>
+<h4>Making it healthy</h4>
+<ul><li><strong>Be lightweight</strong>: time-box reviews, provide templates and examples, and accept that a proposal need not be perfect to share (&quot;strawman first&quot;).</li><li><strong>Clear decision rights</strong> prevent infinite debate: define the approver in advance, set a deadline, and make a decision even when consensus is incomplete, documenting dissent.</li><li><strong>Review etiquette</strong>: critique the design, not the person; ask questions first; label comments (blocking vs suggestion vs nit); separate &quot;must fix&quot; from preferences; senior reviewers model constructive feedback.</li><li><strong>Reward participation</strong>: recognise high-quality RFC authors and reviewers in performance reviews and promotion criteria (especially for staff and principal levels), call out good examples in all-hands.</li><li><strong>Keep it discoverable</strong>: central index, tagging, notifications to relevant channels, an &quot;RFC digest&quot; newsletter, and office hours with architects for coaching.</li><li><strong>Close the loop</strong>: review outcomes after implementation (did the design deliver?), retire stale RFCs, and use lessons in future templates.</li></ul>
+<h4>Rollout plan</h4>
+<p>Pilot with a few teams on real decisions, collect feedback after a quarter, adjust the template and thresholds, then publish guidelines. Leaders should <strong>write RFCs themselves</strong> and refuse to make major architectural decisions outside the process. For seniors who prefer verbal decisions, show the value: fewer re-litigated debates, faster onboarding, and protection when decisions are questioned later.</p>
+<h4>Metrics</h4>
+<p>Number of RFCs, time from draft to decision, participation breadth, proportion of production incidents linked to unreviewed designs, survey scores on decision transparency.</p>
+<h4>Pitfalls</h4>
+<p>Requiring RFCs for everything, vague ownership, review that takes weeks, RFCs written after implementation (rubber stamps), no archive, and hierarchy overriding written conclusions.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>When is an RFC required and when is it unnecessary overhead?</li><li>How do you prevent RFCs from turning into endless debate or bureaucratic blockers?</li><li>How do you drive adoption among senior engineers who prefer verbal decisions?</li></ul>
+<p><a class="btn primary" href="../#/q/lead-21">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+lead-21%3A+How+do+you+cultivate+an+RFC+%28Request+for+Comments%29+culture+for%E2%80%A6&amp;question-id=lead-21&amp;context=Tech+lead+%2F+Engineering+manager%2C+Gear+3%2C+topic%3A+Strategy%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Flead-21.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

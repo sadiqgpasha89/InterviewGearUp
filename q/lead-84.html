@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you guide a team through a multi-hour cloud provider outage while keeping customers updated? | InterviewGearUp</title>
+<meta name="description" content="In a multi-hour cloud provider outage, establish incident command, confirm scope from provider status and your own telemetry, protect what you can by…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/lead-84.html">
+<meta property="og:title" content="How do you guide a team through a multi-hour cloud provider outage while keeping customers updated? | InterviewGearUp">
+<meta property="og:description" content="In a multi-hour cloud provider outage, establish incident command, confirm scope from provider status and your own telemetry, protect what you can by…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/lead-84.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you guide a team through a multi-hour cloud provider outage while keeping customers updated?</h1>
+<p class="muted small-text meta-line">Tech lead / Engineering manager · Gear 3 (Senior) · Operations · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>In a multi-hour cloud provider outage, establish incident command, confirm scope from provider status and your own telemetry, protect what you can by failing over, degrading gracefully or pausing risky changes, give customers regular honest updates on a status page even without a cause, avoid blame, rotate people to prevent fatigue, and hold a blameless review afterward.</p></div>
+<h4>Explained in depth</h4>
+<h4>Start with incident command</h4>
+<ol start="1"><li><strong>Declare an incident</strong> with the right severity, open a dedicated channel and video bridge, and appoint roles: <strong>incident commander (IC)</strong> coordinating, <strong>ops/technical lead(s)</strong>, <strong>communications lead</strong> (customers and executives), <strong>scribe</strong> keeping a timeline, and subject matter experts. The IC does not debug; they direct, decide and remove blockers. Use PagerDuty, incident.io or similar tools.</li><li><strong>Establish facts</strong>: check the provider&#39;s status page and health dashboards (AWS Health, Azure Service Health, Google Cloud Status), social channels and your account manager; but trust <strong>your own telemetry</strong>: which regions, services, availability zones and dependencies are impacted (compute, DNS, load balancers, IAM, storage, managed databases)? Determine <strong>customer impact</strong> (error rate, latency, features affected, which segments). Document hypotheses and decisions.</li></ol>
+<h4>Immediate technical response</h4>
+<ul><li><strong>Stabilise and protect</strong>: stop deployments and risky changes (no new releases, config changes or scaling that could worsen load), freeze automation that might aggravate failure (autoscaling thrash, retry storms), shed load or <strong>rate-limit</strong> and <strong>circuit-break</strong> failing dependencies, protect data integrity (pause writes if replication is unsafe, avoid split brain).</li><li><strong>Degrade gracefully</strong>: enable feature flags to disable non-essential features, serve cached or static content, queue work for later, show maintenance mode for impacted functions, prioritise critical flows (payments, authentication).</li><li><strong>Failover decisions</strong>: if you have multi-region or multi-AZ designs, evaluate <strong>fail over</strong> (traffic shifting via DNS or global load balancer, database promotion) using tested runbooks. Weigh risks: failover can cause data loss or overload the secondary; do not fail over blindly if the control plane is down (many failovers depend on the provider&#39;s APIs and IAM). Prepare for <strong>dependencies on the failed region</strong> (control-plane access, CI/CD, secrets, monitoring in the same cloud). Decide with explicit criteria (customer impact above X for over Y minutes and a safe target available).</li><li><strong>Workarounds</strong>: manual processes for critical business functions, direct customer support, alternative providers for narrow functions (a secondary DNS, payment fallback).</li><li><strong>Monitor recovery</strong>: when the provider recovers, watch for secondary effects (thundering herd, cache stampedes, backlog processing, inconsistent data, throttling), and bring systems back in a controlled order.</li></ul>
+<h4>Customer and stakeholder communication</h4>
+<ul><li><strong>Early acknowledgement</strong> within 15 to 30 minutes (&quot;We are aware of an issue affecting X and investigating&quot;), even without details. Publish on a <strong>status page</strong> (Statuspage, Instatus) and in-product banners, and email or notify key accounts directly via customer success.</li><li><strong>Regular cadence</strong>: updates every 30 to 60 minutes, even if &quot;no change&quot;, with: what is affected, what users can do, what we are doing, when the next update will be. State what you know, what you do not, and avoid speculative root causes or blaming the provider prematurely (factual statements like &quot;an issue with our cloud provider is impacting...&quot; are appropriate).</li><li>Align <strong>internal communications</strong>: executives, support, sales and customer success receive a briefing and talking points; a single source of truth prevents mixed messages. Coordinate with legal for contract or SLA implications.</li><li>After resolution, send a clear <strong>all-clear and summary</strong>, then a <strong>post-incident report</strong> within days with timeline, customer impact, root cause (including provider RCA), what you are doing to prevent recurrence, and any compensation (SLA credits) according to policy.</li></ul>
+<h4>Team care in a long incident</h4>
+<ul><li><strong>Rotate roles</strong> and use <strong>shift handovers</strong> every 2 to 4 hours with a written summary (state, hypotheses, actions, pending decisions). Ensure people <strong>eat, rest and sleep</strong>; send people home when relieved. Avoid heroics. The IC checks for fatigue and tunnel vision, and calls timeouts to re-evaluate assumptions. Keep the bridge calm and focused, with one conversation at a time.</li><li>Maintain <strong>psychological safety</strong> and a no-blame tone; thank people frequently.</li></ul>
+<h4>After the incident</h4>
+<p>Hold a <strong>blameless postmortem</strong>: timeline, detection and response effectiveness, impact, contributing factors (single-region dependencies, untested failover, lack of status automation, control plane dependence), and <strong>concrete action items</strong> with owners. Consider <strong>multi-region architecture</strong> for critical services, <strong>chaos tests</strong>, runbook updates, reduce dependence on a single provider&#39;s control plane for recovery tooling, backup communication channels (if chat or email are hosted on the affected cloud), improved status automation, and re-evaluate SLAs and cost of resilience. Share learnings with customers and the team.</p>
+<h4>Pitfalls</h4>
+<p>Assuming the provider will fix it quickly and doing nothing, failing over without tested procedures, silent customers, status pages hosted on the failing infrastructure, no handovers, and blaming the provider while ignoring your architecture&#39;s single-region risk.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you decide whether to fail over to another region during a provider outage when the provider&#39;s status is unclear?</li><li>What should customer updates say when you do not know the root cause or the recovery time?</li><li>How do you manage team fatigue and decision quality during a long incident?</li></ul>
+<p><a class="btn primary" href="../#/q/lead-84">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+lead-84%3A+How+do+you+guide+a+team+through+a+multi-hour+cloud+provider+outage%E2%80%A6&amp;question-id=lead-84&amp;context=Tech+lead+%2F+Engineering+manager%2C+Gear+3%2C+topic%3A+Operations%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Flead-84.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you plan and execute simulated disaster recovery drills (GameDays) across production systems? | InterviewGearUp</title>
+<meta name="description" content="Run disaster recovery GameDays by choosing a realistic scenario and clear objectives, preparing runbooks, monitoring and safeguards, announcing scope and…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/lead-83.html">
+<meta property="og:title" content="How do you plan and execute simulated disaster recovery drills (GameDays) across production systems? | InterviewGearUp">
+<meta property="og:description" content="Run disaster recovery GameDays by choosing a realistic scenario and clear objectives, preparing runbooks, monitoring and safeguards, announcing scope and…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/lead-83.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you plan and execute simulated disaster recovery drills (GameDays) across production systems?</h1>
+<p class="muted small-text meta-line">Tech lead / Engineering manager · Gear 3 (Senior) · Operations · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Run disaster recovery GameDays by choosing a realistic scenario and clear objectives, preparing runbooks, monitoring and safeguards, announcing scope and abort criteria, executing the failure while observers record timings and decisions, then measuring RTO and RPO against targets, running a blameless review, and tracking fixes. Start in staging, then progress to controlled production experiments.</p></div>
+<h4>Explained in depth</h4>
+<h4>Purpose</h4>
+<p>A <strong>GameDay</strong> is a planned exercise where teams simulate failures (region outage, database loss, dependency failure, security incident, credential compromise) to <strong>validate recovery procedures, monitoring, communication and people&#39;s readiness</strong>. Unrehearsed DR plans commonly fail because of stale runbooks, missing access, untested backups, hidden dependencies and slow decision making. Practising builds <strong>confidence and muscle memory</strong>.</p>
+<h4>Types</h4>
+<ul><li><strong>Tabletop</strong>: discuss a scenario verbally, walk through decisions and communications. Low risk, good starting point.</li><li><strong>Simulation in staging or a dedicated environment</strong>: execute recovery procedures against a production-like environment.</li><li><strong>Live production GameDay</strong> (chaos engineering): inject controlled failures (kill instances, fail over a database, block a dependency, simulate AZ loss with AWS FIS, Gremlin or Chaos Mesh) with safeguards. Netflix, Amazon (GameDay), Google (DiRT) practise these regularly.</li></ul>
+<h4>Preparation</h4>
+<ol start="1"><li><strong>Objectives and hypotheses</strong>: for example &quot;We can restore the order database from backup within 60 minutes (RTO) with at most 5 minutes data loss (RPO)&quot;, &quot;Traffic fails over to region B within 10 minutes, with checkout success above 99 percent.&quot; Align with service tier targets.</li><li><strong>Scope and scenario</strong>: choose realistic, high-impact failures from risk analysis, past incidents and the SPOF register (for example primary database corruption, loss of a cloud region, expired certificate, ransomware on file servers, DNS provider outage, CI/CD compromised). Start small and escalate in complexity. Define the <strong>blast radius</strong> and what is excluded.</li><li><strong>Readiness checks</strong>: current runbooks and diagrams, up-to-date contact lists, access and break-glass credentials tested, monitoring dashboards and alerting in place, <strong>backups verified</strong>, rollback and <strong>abort criteria</strong> (for example &quot;stop if error rate exceeds X for 5 minutes or customer-impacting alerts fire&quot;), customer support and stakeholders informed, a freeze on risky changes, and a communication channel and incident bridge ready. For production, obtain <strong>approval from leadership and risk/compliance</strong>, schedule at low-traffic windows, and have safety mechanisms (automated rollback, feature flags).</li><li><strong>Roles</strong>: <strong>GameDay lead/facilitator</strong>, <strong>incident commander</strong> (participant), <strong>responders</strong>, <strong>scribe</strong> recording timeline, <strong>observers/evaluators</strong> (capture metrics and gaps), <strong>chaos operator</strong> who injects failures and can abort, <strong>communications lead</strong>, <strong>safety officer</strong> with authority to stop. Decide whether the exercise is <strong>announced</strong> (participants know scenario) or a <strong>surprise</strong> drill (only the facilitators know) once mature.</li></ol>
+<h4>Execution</h4>
+<ol start="1"><li>Kickoff: brief scope, rules, safety and abort criteria.</li><li><strong>Inject the failure</strong> at the planned time (for example terminate the primary database, or block a region at the load balancer).</li><li>Responders <strong>detect and diagnose using real tools</strong> and runbooks, make decisions, communicate on the incident channel, and perform recovery. Evaluators note timestamps: time to detect, time to engage, time to mitigate, time to recover; deviations from runbooks; confusing steps; missing access; communication delays.</li><li><strong>Inject complications</strong> as the exercise matures (a second failure, key person unavailable, partial data corruption, an upstream vendor outage).</li><li><strong>Stop and restore</strong> according to plan, verify full service health, and ensure all test artefacts are cleaned up.</li></ol>
+<h4>Measure</h4>
+<p>RTO and RPO achieved versus target, detection time, number of manual steps, alert quality, runbook accuracy, <strong>customer impact</strong> (error rate, latency, failed transactions), communication timeliness, escalation effectiveness, and human factors (stress, clarity of roles).</p>
+<h4>After the exercise</h4>
+<ol start="1"><li><strong>Hot debrief</strong> right away (what surprised us?), followed by a <strong>blameless review</strong> within a week: timeline, what worked, what failed, root causes, and recommendations.</li><li><strong>Action items</strong> with owners, priorities and due dates, tracked in the backlog like production incidents (update runbooks, fix monitoring gaps, automate manual steps, add redundancy, improve access, training). Re-test failed scenarios to verify fixes.</li><li>Share a <strong>summary</strong> with leadership and teams, report metrics trends, and incorporate lessons into onboarding and architecture standards.</li><li><strong>Cadence</strong>: run GameDays at least quarterly for critical services, with a full DR exercise annually (and after major architecture changes). Rotate scenarios and participants to spread knowledge.</li></ol>
+<h4>Pitfalls</h4>
+<p>Rehearsing only the &quot;happy&quot; failure, no abort criteria, treating the exercise as a test of individuals, skipping follow-ups, running only in staging forever, and not involving support and business teams.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you choose scenarios and scope for a first production GameDay without risking customers?</li><li>What roles and artefacts make a GameDay effective and what should you measure?</li><li>How do you ensure the findings turn into real improvements rather than a forgotten report?</li></ul>
+<p><a class="btn primary" href="../#/q/lead-83">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+lead-83%3A+How+do+you+plan+and+execute+simulated+disaster+recovery+drills%E2%80%A6&amp;question-id=lead-83&amp;context=Tech+lead+%2F+Engineering+manager%2C+Gear+3%2C+topic%3A+Operations%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Flead-83.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

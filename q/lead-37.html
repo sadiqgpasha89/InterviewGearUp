@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you establish Tier 1, Tier 2, and Tier 3 service tiers with clear SLA and SLO commitments? | InterviewGearUp</title>
+<meta name="description" content="Define service tiers by business impact (revenue, customers, data sensitivity, dependencies), then attach each tier an availability SLO, latency targets,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/lead-37.html">
+<meta property="og:title" content="How do you establish Tier 1, Tier 2, and Tier 3 service tiers with clear SLA and SLO commitments? | InterviewGearUp">
+<meta property="og:description" content="Define service tiers by business impact (revenue, customers, data sensitivity, dependencies), then attach each tier an availability SLO, latency targets,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/lead-37.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you establish Tier 1, Tier 2, and Tier 3 service tiers with clear SLA and SLO commitments?</h1>
+<p class="muted small-text meta-line">Tech lead / Engineering manager · Gear 3 (Senior) · Operations · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Define service tiers by business impact (revenue, customers, data sensitivity, dependencies), then attach each tier an availability SLO, latency targets, support hours, response times, on-call level, testing and DR requirements. SLAs are customer-facing contracts with consequences, set looser than internal SLOs, and error budgets guide the trade-off between reliability work and feature delivery.</p></div>
+<h4>Explained in depth</h4>
+<h4>Vocabulary</h4>
+<ul><li><strong>SLI</strong> (service level indicator): a measured quantity such as the proportion of successful requests, p99 latency, freshness, or throughput.</li><li><strong>SLO</strong> (objective): an internal target for an SLI over a window (for example 99.9 percent of requests succeed over 30 days).</li><li><strong>SLA</strong> (agreement): an external contract with penalties (credits, termination rights). Set the SLA <strong>below</strong> the SLO so you have room to react before breaching it.</li><li><strong>Error budget</strong>: 100 percent minus the SLO. At 99.9 percent monthly, the budget is about 43 minutes of downtime or the equivalent in failed requests.</li></ul>
+<h4>Designing tiers</h4>
+<ol start="1"><li><strong>Inventory services</strong> (service catalogue such as Backstage or OpsLevel) with owner, dependencies, users, data classification and revenue impact.</li><li><strong>Classify by business criticality</strong>, with a few clear questions: Does an outage stop revenue or safety? How many customers are affected? Is there a regulatory or contractual obligation? Is there a workaround? How quickly does impact grow?</li><li><strong>Define tier profiles</strong>:</li></ol>
+<div class="md-table"><table><thead><tr><th></th><th>Tier 1 (critical)</th><th>Tier 2 (important)</th><th>Tier 3 (supporting)</th></tr></thead><tbody><tr><td>Examples</td><td>checkout, auth, payments, core API</td><td>search, notifications, reporting</td><td>internal tools, batch analytics</td></tr><tr><td>Availability SLO</td><td>99.95 to 99.99 percent</td><td>99.9 percent</td><td>99 to 99.5 percent</td></tr><tr><td>Latency SLO</td><td>p99 target defined</td><td>p95 target</td><td>best effort</td></tr><tr><td>Support and on-call</td><td>24x7 primary and secondary, response in 5 to 15 minutes</td><td>24x7 or extended hours, 30 to 60 minutes</td><td>business hours, next day</td></tr><tr><td>Recovery</td><td>RTO minutes, RPO near zero, multi-AZ or multi-region</td><td>RTO hours, RPO minutes to hours</td><td>RTO days, daily backups</td></tr><tr><td>Engineering requirements</td><td>load tests, chaos or game days, on-call training, runbooks, canary, SLO dashboards, postmortems for every incident</td><td>runbooks, alerts, quarterly reviews</td><td>basic monitoring</td></tr><tr><td>Change management</td><td>stricter review, progressive delivery, freezes</td><td>standard</td><td>lightweight</td></tr><tr><td>Cost</td><td>highest</td><td>moderate</td><td>lowest</td></tr></tbody></table></div>
+<ol start="4"><li><strong>Choose SLIs that reflect user experience</strong> (request success rate at the load balancer, latency measured at the edge, data freshness, job completion), not just CPU or host health. Use <strong>realistic targets</strong> based on <strong>historical performance</strong> and what customers need. Each additional nine costs roughly an order of magnitude more effort and money, so choose the cheapest target that satisfies the business. <strong>Dependencies cap reliability</strong>: a service cannot exceed the availability of its critical hard dependencies unless it degrades gracefully.</li><li><strong>Error budget policy</strong>: agree with product and leadership in writing: when the budget is healthy, ship features; when it is burning too fast (multi-window, multi-burn-rate alerts such as 2 percent budget in 1 hour), freeze risky launches and prioritise reliability work until it recovers. Budgets make the reliability versus velocity trade-off <strong>objective</strong> and shared.</li><li><strong>Alert on SLO burn</strong>, not on every symptom, to cut noise and page only on user impact.</li><li><strong>Document SLAs</strong> with measurement method, exclusions (scheduled maintenance, customer-caused issues), credits, and support commitments, reviewed with legal and sales. Do not promise a customer SLA that exceeds your internal capability.</li><li><strong>Review cadence</strong>: quarterly review of tier assignments, SLO attainment, incident trends and budget usage; adjust targets and tiers as the business changes. Publish a dashboard and status page.</li></ol>
+<h4>Handling dependencies</h4>
+<p>A Tier 1 service must not hard-depend on a Tier 3 one. Options: raise the dependency&#39;s tier and invest, add <strong>caching, fallbacks, timeouts, circuit breakers and graceful degradation</strong>, or move the dependency out of the critical path. Include <strong>dependency SLOs</strong> in design reviews.</p>
+<h4>Rollout</h4>
+<p>Start with a few critical services, learn from measurement, then expand. Provide templates, tooling (Prometheus recording rules, Sloth, Nobl9, Datadog SLOs, Google Cloud SLO monitoring), and training.</p>
+<h4>Pitfalls</h4>
+<p>Tiering everything as Tier 1, SLOs nobody measures, setting 100 percent targets, using SLAs as marketing numbers, ignoring dependencies, and treating error budgets as punishments.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you choose realistic SLO targets and SLIs for a service and avoid promising nines you cannot afford?</li><li>How do error budgets change prioritisation conversations between product and engineering?</li><li>How do you handle a Tier 1 service that depends on a Tier 3 service?</li></ul>
+<p><a class="btn primary" href="../#/q/lead-37">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+lead-37%3A+How+do+you+establish+Tier+1%2C+Tier+2%2C+and+Tier+3+service+tiers+with%E2%80%A6&amp;question-id=lead-37&amp;context=Tech+lead+%2F+Engineering+manager%2C+Gear+3%2C+topic%3A+Operations%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Flead-37.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

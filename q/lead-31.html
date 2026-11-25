@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What criteria determine a Go/No-Go release decision, and how do you design emergency rollback plans? | InterviewGearUp</title>
+<meta name="description" content="A Go/No-Go decision weighs readiness criteria: passing tests and quality gates, no open critical defects, performance and security sign-off, operational…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/lead-31.html">
+<meta property="og:title" content="What criteria determine a Go/No-Go release decision, and how do you design emergency rollback plans? | InterviewGearUp">
+<meta property="og:description" content="A Go/No-Go decision weighs readiness criteria: passing tests and quality gates, no open critical defects, performance and security sign-off, operational…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/lead-31.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What criteria determine a Go/No-Go release decision, and how do you design emergency rollback plans?</h1>
+<p class="muted small-text meta-line">Tech lead / Engineering manager · Gear 3 (Senior) · Delivery · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A Go/No-Go decision weighs readiness criteria: passing tests and quality gates, no open critical defects, performance and security sign-off, operational readiness with monitoring, runbooks and on-call coverage, a tested rollback plan, and acceptable business risk. Plan rollbacks with feature flags, backward-compatible migrations and defined triggers so a bad release can be reversed quickly.</p></div>
+<h4>Explained in depth</h4>
+<h4>Go/No-Go criteria</h4>
+<p>A release readiness review (often 24 to 48 hours before launch, with a final check just before) evaluates a <strong>checklist</strong> with clear, measurable thresholds. Typical categories:</p>
+<ol start="1"><li><strong>Functionality and quality</strong>: all must-have scope complete, <strong>no open P0 or P1 defects</strong>, known issues documented with workarounds, regression, integration and end-to-end suites passing, UAT sign-off, test coverage and quality gate status, exploratory testing for risky areas.</li><li><strong>Non-functional</strong>: <strong>performance and load tests</strong> meet SLOs, capacity validated for expected traffic (plus headroom), resilience and failover tests, accessibility and compatibility.</li><li><strong>Security and compliance</strong>: threat model, SAST/DAST and dependency scans clean for critical issues, penetration test findings addressed, privacy review, legal or regulatory approvals, audit evidence.</li><li><strong>Operational readiness</strong>: monitoring, dashboards and <strong>alerts</strong> for the new components, logs and traces, <strong>runbooks</strong>, on-call staffed with trained people, escalation paths, support and customer success trained with FAQs, status page and communication templates ready, <strong>capacity and cost</strong> reviewed, dependencies and third parties confirmed.</li><li><strong>Deployment readiness</strong>: deployment automation rehearsed in staging, migrations tested on production-like data, configuration and secrets verified, feature flags set, dependency and version compatibility, deploy window chosen (avoid Fridays and peak periods unless justified).</li><li><strong>Business readiness</strong>: stakeholders aligned on launch plan, marketing and sales messages, documentation, rollout plan (percentage, regions), success metrics defined.</li><li><strong>Risk assessment</strong>: list known risks, likelihood, impact and mitigations; confirm the residual risk is acceptable to the <strong>business owner</strong>.</li></ol>
+<h4>Decision making</h4>
+<p>Define the <strong>decider</strong> in advance (release manager or engineering lead with the product owner and operations/SRE input; for high-risk launches a change advisory or launch review board). Use a <strong>consensus-with-veto</strong> model for safety areas: security, SRE or QA can raise a <strong>No-Go</strong> for unmet critical criteria. Record the decision, rationale, conditions (for example &quot;Go with flag off for region X&quot;), and owners for follow-ups. Prevent schedule pressure from overriding: criteria agreed early, evidence visible to everyone, and an explicit <strong>risk acceptance</strong> by a named executive if a criterion is waived.</p>
+<h4>Designing the rollback plan</h4>
+<ol start="1"><li><strong>Make rollback possible by design</strong>:</li></ol>
+<ul><li><strong>Backward-compatible database changes</strong> using <strong>expand and contract</strong>: add columns or tables first, deploy code that works with both schemas, migrate data, then remove old structures in a later release. Avoid destructive migrations in the same release as code.</li><li><strong>Feature flags</strong> to disable new behaviour instantly without redeploying (kill switch), with defaults tested.</li><li><strong>Versioned APIs and messages</strong> and tolerant readers so old and new versions interoperate.</li><li><strong>Immutable artifacts and previous versions retained</strong> so redeploying the last known good build takes minutes; keep container images and configuration versioned.</li></ul>
+<ol start="2"><li><strong>Progressive delivery</strong>: <strong>canary</strong> (1 to 5 percent), blue/green, or ring-based rollout with automated analysis (Argo Rollouts, Flagger, Spinnaker) comparing error rates and latency with baseline and <strong>auto-rollback</strong> when thresholds break.</li><li><strong>Define triggers</strong>: for example error rate &gt; 2x baseline for 5 minutes, p99 latency above SLO, failed health checks, payment failure rate increase, data inconsistency detection, critical bug reports, or loss of key business KPIs. Pre-assign who can call a rollback (any on-call engineer, without waiting for approval).</li><li><strong>Document and rehearse</strong>: step-by-step rollback runbook, tested in staging, with estimated time and dependencies (data migrations needing reverse scripts, cache invalidation, message queue draining), and a decision tree for <strong>roll back versus roll forward</strong> (fix forward may be faster for small defects when the pipeline is quick; rollback when impact is large or the cause is unclear).</li><li><strong>Data considerations</strong>: if irreversible data changes happen, take backups or snapshots beforehand, plan for dual writes, and define how to repair data created by the faulty version.</li><li><strong>Communication plan</strong>: incident channel, stakeholders, customer comms and status page updates, and a post-release review.</li></ol>
+<h4>During and after launch</h4>
+<p>A <strong>launch room</strong> with a clear owner, monitoring dashboards, a timeline checklist, and hypercare period (extra support for 24 to 72 hours). Run a <strong>post-launch retrospective</strong> and update criteria based on lessons.</p>
+<h4>Pitfalls</h4>
+<p>Subjective &quot;feels ready&quot; decisions, ignoring operational readiness, no tested rollback, irreversible migrations bundled with code, pressure to launch on the date regardless, and unclear authority to abort.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you design database migrations and feature flags so a release can be rolled back safely?</li><li>Who makes the Go/No-Go call and how do you prevent pressure from overriding the criteria?</li><li>What rollback triggers and monitoring thresholds should be defined before a release begins?</li></ul>
+<p><a class="btn primary" href="../#/q/lead-31">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+lead-31%3A+What+criteria+determine+a+Go%2FNo-Go+release+decision%2C+and+how+do+you%E2%80%A6&amp;question-id=lead-31&amp;context=Tech+lead+%2F+Engineering+manager%2C+Gear+3%2C+topic%3A+Delivery%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Flead-31.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

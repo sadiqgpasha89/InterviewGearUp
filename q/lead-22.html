@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you safely deprecate and decommission a critical legacy system without breaking business continuity? | InterviewGearUp</title>
+<meta name="description" content="Decommission a critical legacy system incrementally: inventory every consumer and dependency, define the target and exit criteria, migrate using the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/lead-22.html">
+<meta property="og:title" content="How do you safely deprecate and decommission a critical legacy system without breaking business continuity? | InterviewGearUp">
+<meta property="og:description" content="Decommission a critical legacy system incrementally: inventory every consumer and dependency, define the target and exit criteria, migrate using the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/lead-22.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you safely deprecate and decommission a critical legacy system without breaking business continuity?</h1>
+<p class="muted small-text meta-line">Tech lead / Engineering manager · Gear 3 (Senior) · Strategy · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Decommission a critical legacy system incrementally: inventory every consumer and dependency, define the target and exit criteria, migrate using the strangler pattern with parallel runs and data validation, communicate timelines to owners, shift traffic gradually with rollback, keep read-only archives for compliance, and only switch off after a monitored quiet period.</p></div>
+<h4>Explained in depth</h4>
+<h4>Reframe the goal</h4>
+<p>The aim is <strong>business continuity with reduced risk and cost</strong>, not simply shutting something down. Treat decommissioning as a <strong>product</strong> with owners, a roadmap, success metrics and communication, not a side project.</p>
+<h4>Step 1: understand the system and why to retire it</h4>
+<p>Document purpose, business processes supported, SLAs, data, security posture, cost (infrastructure, licences, support, opportunity cost), risk (unsupported OS, key-person dependency, compliance gaps), and the <strong>benefits of retirement</strong>. Get an <strong>executive sponsor</strong> and a business case, because migration competes with feature work.</p>
+<h4>Step 2: inventory consumers and dependencies</h4>
+<ul><li><strong>Technical discovery</strong>: analyse network traffic and logs (flow logs, proxies, API gateway logs), database connection and query logs, scheduled jobs and ETL feeds, code searches, service mesh and tracing data, DNS records, firewall rules, credentials and API keys, file shares, reports and spreadsheets that read from it.</li><li><strong>Human discovery</strong>: interview business owners, support, finance, data teams, auditors and partners, since shadow integrations (Excel macros, nightly CSV exports) are common.</li><li>Build a <strong>dependency map</strong> with owner, criticality, data flows, and migration complexity. Use <strong>telemetry to measure usage</strong> and identify unused features that can simply be dropped.</li></ul>
+<h4>Step 3: define target and strategy</h4>
+<p>Options: <strong>retire</strong> (functionality no longer needed), <strong>replace</strong> with a SaaS or existing platform, <strong>rehost, replatform or rewrite</strong>. Prefer the <strong>strangler fig pattern</strong>: put a facade or routing layer in front, migrate capabilities and consumers <strong>slice by slice</strong>, and let the old system shrink. Avoid big-bang cutovers for critical systems. Define <strong>exit criteria</strong>: zero traffic for N weeks, all consumers migrated, data archived, contracts ended.</p>
+<h4>Step 4: data migration and validation</h4>
+<p>Map data models and quality issues, build repeatable ETL or change data capture, <strong>reconcile with automated comparisons</strong> (row counts, checksums, business-level totals), perform <strong>dual writes or shadow traffic</strong> to test the new path, and run <strong>parallel runs</strong> for a business cycle (for example a month-end close) comparing outputs. Plan for historical data: migrate, archive in cold storage with search, or keep a read-only copy for <strong>legal retention and audit</strong> requirements (financial, healthcare, GDPR deletion duties).</p>
+<h4>Step 5: phased rollout</h4>
+<ol start="1"><li>Build the new capability and test (functional, load, security, disaster recovery).</li><li><strong>Pilot</strong> with a small, friendly consumer; use <strong>feature flags and weighted routing</strong> (1 percent, 10 percent, 50 percent, 100 percent).</li><li>Monitor error rates, latency, data discrepancies and business metrics; define <strong>rollback triggers</strong> and keep the legacy path ready until confidence is high.</li><li>Migrate remaining consumers in waves, with migration guides, adapters and office hours; give a <strong>deprecation calendar</strong> (announce, freeze new features, brownout, read-only, shutdown).</li><li><strong>Brownouts</strong> (temporary scheduled disablement) reveal hidden dependencies before the final shutdown.</li></ol>
+<h4>Step 6: communicate and manage change</h4>
+<p>Stakeholder map, regular updates, clear dates, training, runbooks, and a support channel. Address concerns: show feature parity, performance and improvements, and involve users in testing. Resistance often comes from fear of disruption or loss of undocumented capabilities, so capture those needs as requirements. Escalate through the sponsor if teams do not meet deadlines.</p>
+<h4>Step 7: shut down safely</h4>
+<p>After a quiet period: take final backups and snapshots, verify archives are restorable, revoke credentials and network access, remove DNS and firewall rules, delete or sanitise data per policy (disk wipe, certificates), cancel licences and contracts, update CMDB, documentation and monitoring, and <strong>hold a post-mortem</strong> to capture lessons. Keep a rollback window (for example 30 to 90 days) with the system powered down but intact before destruction.</p>
+<h4>Risk management</h4>
+<p>Track risks (hidden consumers, data loss, performance regressions, regulatory issues, team capacity), keep a <strong>go/no-go checklist</strong>, schedule cutovers away from critical business periods, and rehearse the cutover and rollback.</p>
+<h4>Pitfalls</h4>
+<p>Underestimating undocumented consumers, no rollback, losing historical data needed for audits, switching off before a quiet period, treating the migration as purely technical, and keeping the legacy system &quot;just in case&quot; indefinitely.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you discover hidden consumers and undocumented dependencies of a legacy system?</li><li>How do you run old and new systems in parallel and prove data parity before cutover?</li><li>How do you handle stakeholders who resist because the legacy system works for them?</li></ul>
+<p><a class="btn primary" href="../#/q/lead-22">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+lead-22%3A+How+do+you+safely+deprecate+and+decommission+a+critical+legacy%E2%80%A6&amp;question-id=lead-22&amp;context=Tech+lead+%2F+Engineering+manager%2C+Gear+3%2C+topic%3A+Strategy%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Flead-22.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

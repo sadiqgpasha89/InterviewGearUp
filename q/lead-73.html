@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you map and eliminate technical single points of failure across legacy infrastructure? | InterviewGearUp</title>
+<meta name="description" content="Find single points of failure by mapping dependencies and failure domains: inventory services, hosts, data stores, networks, people, vendors and…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/lead-73.html">
+<meta property="og:title" content="How do you map and eliminate technical single points of failure across legacy infrastructure? | InterviewGearUp">
+<meta property="og:description" content="Find single points of failure by mapping dependencies and failure domains: inventory services, hosts, data stores, networks, people, vendors and…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/lead-73.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you map and eliminate technical single points of failure across legacy infrastructure?</h1>
+<p class="muted small-text meta-line">Tech lead / Engineering manager · Gear 3 (Senior) · Operations · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Find single points of failure by mapping dependencies and failure domains: inventory services, hosts, data stores, networks, people, vendors and certificates, run failure-mode analysis and chaos tests, then remove them with redundancy, automation, tested failover, backups and documentation. In legacy systems, prioritise by blast radius and likelihood, and add compensating controls where redesign is slow.</p></div>
+<h4>Explained in depth</h4>
+<h4>What counts as a SPOF</h4>
+<p>A <strong>single point of failure</strong> is any component, resource, process or person whose failure stops the system or service, with no automatic alternative. Examples: one database primary, one load balancer or firewall, a single network link or data centre, a shared NFS mount, one DNS provider, a certificate or licence expiry, one credential or cron host, a single batch server, an unreplicated message queue, an authentication service, <strong>a person who is the only one who knows how to operate a system</strong>, or a single vendor. Legacy infrastructure is full of implicit SPOFs from years of growth.</p>
+<h4>Step 1: map the system</h4>
+<ul><li><strong>Inventory and dependency mapping</strong>: use CMDB, service catalogue, infrastructure-as-code, network diagrams, cloud resource inventories, service mesh and tracing data, and interviews. Draw <strong>architecture diagrams with data flows</strong> for each critical business service from user to storage, including external services (DNS, CDN, payment, email, identity provider).</li><li>Identify <strong>failure domains</strong>: host, rack, availability zone, region, power, network switch, storage array, hypervisor cluster, vendor account, shared credentials, and team.</li></ul>
+<h4>Step 2: analyse failure modes</h4>
+<ul><li><strong>FMEA (Failure Mode and Effects Analysis)</strong>: for each component ask what happens if it fails, how likely, how detectable, how severe (risk priority number).</li><li><strong>Walk the request path</strong> and ask &quot;if this vanished now, what breaks?&quot;; review past incidents and near misses for patterns; check <strong>non-technical SPOFs</strong>: bus factor, vendor lock-in, unpatched appliances, expiring contracts, manual runbooks.</li><li><strong>Test</strong>: game days, tabletop exercises, controlled failure injection (chaos engineering with Chaos Monkey, Gremlin, AWS FIS) in staging first, and later production with guardrails; disaster recovery drills that prove restore and failover. Verify that redundancy actually works (redundant node that is never tested often fails).</li><li>Check <strong>hidden shared dependencies</strong>: all &quot;redundant&quot; servers using one storage array, one DNS server, one NTP source, the same expired certificate, or the same jump host.</li></ul>
+<h4>Step 3: prioritise</h4>
+<p>Rank by <strong>impact (business criticality and blast radius) times likelihood</strong>, ease of fix, and cost. Use a risk register with owners and target dates. Fix cheap, high-impact items first (for example add a second DNS provider, enable database replication, put certificates under monitoring, replicate backups off-site). Align with service tiers: Tier 1 services must have no SPOF in the critical path.</p>
+<h4>Step 4: eliminate or mitigate</h4>
+<ul><li><strong>Redundancy and replication</strong>: active-active or active-passive clusters, database replicas with automated failover (Patroni, Aurora, SQL Server Always On), multiple load balancers (VRRP, cloud LB), redundant network paths (dual ISPs, bonded NICs, multi-AZ), clustered file systems, replicated queues, geographic redundancy and multi-region where justified.</li><li><strong>Stateless design and externalised state</strong>: move state to managed replicated stores, make instances disposable and replaceable.</li><li><strong>Automation and self-healing</strong>: health checks, auto-scaling groups, orchestration (Kubernetes), automatic failover and restart, infrastructure as code for rebuilds.</li><li><strong>Backups and restore</strong>: tested restores, off-site and immutable copies, defined RPO and RTO.</li><li><strong>Graceful degradation</strong>: caching, circuit breakers, timeouts, feature flags and fallbacks so a dependency failure reduces functionality instead of causing a full outage.</li><li><strong>People and process SPOFs</strong>: cross-training, runbooks, on-call rotation, access to credentials via shared vaults and break-glass procedures, vendor support contracts, and documented escalation.</li><li><strong>Vendor risk</strong>: multi-vendor options, exit plans, contractual SLAs.</li><li><strong>Legacy constraints</strong>: if redesign is not feasible, use compensating controls: <strong>cold or warm standby hardware</strong>, spare parts, VM snapshots, frequent backups and rehearsed restore, enhanced monitoring and alerting, maintenance windows, <strong>strangler pattern</strong> to migrate functions gradually, and place a resilient front (proxy, cache, queue) in front of the fragile component. Document known risks, get explicit risk acceptance from owners, and plan retirement.</li></ul>
+<h4>Step 5: sustain</h4>
+<p>Include SPOF review in <strong>architecture reviews and change management</strong>, track resilience metrics (percentage of Tier 1 services multi-AZ, DR test success, mean time to recover), review after incidents, and maintain the register.</p>
+<h4>Pitfalls</h4>
+<p>Adding redundancy without testing failover, ignoring shared dependencies, forgetting DNS, certificates and credentials, overspending on redundancy for low-criticality systems, and leaving knowledge in one person&#39;s head.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you discover hidden single points of failure such as shared DNS, certificates, credentials or one person&#39;s knowledge?</li><li>How do you prioritise which SPOFs to remove first when budget and capacity are limited?</li><li>What compensating controls reduce risk when a legacy component cannot be made redundant quickly?</li></ul>
+<p><a class="btn primary" href="../#/q/lead-73">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+lead-73%3A+How+do+you+map+and+eliminate+technical+single+points+of+failure%E2%80%A6&amp;question-id=lead-73&amp;context=Tech+lead+%2F+Engineering+manager%2C+Gear+3%2C+topic%3A+Operations%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Flead-73.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>
