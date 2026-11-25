@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain the Open/Closed Principle (OCP) and how the Strategy pattern adheres to it. | InterviewGearUp</title>
+<meta name="description" content="The Open/Closed Principle says software entities should be open for extension but closed for modification. The Strategy pattern complies: new behaviour…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-64.html">
+<meta property="og:title" content="Explain the Open/Closed Principle (OCP) and how the Strategy pattern adheres to it. | InterviewGearUp">
+<meta property="og:description" content="The Open/Closed Principle says software entities should be open for extension but closed for modification. The Strategy pattern complies: new behaviour…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-64.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain the Open/Closed Principle (OCP) and how the Strategy pattern adheres to it.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 2 (Mid-level) · OOP · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>The Open/Closed Principle says software entities should be open for extension but closed for modification. The Strategy pattern complies: new behaviour is added as a new class implementing a shared interface, while the context that uses it never changes.</p></div>
+<h4>Explained in depth</h4>
+<h4>The principle</h4>
+<p>Bertrand Meyer&#39;s formulation: you should be able to <strong>add new behaviour without editing tested, working code</strong>. Modification risks regressions and forces retesting of everything that depends on the changed module. Extension through new code isolates risk.</p>
+<h4>A violation</h4>
+<pre><code>class PriceCalculator {
+    double price(Order o, String customerType) {
+        if (customerType.equals(&quot;REGULAR&quot;)) return o.total();
+        else if (customerType.equals(&quot;PREMIUM&quot;)) return o.total() * 0.9;
+        else if (customerType.equals(&quot;EMPLOYEE&quot;)) return o.total() * 0.7;
+        throw new IllegalArgumentException();
+    }
+}</code></pre>
+<p>Every new customer type forces an edit to this method, which gets longer and riskier, and unit tests must cover every branch each time.</p>
+<h4>The Strategy fix</h4>
+<pre><code>interface DiscountPolicy { double apply(double total); }
+
+class RegularPolicy  implements DiscountPolicy { public double apply(double t) { return t; } }
+class PremiumPolicy  implements DiscountPolicy { public double apply(double t) { return t * 0.9; } }
+class EmployeePolicy implements DiscountPolicy { public double apply(double t) { return t * 0.7; } }
+
+class PriceCalculator {
+    private final DiscountPolicy policy;           // injected
+    PriceCalculator(DiscountPolicy policy) { this.policy = policy; }
+    double price(Order o) { return policy.apply(o.total()); }
+}</code></pre>
+<p>A new customer type is a <strong>new class</strong>; <code>PriceCalculator</code> is closed for modification, while the system is open for extension through the <code>DiscountPolicy</code> abstraction. Selecting the right strategy happens at one composition point (a factory, a map keyed by type, or a DI container).</p>
+<h4>Why it works</h4>
+<p>The stable part (the algorithm skeleton that consumes a policy) depends on an abstraction, and the volatile part (concrete policies) depends on the same abstraction. That is also the Dependency Inversion Principle at work.</p>
+<h4>Testing benefits</h4>
+<p>Each policy has a small, focused unit test. The calculator is tested once with a fake policy.</p>
+<h4>Judgement and pitfalls</h4>
+<ul><li>Do not abstract before you see the <strong>second or third variation</strong>. Premature interfaces add indirection and cognitive load. Refactor when the first <code>if</code> chain starts to grow.</li><li>Closed against <strong>one kind</strong> of change is the realistic goal: you cannot predict all changes. Choose the axes that actually vary (pricing rules, payment providers, export formats).</li><li>Other OCP tools: the Decorator pattern, plugin registries, template method, and higher-order functions (passing a function instead of an object).</li><li>Registration must stay simple, or you merely move the modification into a giant factory switch; use registration maps, reflection or DI to avoid that.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How would you refactor a long if/else on a type code to follow OCP?</li><li>Can OCP be taken too far, and what is the cost of premature abstraction?</li><li>How does dependency injection help you plug in new strategies?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-64">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-64%3A+Explain+the+Open%2FClosed+Principle+%28OCP%29+and+how+the+Strategy+pattern%E2%80%A6&amp;question-id=gen-64&amp;context=Software+engineer+%28core%29%2C+Gear+2%2C+topic%3A+OOP%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-64.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

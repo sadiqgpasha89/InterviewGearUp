@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain CPU cache hierarchy (L1, L2, L3), cache lines (64 bytes), and false sharing in multi-threaded code. | InterviewGearUp</title>
+<meta name="description" content="CPUs hide slow memory behind small, fast caches: L1 (per core, about 32 KB), L2 (per core or cluster) and a shared L3, moving data in 64 byte cache…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-87.html">
+<meta property="og:title" content="Explain CPU cache hierarchy (L1, L2, L3), cache lines (64 bytes), and false sharing in multi-threaded code. | InterviewGearUp">
+<meta property="og:description" content="CPUs hide slow memory behind small, fast caches: L1 (per core, about 32 KB), L2 (per core or cluster) and a shared L3, moving data in 64 byte cache…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-87.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain CPU cache hierarchy (L1, L2, L3), cache lines (64 bytes), and false sharing in multi-threaded code.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 3 (Senior) · Systems · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>CPUs hide slow memory behind small, fast caches: L1 (per core, about 32 KB), L2 (per core or cluster) and a shared L3, moving data in 64 byte cache lines. False sharing happens when threads write different variables on the same line, making cores fight for the line even though they share no data.</p></div>
+<h4>Explained in depth</h4>
+<h4>The hierarchy</h4>
+<div class="md-table"><table><thead><tr><th>Level</th><th>Typical size</th><th>Latency</th><th>Scope</th></tr></thead><tbody><tr><td>Registers</td><td>few hundred bytes</td><td>under 1 ns</td><td>core</td></tr><tr><td>L1 (data and instruction)</td><td>32 to 64 KB</td><td>about 1 ns (4 cycles)</td><td>per core</td></tr><tr><td>L2</td><td>256 KB to 2 MB</td><td>about 3 to 4 ns</td><td>per core or pair</td></tr><tr><td>L3</td><td>8 to 64+ MB</td><td>about 10 to 20 ns</td><td>shared across cores</td></tr><tr><td>DRAM</td><td>GBs</td><td>about 60 to 100 ns</td><td>whole machine</td></tr></tbody></table></div>
+<p>A main memory access costs roughly 100 times a register access, so performance depends largely on cache hit rate.</p>
+<h4>Cache lines</h4>
+<p>Memory moves between levels in <strong>64 byte lines</strong> (128 on some designs). Reading one byte loads its whole line. This is why sequential array traversal is fast (the next 15 integers arrive for free) and pointer chasing is slow (each node may sit on a different line).</p>
+<h4>Coherence</h4>
+<p>Each core has its own L1 and L2, so the hardware keeps copies consistent with a protocol such as <strong>MESI</strong> (Modified, Exclusive, Shared, Invalid). When a core writes to a line, other cores&#39; copies are invalidated, and they must re-fetch it before they can read or write it.</p>
+<h4>False sharing</h4>
+<pre><code>class Counters { volatile long a; volatile long b; }   // a and b share one 64 byte line
+// Thread 1 increments a in a loop; Thread 2 increments b in a loop.</code></pre>
+<p>The threads never touch the same variable, but both variables live in one cache line. Every write by one thread invalidates the line in the other core&#39;s cache, so the line <strong>ping-pongs</strong> between cores. Real-world benchmarks often show slowdowns of 5x to 20x, and the scaling flattens as threads are added.</p>
+<h4>Fixes</h4>
+<ul><li><strong>Pad or align</strong> hot per-thread fields to separate lines: C++ <code>alignas(64)</code> or <code>std::hardware_destructive_interference_size</code>; Java <code>@Contended</code> (needs <code>-XX:-RestrictContended</code>); Go padding arrays; Rust <code>crossbeam::CachePadded</code>.</li><li>Use <strong>thread-local accumulators</strong> and combine at the end (<code>LongAdder</code> in Java is striped cells).</li><li>Group data by access pattern (struct of arrays) so each thread works on its own lines.</li></ul>
+<h4>Detection</h4>
+<p>Symptoms: poor scaling, high L1/L2 miss and &quot;HITM&quot; counters. Tools: <code>perf c2c</code> on Linux, Intel VTune, Valgrind&#39;s <code>lackey</code> experiments, and benchmarks that vary thread count.</p>
+<h4>Pitfalls</h4>
+<p>Padding wastes memory and hides only the specific layout assumptions, so use it for proven hot spots. True sharing (threads really using the same variable) needs algorithm changes, not padding.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you detect and fix false sharing in a Java or C++ program?</li><li>How does the MESI cache coherence protocol cause this slowdown?</li><li>Why is iterating an array faster than a linked list of the same size?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-87">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-87%3A+Explain+CPU+cache+hierarchy+%28L1%2C+L2%2C+L3%29%2C+cache+lines+%2864+bytes%29%2C%E2%80%A6&amp;question-id=gen-87&amp;context=Software+engineer+%28core%29%2C+Gear+3%2C+topic%3A+Systems%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-87.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

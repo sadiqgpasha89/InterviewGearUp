@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does a Segment Tree support range sum queries and point updates in $O(\log N)$ time? | InterviewGearUp</title>
+<meta name="description" content="A segment tree stores aggregates (sum, min, max) of array ranges in a binary tree, so a range query combines O(log N) nodes and a point update recomputes…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-95.html">
+<meta property="og:title" content="How does a Segment Tree support range sum queries and point updates in $O(\log N)$ time? | InterviewGearUp">
+<meta property="og:description" content="A segment tree stores aggregates (sum, min, max) of array ranges in a binary tree, so a range query combines O(log N) nodes and a point update recomputes…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-95.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does a Segment Tree support range sum queries and point updates in $O(\log N)$ time?</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 3 (Senior) · Data structures · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A segment tree stores aggregates (sum, min, max) of array ranges in a binary tree, so a range query combines O(log N) nodes and a point update recomputes O(log N) ancestors. It trades O(N) extra memory for logarithmic queries and updates, and extends to lazy range updates.</p></div>
+<h4>Explained in depth</h4>
+<h4>Structure</h4>
+<p>Each node covers a segment <code>[l, r]</code> of the array and stores the aggregate of that segment. The root covers <code>[0, n-1]</code>; each node splits its range at the midpoint into two children. Leaves hold single elements. The tree has <code>2n - 1</code> nodes (an array of size <code>4n</code> is a safe bound for recursive layout).</p>
+<pre><code>          [0..7]=36
+        /          \
+   [0..3]=10     [4..7]=26
+   /      \        /      \
+[0..1]=3 [2..3]=7 [4..5]=11 [6..7]=15</code></pre>
+<h4>Build, query, update (sum)</h4>
+<pre><code>class SegTree:
+    def __init__(self, a):
+        self.n = len(a); self.t = [0] * (4 * self.n); self._build(a, 1, 0, self.n - 1)
+    def _build(self, a, v, l, r):
+        if l == r: self.t[v] = a[l]; return
+        m = (l + r) // 2
+        self._build(a, 2*v, l, m); self._build(a, 2*v+1, m+1, r)
+        self.t[v] = self.t[2*v] + self.t[2*v+1]
+    def query(self, v, l, r, ql, qr):               # sum of a[ql..qr]
+        if ql &gt; r or qr &lt; l: return 0               # disjoint: identity element
+        if ql &lt;= l and r &lt;= qr: return self.t[v]    # fully covered
+        m = (l + r) // 2
+        return self.query(2*v, l, m, ql, qr) + self.query(2*v+1, m+1, r, ql, qr)
+    def update(self, v, l, r, pos, val):            # point assignment
+        if l == r: self.t[v] = val; return
+        m = (l + r) // 2
+        if pos &lt;= m: self.update(2*v, l, m, pos, val)
+        else: self.update(2*v+1, m+1, r, pos, val)
+        self.t[v] = self.t[2*v] + self.t[2*v+1]</code></pre>
+<h4>Complexity</h4>
+<ul><li>Build <code>O(n)</code>, space <code>O(n)</code>.</li><li>A range query visits at most about <code>4 log n</code> nodes: at each level at most two partially covered nodes are expanded, so <code>O(log n)</code>.</li><li>Point update walks one root-to-leaf path and recomputes parents: <code>O(log n)</code>.</li></ul>
+<h4>Extensions</h4>
+<ul><li><strong>Any associative operation</strong> with an identity: min, max, gcd, XOR, matrix product, &quot;(count, max)&quot; tuples.</li><li><strong>Lazy propagation</strong> supports range add or assign by storing pending tags on nodes and pushing them down only when needed, keeping updates <code>O(log n)</code>.</li><li><strong>Iterative bottom-up</strong> version (size <code>2n</code>) is faster and shorter for commutative operations.</li><li>Persistent and 2D variants, merge sort trees, and <strong>sweep line</strong> problems (area of union of rectangles).</li></ul>
+<h4>Versus alternatives</h4>
+<div class="md-table"><table><thead><tr><th>Structure</th><th>Query</th><th>Update</th><th>Notes</th></tr></thead><tbody><tr><td>Prefix sums</td><td>O(1)</td><td>O(n)</td><td>static arrays</td></tr><tr><td>Fenwick tree</td><td>O(log n)</td><td>O(log n)</td><td>simpler, prefix operations that are invertible</td></tr><tr><td>Sparse table</td><td>O(1) for idempotent ops</td><td>rebuild</td><td>static min/max</td></tr><tr><td>Segment tree</td><td>O(log n)</td><td>O(log n)</td><td>flexible, supports lazy ranges</td></tr></tbody></table></div>
+<h4>Pitfalls</h4>
+<p>Off-by-one errors in the inclusive ranges, wrong identity for disjoint nodes (0 for sum, +infinity for min), too small an array, and forgetting to push lazy tags before descending.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does lazy propagation support range updates in O(log N)?</li><li>When would you choose a Fenwick tree or a sparse table instead?</li><li>How do you handle non-invertible operations such as min or gcd?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-95">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-95%3A+How+does+a+Segment+Tree+support+range+sum+queries+and+point+updates%E2%80%A6&amp;question-id=gen-95&amp;context=Software+engineer+%28core%29%2C+Gear+3%2C+topic%3A+Data+structures%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-95.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

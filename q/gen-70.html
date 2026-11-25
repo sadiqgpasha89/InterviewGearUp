@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does the Builder pattern construct complex immutable objects with optional parameters? | InterviewGearUp</title>
+<meta name="description" content="The Builder pattern assembles an object step by step through a fluent API and only creates the final object in build(), so required and optional fields…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-70.html">
+<meta property="og:title" content="How does the Builder pattern construct complex immutable objects with optional parameters? | InterviewGearUp">
+<meta property="og:description" content="The Builder pattern assembles an object step by step through a fluent API and only creates the final object in build(), so required and optional fields…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-70.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does the Builder pattern construct complex immutable objects with optional parameters?</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 2 (Mid-level) · Design patterns · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>The Builder pattern assembles an object step by step through a fluent API and only creates the final object in build(), so required and optional fields are set clearly and the result can be immutable. It replaces telescoping constructors and avoids half-initialised objects.</p></div>
+<h4>Explained in depth</h4>
+<h4>The problem</h4>
+<p>A class with many optional parameters ends up with a <strong>telescoping constructor</strong> (<code>new Pizza(12, true, false, true, null, 3)</code>), where callers cannot tell what each argument means, or with setters that leave the object mutable and half built between calls.</p>
+<h4>Builder solution</h4>
+<pre><code>public final class HttpRequest {
+    private final String url;                 // required
+    private final String method;              // optional, default GET
+    private final Map&lt;String, String&gt; headers;
+    private final int timeoutMs;
+
+    private HttpRequest(Builder b) {
+        this.url = b.url; this.method = b.method;
+        this.headers = Map.copyOf(b.headers); // defensive immutable copy
+        this.timeoutMs = b.timeoutMs;
+    }
+
+    public static Builder builder(String url) { return new Builder(url); }
+
+    public static final class Builder {
+        private final String url;
+        private String method = &quot;GET&quot;;
+        private final Map&lt;String, String&gt; headers = new HashMap&lt;&gt;();
+        private int timeoutMs = 30_000;
+
+        private Builder(String url) { this.url = Objects.requireNonNull(url); }
+        public Builder method(String m)   { this.method = m; return this; }
+        public Builder header(String k, String v) { headers.put(k, v); return this; }
+        public Builder timeoutMs(int t)   { this.timeoutMs = t; return this; }
+        public HttpRequest build() {
+            if (timeoutMs &lt;= 0) throw new IllegalStateException(&quot;timeout must be positive&quot;);
+            return new HttpRequest(this);
+        }
+    }
+}
+// usage
+HttpRequest r = HttpRequest.builder(&quot;https://api.example.com&quot;).method(&quot;POST&quot;).header(&quot;X-Id&quot;, &quot;7&quot;).build();</code></pre>
+<h4>Why this yields immutable objects</h4>
+<p>All fields are <code>final</code> and set once in a private constructor, so the finished object cannot change. The mutable state lives in the builder. Validation runs in <code>build()</code>, so <strong>invalid objects can never escape</strong>, and cross-field rules (start date before end date) have one natural home.</p>
+<h4>Variants</h4>
+<ul><li><strong>Step (staged) builder</strong>: each step returns a different interface so required fields must be supplied in order, with compile-time safety.</li><li><strong>Director</strong>: a class that knows common build recipes (the original GoF form).</li><li><strong>Lombok <code>@Builder</code></strong>, Kotlin named arguments with defaults, Python dataclasses with <code>field(default=...)</code>, TypeScript options objects and Rust <code>derive_builder</code> give the same benefits with less code.</li></ul>
+<h4>When not to use it</h4>
+<p>For two or three parameters a plain constructor or a static factory is clearer. Builders add boilerplate and a transient object per construction.</p>
+<h4>Pitfalls</h4>
+<p>Forgetting defensive copies of mutable collections, making <code>build()</code> callable repeatedly with shared mutable state, and putting required fields in optional setters so errors appear only at runtime.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you enforce required fields at compile time with a step builder?</li><li>How does the builder differ from a plain constructor with named arguments in languages that have them?</li><li>How do you make the builder thread safe and reusable?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-70">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-70%3A+How+does+the+Builder+pattern+construct+complex+immutable+objects%E2%80%A6&amp;question-id=gen-70&amp;context=Software+engineer+%28core%29%2C+Gear+2%2C+topic%3A+Design+patterns%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-70.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

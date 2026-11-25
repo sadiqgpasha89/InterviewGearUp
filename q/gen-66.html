@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain the Interface Segregation Principle (ISP) and why fat interfaces harm maintainability. | InterviewGearUp</title>
+<meta name="description" content="The Interface Segregation Principle says clients should not be forced to depend on methods they do not use. Fat interfaces create unnecessary coupling,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-66.html">
+<meta property="og:title" content="Explain the Interface Segregation Principle (ISP) and why fat interfaces harm maintainability. | InterviewGearUp">
+<meta property="og:description" content="The Interface Segregation Principle says clients should not be forced to depend on methods they do not use. Fat interfaces create unnecessary coupling,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-66.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain the Interface Segregation Principle (ISP) and why fat interfaces harm maintainability.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 2 (Mid-level) · OOP · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>The Interface Segregation Principle says clients should not be forced to depend on methods they do not use. Fat interfaces create unnecessary coupling, force dummy implementations and make changes ripple, so split them into small role-focused interfaces.</p></div>
+<h4>Explained in depth</h4>
+<h4>The problem with fat interfaces</h4>
+<pre><code>interface Machine {
+    void print(Doc d);
+    void scan(Doc d);
+    void fax(Doc d);
+    void staple(Doc d);
+}
+
+class BasicPrinter implements Machine {
+    public void print(Doc d) { /* real work */ }
+    public void scan(Doc d)  { throw new UnsupportedOperationException(); }
+    public void fax(Doc d)   { throw new UnsupportedOperationException(); }
+    public void staple(Doc d){ throw new UnsupportedOperationException(); }
+}</code></pre>
+<p>Consequences:</p>
+<ul><li><code>BasicPrinter</code> must implement behaviour it does not have, so stubs that throw or do nothing appear. That also violates LSP.</li><li>Any change to <code>fax</code> forces recompilation and retesting of every implementer and every client, even those that never fax.</li><li>Client code is coupled to capabilities it never calls, which makes mocking harder.</li></ul>
+<h4>Segregated roles</h4>
+<pre><code>interface Printer { void print(Doc d); }
+interface Scanner { void scan(Doc d); }
+interface Fax     { void fax(Doc d); }
+
+class BasicPrinter implements Printer { /* only what it can do */ }
+class OfficeMachine implements Printer, Scanner, Fax { /* combines roles */ }
+
+void printReport(Printer p) { p.print(report); }   // depends only on printing</code></pre>
+<p>A client declares the <strong>narrowest interface it needs</strong>. Implementers compose the roles they truly support.</p>
+<h4>Benefits</h4>
+<ul><li>Lower coupling and clearer intent: the parameter type documents what the function uses.</li><li>Simpler tests: a fake implements one method instead of ten.</li><li>Smaller blast radius when an interface changes.</li><li>Easier to evolve: add a new role interface rather than adding methods to a widely implemented one.</li></ul>
+<h4>Relation to other ideas</h4>
+<ul><li><strong>SRP</strong> is about reasons for a class to change; <strong>ISP</strong> is about what consumers are forced to know.</li><li>Go idioms (<code>io.Reader</code>, <code>io.Writer</code>, one or two method interfaces defined <strong>by the consumer</strong>) are ISP by culture.</li><li>In TypeScript, use narrow structural types or <code>Pick&lt;T, &#39;a&#39; | &#39;b&#39;&gt;</code> for function parameters.</li></ul>
+<h4>Splitting safely</h4>
+<p>Introduce the small interfaces and make the old fat interface extend them (<code>interface Machine extends Printer, Scanner, Fax</code>). Existing code keeps compiling, and clients migrate gradually to the narrow types.</p>
+<h4>Pitfalls</h4>
+<p>Over-fragmentation (one-method interfaces for everything) hurts discoverability. Group methods that <strong>change together and are used together</strong>; split along client needs, not mechanically per method. Also avoid the opposite: god interfaces in service layers (<code>IUserService</code> with thirty methods) that every consumer mocks.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do Go&#39;s small interfaces embody ISP?</li><li>How does ISP differ from the Single Responsibility Principle?</li><li>How can you split a fat interface without breaking existing clients?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-66">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-66%3A+Explain+the+Interface+Segregation+Principle+%28ISP%29+and+why+fat%E2%80%A6&amp;question-id=gen-66&amp;context=Software+engineer+%28core%29%2C+Gear+2%2C+topic%3A+OOP%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-66.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

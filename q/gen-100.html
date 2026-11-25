@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does a Monotonic Queue find sliding window maximums in $O(N)$ amortized time? | InterviewGearUp</title>
+<meta name="description" content="A monotonic deque keeps indices of the current window in order of decreasing value, so the front is always the maximum. Each element is pushed once and…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-100.html">
+<meta property="og:title" content="How does a Monotonic Queue find sliding window maximums in $O(N)$ amortized time? | InterviewGearUp">
+<meta property="og:description" content="A monotonic deque keeps indices of the current window in order of decreasing value, so the front is always the maximum. Each element is pushed once and…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-100.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does a Monotonic Queue find sliding window maximums in $O(N)$ amortized time?</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 3 (Senior) · Data structures · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A monotonic deque keeps indices of the current window in order of decreasing value, so the front is always the maximum. Each element is pushed once and popped once, giving O(N) total time for all sliding window maxima, instead of O(N log k) with a heap or O(Nk) with scanning.</p></div>
+<h4>Explained in depth</h4>
+<h4>Problem</h4>
+<p>For an array <code>a</code> and window size <code>k</code>, output <code>max(a[i..i+k-1])</code> for every <code>i</code>. Brute force costs <code>O(nk)</code>. A max-heap costs <code>O(n log n)</code> (with lazy removal of expired items).</p>
+<h4>Key observation</h4>
+<p>When a new element <code>x</code> enters the window, every earlier element smaller than <code>x</code> can <strong>never be the maximum again</strong>: <code>x</code> is larger and will leave the window later than those earlier elements. So they can be discarded immediately.</p>
+<h4>Algorithm</h4>
+<p>Keep a deque of <strong>indices</strong>, whose values are strictly decreasing from front to back.</p>
+<pre><code>from collections import deque
+
+def sliding_max(a, k):
+    dq, out = deque(), []                       # dq holds indices, a[dq] is decreasing
+    for i, x in enumerate(a):
+        while dq and a[dq[-1]] &lt;= x:            # drop smaller or equal values from the back
+            dq.pop()
+        dq.append(i)
+        if dq[0] &lt;= i - k:                      # front index has left the window
+            dq.popleft()
+        if i &gt;= k - 1:
+            out.append(a[dq[0]])                # front is the window maximum
+    return out</code></pre>
+<p>Example: <code>a = [1, 3, -1, -3, 5, 3, 6, 7]</code>, <code>k = 3</code> gives <code>[3, 3, 5, 5, 6, 7]</code>.</p>
+<h4>Why it is O(n)</h4>
+<p>Every index is appended exactly once and removed at most once, either from the back (dominated by a larger value) or from the front (expired). Total deque operations are at most <code>2n</code>, so the <strong>amortized</strong> cost per element is <code>O(1)</code>.</p>
+<h4>Invariants</h4>
+<ol start="1"><li>Deque values are decreasing, so <code>front</code> is the maximum.</li><li>All indices in the deque lie within the current window <code>(i - k, i]</code> after the expiry check.</li><li>Any element not in the deque is either expired or dominated by a later, larger element.</li></ol>
+<h4>Variations</h4>
+<ul><li><strong>Minimum</strong>: reverse the comparison (increasing deque).</li><li><strong>Constrained DP</strong>: <code>dp[i] = a[i] + max(dp[i-k..i-1])</code> (jump game with a limit, constrained subsequence sum) becomes <code>O(n)</code> with a monotonic deque.</li><li><strong>Shortest subarray with sum at least K</strong> uses a monotonic deque over prefix sums.</li><li>The one-sided relatives: <strong>monotonic stack</strong> for next greater element, largest rectangle in a histogram and trapping rain water.</li></ul>
+<h4>Pitfalls</h4>
+<p>Storing values instead of indices (you cannot detect expiry), popping with <code>&lt;</code> versus <code>&lt;=</code> (both work for the maximum, but equal values decide which index stays), and off-by-one when checking expiry (<code>i - k</code>). Handle <code>k &gt; n</code>, <code>k = 1</code> and empty input.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How would you adapt this to compute sliding window minima or both at once?</li><li>Why does a heap with lazy deletion take O(N log N) while the deque takes O(N)?</li><li>Where else does the monotonic stack or queue idea appear (next greater element, largest rectangle)?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-100">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-100%3A+How+does+a+Monotonic+Queue+find+sliding+window+maximums+in+%24O%28N%29%24%E2%80%A6&amp;question-id=gen-100&amp;context=Software+engineer+%28core%29%2C+Gear+3%2C+topic%3A+Data+structures%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-100.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain Brian Kernighan&#39;s algorithm for counting set bits in an integer in $O(\text{set bits})$ time. | InterviewGearUp</title>
+<meta name="description" content="Brian Kernighan&#39;s trick clears the lowest set bit with n &amp;= n - 1, so the loop runs once per set bit instead of once per bit position. Counting k set…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-52.html">
+<meta property="og:title" content="Explain Brian Kernighan&#39;s algorithm for counting set bits in an integer in $O(\text{set bits})$ time. | InterviewGearUp">
+<meta property="og:description" content="Brian Kernighan&#39;s trick clears the lowest set bit with n &amp;= n - 1, so the loop runs once per set bit instead of once per bit position. Counting k set…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-52.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain Brian Kernighan&#39;s algorithm for counting set bits in an integer in $O(\text{set bits})$ time.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 2 (Mid-level) · Bit manipulation · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Brian Kernighan&#39;s trick clears the lowest set bit with n &amp;= n - 1, so the loop runs once per set bit instead of once per bit position. Counting k set bits takes O(k) time, which beats shifting through all 32 or 64 bits when the number is sparse.</p></div>
+<h4>Explained in depth</h4>
+<h4>The algorithm</h4>
+<pre><code>int count_bits(unsigned n) {
+    int c = 0;
+    while (n) {
+        n &amp;= n - 1;     // clear the lowest set bit
+        c++;
+    }
+    return c;
+}</code></pre>
+<p>The loop body executes once per set bit, so the cost is <code>O(k)</code> where <code>k</code> is the popcount, compared to <code>O(w)</code> (word width) for the naive <code>n &amp; 1; n &gt;&gt;= 1</code> loop.</p>
+<h4>Why <code>n &amp; (n - 1)</code> works</h4>
+<p>Subtracting 1 from <code>n</code> flips the lowest set bit to 0 and turns every zero below it into a 1. Everything above the lowest set bit is unchanged.</p>
+<pre><code>n      = 1011 1000
+n - 1  = 1011 0111
+n&amp;n-1  = 1011 0000   (lowest set bit cleared)</code></pre>
+<p>ANDing keeps the unchanged high bits and zeroes the flipped region, so exactly one bit is removed per iteration.</p>
+<h4>Useful consequences</h4>
+<ul><li><strong>Power of two test</strong>: <code>n &gt; 0 &amp;&amp; (n &amp; (n - 1)) == 0</code> (a power of two has a single set bit).</li><li><strong>Hamming distance</strong> between <code>a</code> and <code>b</code>: popcount of <code>a ^ b</code>.</li><li><strong>Isolate the lowest set bit</strong>: <code>n &amp; -n</code>.</li><li>Iterate over set bits (for bitmask DP over subsets): <code>while (m) { low = m &amp; -m; ...; m ^= low; }</code>.</li></ul>
+<h4>Alternatives</h4>
+<div class="md-table"><table><thead><tr><th>Method</th><th>Time</th><th>Notes</th></tr></thead><tbody><tr><td>Shift and test every bit</td><td>O(w)</td><td>simplest, slowest for sparse values</td></tr><tr><td>Kernighan</td><td>O(k)</td><td>great when few bits are set</td></tr><tr><td>Lookup table (256 or 65536 entries)</td><td>O(w / table bits)</td><td>extra memory, cache effects</td></tr><tr><td>SWAR parallel bit count</td><td>O(log w)</td><td>branch free, ~12 operations for 32 bits</td></tr><tr><td>Hardware <code>POPCNT</code></td><td>O(1)</td><td><code>__builtin_popcount</code>, <code>Integer.bitCount</code>, <code>int.bit_count()</code></td></tr></tbody></table></div>
+<h4>Practical advice</h4>
+<p>In production use the language intrinsic (<code>Integer.bitCount</code>, <code>__builtin_popcountll</code>, <code>int.bit_count()</code> in Python 3.10+). It compiles to a single <code>POPCNT</code> instruction on modern CPUs. Know Kernighan for interviews and for languages or targets without the intrinsic.</p>
+<h4>Pitfalls</h4>
+<p>In languages with arbitrary sized or signed integers, <code>n</code> must be non-negative or masked to a fixed width, otherwise negative numbers either loop forever (Python) or rely on two&#39;s complement behaviour (Java <code>&gt;&gt;</code> versus <code>&gt;&gt;&gt;</code>).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does n &amp; (n - 1) clear exactly the lowest set bit?</li><li>How does the hardware POPCNT instruction compare to this loop?</li><li>How would you check whether a number is a power of two with the same idea?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-52">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-52%3A+Explain+Brian+Kernighan%27s+algorithm+for+counting+set+bits+in+an%E2%80%A6&amp;question-id=gen-52&amp;context=Software+engineer+%28core%29%2C+Gear+2%2C+topic%3A+Bit+manipulation%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-52.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

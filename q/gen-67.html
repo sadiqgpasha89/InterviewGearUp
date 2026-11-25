@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain the Dependency Inversion Principle (DIP) and how Dependency Injection decouples high-level modules. | InterviewGearUp</title>
+<meta name="description" content="The Dependency Inversion Principle says high-level policy should not depend on low-level details; both should depend on abstractions. Dependency…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-67.html">
+<meta property="og:title" content="Explain the Dependency Inversion Principle (DIP) and how Dependency Injection decouples high-level modules. | InterviewGearUp">
+<meta property="og:description" content="The Dependency Inversion Principle says high-level policy should not depend on low-level details; both should depend on abstractions. Dependency…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-67.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain the Dependency Inversion Principle (DIP) and how Dependency Injection decouples high-level modules.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 2 (Mid-level) · OOP · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>The Dependency Inversion Principle says high-level policy should not depend on low-level details; both should depend on abstractions. Dependency Injection is the mechanism that hands the concrete implementation in from outside, so modules can be swapped and tested without edits.</p></div>
+<h4>Explained in depth</h4>
+<h4>Two statements of DIP</h4>
+<ol start="1"><li>High-level modules should not depend on low-level modules. Both should depend on <strong>abstractions</strong>.</li><li>Abstractions should not depend on details; details should depend on abstractions.</li></ol>
+<p>&quot;Inversion&quot; refers to the <strong>direction of the source code dependency</strong>: instead of business logic importing a database driver, the database adapter imports (implements) an interface owned by the business logic.</p>
+<h4>Before: tight coupling</h4>
+<pre><code>class OrderService {
+    private final MySqlOrderRepository repo = new MySqlOrderRepository();   // hard wired
+    private final SmtpMailer mailer = new SmtpMailer(&quot;smtp.example.com&quot;);
+    void place(Order o) { repo.save(o); mailer.send(o.customerEmail(), &quot;Thanks&quot;); }
+}</code></pre>
+<p>Unit testing needs a real MySQL and SMTP server, and switching to Postgres means editing business code.</p>
+<h4>After: invert and inject</h4>
+<pre><code>interface OrderRepository { void save(Order o); }     // owned by the domain layer
+interface Notifier { void send(String to, String body); }
+
+class OrderService {
+    private final OrderRepository repo;
+    private final Notifier notifier;
+    OrderService(OrderRepository repo, Notifier notifier) {   // constructor injection
+        this.repo = repo; this.notifier = notifier;
+    }
+    void place(Order o) { repo.save(o); notifier.send(o.customerEmail(), &quot;Thanks&quot;); }
+}
+// composition root (main or DI container) wires concrete classes:
+new OrderService(new PostgresOrderRepository(ds), new SmtpNotifier(cfg));</code></pre>
+<h4>Terminology</h4>
+<ul><li><strong>DIP</strong> is the design principle.</li><li><strong>Dependency injection</strong> is a technique for satisfying DIP by supplying dependencies from outside (constructor, setter, method parameter).</li><li>An <strong>IoC container</strong> (Spring, Guice, .NET DI, Dagger) automates the wiring. DI works fine with plain constructors and no framework.</li></ul>
+<h4>Types of injection</h4>
+<ul><li><strong>Constructor</strong>: preferred. Dependencies are required, fields can be <code>final</code>, and the object is always valid.</li><li><strong>Setter or property</strong>: for optional dependencies or frameworks that need it; allows partially built objects.</li><li><strong>Method parameter</strong>: when the dependency varies per call.</li></ul>
+<h4>Benefits</h4>
+<ul><li>Unit tests pass in an in-memory fake or mock.</li><li>Swapping implementations (cloud provider, payment gateway) happens at the composition root.</li><li>Clear dependency graph; cycles become visible.</li><li>Enables architectures like hexagonal or clean architecture, where the domain core has zero framework imports.</li></ul>
+<h4>Pitfalls</h4>
+<p>Using a <strong>service locator</strong> (global lookup) hides dependencies. Do not over-abstract stable, simple dependencies (<code>String</code>, <code>List</code>), and avoid interfaces with exactly one implementation that never changes unless you need the test seam. Watch for constructors with many parameters, which usually signal a class doing too much.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the difference between DIP, dependency injection and an IoC container?</li><li>Constructor, setter and interface injection: when do you use which?</li><li>How does DI make a class that talks to a database easy to unit test?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-67">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-67%3A+Explain+the+Dependency+Inversion+Principle+%28DIP%29+and+how+Dependency%E2%80%A6&amp;question-id=gen-67&amp;context=Software+engineer+%28core%29%2C+Gear+2%2C+topic%3A+OOP%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-67.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

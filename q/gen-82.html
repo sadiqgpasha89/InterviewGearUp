@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare Mutexes, Binary Semaphores, and Counting Semaphores in thread synchronization. | InterviewGearUp</title>
+<meta name="description" content="A mutex provides mutual exclusion and has an owner: only the thread that locked it may unlock it. A binary semaphore is a 0/1 signalling counter without…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-82.html">
+<meta property="og:title" content="Compare Mutexes, Binary Semaphores, and Counting Semaphores in thread synchronization. | InterviewGearUp">
+<meta property="og:description" content="A mutex provides mutual exclusion and has an owner: only the thread that locked it may unlock it. A binary semaphore is a 0/1 signalling counter without…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-82.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare Mutexes, Binary Semaphores, and Counting Semaphores in thread synchronization.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 2 (Mid-level) · Systems · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A mutex provides mutual exclusion and has an owner: only the thread that locked it may unlock it. A binary semaphore is a 0/1 signalling counter without ownership, and a counting semaphore tracks N available resources. Use mutexes to protect data, semaphores to signal or limit concurrency.</p></div>
+<h4>Explained in depth</h4>
+<h4>Summary table</h4>
+<div class="md-table"><table><thead><tr><th></th><th>Mutex</th><th>Binary semaphore</th><th>Counting semaphore</th></tr></thead><tbody><tr><td>Value range</td><td>locked or unlocked</td><td>0 or 1</td><td>0 to N</td></tr><tr><td>Ownership</td><td>yes, the locker must unlock</td><td>no</td><td>no</td></tr><tr><td>Primary purpose</td><td>protect a critical section</td><td>signal between threads</td><td>limit access to N identical resources</td></tr><tr><td>Who may release</td><td>same thread</td><td>any thread</td><td>any thread</td></tr><tr><td>Typical bug</td><td>forgetting to unlock, double lock</td><td>lost signal</td><td>releasing more than acquired</td></tr></tbody></table></div>
+<h4>Mutex</h4>
+<p>Guards shared data. Because it has an <strong>owner</strong>, the system can support recursive locking, detect misuse and apply <strong>priority inheritance</strong> (a low priority holder temporarily runs at the priority of a high priority waiter), which avoids priority inversion. That is why real-time systems use mutexes, not semaphores, for protection.</p>
+<pre><code>pthread_mutex_lock(&amp;m);
+balance += amount;          // critical section
+pthread_mutex_unlock(&amp;m);</code></pre>
+<h4>Binary semaphore</h4>
+<p>Initial value 0 or 1; <code>wait</code> (P) decrements or blocks, <code>post</code> (V) increments and wakes a waiter. It is often used for <strong>signalling</strong>: thread A does <code>post</code> when an event completes, thread B waits on it. B is not &quot;owning&quot; anything.</p>
+<pre><code>sem_t ready;  sem_init(&amp;ready, 0, 0);
+// consumer: sem_wait(&amp;ready);   // blocks until the producer signals
+// producer: ... prepare data ...; sem_post(&amp;ready);</code></pre>
+<p>Using a binary semaphore as a mutex works but loses ownership checks and priority inheritance, and anyone can accidentally release it.</p>
+<h4>Counting semaphore</h4>
+<p>Initialised to the number of permits. It models pools:</p>
+<pre><code>Semaphore dbPermits = new Semaphore(10);
+void query() throws InterruptedException {
+    dbPermits.acquire();             // blocks when 10 queries are running
+    try { runQuery(); } finally { dbPermits.release(); }
+}</code></pre>
+<p>Typical uses: connection pools, rate or concurrency limiting, bounded buffers (one semaphore counts empty slots, another counts full slots).</p>
+<h4>Choosing</h4>
+<ul><li>Protecting a data structure: <strong>mutex</strong> (or read-write lock).</li><li>Waiting for an event: condition variable, latch or binary semaphore.</li><li>Limiting parallelism or modelling a resource pool: <strong>counting semaphore</strong>.</li></ul>
+<h4>Pitfalls</h4>
+<p>Deadlock from wrong acquisition order, releasing a mutex from another thread (undefined behaviour in POSIX), lost wakeups when signalling before anyone waits (a semaphore remembers the post, a plain condition variable does not), and starvation when wake-up order is unfair.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is a binary semaphore not exactly the same as a mutex (ownership, priority inheritance)?</li><li>How would you limit a service to 10 concurrent database connections?</li><li>How do you implement a mutex from a counting semaphore, and why is it risky?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-82">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-82%3A+Compare+Mutexes%2C+Binary+Semaphores%2C+and+Counting+Semaphores+in%E2%80%A6&amp;question-id=gen-82&amp;context=Software+engineer+%28core%29%2C+Gear+2%2C+topic%3A+Systems%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-82.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

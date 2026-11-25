@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare the Adapter pattern and the Facade pattern: Intent and interface transformation differences. | InterviewGearUp</title>
+<meta name="description" content="Adapter converts one interface into another that clients expect so incompatible classes can work together. Facade provides a new, simpler interface over…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-71.html">
+<meta property="og:title" content="Compare the Adapter pattern and the Facade pattern: Intent and interface transformation differences. | InterviewGearUp">
+<meta property="og:description" content="Adapter converts one interface into another that clients expect so incompatible classes can work together. Facade provides a new, simpler interface over…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-71.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare the Adapter pattern and the Facade pattern: Intent and interface transformation differences.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 2 (Mid-level) · Design patterns · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Adapter converts one interface into another that clients expect so incompatible classes can work together. Facade provides a new, simpler interface over a whole subsystem. Adapter changes the shape of one thing to fit; Facade reduces the surface of many things.</p></div>
+<h4>Explained in depth</h4>
+<h4>Intent</h4>
+<ul><li><strong>Adapter</strong> (wrapper): make an existing class with interface <code>A</code> usable where interface <code>B</code> is expected. The client code and the adapted class both stay unchanged.</li><li><strong>Facade</strong>: give a convenient, high-level entry point to a complex subsystem of many classes. It does not change what the subsystem can do; it reduces what a caller must know.</li></ul>
+<h4>Adapter example</h4>
+<pre><code>interface PaymentGateway { Receipt charge(Money amount, Card card); }   // what our app expects
+
+class LegacyBillingClient {                                            // third party, cannot edit
+    int makePayment(long cents, String pan, String exp) { ... }
+}
+
+class LegacyBillingAdapter implements PaymentGateway {
+    private final LegacyBillingClient client;
+    LegacyBillingAdapter(LegacyBillingClient c) { this.client = c; }
+    public Receipt charge(Money m, Card card) {
+        int code = client.makePayment(m.cents(), card.number(), card.expiry());
+        return new Receipt(code == 0);
+    }
+}</code></pre>
+<p>The adapter translates method names, argument types, units and error conventions (here a status code into a <code>Receipt</code>).</p>
+<h4>Facade example</h4>
+<pre><code>class VideoConverterFacade {
+    File convert(File in, String format) {
+        var codec = CodecFactory.forFormat(format);
+        var audio = new AudioMixer().extract(in);
+        var video = new BitrateReader().read(in, codec);
+        return new Muxer().write(video, audio, codec);
+    }
+}</code></pre>
+<p>Clients call <code>convert</code> and never touch <code>CodecFactory</code>, <code>AudioMixer</code> or <code>Muxer</code>. Power users can still use the subsystem directly.</p>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th></th><th>Adapter</th><th>Facade</th></tr></thead><tbody><tr><td>Goal</td><td>make interfaces compatible</td><td>simplify a subsystem</td></tr><tr><td>Wraps</td><td>usually one class</td><td>many classes</td></tr><tr><td>Interface</td><td>dictated by the client&#39;s target</td><td>newly designed to be simple</td></tr><tr><td>Typical trigger</td><td>integrating legacy or third-party code</td><td>layered architecture boundaries, SDK entry points</td></tr></tbody></table></div>
+<h4>Practical notes</h4>
+<ul><li>Adapters protect your domain from vendor APIs (anti-corruption layer): replace the vendor by writing one more adapter.</li><li>Facades are common as service layer methods or SDK clients. They also help to define module boundaries.</li><li>Both are thin: avoid business logic inside them.</li></ul>
+<h4>Pitfalls</h4>
+<p>A Facade that accumulates unrelated operations becomes a god class. An Adapter that adds new behaviour is really a Decorator or a service. Leaking vendor types through the adapter&#39;s interface defeats its purpose.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the difference between an object adapter and a class adapter?</li><li>How does a Facade differ from an API gateway?</li><li>Can a Facade hide too much, and how do you avoid it becoming a god class?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-71">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-71%3A+Compare+the+Adapter+pattern+and+the+Facade+pattern%3A+Intent+and%E2%80%A6&amp;question-id=gen-71&amp;context=Software+engineer+%28core%29%2C+Gear+2%2C+topic%3A+Design+patterns%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-71.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

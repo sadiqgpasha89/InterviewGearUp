@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare Factory Method and Abstract Factory design patterns. | InterviewGearUp</title>
+<meta name="description" content="Factory Method defers creating one product to subclasses through an overridable method, while Abstract Factory is an object that creates a whole family…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-69.html">
+<meta property="og:title" content="Compare Factory Method and Abstract Factory design patterns. | InterviewGearUp">
+<meta property="og:description" content="Factory Method defers creating one product to subclasses through an overridable method, while Abstract Factory is an object that creates a whole family…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-69.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare Factory Method and Abstract Factory design patterns.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 2 (Mid-level) · Design patterns · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Factory Method defers creating one product to subclasses through an overridable method, while Abstract Factory is an object that creates a whole family of related products without naming their concrete classes. Use Factory Method for one product variation, Abstract Factory when products must be consistent together.</p></div>
+<h4>Explained in depth</h4>
+<h4>Intent</h4>
+<ul><li><strong>Factory Method</strong>: define an interface for creating an object but let <strong>subclasses decide which class to instantiate</strong>. It is one method, using inheritance.</li><li><strong>Abstract Factory</strong>: provide an interface for creating <strong>families of related objects</strong> without specifying their concrete classes. It is an object (composition) with several creation methods.</li></ul>
+<h4>Factory Method</h4>
+<pre><code>abstract class Dialog {
+    abstract Button createButton();               // the factory method
+    void render() { Button b = createButton(); b.draw(); }
+}
+class WindowsDialog extends Dialog { Button createButton() { return new WinButton(); } }
+class WebDialog     extends Dialog { Button createButton() { return new HtmlButton(); } }</code></pre>
+<p>The algorithm in <code>render</code> is reused and only the product creation varies.</p>
+<h4>Abstract Factory</h4>
+<pre><code>interface UiFactory {
+    Button createButton();
+    Checkbox createCheckbox();
+    Menu createMenu();
+}
+class DarkThemeFactory  implements UiFactory { /* DarkButton, DarkCheckbox, DarkMenu */ }
+class LightThemeFactory implements UiFactory { /* LightButton, LightCheckbox, LightMenu */ }
+
+class App {
+    App(UiFactory f) { button = f.createButton(); box = f.createCheckbox(); }
+}</code></pre>
+<p>The client never mixes a dark button with a light checkbox, because every product comes from the same factory. That <strong>consistency guarantee</strong> is the main reason to use it.</p>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th>Aspect</th><th>Factory Method</th><th>Abstract Factory</th></tr></thead><tbody><tr><td>Creates</td><td>one product</td><td>a family of products</td></tr><tr><td>Mechanism</td><td>inheritance, override one method</td><td>composition, a factory object</td></tr><tr><td>Adding a new product kind</td><td>add a subclass</td><td>change the interface and every factory</td></tr><tr><td>Adding a new family</td><td>subclass the creator</td><td>add one new factory class</td></tr><tr><td>Typical use</td><td>frameworks, hooks for subclasses</td><td>themes, cross-platform toolkits, DB driver sets</td></tr></tbody></table></div>
+<h4>Modern alternatives</h4>
+<ul><li>Pass a <strong>function or lambda</strong> (<code>Supplier&lt;Button&gt;</code>) instead of subclassing.</li><li>Use a <strong>registry map</strong> (<code>type -&gt; constructor</code>) to avoid switch statements.</li><li>Let a DI container choose implementations.</li><li>A simple static factory method (<code>Money.of(...)</code>) is not the GoF pattern but is often all you need.</li></ul>
+<h4>Pitfalls</h4>
+<p>Abstract Factory is rigid in one direction: adding a new product type forces edits across all factories. Do not introduce either pattern until you have a real second variant, and keep creation logic out of the client so that swapping behaviour stays a single wiring change.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How would you implement Factory Method without subclassing, using a registry or a function?</li><li>When does Abstract Factory become painful as the family grows?</li><li>How do these patterns relate to dependency injection?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-69">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-69%3A+Compare+Factory+Method+and+Abstract+Factory+design+patterns.&amp;question-id=gen-69&amp;context=Software+engineer+%28core%29%2C+Gear+2%2C+topic%3A+Design+patterns%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-69.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

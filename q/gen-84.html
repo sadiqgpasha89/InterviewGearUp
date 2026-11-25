@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Solve the Producer-Consumer problem using a bounded buffer, condition variables, and mutexes. | InterviewGearUp</title>
+<meta name="description" content="Producer-consumer with a bounded buffer needs a mutex for the queue plus two conditions: producers wait while the buffer is full, consumers wait while it…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-84.html">
+<meta property="og:title" content="Solve the Producer-Consumer problem using a bounded buffer, condition variables, and mutexes. | InterviewGearUp">
+<meta property="og:description" content="Producer-consumer with a bounded buffer needs a mutex for the queue plus two conditions: producers wait while the buffer is full, consumers wait while it…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-84.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Solve the Producer-Consumer problem using a bounded buffer, condition variables, and mutexes.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 3 (Senior) · Systems · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Producer-consumer with a bounded buffer needs a mutex for the queue plus two conditions: producers wait while the buffer is full, consumers wait while it is empty. Always re-check the condition in a while loop and signal after changing the state to avoid lost wakeups and spurious wakeups.</p></div>
+<h4>Explained in depth</h4>
+<h4>Requirements</h4>
+<p>Producers add items, consumers remove them, the buffer has fixed capacity <code>N</code>. A producer must block when the buffer is full, a consumer must block when it is empty, and all buffer accesses must be mutually exclusive.</p>
+<h4>Implementation with a mutex and two condition variables</h4>
+<pre><code>class BoundedBuffer&lt;T&gt; {
+    private final Object[] items;
+    private int head, tail, count;
+    private final ReentrantLock lock = new ReentrantLock();
+    private final Condition notFull  = lock.newCondition();
+    private final Condition notEmpty = lock.newCondition();
+
+    BoundedBuffer(int capacity) { items = new Object[capacity]; }
+
+    void put(T x) throws InterruptedException {
+        lock.lock();
+        try {
+            while (count == items.length) notFull.await();   // while, not if
+            items[tail] = x; tail = (tail + 1) % items.length; count++;
+            notEmpty.signal();                               // wake one consumer
+        } finally { lock.unlock(); }
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    T take() throws InterruptedException {
+        lock.lock();
+        try {
+            while (count == 0) notEmpty.await();
+            T x = (T) items[head]; items[head] = null; head = (head + 1) % items.length; count--;
+            notFull.signal();                                // wake one producer
+            return x;
+        } finally { lock.unlock(); }
+    }
+}</code></pre>
+<h4>Why <code>while</code> and not <code>if</code></h4>
+<p><code>await</code> atomically releases the lock and sleeps, then re-acquires it before returning. Between the wake-up and the re-acquisition another thread may have consumed the item, and POSIX/Java also allow <strong>spurious wakeups</strong>. Re-testing the predicate in a loop makes the code correct regardless.</p>
+<h4>Semaphore variant</h4>
+<p>Use <code>empty = Semaphore(N)</code>, <code>full = Semaphore(0)</code> and a mutex for the buffer indexes. Producer: <code>empty.acquire(); lock; add; unlock; full.release()</code>. Consumer: the mirror image. Acquire the counting semaphore <strong>before</strong> the mutex, otherwise a waiter holding the mutex deadlocks everyone.</p>
+<h4>Practical solutions</h4>
+<p>Use <code>ArrayBlockingQueue</code> / <code>LinkedBlockingQueue</code> in Java, <code>queue.Queue(maxsize=n)</code> in Python, bounded channels in Go (<code>make(chan T, n)</code>) and Rust (<code>sync_channel</code>). They implement exactly this logic and are well tested.</p>
+<h4>Shutdown and errors</h4>
+<ul><li>A <strong>poison pill</strong> (special sentinel item) per consumer, or a <code>closed</code> flag checked in loops, with <code>notAll</code> / <code>signalAll</code> to wake waiters.</li><li>Handle interrupts: restore the interrupt flag and exit.</li><li>Decide how to treat full buffers: block, drop, or reject (backpressure is usually desired).</li></ul>
+<h4>Pitfalls</h4>
+<p>Using <code>signal</code> when multiple condition types share one condition variable (use <code>signalAll</code> or separate conditions), forgetting to release locks on exceptions, unbounded queues hiding overload until memory runs out, and calling blocking operations while holding the buffer lock.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why must the wait condition be checked in a while loop rather than an if?</li><li>How would you shut the system down cleanly with a poison pill or a closed flag?</li><li>How does a blocking queue or a Go channel simplify this?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-84">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-84%3A+Solve+the+Producer-Consumer+problem+using+a+bounded+buffer%2C%E2%80%A6&amp;question-id=gen-84&amp;context=Software+engineer+%28core%29%2C+Gear+3%2C+topic%3A+Systems%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-84.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

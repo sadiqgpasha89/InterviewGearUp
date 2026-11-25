@@ -10,7 +10,7 @@ const root = path.join(__dirname, '..');
 const ctx = { setTimeout, clearTimeout, AbortController, URL };
 ctx.window = ctx;
 vm.createContext(ctx);
-['js/config.js', 'js/quality.js', 'js/engine.js', 'js/srs.js', 'js/migrate.js', 'js/ai.js', 'js/planner.js', 'js/mock.js', 'js/stories.js', 'js/jd.js', 'js/design.js', 'data/design.js', 'js/coding-core.js', 'data/coding.js', 'js/company.js', 'js/voice.js']
+['js/config.js', 'js/quality.js', 'js/engine.js', 'js/srs.js', 'js/migrate.js', 'js/ai.js', 'js/planner.js', 'js/mock.js', 'js/stories.js', 'js/jd.js', 'js/design.js', 'data/design.js', 'js/coding-core.js', 'data/coding.js', 'data/coding-langs.js', 'js/company.js', 'js/voice.js']
   .concat(require('../scripts/lib/data-files').dataFiles(root))
   .forEach((f) => vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f }));
 
@@ -792,6 +792,24 @@ test('coding problems: every reference solution passes every test, and the start
     const st = CC.runTests(p.starter, p.fn, p.tests);
     assert.ok(st.results.some((r) => !r.pass), p.id + ' starter must not already pass');
   });
+});
+
+test('coding languages: every problem has a starter and a solution in every listed language, and JavaScript is the only runnable one', () => {
+  const langs = IGU.codingLanguages;
+  assert.equal(langs.filter((l) => l.runnable).map((l) => l.id).join(), 'javascript');
+  const names = { typescript: (f) => f, python: (f) => f.replace(/[A-Z]/g, (c) => '_' + c.toLowerCase()), java: (f) => f, cpp: (f) => f, go: (f) => f, csharp: (f) => f[0].toUpperCase() + f.slice(1) };
+  IGU.codingProblems.forEach((p) => {
+    const set = IGU.codingLangs[p.id];
+    assert.ok(set, p.id + ' has no other-language entries');
+    langs.filter((l) => l.id !== 'javascript').forEach((l) => {
+      const e = set[l.id];
+      assert.ok(e && e.starter && e.code, p.id + ' missing ' + l.id);
+      assert.ok(e.code.includes(names[l.id](p.fn)), p.id + ' ' + l.id + ' solution must define ' + names[l.id](p.fn));
+      assert.ok(e.starter.includes(names[l.id](p.fn)), p.id + ' ' + l.id + ' starter must define ' + names[l.id](p.fn));
+      assert.notEqual(e.starter, e.code, p.id + ' ' + l.id + ' starter must not already be the solution');
+    });
+  });
+  Object.keys(IGU.codingLangs).forEach((id) => assert.ok(IGU.codingProblems.some((p) => p.id === id), 'unknown problem ' + id));
 });
 
 test('coding problems: a plausible wrong solution is caught by the tests', () => {

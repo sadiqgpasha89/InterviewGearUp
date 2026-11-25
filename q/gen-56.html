@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does the Master Theorem solve divide-and-conquer recurrence relations like $T(N) = aT(N/b) + f(N)$? | InterviewGearUp</title>
+<meta name="description" content="The Master Theorem solves T(n) = aT(n/b) + f(n) by comparing f(n) with n^(log_b a), the work at the leaves. If f is polynomially smaller the leaves…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-56.html">
+<meta property="og:title" content="How does the Master Theorem solve divide-and-conquer recurrence relations like $T(N) = aT(N/b) + f(N)$? | InterviewGearUp">
+<meta property="og:description" content="The Master Theorem solves T(n) = aT(n/b) + f(n) by comparing f(n) with n^(log_b a), the work at the leaves. If f is polynomially smaller the leaves…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-56.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does the Master Theorem solve divide-and-conquer recurrence relations like $T(N) = aT(N/b) + f(N)$?</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 2 (Mid-level) · Complexity · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>The Master Theorem solves T(n) = aT(n/b) + f(n) by comparing f(n) with n^(log_b a), the work at the leaves. If f is polynomially smaller the leaves dominate, if equal each level contributes equally (extra log factor), and if larger the root dominates, provided a regularity condition holds.</p></div>
+<h4>Explained in depth</h4>
+<h4>Setup</h4>
+<p>A divide and conquer algorithm splits a problem of size <code>n</code> into <code>a</code> subproblems of size <code>n/b</code>, then spends <code>f(n)</code> on dividing and combining. The recursion tree has depth <code>log_b n</code> and <code>a^(log_b n) = n^(log_b a)</code> leaves. Define the critical exponent <code>c* = log_b a</code>. Everything depends on how <code>f(n)</code> compares with <code>n^c*</code>.</p>
+<h4>The three cases</h4>
+<div class="md-table"><table><thead><tr><th>Case</th><th>Condition</th><th>Result</th></tr></thead><tbody><tr><td>1: leaves dominate</td><td><code>f(n) = O(n^(c* - e))</code> for some <code>e &gt; 0</code></td><td><code>T(n) = Theta(n^c*)</code></td></tr><tr><td>2: balanced</td><td><code>f(n) = Theta(n^c* * log^k n)</code>, <code>k &gt;= 0</code></td><td><code>T(n) = Theta(n^c* * log^(k+1) n)</code></td></tr><tr><td>3: root dominates</td><td><code>f(n) = Omega(n^(c* + e))</code> and <code>a f(n/b) &lt;= c f(n)</code> for some <code>c &lt; 1</code></td><td><code>T(n) = Theta(f(n))</code></td></tr></tbody></table></div>
+<p>The extra condition in case 3 is called the <strong>regularity condition</strong>; it ensures work shrinks geometrically down the tree.</p>
+<h4>Worked examples</h4>
+<ul><li><strong>Merge sort</strong>: <code>T(n) = 2T(n/2) + n</code>. Here <code>a = 2</code>, <code>b = 2</code>, <code>c* = 1</code>, <code>f(n) = n = Theta(n^1)</code>, so case 2 with <code>k = 0</code>: <code>Theta(n log n)</code>.</li><li><strong>Binary search</strong>: <code>T(n) = T(n/2) + 1</code>. <code>c* = 0</code>, <code>f(n) = 1 = Theta(n^0)</code>, case 2: <code>Theta(log n)</code>.</li><li><strong>Karatsuba multiplication</strong>: <code>T(n) = 3T(n/2) + n</code>. <code>c* = log_2 3 ~ 1.585</code>, <code>f</code> is smaller, case 1: <code>Theta(n^1.585)</code>.</li><li><strong>Strassen</strong>: <code>T(n) = 7T(n/2) + n^2</code>, <code>c* ~ 2.807</code>, case 1: <code>Theta(n^2.807)</code>.</li><li><strong>Quickselect (balanced)</strong>: <code>T(n) = T(n/2) + n</code>, <code>c* = 0</code>, <code>f</code> larger and regular, case 3: <code>Theta(n)</code>.</li></ul>
+<h4>When it does not apply</h4>
+<ul><li><strong>Gaps between cases</strong>: <code>T(n) = 2T(n/2) + n / log n</code> or <code>n log n</code> with the wrong polynomial gap. (The extended case 2 handles <code>n log^k n</code>, <code>k &gt;= 0</code>, but not negative <code>k</code>.)</li><li><strong>Unequal subproblem sizes</strong>: <code>T(n) = T(n/3) + T(2n/3) + n</code> (use the Akra-Bazzi method or a recursion tree).</li><li><strong>Non-constant <code>a</code></strong>, subtraction instead of division (<code>T(n) = T(n-1) + n</code>, which is <code>Theta(n^2)</code> by unrolling), or <code>f(n)</code> that is not polynomial.</li></ul>
+<h4>Practical method</h4>
+<p>Draw the recursion tree: the level <code>i</code> cost is <code>a^i * f(n / b^i)</code>. Sum over <code>log_b n</code> levels. The cases correspond to that sum being dominated by the last level, equal on every level, or dominated by the first level.</p>
+<h4>Pitfalls</h4>
+<p>Using the theorem when <code>f(n)</code> is only asymptotically close to <code>n^c*</code> (not polynomially different), forgetting the regularity check in case 3, and forgetting that <code>b</code> can be a non-integer.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Which cases of the Master Theorem fail for T(n) = 2T(n/2) + n log n?</li><li>How do you solve a recurrence the theorem does not cover, such as T(n) = T(n-1) + n?</li><li>How does the recursion tree method justify the three cases?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-56">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-56%3A+How+does+the+Master+Theorem+solve+divide-and-conquer+recurrence%E2%80%A6&amp;question-id=gen-56&amp;context=Software+engineer+%28core%29%2C+Gear+2%2C+topic%3A+Complexity%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-56.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare QuickSort and MergeSort: Stability, in-place memory usage, and worst-case time complexities. | InterviewGearUp</title>
+<meta name="description" content="Both average O(n log n). MergeSort is stable, guarantees O(n log n) in the worst case, and needs O(n) extra space; QuickSort is usually faster in…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-57.html">
+<meta property="og:title" content="Compare QuickSort and MergeSort: Stability, in-place memory usage, and worst-case time complexities. | InterviewGearUp">
+<meta property="og:description" content="Both average O(n log n). MergeSort is stable, guarantees O(n log n) in the worst case, and needs O(n) extra space; QuickSort is usually faster in…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-57.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare QuickSort and MergeSort: Stability, in-place memory usage, and worst-case time complexities.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 2 (Mid-level) · Algorithms · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Both average O(n log n). MergeSort is stable, guarantees O(n log n) in the worst case, and needs O(n) extra space; QuickSort is usually faster in practice and sorts in place with O(log n) stack, but is not stable and degrades to O(n^2) with bad pivots unless randomized or introspective.</p></div>
+<h4>Explained in depth</h4>
+<h4>Side by side</h4>
+<div class="md-table"><table><thead><tr><th>Property</th><th>QuickSort</th><th>MergeSort</th></tr></thead><tbody><tr><td>Best / average time</td><td>O(n log n)</td><td>O(n log n)</td></tr><tr><td>Worst time</td><td>O(n^2)</td><td>O(n log n)</td></tr><tr><td>Extra space</td><td>O(log n) stack, in place</td><td>O(n) buffer (arrays)</td></tr><tr><td>Stable</td><td>No (standard partition)</td><td>Yes</td></tr><tr><td>Cache behaviour</td><td>Excellent, sequential scans</td><td>Good, but extra buffer copies</td></tr><tr><td>Adaptive</td><td>No</td><td>Natural merge sort and Timsort are</td></tr><tr><td>Parallelism</td><td>Parallel partitions</td><td>Parallel halves, easy merge</td></tr></tbody></table></div>
+<h4>QuickSort in brief</h4>
+<p>Choose a pivot, partition so smaller items are left and larger are right, recurse on both sides. A bad pivot (already sorted input with first element pivot) gives unbalanced splits and <code>O(n^2)</code>.</p>
+<pre><code>def quicksort(a, lo=0, hi=None):
+    hi = len(a) - 1 if hi is None else hi
+    while lo &lt; hi:
+        p = partition(a, lo, hi)          # randomized or median-of-three pivot
+        if p - lo &lt; hi - p:               # recurse on the smaller side,
+            quicksort(a, lo, p - 1); lo = p + 1   # loop on the larger: stack O(log n)
+        else:
+            quicksort(a, p + 1, hi); hi = p - 1</code></pre>
+<h4>MergeSort in brief</h4>
+<p>Split in half, sort each half, merge the two sorted halves with a linear scan. Taking from the left run on ties preserves <strong>stability</strong>.</p>
+<h4>Choosing between them</h4>
+<ul><li><strong>Need stability</strong> (sort by name, then stably by department): MergeSort or Timsort.</li><li><strong>Linked lists</strong>: MergeSort needs no random access and <code>O(1)</code> extra space.</li><li><strong>Data that does not fit in memory</strong>: external merge sort over sorted runs.</li><li><strong>Primitive arrays in memory</strong>: QuickSort variants win through cache locality.</li><li><strong>Predictable latency</strong>: MergeSort or heapsort, because worst case is bounded.</li></ul>
+<h4>What libraries do</h4>
+<ul><li>Java: dual-pivot QuickSort for primitives, TimSort (a MergeSort hybrid) for objects, to keep stability.</li><li>Python and Java object sorts: Timsort (runs plus merging, <code>O(n)</code> on already sorted data).</li><li>C++ <code>std::sort</code>: introsort (QuickSort that switches to heapsort at depth <code>2 log n</code>, then insertion sort for small ranges); <code>std::stable_sort</code> uses merge sort.</li></ul>
+<h4>Pitfalls</h4>
+<p>Using the first element as pivot on sorted input, forgetting many equal keys (use three-way partitioning, Dutch national flag), and assuming <code>sort</code> is stable when the language does not guarantee it.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does introsort avoid QuickSort&#39;s quadratic worst case?</li><li>Why is MergeSort the usual choice for linked lists and external sorting?</li><li>Which sorts do Java, Python and C++ standard libraries use for objects versus primitives?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-57">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-57%3A+Compare+QuickSort+and+MergeSort%3A+Stability%2C+in-place+memory+usage%2C%E2%80%A6&amp;question-id=gen-57&amp;context=Software+engineer+%28core%29%2C+Gear+2%2C+topic%3A+Algorithms%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-57.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

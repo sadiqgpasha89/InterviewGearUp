@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain amortized analysis: Aggregate method, accounting method, and potential method. | InterviewGearUp</title>
+<meta name="description" content="Amortized analysis bounds the average cost per operation over a worst-case sequence, not per call. The aggregate method divides total cost by operation…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-55.html">
+<meta property="og:title" content="Explain amortized analysis: Aggregate method, accounting method, and potential method. | InterviewGearUp">
+<meta property="og:description" content="Amortized analysis bounds the average cost per operation over a worst-case sequence, not per call. The aggregate method divides total cost by operation…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-55.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain amortized analysis: Aggregate method, accounting method, and potential method.</h1>
+<p class="muted small-text meta-line">Software engineer (core) · Gear 2 (Mid-level) · Complexity · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Amortized analysis bounds the average cost per operation over a worst-case sequence, not per call. The aggregate method divides total cost by operation count, the accounting method charges extra credits to cheap operations, and the potential method defines a potential function over the data structure state.</p></div>
+<h4>Explained in depth</h4>
+<h4>What amortized means</h4>
+<p>An operation can be occasionally expensive (a resize, a rebalance) but cheap on average across any sequence. Amortized analysis proves a <strong>worst-case guarantee on a sequence of <code>n</code> operations</strong>, with no probability involved. It differs from average-case analysis, which assumes a distribution over inputs.</p>
+<h4>Running example: dynamic array append</h4>
+<p>Doubling capacity when full. Appending <code>n</code> items triggers copies at sizes 1, 2, 4, ... so total copy work is <code>1 + 2 + 4 + ... + n &lt; 2n</code>.</p>
+<h4>1. Aggregate method</h4>
+<p>Compute the total cost <code>T(n)</code> of <code>n</code> operations and divide: <code>T(n) / n</code>. For appends: <code>n</code> writes plus fewer than <code>2n</code> copies is under <code>3n</code>, so the amortized cost is <code>O(1)</code> per append.</p>
+<h4>2. Accounting (banker&#39;s) method</h4>
+<p>Assign each operation an <strong>amortized charge</strong>. Cheap operations are overcharged and the surplus is stored as credit on specific elements, then spent on later expensive operations. For appends, charge 3 units: 1 pays for the write, 2 stay as credit on the new element. When the array doubles from <code>m</code> to <code>2m</code>, the <code>m/2</code> elements added since the last resize carry <code>m</code> credits, which pay to copy all <code>m</code> elements. The credit never goes negative, so the charge of 3 is valid.</p>
+<h4>3. Potential method</h4>
+<p>Define a potential function <code>Phi(state) &gt;= 0</code> (with <code>Phi(initial) = 0</code>). The amortized cost is <code>actual cost + Phi(after) - Phi(before)</code>. For the dynamic array take <code>Phi = 2 * size - capacity</code>. A normal append raises <code>size</code> by 1, so the amortized cost is <code>1 + 2 = 3</code>. A resizing append has actual cost <code>size + 1</code> but the potential falls from about <code>size</code> to about <code>2</code> after capacity doubles, which cancels the cost, again giving <code>O(1)</code>.</p>
+<h4>Other classic examples</h4>
+<ul><li><strong>Binary counter increment</strong>: each bit flips from 0 to 1 once for every flip back, total flips under <code>2n</code>, so <code>O(1)</code> amortized.</li><li><strong>Stack with multipop</strong>: each element is pushed and popped at most once.</li><li><strong>Union-Find with path compression and union by rank</strong>: <code>O(alpha(n))</code> amortized.</li><li><strong>Splay trees</strong> and <strong>Fibonacci heap</strong> <code>decrease-key</code> rely on potential arguments.</li></ul>
+<h4>Pitfalls</h4>
+<p>Amortized <code>O(1)</code> still allows a single slow operation, which matters for <strong>latency sensitive</strong> systems such as a real-time loop. Growth by a constant increment (<code>+10</code>) gives <code>O(n)</code> amortized appends; growth by a <strong>constant factor</strong> (1.5x or 2x) is what makes it work.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does the amortized cost of dynamic array append work out to O(1)?</li><li>What is the difference between amortized and average-case analysis?</li><li>Why does growing by a constant instead of a factor break the O(1) bound?</li></ul>
+<p><a class="btn primary" href="../#/q/gen-55">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-55%3A+Explain+amortized+analysis%3A+Aggregate+method%2C+accounting+method%2C+and%E2%80%A6&amp;question-id=gen-55&amp;context=Software+engineer+%28core%29%2C+Gear+2%2C+topic%3A+Complexity%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-55.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>
