@@ -865,3 +865,18 @@ test('voice: review reuses the rubric, AI prompt forbids inference and cannot be
   assert.equal((p.match(/<transcript>/g) || []).length, 1); assert.equal((p.match(/<\/transcript>/g) || []).length, 1);
   assert.equal(VO.recognitionCtor(), null, 'no speech API outside a browser');
 });
+
+test('markdown tables in answers are well formed (header, separator, same column count)', () => {
+  const cells = (l) => l.trim().replace(/^\|/, '').replace(/\|$/, '').split(/(?<!\\)\|/).length;
+  bank.forEach((e) => {
+    const lines = String(e.detail || '').split('\n');
+    let inCode = false;
+    for (let i = 0; i < lines.length; i++) {
+      if (/^```/.test(lines[i])) { inCode = !inCode; continue; }
+      if (inCode || !/^\s*\|/.test(lines[i]) || (i > 0 && /^\s*\|/.test(lines[i - 1]))) continue;
+      assert.ok(i + 1 < lines.length && /^\s*\|?\s*:?-{3,}/.test(lines[i + 1]), e.id + ': table needs a --- separator row under the header');
+      const n = cells(lines[i]);
+      for (let j = i; j < lines.length && /^\s*\|/.test(lines[j]); j++) assert.equal(cells(lines[j]), n, e.id + ': table row ' + (j - i) + ' has a different column count');
+    }
+  });
+});

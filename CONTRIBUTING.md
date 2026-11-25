@@ -20,6 +20,7 @@ IGU.revise([ Object.assign(meta('medium'), { id: 'be-65', short: '...', detail: 
 
 - `IGU.revise` replaces the text of an **existing** id and keeps its role and gear, so saved progress and shared links keep working. It throws on an unknown id.
 - `IGU.add` adds a new question. `IGU.retire(oldId, replacementId)` removes a duplicate and redirects old links.
+- The answer text supports a small markdown subset: `###` headings, `-` and `1.` lists, `**bold**`, `` `code` ``, fenced code blocks, `>` quotes, links and simple pipe tables (header row, a `---` separator row, same number of columns in every row; write a literal pipe as `\|`). Single-asterisk italics are not supported.
 - `short` is the 30-second answer (60 to 420 characters). `detail` needs at least 400 characters, at least 2 `follow` questions and at least 3 `tags`.
 
 ## Review status
