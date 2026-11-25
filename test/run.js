@@ -934,7 +934,10 @@ test('paths: export then import round-trips; bad files are rejected without thro
 test('paths: progress counts prepared and written answers; backup carries paths', () => {
   const byId = {}; bank.forEach((e) => { byId[e.id] = e; });
   const real = bank.filter((e) => !IGU.quality.isPlaceholder(e)).slice(0, 3).map((e) => e.id);
-  const ph = bank.find((e) => IGU.quality.isPlaceholder(e));
+  // The bank can now be fully answered, so build a placeholder-shaped entry instead of searching for one.
+  const ph = bank.find((e) => IGU.quality.isPlaceholder(e)) ||
+    { id: 'zz-1', short: 'Addressing x requires balancing performance, reliability, and architectural complexity.' };
+  byId[ph.id] = ph;
   const pr = PA.progress({ ids: real.concat([ph.id]) }, byId, { [real[0]]: 1 });
   assert.equal(pr.total, 4); assert.equal(pr.prepared, 1); assert.equal(pr.real, 3); assert.equal(pr.next, real[1]);
   assert.ok(p14.IGU.stats.BACKUP_KEYS.includes('paths'));
