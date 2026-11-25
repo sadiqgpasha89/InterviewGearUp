@@ -54,4 +54,24 @@
   IGU.add = function (entries) {
     entries.forEach(function (e) { IGU.bank.push(e); });
   };
+  // Retire a duplicate question. The id is removed from the bank but remembered, so old links (#/q/id) and the
+  // router still resolve to the surviving entry. Throws on an unknown id.
+  IGU.retired = IGU.retired || {};
+  IGU.retire = function (id, replacedBy) {
+    const i = IGU.bank.findIndex(function (e) { return e.id === id; });
+    if (i < 0) throw new Error('IGU.retire: unknown id ' + id);
+    if (!IGU.bank.some(function (e) { return e.id === replacedBy; })) throw new Error('IGU.retire: unknown replacement ' + replacedBy);
+    IGU.bank.splice(i, 1);
+    IGU.retired[id] = replacedBy;
+  };
+  // Replace the answer content of existing entries by id, keeping id, role, level, topic and question
+  // unless the revision supplies them. IDs never change, so saved progress and shared links keep working.
+  // Throws on an unknown id so a typo cannot silently drop a revision.
+  IGU.revise = function (entries) {
+    entries.forEach(function (rev) {
+      const i = IGU.bank.findIndex(function (e) { return e.id === rev.id; });
+      if (i < 0) throw new Error('IGU.revise: unknown id ' + rev.id);
+      IGU.bank[i] = Object.assign({}, IGU.bank[i], rev);
+    });
+  };
 })();

@@ -13,14 +13,18 @@ Interview preparation for IT roles, organised by **gear**:
 
 ## Highlights
 
-- **Question bank**: 900+ in-depth questions across 9 tech roles (100+ questions per role across Junior, Mid-level, Senior, and Lead/Staff gears). Every entry provides a 30-second summary answer, deep technical breakdown, pitfalls & trade-offs, and likely follow-up questions tailored to that level.
-- **Drill mode**: Practice out loud with random questions and a timer. Grade yourself after each answer; questions you struggle with go into a **Needs practice** pool. Keyboard shortcuts: `N` next, `R` reveal, `Y` confident, `P` practise again.
-- **Save, annotate, filter**: Star questions for later, keep personal notes on any question, and filter the bank by To prepare / Prepared / Saved / Needs practice / With notes. Press `/` to jump to search.
-- **Progress page**: Overall %, study streak, and a role × gear coverage matrix. **Backup and restore** your progress as a JSON file (API keys are never exported).
-- **Works offline**: Installable as an app (PWA); the question bank keeps working without a connection.
+- **Question bank**: 918 interview questions across 9 tech roles and 4 gears, but **only 113 have a full written answer so far** (30-second answer, in-depth breakdown, pitfalls, follow-ups). The rest are real questions whose answer is still being written; the site says so on each one and shows a practice structure instead of filler. Use the **Full answer** filter to see only the written ones, and see [CONTRIBUTING.md](CONTRIBUTING.md) to help close the gap. Written answers are currently marked *AI-drafted, not yet reviewed by a person*.
+- **Plan**: a daily list built from your role, gear, optional interview date and time budget: reviews that are due first, then new questions with a written answer, plus a mock round every third day. It is a rule-based schedule, not a readiness prediction.
+- **Review (spaced repetition)**: questions you grade in Drill or Review come back on a schedule (again 1 day, partly 3, good 7 then growing, mastered 14 then 30 and up). Daily goal, role and gear filters, a "how it works" explainer and a reset. Days are your local calendar days.
+- **Mock interview**: a timed round of 3, 5 or 7 questions (mixed, technical, behavioral or design). You get a deterministic rubric at the end (structure, specifics, trade-offs, coverage of the reference points, fit to the question type), likely follow-ups, a history, a downloadable Markdown report, and optional AI feedback with your own key. The rubric checks the shape of an answer, not correctness, and is not a prediction of interview results.
+- **Drill mode**: Practice out loud with random questions and a timer. Grade yourself (confident, mastered, partly, practise again); grades feed the review schedule. Keyboard shortcuts: `N` next, `R` reveal, `Y` confident, `M` mastered, `B` partly, `P` practise again.
+- **Save, annotate, filter**: Star questions for later, keep personal notes on any question, and filter the bank by To prepare / Prepared / Saved / Needs practice / With notes / Full answer / Answer pending. Press `/` to jump to search.
+- **Report a problem**: every answer has a link that opens a pre-filled GitHub issue (question id, role, gear, content version; no personal data).
+- **Progress page**: Overall %, study streak, and a role × gear coverage matrix. **Backup and restore** your progress, review schedule, plan and mock history as a JSON file (API keys are never exported).
+- **Works offline**: Installable as an app (PWA); the question bank, plan, review and mock keep working without a connection (AI features need a connection).
 - **Light / Dark / Auto theme** toggle.
 - **Community board**: Real interview questions asked at top companies, filterable by company, role, gear, and business domain.
-- **Auto-generated LLM answers**: Community questions are automatically answered by an LLM (Google Gemini, Anthropic Claude, or OpenAI) calibrated for the stated role, company domain, and gear level.
+- **LLM answers for community questions**: answered by a GitHub Action for maintainers' issues or after a maintainer adds the `approved` label (to prevent cost abuse). The bot marks them with an `ai-answered` label; treat them as study aids.
 - **Post a question**: Register locally with a display name, write questions you were asked in real interviews, and receive an instant answer.
 - **Zero bloat**: Static site built with vanilla HTML, modern CSS, and lightweight JavaScript. No frameworks, no build steps, no tracking, and no external dependencies.
 
@@ -28,19 +32,19 @@ See **[ROADMAP.md](ROADMAP.md)** for the product scope, what shipped in each rel
 
 ---
 
-## Roles Covered (100+ Questions Each)
+## Roles covered
 
-| Role | Questions | Focus Topics |
+| Role | Questions (written answers) | Focus Topics |
 |---|---|---|
-| **Software Engineer (Core)** | 100 | Algorithms, data structures, concurrency, OOP patterns, bit manipulation, systems programming |
-| **Frontend Engineer** | 100 | DOM rendering, CRP, JavaScript internals, React Fiber, Core Web Vitals, CSS architecture, accessibility |
-| **Backend Engineer** | 100 | Microservices, database indexing, MVCC, transactions, messaging queues, event sourcing, caching |
-| **DevOps / SRE / Cloud** | 100 | Kubernetes, CI/CD, Linux internals, Prometheus observability, GitOps, cloud networking, SRE |
-| **Data Engineer** | 100 | Spark optimization, Iceberg/Delta Lake, ETL/ELT pipelines, dimensional modeling, Kafka, Airflow |
-| **ML / AI Engineer** | 100 | Deep learning, Transformers, Attention derivations, LLM serving (vLLM/FlashAttention), RAG, MLOps |
-| **QA / SDET** | 100 | Test automation pyramids, Playwright/Selenium, API contract testing, performance (k6), flaky tests |
-| **Security Engineer** | 101 | OWASP Top 10, cryptographic primitives, OAuth2/OIDC, cloud IAM, Zero Trust, threat modeling |
-| **Tech Lead / EM** | 100 | Engineering 1-on-1s, delivery execution, ADRs, RFC culture, blameless postmortems, team topologies |
+| **Software Engineer (Core)** | 101 (13) | Algorithms, data structures, concurrency, OOP patterns, bit manipulation, systems programming |
+| **Frontend Engineer** | 101 (13) | DOM rendering, CRP, JavaScript internals, React Fiber, Core Web Vitals, CSS architecture, accessibility |
+| **Backend Engineer** | 102 (14) | Microservices, database indexing, MVCC, transactions, messaging queues, event sourcing, caching |
+| **DevOps / SRE / Cloud** | 102 (13) | Kubernetes, CI/CD, Linux internals, Prometheus observability, GitOps, cloud networking, SRE |
+| **Data Engineer** | 102 (11) | Spark optimization, Iceberg/Delta Lake, ETL/ELT pipelines, dimensional modeling, Kafka, Airflow |
+| **ML / AI Engineer** | 99 (12) | Deep learning, Transformers, Attention derivations, LLM serving (vLLM/FlashAttention), RAG, MLOps |
+| **QA / SDET** | 102 (11) | Test automation pyramids, Playwright/Selenium, API contract testing, performance (k6), flaky tests |
+| **Security Engineer** | 103 (12) | OWASP Top 10, cryptographic primitives, OAuth2/OIDC, cloud IAM, Zero Trust, threat modeling |
+| **Tech Lead / EM** | 106 (14) | Engineering 1-on-1s, delivery execution, ADRs, RFC culture, blameless postmortems, team topologies |
 
 ---
 
@@ -55,7 +59,7 @@ Because GitHub Pages does not run a server backend, sharing and AI answer genera
 [ Opens pre-filled GitHub Issue ] ── (label: community-question)
             │
             ▼
-[ GitHub Actions Workflow runs ] ── (.github/workflows/generate-answer.yml)
+[ GitHub Actions Workflow runs ] ── only for maintainers' issues or after a maintainer adds the `approved` label
             │
             ├─► Calls LLM (Gemini 2.5 Flash / Claude / OpenAI)
             ├─► Formats answer for the stated role & gear
@@ -125,12 +129,15 @@ python3 -m http.server 8000
 # http://localhost:8000
 ```
 
-Run validation tests:
+Run validation tests (schema, metadata, duplicates, coverage ratchet, spaced repetition, planner, mock rubric, AI adapter, workflow gate):
 
 ```bash
-# Executes data validation, search engine checks, and parser tests
-npm test
+npm test                  # all automated tests
+npm run test:goal         # also enforces the 15-real-answers-per-role-and-gear target (fails until it is met)
+npm run content:status    # real vs placeholder answers per role and gear, and the next questions to write
 ```
+
+Manual checks that need a person and real devices are listed in [docs/MANUAL_QA.md](docs/MANUAL_QA.md). The starting-point audit is in [docs/BASELINE_AUDIT.md](docs/BASELINE_AUDIT.md).
 
 Test the answer generation script in standalone mode:
 

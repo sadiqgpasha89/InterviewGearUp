@@ -3,7 +3,7 @@
   const IGU = (window.IGU = window.IGU || {});
 
   /* Keys that a backup file may contain. API keys are deliberately excluded. */
-  const BACKUP_KEYS = ['done', 'saved', 'notes', 'practice', 'activity', 'posts', 'profile'];
+  const BACKUP_KEYS = ['done', 'saved', 'notes', 'practice', 'activity', 'posts', 'profile', 'srs', 'plan', 'mocks'];
 
   /* Prepared counts per role and gear. */
   function matrix(bank, done, meta) {
@@ -46,7 +46,17 @@
     return p;
   }
 
-  function day(d) { return new Date(d).toISOString().slice(0, 10); }
+  /* Days are the learner's LOCAL calendar days ("YYYY-MM-DD"), so a late-evening session counts for today. */
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function day(d) {
+    const x = new Date(d);
+    return x.getFullYear() + '-' + pad(x.getMonth() + 1) + '-' + pad(x.getDate());
+  }
+  /* Calendar arithmetic on a day string; independent of DST because it works on UTC midnights. */
+  function shiftDay(str, n) {
+    const p = str.split('-').map(Number);
+    return new Date(Date.UTC(p[0], p[1] - 1, p[2] + n)).toISOString().slice(0, 10);
+  }
 
   /* Add today to a sorted, de-duplicated list of active days (keeps the last 400). */
   function touch(days, now) {
@@ -60,10 +70,10 @@
   function streak(days, now) {
     const set = {};
     (days || []).forEach(function (x) { set[x] = 1; });
-    let cur = new Date(day(now || Date.now()) + 'T00:00:00Z');
-    if (!set[day(cur)]) cur = new Date(cur.getTime() - 86400000);
+    let cur = day(now || Date.now());
+    if (!set[cur]) cur = shiftDay(cur, -1);
     let n = 0;
-    while (set[day(cur)]) { n++; cur = new Date(cur.getTime() - 86400000); }
+    while (set[cur]) { n++; cur = shiftDay(cur, -1); }
     return n;
   }
 
@@ -80,6 +90,9 @@
     if ('notes' in out && !isMap(out.notes)) return { error: 'Backup "notes" section is malformed.' };
     if ('practice' in out && !isMap(out.practice)) return { error: 'Backup "practice" section is malformed.' };
     if ('activity' in out && !Array.isArray(out.activity)) return { error: 'Backup "activity" section is malformed.' };
+    if ('srs' in out && !isMap(out.srs)) return { error: 'Backup "srs" section is malformed.' };
+    if ('plan' in out && !isMap(out.plan)) return { error: 'Backup "plan" section is malformed.' };
+    if ('mocks' in out && !Array.isArray(out.mocks)) return { error: 'Backup "mocks" section is malformed.' };
     if ('posts' in out && !Array.isArray(out.posts)) return { error: 'Backup "posts" section is malformed.' };
     return { data: out };
   }
@@ -90,5 +103,5 @@
     return { app: 'InterviewGearUp', version: 1, exportedAt: new Date().toISOString(), data: data };
   }
 
-  IGU.stats = { matrix: matrix, weak: weak, record: record, touch: touch, streak: streak, readBackup: readBackup, makeBackup: makeBackup, BACKUP_KEYS: BACKUP_KEYS };
+  IGU.stats = { matrix: matrix, weak: weak, record: record, touch: touch, streak: streak, day: day, shiftDay: shiftDay, readBackup: readBackup, makeBackup: makeBackup, BACKUP_KEYS: BACKUP_KEYS };
 })();

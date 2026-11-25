@@ -4,6 +4,7 @@
   const U = IGU.util, h = U.h, md = U.md, store = U.store;
   const cfg = IGU.config, meta = IGU.meta, engine = IGU.engine;
   const bank = IGU.bank;
+  const detectProvider = IGU.ai.detectProvider;
   const app = document.getElementById('app');
   const PAGE = 40;
 
@@ -31,9 +32,11 @@
       if (a.dataset.tab === tab) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
     app.replaceChildren();
+    const extra = IGU.routes && IGU.routes[tab];
     const titles = { questions: 'Question bank', drill: 'Drill', progress: 'Progress', community: 'Community', post: 'Post a question' };
-    document.title = (titles[tab] || 'Question bank') + ' | InterviewGearUp';
-    if (tab === 'drill') drillView(r.params);
+    document.title = ((extra && extra.title) || titles[tab] || 'Question bank') + ' | InterviewGearUp';
+    if (extra) extra.render(r.params);
+    else if (tab === 'drill') drillView(r.params);
     else if (tab === 'progress') progressView();
     else if (tab === 'community') communityView(r.params);
     else if (tab === 'post') postView();
@@ -44,8 +47,53 @@
   /* ---------------- shared pieces ---------------- */
   function gearBadge(n) { return h('span', { class: 'gear g' + n, title: 'Gear ' + n + ': ' + (levelOf(n) || {}).name }, String(n)); }
 
-  function answerBody(e) {
+  const Q = IGU.quality;
+
+  /* Pre-filled GitHub issue for a wrong, outdated or unclear answer. Contains the question id and context, never any local data. */
+  function feedbackUrl(e, title, context) {
+    const q = new URLSearchParams({ template: 'content-feedback.yml', title: title + e.id + ': ' + trim(e.q, 70), 'question-id': e.id, context: context });
+    return 'https://github.com/' + cfg.owner + '/' + cfg.repo + '/issues/new?' + q.toString();
+  }
+  function reportUrl(e) {
+    return feedbackUrl(e, '[Answer feedback] ', roleName(e.role) + ', Gear ' + e.level + ', topic: ' + e.topic + ', content version ' + (e.contentVersion || 1) +
+      '. Link: ' + location.href.split('#')[0] + '#/q/' + e.id);
+  }
+  function contributeUrl(e) {
+    return feedbackUrl(e, '[Write answer] ', 'I would like to help write the reference answer. ' + roleName(e.role) + ', Gear ' + e.level + '.');
+  }
+
+  /* Review status and difficulty, shown only when the data file records them and they validate (quality.metaProblems). */
+  function metaLine(e) {
+    if (Q.metaProblems(e).length) return null;
+    const bits = [];
+    if (e.difficulty) bits.push('Difficulty: ' + e.difficulty);
+    if (e.reviewStatus === 'reviewed') bits.push('Reviewed ' + e.lastReviewed);
+    else if (e.reviewStatus === 'ai-drafted') bits.push('AI-drafted, not yet reviewed by a person');
+    if (e.contentVersion > 1) bits.push('Version ' + e.contentVersion);
+    return bits.length ? h('p', { class: 'muted small-text meta-line' }, bits.join(' · ')) : null;
+  }
+
+  function referencesBlock(e) {
+    if (!Array.isArray(e.references) || !e.references.length || Q.metaProblems(e).length) return null;
+    return h('p', { class: 'muted small-text' }, 'References: ',
+      e.references.map(function (r, i) { return [i ? ', ' : '', h('a', { href: r.url, rel: 'noopener noreferrer' }, r.title)]; }));
+  }
+
+  /* Entries that still hold generic filler: show an honest notice and the offline scaffold instead of the filler. */
+  function placeholderBody(e) {
     const f = document.createDocumentFragment();
+    f.appendChild(h('p', { class: 'notice' }, h('strong', null, 'No reference answer yet. '),
+      'This is a real interview question, but its stored answer is generic filler, so it is not shown. Answer it in your own words first, then compare with the structure below. ',
+      h('a', { href: contributeUrl(e), rel: 'noopener noreferrer', target: '_blank' }, 'Help write the answer'), '.'));
+    f.appendChild(answerBlock({ id: 'bank-' + e.id, question: e.q, role: e.role, level: e.level, company: '', domain: '', round: '', answer: '' }));
+    return f;
+  }
+
+  function answerBody(e) {
+    if (Q.isPlaceholder(e)) return placeholderBody(e);
+    const f = document.createDocumentFragment();
+    const ml = metaLine(e);
+    if (ml) f.appendChild(ml);
     f.appendChild(h('div', { class: 'short' }, h('h4', null, 'In 30 seconds'), md(e.short)));
     f.appendChild(h('h4', null, 'Explained in depth'));
     f.appendChild(md(e.detail));
@@ -53,10 +101,14 @@
       f.appendChild(h('h4', null, 'Likely follow-ups'));
       f.appendChild(h('ul', null, e.follow.map(function (x) { return h('li', null, x); })));
     }
+    const refs = referencesBlock(e);
+    if (refs) f.appendChild(refs);
+    f.appendChild(h('p', { class: 'small-text' }, h('a', { href: reportUrl(e), rel: 'noopener noreferrer', target: '_blank' }, 'Report a problem with this answer')));
     return f;
   }
 
   const S = IGU.stats;
+  const today = function () { return S.day(Date.now()); };
   function touchActivity() { store.set('activity', S.touch(store.get('activity', []))); }
 
   /* A set of question ids kept in localStorage under one key. */
@@ -85,7 +137,9 @@
     { id: 'done', label: 'Prepared' },
     { id: 'saved', label: 'Saved' },
     { id: 'weak', label: 'Needs practice' },
-    { id: 'notes', label: 'With notes' }
+    { id: 'notes', label: 'With notes' },
+    { id: 'real', label: 'Full answer' },
+    { id: 'pending', label: 'Answer pending' }
   ];
   function showFilter(mode) {
     if (!mode) return function () { return true; };
@@ -97,6 +151,8 @@
       if (mode === 'saved') return !!sv[e.id];
       if (mode === 'weak') return !!wk[e.id];
       if (mode === 'notes') return !!nt[e.id];
+      if (mode === 'real') return Q.isReal(e);
+      if (mode === 'pending') return Q.isPlaceholder(e);
       return true;
     };
   }
@@ -112,7 +168,8 @@
 
   /* ---------------- question bank ---------------- */
   function questionsView(r) {
-    const openId = r.seg[0] === 'q' ? r.seg[1] : null;
+    const rawId = r.seg[0] === 'q' ? r.seg[1] : null;
+    const openId = rawId && (IGU.retired && IGU.retired[rawId]) || rawId;
     const f = {
       role: r.params.get('role') || '',
       level: Number(r.params.get('level')) || 0,
@@ -236,6 +293,7 @@
         h('summary', null, gearBadge(e.level),
           h('div', null, h('div', { class: 'qt' }, e.q),
             h('div', { class: 'qm' }, h('span', null, roleName(e.role)), h('span', null, e.topic),
+              Q.isPlaceholder(e) ? h('span', { class: 'pending-badge' }, 'Answer pending') : null,
               notes.get(e.id) ? h('span', { class: 'has-note' }, 'Has notes') : null)),
           h('span', { class: 'marks' }, star, mark)));
       function build() {
@@ -288,6 +346,8 @@
       h('section', null,
         h('h1', null, 'Pick your gear'),
         h('p', { class: 'lede' }, 'Questions run from first gear (junior) to fourth (lead or staff). Open one for a 30-second answer, then the full explanation.'),
+        h('p', { class: 'muted small-text' }, bank.filter(Q.isReal).length + ' of ' + bank.length + ' questions have a full written answer. The rest are real interview questions whose answers are still being written; they show a practice structure instead. ',
+          h('a', { href: '#/questions?show=real' }, 'Show only full answers'), '.'),
         openId && !openEntry ? h('p', { class: 'notice bad' }, 'That question link is not in the bank. Showing everything instead.') : null,
         h('div', { class: 'search' }, input),
         chips,
@@ -340,9 +400,12 @@
       if (!fresh.length) fresh = p;
       begin(fresh[Math.floor(Math.random() * fresh.length)]);
     }
-    function grade(outcome) {
+    /* grade: 'again' | 'partial' | 'solid' | 'mastered'. practice keeps its original two outcomes. */
+    function grade(g) {
       const e = st.current;
+      const outcome = (g === 'solid' || g === 'mastered') ? 'ok' : 'again';
       store.set('practice', S.record(store.get('practice', {}), e.id, outcome, st.secs));
+      store.set('srs', IGU.srs.review(store.get('srs', {}), e.id, g, today()));
       touchActivity();
       if (outcome === 'ok' && !done.has(e.id)) done.toggle(e.id);
       st.session.n++; st.session[outcome]++; st.session.secs += st.secs;
@@ -376,7 +439,9 @@
       if (!st.current) { if (k === 'n' && pool().length) { ev.preventDefault(); draw(); } return; }
       if (!st.shown && k === 'r') { ev.preventDefault(); reveal(); }
       else if (!st.shown && k === 'n') { ev.preventDefault(); draw(); }
-      else if (st.shown && k === 'y') { ev.preventDefault(); grade('ok'); }
+      else if (st.shown && k === 'y') { ev.preventDefault(); grade('solid'); }
+      else if (st.shown && k === 'm') { ev.preventDefault(); grade('mastered'); }
+      else if (st.shown && k === 'b') { ev.preventDefault(); grade('partial'); }
       else if (st.shown && k === 'p') { ev.preventDefault(); grade('again'); }
     }
     document.addEventListener('keydown', onKey);
@@ -412,9 +477,11 @@
         const note = notes.get(e.id);
         if (note) card.appendChild(h('div', { class: 'short' }, h('h4', null, 'Your notes'), h('p', { class: 'userq plain' }, note)));
         card.appendChild(h('div', { class: 'q-actions' },
-          h('button', { class: 'btn primary', type: 'button', onclick: function () { grade('ok'); } }, 'I could answer this'),
+          h('button', { class: 'btn primary', type: 'button', onclick: function () { grade('solid'); } }, 'I could answer this'),
+          h('button', { class: 'btn', type: 'button', onclick: function () { grade('mastered'); } }, 'Mastered'),
+          h('button', { class: 'btn', type: 'button', onclick: function () { grade('partial'); } }, 'Partly'),
           h('button', { class: 'btn', type: 'button', onclick: function () { grade('again'); } }, 'Needs more practice'),
-          h('span', { class: 'kbd-hint' }, h('kbd', null, 'Y'), ' confident  ', h('kbd', null, 'P'), ' practise again')));
+          h('span', { class: 'kbd-hint' }, h('kbd', null, 'Y'), ' confident  ', h('kbd', null, 'M'), ' mastered  ', h('kbd', null, 'B'), ' partly  ', h('kbd', null, 'P'), ' practise again')));
       }
       stage.appendChild(card);
     }
@@ -606,8 +673,9 @@
             p.gen = await askLlm(p);
             saveAi(p.id, p.gen);
           } catch (e) {
-            console.warn('AI answer generation failed, using offline fallback:', e);
+            console.warn('AI answer generation failed, using offline fallback:', e.kind || e.name);
             p.gen = engine.generate({ question: p.question, role: p.role, level: p.level, company: p.company, domain: p.domain, round: p.round, answer: p.answer }, bank);
+            p.gen.fallbackNote = e.message;
           }
         } else {
           p.gen = engine.generate({ question: p.question, role: p.role, level: p.level, company: p.company, domain: p.domain, round: p.round, answer: p.answer }, bank);
@@ -654,7 +722,9 @@
       year: parseInt(fields.year, 10) || new Date(i.created_at).getFullYear(),
       question: trim(fields.question || i.title, 1500), answer: trim(fields.answer || '', 2500)
     };
-    if (aiAnswer) {
+    const botLabelled = (i.labels || []).some(function (l) { return (l && l.name) === 'ai-answered'; });
+    // A "generated answer" section is only shown as LLM-written when the bot applied the label; anyone can type that heading into an issue.
+    if (aiAnswer && botLabelled) {
       item.gen = {
         mode: 'llm',
         model: fields['model'] || fields['ai model'] || 'LLM',
@@ -689,108 +759,10 @@
     return 'https://github.com/' + cfg.owner + '/' + cfg.repo + '/issues/new?' + q.toString();
   }
 
-  async function callGemini(key, model, systemPrompt, userPrompt) {
-    const m = model || (cfg.providers && cfg.providers.gemini.defaultModel) || 'gemini-2.5-flash';
-    const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(m) + ':generateContent?key=' + encodeURIComponent(key);
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-        systemInstruction: { parts: [{ text: systemPrompt }] }
-      })
-    });
-    if (!res.ok) {
-      let msg = 'Gemini request failed (' + res.status + ').';
-      try { const j = await res.json(); if (j && j.error && j.error.message) msg = j.error.message; } catch (e) { /* keep default */ }
-      throw new Error(msg);
-    }
-    const j = await res.json();
-    const candidate = (j.candidates && j.candidates[0]) || {};
-    const parts = (candidate.content && candidate.content.parts) || [];
-    const text = parts.map(function (p) { return p.text || ''; }).join('\n').trim();
-    if (!text) throw new Error('Gemini returned an empty answer.');
-    return { text: text, model: m, provider: 'Google Gemini' };
-  }
-
-  async function callAnthropic(key, model, systemPrompt, userPrompt) {
-    const m = model || (cfg.providers && cfg.providers.anthropic.defaultModel) || 'claude-sonnet-5-5';
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({ model: m, max_tokens: 1800, system: systemPrompt, messages: [{ role: 'user', content: userPrompt }] })
-    });
-    if (!res.ok) {
-      let msg = 'Claude request failed (' + res.status + ').';
-      try { const j = await res.json(); if (j && j.error && j.error.message) msg = j.error.message; } catch (e) { /* keep default */ }
-      throw new Error(msg);
-    }
-    const j = await res.json();
-    const text = (j.content || []).filter(function (b) { return b.type === 'text'; }).map(function (b) { return b.text; }).join('\n').trim();
-    if (!text) throw new Error('Claude returned an empty answer.');
-    return { text: text, model: m, provider: 'Anthropic Claude' };
-  }
-
-  async function callOpenAI(key, model, systemPrompt, userPrompt) {
-    const m = model || (cfg.providers && cfg.providers.openai.defaultModel) || 'gpt-4o-mini';
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'authorization': 'Bearer ' + key
-      },
-      body: JSON.stringify({
-        model: m,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        max_tokens: 1800
-      })
-    });
-    if (!res.ok) {
-      let msg = 'OpenAI request failed (' + res.status + ').';
-      try { const j = await res.json(); if (j && j.error && j.error.message) msg = j.error.message; } catch (e) { /* keep default */ }
-      throw new Error(msg);
-    }
-    const j = await res.json();
-    const text = (((j.choices || [])[0] || {}).message || {}).content || '';
-    if (!text.trim()) throw new Error('OpenAI returned an empty answer.');
-    return { text: text.trim(), model: m, provider: 'OpenAI' };
-  }
-
-  function detectProvider(s) {
-    if (s.provider) return s.provider;
-    const key = (s.key || '').trim();
-    if (key.startsWith('AIza')) return 'gemini';
-    if (key.startsWith('sk-ant')) return 'anthropic';
-    if (key.startsWith('sk-')) return 'openai';
-    const model = (s.model || '').toLowerCase();
-    if (model.includes('gemini')) return 'gemini';
-    if (model.includes('claude')) return 'anthropic';
-    if (model.includes('gpt')) return 'openai';
-    return cfg.defaultProvider || 'gemini';
-  }
-
   async function askLlm(p) {
     const s = store.get('settings', {});
-    if (!s.key) throw new Error('Add an AI API key in Settings first.');
     const payload = Object.assign({}, p, { roleName: roleName(p.role) });
-    const prompt = engine.aiPrompt(payload);
-    const provider = detectProvider(s);
-    let result;
-    if (provider === 'gemini') {
-      result = await callGemini(s.key, s.model, engine.AI_SYSTEM, prompt);
-    } else if (provider === 'anthropic') {
-      result = await callAnthropic(s.key, s.model, engine.AI_SYSTEM, prompt);
-    } else if (provider === 'openai') {
-      result = await callOpenAI(s.key, s.model, engine.AI_SYSTEM, prompt);
-    } else {
-      throw new Error('Unsupported AI provider: ' + provider);
-    }
+    const result = await IGU.ai.ask({ settings: s, system: engine.AI_SYSTEM, prompt: engine.aiPrompt(payload) });
     return { mode: 'llm', provider: result.provider, model: result.model, md: result.text, at: new Date().toISOString() };
   }
 
@@ -821,6 +793,7 @@
       const headerTitle = isLlm ? ('Answer generated by ' + (gen.model || gen.provider || 'AI')) : 'Auto-generated answer (offline draft)';
       wrap.appendChild(h('div', { class: 'ans-h' }, h('span', null, headerTitle), btn));
       wrap.appendChild(msg);
+      if (gen.fallbackNote) wrap.appendChild(h('p', { class: 'notice' }, 'AI answer not generated: ' + gen.fallbackNote + ' Showing the offline draft instead.'));
       wrap.appendChild(h('div', { class: 'q-body' }, md(gen.md)));
       if (isLlm) {
         wrap.appendChild(h('p', { class: 'muted small-text' }, 'Generated by a language model for interview preparation. Calibrated to the stated role, level, and company domain.'));
@@ -1009,6 +982,16 @@
       navigator.serviceWorker.register('sw.js').catch(function (e) { console.warn('Offline mode unavailable:', e); });
     });
   }
+
+  /* Shared pieces for view files that register routes in IGU.routes (js/views.js). */
+  IGU.ui = {
+    h: h, md: md, store: store, bank: bank, today: today, roleName: roleName, levelLabel: levelLabel, gearBadge: gearBadge,
+    go: go, render: render, answerBody: answerBody, notes: notes, done: done, touchActivity: touchActivity,
+    openSettings: openSettings, setCleanup: function (fn) { cleanup = fn; }, app: app, aiAvailable: function () { return !!store.get('settings', {}).key; }
+  };
+
+  /* Versioned, additive storage migration; a newer schema than this build knows is left alone. */
+  try { IGU.migrate.run(store, today()); } catch (e) { console.warn('Storage migration skipped:', e); }
 
   window.addEventListener('hashchange', render);
   render();

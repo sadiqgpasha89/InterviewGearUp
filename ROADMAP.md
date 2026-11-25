@@ -28,12 +28,12 @@ InterviewGearUp is a free, static, privacy-first interview preparation site for 
 
 ### v1.0
 
-- Question bank: 900+ questions across 9 roles and 4 gears, each with a 30-second answer, an in-depth explanation and likely follow-ups.
+- Question bank: 901 questions across 9 roles and 4 gears. (Correction: at the time only about 66 had a real written answer; the rest were templated placeholder text. See v1.2.)
 - Drill mode with a timer.
 - Community board backed by GitHub Issues, answered automatically by an LLM through GitHub Actions.
 - Bring-your-own-key generation in the browser (Gemini, Claude, OpenAI) with an offline template fallback.
 
-### v1.1 (this release)
+### v1.1
 
 | Area | Enhancement |
 |---|---|
@@ -48,33 +48,30 @@ InterviewGearUp is a free, static, privacy-first interview preparation site for 
 | Sharing | Open Graph and Twitter meta tags for link previews. |
 | Housekeeping | Removed committed `__pycache__` files and added `.gitignore`. Aligned the GitHub Action's default Claude model with the browser default. Tests added for progress, streaks, backups and service-worker precache coverage. |
 
-## Next (v1.2): content quality and balance
+## v1.2: honesty, review loop and mock interviews (this release)
 
-The coverage matrix exposed an imbalance in the bank: **Gear 1 (Junior) has 60 questions and Gear 4 (Lead / Staff) has 59, against ~390 each for Gears 2 and 3.** Some cells are nearly empty (Tech lead / EM has no Gear 1 questions; Frontend and QA have 1 or 2 at Gear 4).
+Source: `InterviewGearUp_plan.md`. This release does the P0 track (phases 0 to 4, plus the reliability, hardening and test parts of 11 to 13).
 
-- [ ] Rebalance to at least **15 questions per role per gear** (540 minimum across the 36 cells), prioritising Junior and Lead / Staff.
-- [ ] Add a test that fails when any role × gear cell drops below the minimum.
-- [ ] Per-question **difficulty and "last reviewed" date**, shown in the UI.
-- [ ] **"Report an issue with this answer"** button that pre-fills a GitHub issue with the question id.
-- [ ] Moderation workflow for community posts: a `needs-review` label, a reviewed badge, and clear posting guidelines in `CONTRIBUTING.md`.
-- [ ] Label each community answer with its provider, model and generation date (partly there today).
+| Phase | Status | What changed |
+|---|---|---|
+| 0 Baseline audit | Done | `docs/BASELINE_AUDIT.md`. Found that 805 of 918 questions are placeholders; fixed workflow abuse and provenance forgery. |
+| 1 Content quality | **Partly done** | Placeholders are labelled in the UI and excluded from retrieval; 47 real answers added (66 to 113 real); metadata (difficulty, review status, last reviewed, version, references) with validation; report-a-problem links; duplicate and coverage-ratchet tests; `CONTRIBUTING.md`. **Not done: 427 more answers are needed to reach 15 per role and gear.** All written answers are AI-drafted and unreviewed by a person. |
+| 2 Planner | Done | `#/plan`: profile, rule-based daily tasks, skip, regenerate, edit, reset. |
+| 3 Spaced repetition | Done | `#/review`, versioned `igu.schema` migration (non-destructive), local-day logic, DST and month-end tests, four grades. |
+| 4 Mock interview | Done (deterministic) | `#/mock`: timed rounds, rubric scorecard, history, Markdown report, optional AI feedback. No server, no voice. |
+| 11 UX, a11y, PWA | Partly | Header fits all widths, 44px targets in new views, labelled controls, live regions. Manual a11y and device testing still needed (`docs/MANUAL_QA.md`). |
+| 12 AI reliability | Done | `js/ai.js`: timeout, bounded retry, no retry on auth or quota, friendly errors, key redacted from messages, Gemini key moved from the URL to a header, delimiter hardening against prompt injection. |
+| 13 Tests and CI | Done | 40+ tests, `ci.yml` runs them on every PR. Action versions use tags, not commit SHAs. |
 
-## Later (v1.3): practice depth
+### Not started (P1 and P2 in the plan)
 
-- [ ] **Spaced repetition** for the Needs practice pool (resurface after 1, 3, 7 and 14 days).
-- [ ] **Mock interview mode**: a fixed set of N questions mixing rounds (coding, design, behavioural), with a countdown per question and a scorecard at the end.
-- [ ] **AI feedback on your spoken answer**: Web Speech API transcription, then a rubric-based critique with the visitor's own key.
-- [ ] **Study plans**: "Senior backend in 2 weeks" style curated paths with daily targets.
-- [ ] Company-specific tracks built from community questions (e.g. everything tagged with one company and domain).
+Phase 5 behavioral story bank, 6 JD analyzer, 7 system design workspace, 8 coding lab, 9 company tracks, 10 voice practice, 14 optional sync and growth. They are intentionally not built; nothing in the app pretends otherwise.
 
-## Exploratory
+## Next
 
-- [ ] New roles: Mobile (iOS / Android), Platform / SRE leadership, Product-minded engineer, Data scientist / Analytics engineer.
-- [ ] Behavioural question bank with STAR templates linked to your notes.
-- [ ] Internationalisation of the UI.
-- [ ] Optional sync of progress through a private GitHub Gist (still no server of our own).
-- [ ] Static pre-rendered pages per question for search engines and no-JavaScript readers.
-
-## How to propose changes
-
-Open an issue describing the problem first. Content additions should follow the schema in the README and pass `npm test`.
+- [ ] Write the remaining ~427 answers (`npm run content:status` lists them) and have people review the AI-drafted ones, then set `reviewStatus: 'reviewed'` with a date.
+- [ ] Retire semantic-duplicate placeholder questions.
+- [ ] Moderation workflow for community posts (`needs-review` label, reviewed badge).
+- [ ] Pin GitHub Actions to commit SHAs.
+- [ ] Real-device accessibility testing.
+- [ ] Phases 5 to 10 and 14 from the plan, in that priority order.
