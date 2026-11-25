@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What techniques do you use when an input is larger than an LLM&#39;s context window? | InterviewGearUp</title>
+<meta name="description" content="First decide whether the task needs specific facts, a global view or exact computation. Then pick: retrieval (RAG) for relevant chunks; map-reduce or…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-111.html">
+<meta property="og:title" content="What techniques do you use when an input is larger than an LLM&#39;s context window? | InterviewGearUp">
+<meta property="og:description" content="First decide whether the task needs specific facts, a global view or exact computation. Then pick: retrieval (RAG) for relevant chunks; map-reduce or…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-111.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What techniques do you use when an input is larger than an LLM&#39;s context window?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · LLMs · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>First decide whether the task needs specific facts, a global view or exact computation. Then pick: retrieval (RAG) for relevant chunks; map-reduce or refine summarization for whole documents; extract-then-aggregate into structured data; prompt compression; a sliding window with summary memory for chats; tools (SQL, code, search) so the model never reads raw data; or a long-context model with caching.</p></div>
+<h4>Explained in depth</h4>
+<p>Bigger context windows do not remove the problem. Cost and latency grow with input length, attention over very long inputs is expensive, and models often use information in the middle of a long prompt less reliably than information at the start or end (&#39;lost in the middle&#39;). So the question is how to give the model the <strong>right</strong> tokens, not the most.</p>
+<h4>Start with the shape of the task</h4>
+<div class="md-table"><table><thead><tr><th>Task needs</th><th>Best fit</th></tr></thead><tbody><tr><td>A few specific facts from a big corpus</td><td>Retrieval (RAG)</td></tr><tr><td>Understanding of a whole long document</td><td>Map-reduce, refine or tree summarization</td></tr><tr><td>Counting, totals, filtering over records</td><td>Tools: SQL or code, not reading</td></tr><tr><td>A long running conversation</td><td>Sliding window plus summary and memory store</td></tr><tr><td>Cheaper long prompts with little loss</td><td>Prompt compression, prompt caching</td></tr></tbody></table></div>
+<h4>1. Retrieval-augmented generation</h4>
+<ul><li>Split the input into chunks (structure-aware, a few hundred tokens, small overlap), embed them, and at question time retrieve only the relevant ones.</li><li>Use <strong>hybrid search</strong> (dense vectors plus BM25) so exact identifiers and rare terms are found, then a <strong>cross-encoder reranker</strong> to keep the best 5 to 10 chunks.</li><li>Good for: knowledge bases, manuals, contracts when the question is specific.</li><li>Weakness: chunk boundaries lose context, and questions that need the whole document (&#39;what are the main themes?&#39;) retrieve poorly. Mitigate with contextual headers on chunks and parent-section retrieval.</li></ul>
+<h4>2. Hierarchical summarization</h4>
+<ul><li><strong>Map-reduce</strong>: process chunks in parallel (&#39;extract obligations and dates from this section&#39;), then combine the partial results; recurse if the combination is still too long.</li><li><strong>Refine</strong>: walk the chunks in order, carrying a running summary that each step updates. Keeps order and narrative, but is sequential and slow.</li><li><strong>Tree index</strong> (RAPTOR-style): cluster and summarise chunks into a tree once, then retrieve at whatever level of detail a question needs.</li><li>Weakness: each summarization step loses detail and can introduce errors. Make the map step task-specific (extract what the final question needs) rather than generic &#39;summarise&#39;, and keep pointers back to source chunks for citation.</li></ul>
+<h4>3. Extract, then aggregate in code</h4>
+<ul><li>For questions over many records (500 invoices, a large log, many contracts), have the model extract a fixed JSON schema from each chunk, then compute totals, joins and filters in ordinary code.</li><li>This is more reliable than asking a model to add up numbers spread across a long prompt, and the intermediate data is auditable.</li></ul>
+<h4>4. Prompt compression</h4>
+<ul><li>Methods such as LLMLingua use a small language model to score tokens and drop the ones that carry little information given the instruction; others remove boilerplate, duplicated passages and irrelevant sections with rules.</li><li>Can shrink prompts several times over with modest quality loss on many tasks, but the loss is task-dependent: evaluate on your own data, and never compress text whose exact wording matters (legal clauses, code, numbers).</li></ul>
+<h4>5. Conversation memory: sliding window plus summaries</h4>
+<ul><li>Keep the last N turns verbatim, fold older turns into a running summary, and store durable facts (user preferences, decisions, entity values) in a structured memory or vector store that is retrieved when relevant.</li><li>Trigger summarization at a token threshold (for example 60 to 70 percent of the budget) and always reserve room for the system prompt, tools and the answer.</li><li>Weakness: details from early in the conversation can drift or vanish unless they were captured as explicit facts.</li></ul>
+<h4>6. Give the model tools instead of the data</h4>
+<ul><li><strong>Text-to-SQL</strong> against a database, <strong>code execution</strong> over a large CSV or JSON file, <strong>grep or file search</strong> over a codebase, or an API that returns one page at a time.</li><li>The model sees the schema and the filtered result, not millions of rows. Large tool outputs are written to storage and only a summary or handle goes back into the context.</li><li>Best for structured and semi-structured data and codebases; needs sandboxing, permission checks and limits on steps.</li></ul>
+<h4>7. Use a long-context model well</h4>
+<ul><li>When the document fits (hundreds of thousands of tokens on current models), sending it whole can beat a lossy pipeline, especially for cross-references inside one document.</li><li>Put instructions and the question at the start or end, label sections clearly, and ask for quotes or section ids so answers are checkable.</li><li><strong>Prompt caching</strong> (offered by major providers) makes repeated questions over the same large prefix much cheaper and faster.</li></ul>
+<h4>Model and serving techniques behind long context</h4>
+<ul><li><strong>FlashAttention</strong>: computes exact attention in tiles that fit in fast GPU memory, so memory grows linearly with length and it runs much faster; the compute is still quadratic.</li><li><strong>RoPE scaling</strong> (position interpolation, NTK-aware scaling, YaRN): extends a model trained on short sequences to longer ones, usually with some fine-tuning.</li><li><strong>Sliding-window and sparse attention</strong>, and <strong>attention sinks</strong> (StreamingLLM): keep the first few tokens plus a recent window so generation can stream indefinitely, at the cost of forgetting the middle.</li><li><strong>KV-cache management</strong>: paged attention, KV quantization and prefix sharing reduce the memory that long prompts need at serving time.</li><li><strong>State space and hybrid models</strong> (Mamba and similar): scale linearly with length, often combined with some attention layers for recall.</li></ul>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th>Technique</th><th>Latency</th><th>Cost</th><th>Detail kept</th><th>Global view</th></tr></thead><tbody><tr><td>RAG + rerank</td><td>Low</td><td>Low</td><td>High for specific facts</td><td>Weak</td></tr><tr><td>Map-reduce / refine</td><td>High</td><td>Medium</td><td>Medium</td><td>Good</td></tr><tr><td>Extract then aggregate</td><td>Medium</td><td>Medium</td><td>High (structured)</td><td>Good for counts and totals</td></tr><tr><td>Prompt compression</td><td>Low</td><td>Low</td><td>Task-dependent</td><td>Same as input</td></tr><tr><td>Window + memory</td><td>Low</td><td>Low</td><td>Low for distant history</td><td>Weak</td></tr><tr><td>Tools (SQL, code)</td><td>Medium</td><td>Low</td><td>Exact</td><td>Good for structured data</td></tr><tr><td>Long-context model + caching</td><td>Medium</td><td>High without caching</td><td>High</td><td>Good</td></tr></tbody></table></div>
+<h4>Practical checklist</h4>
+<ul><li>Count tokens with the model&#39;s own tokenizer and reserve output tokens.</li><li>Combine techniques: retrieval to narrow, then extraction or summarization over what was retrieved.</li><li>Build a small evaluation set of real questions with known answers and compare approaches on quality, latency and cost before committing.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>When would you choose map-reduce over RAG for a 300-page report?</li><li>How do you stop a running conversation summary from dropping important facts?</li><li>Why is FlashAttention not a fix for the quadratic cost of attention?</li><li>How would you evaluate whether prompt compression hurt answer quality?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-111">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-111%3A+What+techniques+do+you+use+when+an+input+is+larger+than+an+LLM%27s%E2%80%A6&amp;question-id=ml-111&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+LLMs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-111.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

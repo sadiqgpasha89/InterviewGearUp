@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you run a valid experiment on billing workflows when related accounts interfere with each other? | InterviewGearUp</title>
+<meta name="description" content="Randomise at the level where interference stops: the parent organisation or billing entity, not the invoice or user. Analyse at that cluster level (or…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-122.html">
+<meta property="og:title" content="How do you run a valid experiment on billing workflows when related accounts interfere with each other? | InterviewGearUp">
+<meta property="og:description" content="Randomise at the level where interference stops: the parent organisation or billing entity, not the invoice or user. Analyse at that cluster level (or…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-122.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you run a valid experiment on billing workflows when related accounts interfere with each other?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 4 (Lead / Staff) · Experimentation · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Randomise at the level where interference stops: the parent organisation or billing entity, not the invoice or user. Analyse at that cluster level (or with cluster-robust errors), and expect less power because there are fewer units. When randomisation is not possible, use quasi-experiments such as difference-in-differences or synthetic control, and check their assumptions.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why interference breaks a test</h4>
+<ul><li>A parent company pays invoices for several subsidiaries from one accounts-payable team. If one subsidiary gets the new reminder flow and another the old one, the same person sees both and behaviour spills over. The comparison no longer measures the treatment.</li></ul>
+<h4>Cluster randomisation</h4>
+<ul><li>Build the graph of relationships (shared parent, billing contact, payment method, domain) and randomise <strong>connected groups</strong> together.</li><li>Stratify by size and risk before randomising so arms are balanced; a few giant clusters can otherwise dominate.</li><li>Analyse at the cluster level or use cluster-robust standard errors. Effective sample size is closer to the number of clusters than the number of invoices, so compute power with the intraclass correlation.</li></ul>
+<h4>Other designs</h4>
+<ul><li><strong>Switchback</strong> (alternate treatment over time windows) suits shared resources such as a collector team&#39;s queue; watch for carry-over between windows.</li><li><strong>Staggered rollout</strong> by region with <strong>difference-in-differences</strong>: check parallel pre-trends.</li><li><strong>Synthetic control</strong> when only one market or a few large accounts get the change.</li><li><strong>Propensity matching</strong> is the weakest option: it only adjusts for observed differences.</li></ul>
+<h4>Practical checks</h4>
+<ul><li>Run an A/A test to validate the pipeline.</li><li>Define the primary metric and analysis plan in advance (for example share of invoices paid within 30 days per cluster).</li><li>Monitor guardrail metrics such as churn and complaints.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How does clustering change the sample size you need?</li><li>What would you do if three customers make up half of the revenue?</li><li>How would you check the parallel-trends assumption?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-122">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-122%3A+How+do+you+run+a+valid+experiment+on+billing+workflows+when+related%E2%80%A6&amp;question-id=ml-122&amp;context=ML+%2F+AI+engineer%2C+Gear+4%2C+topic%3A+Experimentation%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-122.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

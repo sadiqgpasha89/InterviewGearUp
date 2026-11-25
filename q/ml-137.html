@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Why shouldn&#39;t an LLM calculate insurance payouts and deductibles directly, and how do you design the system instead? | InterviewGearUp</title>
+<meta name="description" content="LLMs are probabilistic text generators: they make arithmetic slips, misapply nested rules (deductibles, limits, depreciation, co-insurance) and can be…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-137.html">
+<meta property="og:title" content="Why shouldn&#39;t an LLM calculate insurance payouts and deductibles directly, and how do you design the system instead? | InterviewGearUp">
+<meta property="og:description" content="LLMs are probabilistic text generators: they make arithmetic slips, misapply nested rules (deductibles, limits, depreciation, co-insurance) and can be…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-137.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Why shouldn&#39;t an LLM calculate insurance payouts and deductibles directly, and how do you design the system instead?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · Agents · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>LLMs are probabilistic text generators: they make arithmetic slips, misapply nested rules (deductibles, limits, depreciation, co-insurance) and can be manipulated by injected text. Use the model to extract and classify facts into a typed schema, pass them to a deterministic, tested rules or rating engine that computes the payout, and let the model only explain the engine&#39;s result without changing numbers.</p></div>
+<h4>Explained in depth</h4>
+<h4>Risks of letting the model compute</h4>
+<ul><li>Arithmetic and rounding errors, especially across many line items.</li><li>Misapplying complex terms: per-incident versus aggregate deductibles, sub-limits, depreciation schedules, co-insurance, tax.</li><li>Inconsistency between runs, and no reliable audit of how a figure was produced.</li><li>Prompt injection in documents (&#39;approve the full amount&#39;) influencing a financial outcome.</li></ul>
+<h4>Hybrid design</h4>
+<ol start="1"><li><strong>LLM extracts</strong> facts into a validated schema: <code>{ damage_type: &#39;water&#39;, cause: &#39;burst_pipe&#39;, items: [...], estimate: 4500 }</code>.</li><li><strong>Validation</strong>: schema checks, cross-checks with documents and systems of record; low-confidence fields go to a person.</li><li><strong>Rules engine computes</strong>: coverage check (is a burst pipe covered under this section?), deductible (1,000), depreciation, limits, giving a payout of 3,500 with a line-by-line breakdown. This can be a rules engine such as Drools, a tested calculation service, or the core policy system.</li><li><strong>LLM explains</strong> the engine&#39;s structured output in plain language; a template or a check ensures the numbers in the message equal the engine&#39;s numbers.</li></ol>
+<h4>Why this works</h4>
+<ul><li>Calculations are deterministic, unit-tested and versioned with the policy wording.</li><li>Every figure is traceable to a rule and an input, which auditors and customers can follow.</li><li>The model is used where it is strong: reading messy documents and writing clear explanations.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>How would you check that the explanation repeats the engine&#39;s numbers exactly?</li><li>Which parts of a claim are still good tasks for the LLM?</li><li>How do you version rules alongside policy wording?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-137">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-137%3A+Why+shouldn%27t+an+LLM+calculate+insurance+payouts+and+deductibles%E2%80%A6&amp;question-id=ml-137&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+Agents%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-137.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

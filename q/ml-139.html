@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you turn a vague business request for an agent into user stories and testable acceptance criteria? | InterviewGearUp</title>
+<meta name="description" content="Ask what decision or task the agent supports and what good looks like. Split the request into deterministic rules (always true, tested exactly) and…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-139.html">
+<meta property="og:title" content="How do you turn a vague business request for an agent into user stories and testable acceptance criteria? | InterviewGearUp">
+<meta property="og:description" content="Ask what decision or task the agent supports and what good looks like. Split the request into deterministic rules (always true, tested exactly) and…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-139.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you turn a vague business request for an agent into user stories and testable acceptance criteria?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · Agents · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Ask what decision or task the agent supports and what good looks like. Split the request into deterministic rules (always true, tested exactly) and judgement tasks (measured statistically on a labelled set). Write user stories with Given-When-Then criteria, define thresholds for probabilistic behaviour, and list the edge cases where the agent must stop and hand off to a person.</p></div>
+<h4>Explained in depth</h4>
+<h4>Clarify</h4>
+<ul><li>&#39;The agent should intelligently decide if a property claim needs an on-site inspection.&#39; Ask: what happens today, who decides, how often are they wrong, what does a wrong call cost, what data is available at decision time?</li></ul>
+<h4>Split the requirement</h4>
+<ul><li><strong>Deterministic</strong>: &#39;claims above 25,000 always need an on-site adjuster&#39;; &#39;images below 720p are rejected&#39;. These are rules with exact tests.</li><li><strong>Probabilistic</strong>: &#39;spot conflicts between the police report and the customer&#39;s description&#39;; &#39;tell hail damage from wear&#39;. These need a labelled dataset and a target metric.</li></ul>
+<h4>Write stories and criteria</h4>
+<p><strong>Story</strong>: As a senior claims adjuster, I want roof damage photos classified so that clear wind or hail claims go straight to desk review.</p>
+<ul><li><strong>Deterministic criterion</strong>: Given a photo below 720p, when it is submitted, then the agent asks for a higher-resolution upload and does not call the classifier.</li><li><strong>Statistical criterion</strong>: On an agreed benchmark of 500 labelled claims, precision for &#39;hail damage&#39; is at least 95% and recall at least 85%, with zero unhandled errors.</li><li><strong>Handoff criterion</strong>: Given conflicting evidence or confidence below 0.7, the claim goes to a person with the reason recorded.</li></ul>
+<h4>Also define</h4>
+<ul><li>Non-functional needs: latency, cost per claim, availability, audit logging.</li><li>Out of scope, so the agent is not expected to handle everything.</li><li>Who owns the benchmark dataset and how it is refreshed.</li><li>How acceptance is signed off in UAT and monitored after launch.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>Who should label the benchmark set, and how many examples do you need?</li><li>How do you write an acceptance criterion for tone or helpfulness?</li><li>What goes in the out-of-scope list?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-139">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-139%3A+How+do+you+turn+a+vague+business+request+for+an+agent+into+user%E2%80%A6&amp;question-id=ml-139&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+Agents%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-139.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

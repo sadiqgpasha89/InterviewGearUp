@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you enforce privacy, access control and fair-treatment rules in agentic insurance workflows? | InterviewGearUp</title>
+<meta name="description" content="Redact or tokenise personal and payment data before it reaches the model, use model endpoints with zero data retention and no training on your data,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-135.html">
+<meta property="og:title" content="How do you enforce privacy, access control and fair-treatment rules in agentic insurance workflows? | InterviewGearUp">
+<meta property="og:description" content="Redact or tokenise personal and payment data before it reaches the model, use model endpoints with zero data retention and no training on your data,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-135.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you enforce privacy, access control and fair-treatment rules in agentic insurance workflows?</h1>
+<p class="muted small-text meta-line">ML / AI engineer · Gear 4 (Lead / Staff) · Ethics · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Redact or tokenise personal and payment data before it reaches the model, use model endpoints with zero data retention and no training on your data, enforce role- and attribute-based access in the tool layer with the end user&#39;s identity, keep protected attributes and their proxies out of decisions, require human review for adverse outcomes, and log every step immutably for regulators.</p></div>
+<h4>Explained in depth</h4>
+<h4>Data protection</h4>
+<ul><li>An inline <strong>redaction step</strong> (Cloud DLP, Microsoft Presidio, NER plus rules) replaces national IDs, licence numbers, card and bank details with tokens (<code>&lt;SSN_1&gt;</code>) and keeps the mapping in a secure vault; the real value is reinserted only by trusted code that needs it.</li><li><strong>Minimise</strong>: send the model only the fields the task needs. Health information in claims needs extra care (for example HIPAA in the US, GDPR special categories in the EU).</li><li>Use enterprise model endpoints with contractual <strong>zero data retention</strong> and no training on customer data, in the required region.</li></ul>
+<h4>Access control in the tools, not the prompt</h4>
+<ul><li>Tools run with the <strong>calling user&#39;s identity and scopes</strong> (RBAC plus attributes such as region, line of business, claim assignment).</li><li>A customer-facing agent can never call tools tagged for internal use (payouts, adjuster notes, underwriting models).</li><li>Deny by default, and check authorisation on every call on the server side.</li></ul>
+<h4>Fair treatment</h4>
+<ul><li>Decisions use approved rating and underwriting factors only; protected attributes are excluded and proxies tested.</li><li>Keep the decision itself in deterministic rules or validated models; the LLM extracts and explains, it does not decide eligibility or price.</li><li>Monitor outcomes (referral rates, decline rates, time to settle) across segments, and give customers a reason and a route to appeal.</li></ul>
+<h4>Human oversight and audit</h4>
+<ul><li>Adverse decisions (declines, reduced payouts) are reviewed by a qualified person before they go to the customer; many regulators expect this, and it is good practice everywhere.</li><li>An append-only audit log per case: inputs, retrieved documents, model and prompt versions, tool calls with arguments and results, the decision and the human sign-off, with timestamps.</li><li>Rules differ by country and line of business (GLBA, HIPAA, GDPR, India&#39;s IRDAI and DPDP Act, and others); compliance owns the mapping of rules to controls.</li></ul>
+<h4>Likely follow-ups</h4>
+<ul><li>Why should authorisation be enforced in the tool layer rather than the prompt?</li><li>How do you reinsert tokenised values safely?</li><li>How would you monitor for unfair outcomes?</li></ul>
+<p><a class="btn primary" href="../#/q/ml-135">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-135%3A+How+do+you+enforce+privacy%2C+access+control+and+fair-treatment+rules%E2%80%A6&amp;question-id=ml-135&amp;context=ML+%2F+AI+engineer%2C+Gear+4%2C+topic%3A+Ethics%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-135.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>
