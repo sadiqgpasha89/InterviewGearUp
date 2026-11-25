@@ -54,6 +54,23 @@
   }
 
   /* Supports: paragraphs, #### headings, - bullets, 1. lists, > quotes, ``` code fences. */
+  /* Split a markdown table row on unescaped pipes; "\|" is a literal pipe. */
+  function tableCells(line) {
+    let t = line.trim();
+    if (t.charAt(0) === '|') t = t.slice(1);
+    if (t.charAt(t.length - 1) === '|' && t.charAt(t.length - 2) !== '\\') t = t.slice(0, -1);
+    const cells = [];
+    let cur = '';
+    for (let k = 0; k < t.length; k++) {
+      if (t.charAt(k) === '\\' && t.charAt(k + 1) === '|') { cur += '|'; k++; }
+      else if (t.charAt(k) === '|') { cells.push(cur.trim()); cur = ''; }
+      else cur += t.charAt(k);
+    }
+    cells.push(cur.trim());
+    return cells;
+  }
+  const TABLE_SEP = /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?\s*$/;
+
   function md(src) {
     const root = document.createDocumentFragment();
     const lines = String(src || '').replace(/\r\n?/g, '\n').split('\n');
@@ -77,6 +94,17 @@
         root.appendChild(h('blockquote', null, inline(buf.join(' '))));
         continue;
       }
+      if (/^\s*\|/.test(line) && i + 1 < lines.length && TABLE_SEP.test(lines[i + 1])) {
+        const head = tableCells(line);
+        i += 2;
+        const body = [];
+        while (i < lines.length && /^\s*\|/.test(lines[i])) body.push(tableCells(lines[i++]));
+        const tbl = h('table', null,
+          h('thead', null, h('tr', null, head.map(function (c) { return h('th', null, inline(c)); }))),
+          h('tbody', null, body.map(function (r) { return h('tr', null, r.map(function (c) { return h('td', null, inline(c)); })); })));
+        root.appendChild(h('div', { class: 'md-table' }, tbl));
+        continue;
+      }
       if (/^\s*[-*]\s+/.test(line)) {
         const ul = h('ul');
         while (i < lines.length && /^\s*[-*]\s+/.test(lines[i])) ul.appendChild(h('li', null, inline(lines[i++].replace(/^\s*[-*]\s+/, ''))));
@@ -90,7 +118,7 @@
         continue;
       }
       const buf = [];
-      while (i < lines.length && lines[i].trim() && !/^(```|#{3,4}\s|>\s?|\s*[-*]\s+|\s*\d+[.)]\s+)/.test(lines[i])) buf.push(lines[i++]);
+      while (i < lines.length && lines[i].trim() && !/^(```|\s*\||#{3,4}\s|>\s?|\s*[-*]\s+|\s*\d+[.)]\s+)/.test(lines[i])) buf.push(lines[i++]);
       root.appendChild(h('p', null, inline(buf.join(' '))));
     }
     return root;
