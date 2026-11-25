@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you monitor and alert on impending SSL/TLS certificate expirations to avoid production outages? | InterviewGearUp</title>
+<meta name="description" content="Prevent certificate expiry outages by keeping an inventory of every certificate, probing endpoints on a schedule to read notAfter dates, alerting at…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-99.html">
+<meta property="og:title" content="How do you monitor and alert on impending SSL/TLS certificate expirations to avoid production outages? | InterviewGearUp">
+<meta property="og:description" content="Prevent certificate expiry outages by keeping an inventory of every certificate, probing endpoints on a schedule to read notAfter dates, alerting at…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-99.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you monitor and alert on impending SSL/TLS certificate expirations to avoid production outages?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 2 (Mid-level) · Operations · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Prevent certificate expiry outages by keeping an inventory of every certificate, probing endpoints on a schedule to read notAfter dates, alerting at multiple thresholds such as 60, 30, 14, 7 and 1 days to a team channel with an owner, and automating renewal with ACME or a certificate manager. Monitor the renewal process itself, not only the expiry date.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why expiry causes outages</h4>
+<p>When a TLS certificate expires, browsers and clients <strong>refuse the connection</strong>, APIs fail, mTLS between services breaks, and trust chains between systems collapse. Famous incidents: Microsoft Teams (2020), Spotify, Equifax&#39;s expired inspection certificate, LinkedIn, Ericsson&#39;s mobile networks (2018). Causes: manual renewals, <strong>unknown owners</strong>, certificates hidden in appliances, load balancers or Java keystores, short-lived certs outpacing human processes, intermediate or root CA expiry, and <strong>renewals that succeeded but were never deployed</strong>.</p>
+<h4>Build a certificate inventory</h4>
+<ul><li>Discover endpoints via <strong>DNS and asset inventory, cloud APIs</strong> (AWS ACM, Azure Key Vault, GCP Certificate Manager), Kubernetes (cert-manager Certificate resources, Ingress secrets), <strong>certificate transparency logs</strong> (crt.sh, Cert Spotter, Facebook CT monitoring) to find certificates issued for your domains, network scans (<code>nmap --script ssl-cert</code>, ZMap, Censys), CMDB, secrets stores, and internal PKI databases (ADCS).</li><li>Record <strong>owner and team, environment, issuing CA, SAN list, notAfter, where deployed, renewal method</strong> and escalation contacts. Enterprise tools: Venafi, Keyfactor, AppViewX, DigiCert CertCentral and Trust Lifecycle, Sectigo, Smallstep, HashiCorp Vault PKI.</li></ul>
+<h4>Probe and alert</h4>
+<ul><li><strong>Prometheus blackbox exporter</strong> probes HTTPS endpoints and exports <code>probe_ssl_earliest_cert_expiry</code> (seconds since epoch of earliest expiry in the chain):</li></ul>
+<pre><code># blackbox probe module
+modules:
+  https_2xx: { prober: http, http: { valid_status_codes: [], fail_if_not_ssl: true } }</code></pre>
+<pre><code># Prometheus alert rules
+- alert: CertificateExpiringSoon
+  expr: (probe_ssl_earliest_cert_expiry - time()) / 86400 &lt; 21
+  for: 1h
+  labels: { severity: warning }
+  annotations: { summary: &quot;Cert for {{ $labels.instance }} expires in {{ $value | humanizeDuration }}&quot; }
+- alert: CertificateExpiryCritical
+  expr: (probe_ssl_earliest_cert_expiry - time()) / 86400 &lt; 7
+  labels: { severity: page }</code></pre>
+<ul><li><strong>Quick checks</strong>: <code>echo | openssl s_client -connect host:443 -servername host 2&gt;/dev/null | openssl x509 -noout -enddate</code>; <code>openssl x509 -checkend 1209600 -noout -in cert.pem</code> (exit code if it expires within 14 days).</li><li>Other tools: <strong>cert-manager metrics</strong> (<code>certmanager_certificate_expiration_timestamp_seconds</code>, <code>certmanager_certificate_ready_status</code>), x509-certificate-exporter (reads certs from files and Kubernetes secrets), Datadog and New Relic synthetic checks, Uptime Robot, SSL Labs, AWS Config and ACM EventBridge events (<code>ACM Certificate Approaching Expiration</code>), Azure Key Vault near-expiry events, GCP monitoring, Nagios <code>check_http -C 30,14</code>, Zabbix, Splunk.</li><li><strong>Alert thresholds</strong> staged: for example 60 days (ticket), 30 days (owner notified), 14 days (team channel), 7 days (page on-call), 1 day (incident). Cover <strong>the whole chain</strong> including <strong>intermediate certificates</strong> and CA root expiry, and <strong>all SNI hostnames, ports, SMTP/LDAPS/database endpoints</strong>, not just port 443 websites; check from <strong>multiple regions and through CDN or load balancers</strong> and also test <strong>each backend</strong> and internal service-to-service mTLS.</li></ul>
+<h4>Automate renewal (best protection)</h4>
+<ul><li><strong>ACME</strong> (Let&#39;s Encrypt, ZeroSSL, Google Trust Services, Buypass; 90-day certificates, and Let&#39;s Encrypt moving to shorter lifetimes): Certbot, acme.sh, Caddy and Traefik automatic TLS, <strong>cert-manager</strong> for Kubernetes, <strong>AWS ACM</strong> auto-renewal for DNS-validated certificates (keep the validation CNAME), cloud load balancer managed certificates, service mesh (Istio, Linkerd, SPIFFE/SPIRE short-lived workload certificates), Vault PKI and Smallstep for internal CAs.</li><li>The CA/Browser Forum is reducing maximum public certificate lifetimes (toward 47 days by 2029), so <strong>manual renewal is not sustainable</strong>.</li><li><strong>Monitor the renewal job</strong>: alert when renewals fail (<code>certbot renew</code> exit code, cert-manager <code>Ready=False</code>, ACME challenge errors, DNS API credentials expired, rate limits), when a renewed certificate is <strong>not loaded</strong> (reload hooks to NGINX, HAProxy, Java apps need restart), and when the <strong>deployed certificate differs from the issued one</strong>.</li><li>Use <strong>runbooks</strong> for manual certificates (appliances, SaaS custom domains, code signing, SAML signing, client certificates): owner, steps, CSR generation, approval, deployment, rollback, verification.</li><li>Avoid pinning and hard-coded certificates in clients; if pinned, include backup pins and update plans.</li></ul>
+<h4>Process practices</h4>
+<p>Review expiry reports weekly, make expiry tracking part of <strong>change management and offboarding</strong> (departing owners), test renewals in staging, conduct game days that expire a cert on purpose, use alerts that <strong>auto-create tickets with owners</strong>, and <strong>reduce alert fatigue</strong> by deduplicating and routing by team.</p>
+<h4>Pitfalls</h4>
+<p>Alerting only 7 days out, a shared inbox as owner, forgetting intermediate and internal certificates, DNS-validation credentials that silently expire, renewing but not reloading services, and monitoring only the CDN edge while origin certificates expire.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does monitoring only the expiry date miss many outages, and what should you monitor in the renewal pipeline?</li><li>How do you build a Prometheus blackbox exporter alert for certificates and avoid alert fatigue?</li><li>How do you discover unknown certificates such as shadow IT, internal PKI and certificates embedded in appliances?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-99">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-99%3A+How+do+you+monitor+and+alert+on+impending+SSL%2FTLS+certificate%E2%80%A6&amp;question-id=sec-99&amp;context=Security+engineer%2C+Gear+2%2C+topic%3A+Operations%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-99.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

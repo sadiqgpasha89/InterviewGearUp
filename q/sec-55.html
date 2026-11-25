@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare Intrusion Detection Systems (IDS) and Intrusion Prevention Systems (IPS) in network defense. | InterviewGearUp</title>
+<meta name="description" content="An IDS passively monitors a copy of network or host traffic, detects suspicious activity with signatures and anomaly analysis, and alerts. An IPS sits…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-55.html">
+<meta property="og:title" content="Compare Intrusion Detection Systems (IDS) and Intrusion Prevention Systems (IPS) in network defense. | InterviewGearUp">
+<meta property="og:description" content="An IDS passively monitors a copy of network or host traffic, detects suspicious activity with signatures and anomaly analysis, and alerts. An IPS sits…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-55.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare Intrusion Detection Systems (IDS) and Intrusion Prevention Systems (IPS) in network defense.</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 2 (Mid-level) · Operations · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>An IDS passively monitors a copy of network or host traffic, detects suspicious activity with signatures and anomaly analysis, and alerts. An IPS sits inline, so it can also block or reset malicious traffic in real time. IDS gives visibility without risking outages, while IPS gives prevention but needs careful tuning because false positives can break legitimate traffic.</p></div>
+<h4>Explained in depth</h4>
+<h4>Core difference</h4>
+<div class="md-table"><table><thead><tr><th></th><th><strong>IDS</strong> (Intrusion Detection System)</th><th><strong>IPS</strong> (Intrusion Prevention System)</th></tr></thead><tbody><tr><td>Placement</td><td><strong>Out of band</strong>: reads a copy of traffic (SPAN or mirror port, TAP)</td><td><strong>Inline</strong>: traffic passes through it</td></tr><tr><td>Action</td><td>Detect, log, alert</td><td>Detect and <strong>block, drop, reset, quarantine</strong></td></tr><tr><td>Failure impact</td><td>Fail-silent: traffic flows if it dies, but visibility is lost</td><td>Can cause outage if it fails or misfires (use fail-open, bypass, HA pairs)</td></tr><tr><td>Latency</td><td>None on traffic path</td><td>Adds latency, must handle line rate</td></tr><tr><td>False positives</td><td>Result in noisy alerts</td><td>Can <strong>block legitimate users</strong></td></tr><tr><td>Typical use</td><td>Visibility, forensics, compliance, tuning phase</td><td>Active defence at perimeter and between segments</td></tr></tbody></table></div>
+<p>Modern products (Suricata, Snort, Zeek, Cisco Firepower, Palo Alto Threat Prevention, Fortinet, Trend Micro TippingPoint, Corelight) often run in either mode; next-generation firewalls embed IPS.</p>
+<h4>Types by scope</h4>
+<ul><li><strong>NIDS/NIPS (network)</strong>: inspect packets at chokepoints (internet edge, data centre, between VLANs, cloud VPC traffic mirroring); find scans, exploits, malware command and control, lateral movement, protocol anomalies.</li><li><strong>HIDS/HIPS (host)</strong>: agent on a server or endpoint monitors logs, file integrity, process behaviour, registry, system calls (OSSEC/Wazuh, Tripwire, auditd, EDR). Sees <strong>encrypted and local activity</strong> the network cannot.</li><li><strong>Wireless IDS</strong>, <strong>cloud-native</strong> (GuardDuty, VPC flow analytics), <strong>application-layer</strong> (WAF, RASP).</li></ul>
+<h4>Detection methods</h4>
+<ol start="1"><li><strong>Signature-based</strong>: match known attack patterns (Snort or Suricata rules, CVE exploits, malware hashes). Precise and fast for known threats, but blind to zero-days and obfuscation, needs constant rule updates.</li></ol>
+<pre><code>alert http $EXTERNAL_NET any -&gt; $HOME_NET any (msg:&quot;Possible Log4Shell JNDI lookup&quot;; flow:to_server,established;
+  http.uri; content:&quot;${jndi:&quot;; nocase; classtype:attempted-admin; sid:1000001; rev:3;)</code></pre>
+<ol start="2"><li><strong>Anomaly-based</strong>: learn a baseline (normal traffic volumes, protocols, user behaviour) and flag deviations, using statistics or machine learning. Can catch novel attacks but produces more false positives and needs training time.</li><li><strong>Stateful protocol analysis</strong>: compare behaviour to protocol specifications (malformed DNS, invalid HTTP, unusual TLS parameters).</li><li><strong>Heuristic and reputation</strong>: IP and domain reputation, threat intelligence feeds (IOCs), JA3/JA4 TLS fingerprints, DNS tunnelling detection, beaconing analysis.</li><li><strong>Behavioural and network detection and response (NDR)</strong>: correlate flows over time to spot lateral movement and data exfiltration.</li></ol>
+<h4>Deployment and tuning</h4>
+<ul><li><strong>Placement</strong>: perimeter, internal east-west segments (where attackers move), data centre core, cloud with traffic mirroring, critical server VLANs. Encrypted traffic: terminate TLS at inspection points (privacy and legal considerations), or use TLS metadata, JA3, certificate analysis, DNS visibility, and host sensors.</li><li><strong>Tuning lifecycle</strong>: begin in <strong>IDS (alert-only) mode</strong>, review alerts, disable or adjust noisy rules, whitelist known scanners, classify by severity, then enable blocking for <strong>high-confidence</strong> signatures (known exploit attempts) while leaving low-confidence rules in alert mode.</li><li><strong>Capacity</strong>: size for peak throughput including TLS, use hardware acceleration, flow-pinning, bypass modes.</li><li><strong>Integration</strong>: feed alerts to SIEM and SOAR for triage and automated response (block IP at firewall, isolate host through EDR); enrich with threat intelligence and asset context (is the target a critical server, is it vulnerable to this CVE?).</li><li><strong>Maintenance</strong>: update rules (Emerging Threats, Talos, vendor feeds) automatically with testing; update the IDS itself; monitor sensor health and packet drops; evasion testing (fragmentation, encoding).</li><li><strong>Metrics</strong>: true and false positive rate, mean time to detect and respond, rule coverage mapped to MITRE ATT&amp;CK, dropped packet percentage.</li></ul>
+<h4>Limits</h4>
+<p>Encrypted traffic (most web traffic now), evasion techniques, high-volume noise, no business context, insider threats and legitimate-credential misuse, and zero-days. IDS/IPS is one layer: combine with firewalls, EDR, segmentation, patching, logging and user training. Alerts are only valuable if someone responds.</p>
+<h4>Pitfalls</h4>
+<p>Enabling blocking on untuned rules and causing outages, SPAN port oversubscription dropping packets silently, placing sensors only at the perimeter, ignoring internal traffic, never updating signatures, and alert fatigue from unreviewed noise.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do NIDS and HIDS differ and why do mature programs use both?</li><li>What is the trade-off between signature-based and anomaly-based detection?</li><li>How does encrypted traffic limit network IDS/IPS and what compensates for it?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-55">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-55%3A+Compare+Intrusion+Detection+Systems+%28IDS%29+and+Intrusion+Prevention%E2%80%A6&amp;question-id=sec-55&amp;context=Security+engineer%2C+Gear+2%2C+topic%3A+Operations%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-55.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

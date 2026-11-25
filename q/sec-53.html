@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you mitigate Distributed Denial of Service (DDoS) attacks across Layer 4 (SYN floods) and Layer 7 (HTTP floods)? | InterviewGearUp</title>
+<meta name="description" content="Mitigate DDoS in layers. Absorb volumetric and protocol attacks (UDP floods, SYN floods) with anycast scrubbing networks, SYN cookies and rate limits at…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-53.html">
+<meta property="og:title" content="How do you mitigate Distributed Denial of Service (DDoS) attacks across Layer 4 (SYN floods) and Layer 7 (HTTP floods)? | InterviewGearUp">
+<meta property="og:description" content="Mitigate DDoS in layers. Absorb volumetric and protocol attacks (UDP floods, SYN floods) with anycast scrubbing networks, SYN cookies and rate limits at…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-53.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you mitigate Distributed Denial of Service (DDoS) attacks across Layer 4 (SYN floods) and Layer 7 (HTTP floods)?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · Perimeter · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Mitigate DDoS in layers. Absorb volumetric and protocol attacks (UDP floods, SYN floods) with anycast scrubbing networks, SYN cookies and rate limits at Layer 3/4, and defeat application-layer floods with a CDN and WAF, caching, per-client rate limiting, bot challenges, autoscaling and graceful degradation. Prepare with architecture, runbooks and provider DDoS protection contracts.</p></div>
+<h4>Explained in depth</h4>
+<h4>Attack classes</h4>
+<div class="md-table"><table><thead><tr><th>Layer</th><th>Examples</th><th>Target</th></tr></thead><tbody><tr><td><strong>Volumetric (L3/L4)</strong></td><td>UDP floods, ICMP floods, <strong>DNS, NTP, memcached, CLDAP reflection and amplification</strong></td><td>saturate bandwidth</td></tr><tr><td><strong>Protocol (L3/L4)</strong></td><td><strong>SYN flood</strong>, ACK or RST floods, fragmentation, Ping of Death</td><td>exhaust connection tables, firewalls, load balancers</td></tr><tr><td><strong>Application (L7)</strong></td><td><strong>HTTP GET or POST floods</strong>, Slowloris and slow POST, expensive search or login endpoints, WebSocket floods, HTTP/2 Rapid Reset (CVE-2023-44487)</td><td>exhaust CPU, threads, database</td></tr></tbody></table></div>
+<p>Amplification attacks send small spoofed requests to open servers that reply with large responses to the victim (DNS can amplify 50x, memcached over 10,000x).</p>
+<h4>Layer 3/4 defences</h4>
+<ol start="1"><li><strong>Upstream scrubbing and anycast</strong>: use a DDoS-protection provider or CDN with huge global capacity (Cloudflare, Akamai Prolexic, AWS Shield Advanced with CloudFront and Route 53, Azure DDoS Protection, Google Cloud Armor, Imperva). Traffic is attracted to scrubbing centres via anycast or BGP diversion, malicious packets are dropped, clean traffic is forwarded (GRE tunnels or private links). On-premises appliances cannot beat attacks larger than the uplink, so volumetric defence must live upstream.</li><li><strong>SYN flood mitigation</strong>: attacker sends SYNs (often spoofed) and never completes the handshake, filling the backlog queue.</li></ol>
+<ul><li><strong>SYN cookies</strong>: the server encodes connection state in the initial sequence number of the SYN-ACK and allocates memory only when a valid ACK returns.</li><li>Increase backlog, reduce SYN-RECEIVED timeouts and retries, <strong>rate limit SYNs per source</strong>, use stateful DDoS filters or <strong>SYN proxy</strong> in firewalls and load balancers (cloud load balancers absorb handshakes at the edge).</li></ul>
+<pre><code>sysctl -w net.ipv4.tcp_syncookies=1
+sysctl -w net.ipv4.tcp_max_syn_backlog=4096 net.ipv4.tcp_synack_retries=2
+sysctl -w net.core.somaxconn=4096</code></pre>
+<ol start="3"><li><strong>Reduce attack surface</strong>: expose only required ports; hide origin IPs (accept traffic only from the CDN or scrubber); disable open resolvers and unneeded UDP services (so you are not an amplifier); use <strong>BCP 38 / uRPF ingress filtering</strong> to block spoofed sources; rate limit ICMP and UDP; <strong>RTBH or Flowspec</strong> (remotely triggered blackhole and BGP flowspec) with your ISP as a last resort.</li><li><strong>Capacity and resilience</strong>: multi-region, anycast DNS with a provider, autoscaling, over-provisioned bandwidth, separate management plane.</li></ol>
+<h4>Layer 7 defences</h4>
+<ol start="1"><li><strong>CDN and caching</strong>: cache static and cacheable dynamic content so floods hit the edge, not the origin; serve stale content on origin errors.</li><li><strong>WAF and rate limiting</strong>: per IP, per session or token, per path limits (strict on login, search, checkout); sliding windows and adaptive thresholds; <strong>challenge</strong> suspicious clients (JavaScript challenge, proof-of-work, CAPTCHA) while allowing known good bots and APIs.</li><li><strong>Behavioural and bot detection</strong>: TLS and HTTP fingerprints (JA3, JA4), header order, browsing patterns, reputation feeds, anomaly detection on request rate, URL entropy and geographic spikes.</li><li><strong>Protocol hardening</strong>: connection and request timeouts (defeat Slowloris), maximum header and body sizes, limit concurrent connections per client, HTTP/2 stream limits and patches, disable unneeded methods.</li><li><strong>Application resilience</strong>: protect expensive endpoints (search, report generation) with queues, circuit breakers and caching; <strong>graceful degradation</strong> (read-only mode, static fallback, disable non-essential features); autoscaling with cost guards; separate pools for critical paths; database connection limits.</li><li><strong>API-specific</strong>: authentication before expensive work, quotas per API key, schema validation, GraphQL depth and cost limits.</li></ol>
+<h4>Telling an attack from a flash crowd</h4>
+<p>Compare against baselines: distribution of clients (few ASNs and hosting providers vs many residential IPs), identical user agents and request patterns, low cache hit ratio, requests skipping assets (no JS, CSS, images), abnormal geography, sudden growth in a single URL, rising error rates and latency without business events (campaign, launch). Marketing and operations should share a calendar.</p>
+<h4>Preparation and response</h4>
+<ul><li><strong>Runbook</strong>: detection thresholds, escalation, contacts at the DDoS provider and ISP, steps to enable &quot;under attack&quot; modes, communication templates, legal and law enforcement contacts.</li><li><strong>Monitoring</strong>: NetFlow or sFlow, traffic baselines, synthetic probes from outside, alerting on bandwidth, packets per second, connection counts, HTTP error rates.</li><li><strong>Test</strong>: scheduled simulations with an approved vendor (never test with unauthorised attack tools); game days.</li><li><strong>Post-incident</strong>: analyse, adjust rules, capacity and architecture; report; consider extortion (ransom DDoS) policy: do not pay, engage provider.</li><li><strong>Cost protection</strong>: guard against autoscaling bills (provider cost protection credits with Shield Advanced).</li></ul>
+<h4>Pitfalls</h4>
+<p>Relying on origin hardware, leaving the origin IP exposed, no rate limits on expensive endpoints, blocking by IP only when attackers rotate across botnets, no practice before the real attack, and forgetting to be a good citizen (closing open resolvers, filtering spoofed traffic).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do SYN cookies let a server survive a SYN flood without allocating state per half-open connection?</li><li>How do you distinguish a flash crowd from a Layer 7 DDoS attack in real time?</li><li>Why do reflection and amplification attacks matter and how do BCP38 and rate limiting reduce them?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-53">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-53%3A+How+do+you+mitigate+Distributed+Denial+of+Service+%28DDoS%29+attacks%E2%80%A6&amp;question-id=sec-53&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+Perimeter%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-53.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

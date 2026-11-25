@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare Role-Based Access Control (RBAC) and Attribute-Based Access Control (ABAC) in enterprise applications. | InterviewGearUp</title>
+<meta name="description" content="RBAC grants permissions through roles assigned to users, which is simple to administer and audit but suffers role explosion and coarse context. ABAC…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-37.html">
+<meta property="og:title" content="Compare Role-Based Access Control (RBAC) and Attribute-Based Access Control (ABAC) in enterprise applications. | InterviewGearUp">
+<meta property="og:description" content="RBAC grants permissions through roles assigned to users, which is simple to administer and audit but suffers role explosion and coarse context. ABAC…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-37.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare Role-Based Access Control (RBAC) and Attribute-Based Access Control (ABAC) in enterprise applications.</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 2 (Mid-level) · IAM · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>RBAC grants permissions through roles assigned to users, which is simple to administer and audit but suffers role explosion and coarse context. ABAC evaluates policies over attributes of the subject, resource, action and environment, enabling fine-grained dynamic rules at the cost of policy complexity. Many enterprises combine them, using roles as coarse attributes and ABAC for exceptions.</p></div>
+<h4>Explained in depth</h4>
+<h4>RBAC (Role-Based Access Control)</h4>
+<p>Permissions are attached to <strong>roles</strong>; users get roles. Example: <code>invoice_clerk</code> can <code>create</code> and <code>read</code> invoices, <code>finance_manager</code> can also <code>approve</code>. NIST RBAC adds <strong>role hierarchies</strong> (manager inherits clerk), <strong>separation of duty</strong> constraints (the same person cannot create and approve) and sessions.</p>
+<pre><code>{ &quot;roles&quot;: { &quot;support_agent&quot;: [&quot;ticket:read&quot;, &quot;ticket:update&quot;], &quot;admin&quot;: [&quot;*&quot;] }, &quot;assignments&quot;: { &quot;alice&quot;: [&quot;support_agent&quot;] } }</code></pre>
+<p><strong>Strengths</strong>: easy to understand, review and certify (access reviews list user to role), maps to job functions, mature tooling (IAM groups, Kubernetes RBAC, application frameworks), fast evaluation. <strong>Weaknesses</strong>:</p>
+<ul><li><strong>Role explosion</strong>: needing &quot;support agent for EU customers during business hours who can refund under 100&quot; creates many roles (<code>support_eu_refund_100</code>).</li><li>Static: no context (time, location, device risk, data sensitivity, relationship to resource).</li><li>Resource-level rules (&quot;only own records&quot;) need extra code.</li><li>Role creep: users accumulate roles over time, violating least privilege.</li></ul>
+<h4>ABAC (Attribute-Based Access Control)</h4>
+<p>A <strong>policy</strong> is a rule over attributes:</p>
+<ul><li><strong>Subject</strong> (department, clearance, role, employment type, MFA level),</li><li><strong>Resource</strong> (owner, classification, region, status, tenant),</li><li><strong>Action</strong> (read, approve, delete),</li><li><strong>Environment</strong> (time, IP, device compliance, risk score).</li></ul>
+<p>Decision = policy evaluation (permit or deny).</p>
+<pre><code>permit(action == &quot;read&quot;, resource.type == &quot;patient_record&quot;)
+  when subject.role == &quot;doctor&quot;
+   and subject.department == resource.department
+   and environment.time within 07:00-19:00
+   and subject.mfa == true
+forbid when resource.classification == &quot;restricted&quot; and subject.clearance &lt; 3</code></pre>
+<p><strong>Architecture (XACML terms)</strong>: <strong>PEP</strong> (policy enforcement point, in the app or gateway) calls <strong>PDP</strong> (decision point) which uses <strong>PIP</strong> (attribute sources) and <strong>PAP</strong> (policy administration). Modern engines: <strong>Open Policy Agent (Rego)</strong>, <strong>AWS Cedar</strong> and Verified Permissions, Casbin, Oso, Topaz, Google Zanzibar-style <strong>ReBAC</strong> systems (OpenFGA, SpiceDB) for relationship-based rules. <strong>Strengths</strong>: fine-grained, dynamic, fewer artefacts than roles, supports data-sensitive and contextual rules, centralised policy-as-code with testing and versioning, good for multi-tenant and regulated environments. <strong>Weaknesses</strong>: policies are harder to reason about and audit (&quot;who can access X?&quot; needs analysis tooling), attribute quality and freshness matter, performance and caching of attribute lookups, governance of policy sprawl, debugging overhead.</p>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th>Aspect</th><th>RBAC</th><th>ABAC</th></tr></thead><tbody><tr><td>Basis</td><td>role membership</td><td>attributes and rules</td></tr><tr><td>Granularity</td><td>coarse to medium</td><td>fine</td></tr><tr><td>Context awareness</td><td>low</td><td>high</td></tr><tr><td>Administration</td><td>simple, role catalogue</td><td>complex policy lifecycle</td></tr><tr><td>Auditability</td><td>easy (who has which role)</td><td>harder (requires policy analysis)</td></tr><tr><td>Scalability for variations</td><td>role explosion</td><td>scales with rules</td></tr><tr><td>Typical use</td><td>internal apps, cloud IAM groups</td><td>healthcare, finance, data platforms, multi-tenant SaaS</td></tr></tbody></table></div>
+<h4>Hybrid approach</h4>
+<p>Use RBAC for <strong>coarse entitlements</strong> (job functions, application access) and ABAC or ReBAC for <strong>fine-grained, contextual, resource-level rules</strong>. Roles become attributes (<code>subject.roles</code>). Examples: AWS IAM combines policies with <strong>tag-based conditions</strong> (<code>aws:PrincipalTag/team == aws:ResourceTag/team</code>), Kubernetes RBAC plus admission policies for attributes, and Azure RBAC with ABAC conditions.</p>
+<h4>Design guidance</h4>
+<ul><li>Centralise decisions (policy as code, tested with unit tests and policy simulation) but enforce at every layer (gateway, service, data); deny by default.</li><li>Keep roles few and business meaningful; apply separation of duties; automate joiner-mover-leaver and periodic <strong>access recertification</strong>.</li><li>For ABAC ensure reliable attribute sources (HR system, device posture), log decisions with the attributes used, and offer &quot;why was this denied&quot; explanations.</li><li>Use <strong>just-in-time</strong> elevation for privileged roles.</li></ul>
+<h4>Pitfalls</h4>
+<p>Creating a new role for every exception, embedding authorisation checks in scattered code, trusting client-supplied attributes, stale attributes after job changes, and policy engines without test suites.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is role explosion and how do hierarchies, groups or ABAC mitigate it?</li><li>How would you express a rule like &#39;doctors can read records of patients in their department during working hours&#39; in each model?</li><li>What are policy engines like OPA or Cedar and where do they sit in the architecture?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-37">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-37%3A+Compare+Role-Based+Access+Control+%28RBAC%29+and+Attribute-Based+Access%E2%80%A6&amp;question-id=sec-37&amp;context=Security+engineer%2C+Gear+2%2C+topic%3A+IAM%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-37.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

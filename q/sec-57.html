@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are the core workflows and responsibilities of Tier 1, Tier 2, and Tier 3 SOC analysts? | InterviewGearUp</title>
+<meta name="description" content="Tier 1 SOC analysts monitor the alert queue, triage and resolve routine events or escalate. Tier 2 analysts investigate escalated incidents in depth,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-57.html">
+<meta property="og:title" content="What are the core workflows and responsibilities of Tier 1, Tier 2, and Tier 3 SOC analysts? | InterviewGearUp">
+<meta property="og:description" content="Tier 1 SOC analysts monitor the alert queue, triage and resolve routine events or escalate. Tier 2 analysts investigate escalated incidents in depth,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-57.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are the core workflows and responsibilities of Tier 1, Tier 2, and Tier 3 SOC analysts?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · Operations · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Tier 1 SOC analysts monitor the alert queue, triage and resolve routine events or escalate. Tier 2 analysts investigate escalated incidents in depth, correlate data, contain threats and drive response. Tier 3 are senior analysts and threat hunters who handle advanced incidents, forensics and malware analysis, and improve detections, tooling and playbooks.</p></div>
+<h4>Explained in depth</h4>
+<h4>What a SOC is</h4>
+<p>A <strong>Security Operations Center</strong> is the team, processes and technology that <strong>continuously monitor, detect, analyse and respond</strong> to cybersecurity threats (24 by 7 in many organisations, in-house, outsourced MSSP/MDR, or hybrid). The tiered model distributes work by skill and urgency so scarce expertise focuses on the hardest problems.</p>
+<h4>Tier 1: triage and monitoring</h4>
+<p><strong>Role</strong>: first line, &quot;alert analysts&quot;.</p>
+<ul><li>Monitor SIEM, EDR, email security and cloud consoles for alerts; <strong>triage</strong>: is this real, what is affected, how severe?</li><li>Follow <strong>runbooks and playbooks</strong> for common alerts (phishing reports, malware detections, failed login spikes, policy violations); verify with quick checks (reputation lookups, user confirmation, asset context).</li><li><strong>Close false positives</strong> with documented reasons, handle simple true positives (reset password, block sender, remove phishing email, quarantine file), open and update tickets, collect initial evidence.</li><li><strong>Escalate</strong> with a clear summary (what, when, where, evidence, actions taken) to Tier 2 when scope, impact or uncertainty exceeds the playbook.</li><li>Skills: fundamentals of networking, operating systems, common attacks, SIEM queries, ticketing; attention to detail and communication.</li></ul>
+<h4>Tier 2: incident responders</h4>
+<p><strong>Role</strong>: deeper investigation and response.</p>
+<ul><li>Take escalated incidents; <strong>correlate across data sources</strong> (identity, endpoint, network, cloud logs) to build a timeline and determine scope, root cause, affected accounts and systems, data exposure, and attacker techniques (map to <strong>MITRE ATT&amp;CK</strong>).</li><li>Perform <strong>containment and remediation</strong>: isolate hosts via EDR, disable compromised accounts, revoke tokens and sessions, block indicators at firewalls and proxies, coordinate patching or reimaging, remove persistence.</li><li>Analyse suspicious artefacts (email headers, URLs, attachments in sandboxes), run threat intelligence enrichment, query logs at scale, run IR playbooks.</li><li>Coordinate with IT, application owners, legal, HR and communications; keep stakeholders informed; document actions and evidence for audit and potential legal action.</li><li>Tune detection rules and suppress noisy alerts, propose improvements.</li><li>Skills: incident response, log analysis, endpoint forensics basics, scripting (Python, PowerShell), cloud security, ATT&amp;CK.</li></ul>
+<h4>Tier 3: advanced analysts, threat hunters, subject matter experts</h4>
+<p><strong>Role</strong>: handle the most complex and high-impact incidents and proactively look for what automated tools miss.</p>
+<ul><li><strong>Advanced forensics and malware reverse engineering</strong> (memory, disk, network captures), investigation of APTs, ransomware, insider threats and supply chain compromises.</li><li><strong>Threat hunting</strong>: hypothesis-driven searches for stealthy activity (living-off-the-land binaries, beaconing, unusual service accounts, lateral movement) using EDR and SIEM data, often derived from threat intelligence about adversary TTPs.</li><li><strong>Detection engineering</strong>: write and test detections (Sigma, YARA, Suricata), build analytics, reduce false positives, validate coverage with purple team exercises and breach and attack simulation.</li><li><strong>Tooling and automation</strong>: develop SOAR playbooks, integrations and enrichments; improve log onboarding and data quality.</li><li><strong>Incident command</strong> for major incidents, post-incident reviews, lessons learned, training and mentoring Tier 1 and 2, red and purple team collaboration.</li><li>Skills: deep OS internals, reverse engineering, advanced scripting, adversary tradecraft, data analysis.</li></ul>
+<h4>Supporting roles</h4>
+<p>SOC manager, <strong>threat intelligence analysts</strong>, <strong>detection engineers</strong>, <strong>incident response lead</strong>, forensic specialists, SOAR and platform engineers, vulnerability management liaison, and on-call management.</p>
+<h4>Typical workflow</h4>
+<p>Alert → Tier 1 triage (enrich, classify, playbook) → close or escalate with context → Tier 2 investigation, containment → Tier 3 deep analysis if complex → eradication, recovery (with IT) → post-incident review → detections and playbooks updated → metrics reported.</p>
+<h4>Metrics and health</h4>
+<p><strong>MTTD</strong> (mean time to detect), <strong>MTTA/MTTR</strong> (acknowledge, respond or resolve), alert volume and <strong>false positive rate</strong>, escalation quality, dwell time, coverage of ATT&amp;CK techniques, SLA adherence by severity, percentage of alerts automated, analyst workload and burnout indicators, quality assurance sampling of closed alerts.</p>
+<h4>Modern evolution</h4>
+<p>Many SOCs move from rigid tiers to <strong>flatter models</strong> with automation: SOAR and AI-assisted triage handle Tier 1 tasks, analysts specialise by domain (cloud, identity, endpoint), and <strong>MDR</strong> providers supply 24 by 7 coverage. Whatever the structure, clear escalation criteria, runbooks, shift handovers and continuous training are essential.</p>
+<h4>Pitfalls</h4>
+<p>Tier 1 as a ticket-closing factory with no growth path (attrition), escalations without context, no feedback loop from IR into detections, ignoring analyst wellbeing on 24 by 7 shifts, and measuring volume of tickets rather than quality and outcomes.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How do you reduce Tier 1 alert fatigue and burnout using automation and better detections?</li><li>What metrics such as MTTD and MTTR show whether a SOC is effective?</li><li>How does a SOC combine tiered and flat team models, and where do threat intelligence and detection engineering fit?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-57">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-57%3A+What+are+the+core+workflows+and+responsibilities+of+Tier+1%2C+Tier+2%2C%E2%80%A6&amp;question-id=sec-57&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+Operations%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-57.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

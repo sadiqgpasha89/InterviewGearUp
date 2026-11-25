@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do Canary Tokens and Honeytokens alert security teams when unauthorized actors access sensitive data? | InterviewGearUp</title>
+<meta name="description" content="Canary tokens and honeytokens are decoy credentials, files, database rows, URLs or DNS names that no legitimate user should ever touch. Because any…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-95.html">
+<meta property="og:title" content="How do Canary Tokens and Honeytokens alert security teams when unauthorized actors access sensitive data? | InterviewGearUp">
+<meta property="og:description" content="Canary tokens and honeytokens are decoy credentials, files, database rows, URLs or DNS names that no legitimate user should ever touch. Because any…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-95.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do Canary Tokens and Honeytokens alert security teams when unauthorized actors access sensitive data?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · Operations · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Canary tokens and honeytokens are decoy credentials, files, database rows, URLs or DNS names that no legitimate user should ever touch. Because any access is suspicious, they give very high-fidelity alerts of intruders, insider snooping or leaked secrets with almost no false positives, and cost little to deploy across cloud keys, documents, repositories and databases.</p></div>
+<h4>Explained in depth</h4>
+<h4>Concept</h4>
+<p><strong>Deception technology</strong> plants decoys that look valuable but are never used by real processes. A <strong>canary token</strong> (Thinkst Canary, canarytokens.org) is a tripwire that notifies you when it is used. <strong>Honeytokens</strong> are fake data items (credentials, records, API keys, documents) whose access is monitored. A related idea is a <strong>honeypot</strong> (a decoy system). The key property: <strong>legitimate users have no reason to interact with the decoy</strong>, so *any interaction is an alert* and the signal-to-noise ratio is excellent compared with anomaly detection.</p>
+<h4>Types and how they alert</h4>
+<div class="md-table"><table><thead><tr><th>Token type</th><th>How it triggers</th></tr></thead><tbody><tr><td><strong>Fake AWS or cloud access keys</strong> (planted in <code>~/.aws/credentials</code>, repos, wikis, S3 objects)</td><td>an attacker tries them; the token service or CloudTrail records <code>GetCallerIdentity</code>, <code>ListBuckets</code> or any call by that key ID</td></tr><tr><td><strong>Web bug / URL</strong></td><td>a unique URL fetched (embedded in documents, emails, internal wikis)</td></tr><tr><td><strong>DNS token</strong></td><td>a unique hostname resolves, which works even behind egress filters, because resolvers contact your authoritative DNS server</td></tr><tr><td><strong>Word, Excel and PDF documents</strong></td><td>opening the file loads a remote image or URL, with a name like <code>passwords.docx</code> or <code>Payroll 2026.xlsx</code></td></tr><tr><td><strong>Fake database rows or tables</strong></td><td>a fake customer record or table such as <code>admin_backup</code>; alert when it appears in query logs, DLP, or when the fake email receives mail</td></tr><tr><td><strong>Fake email addresses and users</strong></td><td>any login attempt or email sent to them (breach detection)</td></tr><tr><td><strong>Fake Active Directory objects</strong></td><td>a honeypot service account with an SPN (Kerberoast bait), or a decoy admin account; alert on Kerberos ticket requests (event 4769) or logons</td></tr><tr><td><strong>Source-code and secrets</strong></td><td>fake keys in repos, <code>.env</code> files, CI variables, SSH keys, Kubernetes secrets, browser-saved logins; scanned and tested by attackers using tools like TruffleHog</td></tr><tr><td><strong>Cloned sites and SSO pages</strong></td><td>a token on a login page detects copying (phishing kit clones request your assets)</td></tr><tr><td><strong>Fake API endpoints and services</strong></td><td>decoy admin panels and open ports (honeypots)</td></tr></tbody></table></div>
+<h4>Example: fake AWS key with CloudTrail detection</h4>
+<ol start="1"><li>Create an IAM user <code>svc-backup-legacy</code> with <strong>no permissions</strong> (or a <code>Deny *</code> policy), and generate an access key. Never grant real access.</li><li>Place the key in plausible locations: a file <code>~/.aws/credentials</code> on a jump host, a private repo, a wiki page, an S3 object <code>old-credentials.txt</code>.</li><li>Create an <strong>EventBridge rule</strong> on CloudTrail events whose <code>userIdentity.accessKeyId</code> is the decoy key (including <code>AccessDenied</code> events) and send it to SNS, Slack, PagerDuty or the SIEM:</li></ol>
+<pre><code>{ &quot;detail-type&quot;: [&quot;AWS API Call via CloudTrail&quot;],
+  &quot;detail&quot;: { &quot;userIdentity&quot;: { &quot;accessKeyId&quot;: [&quot;AKIAFAKEDECOY123456&quot;] } } }</code></pre>
+<ol start="4"><li>When triggered, the alert includes <strong>source IP, user agent, API called, and time</strong>, indicating where the key was found and who used it. Start incident response: identify which host, repo or backup leaked it.</li></ol>
+<p>Services such as <strong>Thinkst canarytokens</strong> produce AWS keys for you, hosted in their account (so there is no risk to yours), and also provide DNS, Word, PDF, QR code, Kubeconfig, and SQL Server tokens.</p>
+<h4>Design and operational guidance</h4>
+<ul><li><strong>Place tokens where attackers look</strong>: admin shares, developer laptops, jump boxes, CI runners, backup servers, wikis, password manager exports, shell histories, Kubernetes secrets, S3 buckets, internal Git.</li><li><strong>Make them believable and consistent</strong>: names matching internal conventions, realistic content and timestamps; do not use obviously fake names; rotate and refresh placement.</li><li><strong>Alert routing</strong>: high-priority, low-volume channel to the SOC with a <strong>runbook</strong> (identify placement, scope the compromise, contain, hunt for lateral movement). Include metadata (token name, location, owner) so alerts are actionable.</li><li><strong>Avoid false positives from your own tools</strong>: exclude security scanners, backup agents and secret-scanning bots by their IP ranges or user agents, document what scanning will touch them (a GitHub secret scanner can trip a key, which is itself useful, showing a leak).</li><li><strong>Safety</strong>: decoy accounts have <strong>zero permissions</strong>, honeytoken data must not contain real personal data, decoy services must not be pivot points (isolate honeypots, use dedicated VLANs), and coordinate with legal and privacy teams.</li><li><strong>Coverage plan</strong>: map tokens to the ATT&amp;CK stages (credential access, discovery, collection, lateral movement) to detect different phases; measure mean time to detect, and test regularly with red team exercises.</li><li><strong>Complement, not replace</strong>: use alongside EDR, SIEM, UEBA and network detection, because attackers who never touch decoys remain unseen.</li></ul>
+<h4>Limits and pitfalls</h4>
+<p>Attackers can recognise decoys (known canary file formats, DNS domains of public canary services, accounts never logged in), tokens only fire if used, deception adds maintenance overhead, and poorly placed tokens never alert. Never make decoys reachable by legitimate automation, and never place real secrets in them.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why do deception assets have a much lower false positive rate than behaviour-based detections?</li><li>How would you deploy fake AWS access keys and detect their use through CloudTrail without risking real resources?</li><li>What operational mistakes make honeytokens easy for attackers to recognise and avoid?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-95">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-95%3A+How+do+Canary+Tokens+and+Honeytokens+alert+security+teams+when%E2%80%A6&amp;question-id=sec-95&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+Operations%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-95.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

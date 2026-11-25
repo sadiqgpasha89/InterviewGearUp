@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is HTTP Strict Transport Security (HSTS) and how does the HSTS preload list enforce HTTPS? | InterviewGearUp</title>
+<meta name="description" content="HSTS is a response header that tells browsers to use HTTPS only for a domain for a set max-age, upgrading http links internally and refusing to proceed…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-65.html">
+<meta property="og:title" content="What is HTTP Strict Transport Security (HSTS) and how does the HSTS preload list enforce HTTPS? | InterviewGearUp">
+<meta property="og:description" content="HSTS is a response header that tells browsers to use HTTPS only for a domain for a set max-age, upgrading http links internally and refusing to proceed…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-65.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is HTTP Strict Transport Security (HSTS) and how does the HSTS preload list enforce HTTPS?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 2 (Mid-level) · AppSec · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>HSTS is a response header that tells browsers to use HTTPS only for a domain for a set max-age, upgrading http links internally and refusing to proceed on certificate errors, which stops SSL stripping and downgrade attacks after the first visit. The preload list ships the domain in browsers, so even the very first visit is protected.</p></div>
+<h4>Explained in depth</h4>
+<h4>The problem</h4>
+<p>Even if a site serves HTTPS, users typically type <code>example.com</code> or follow old <code>http://</code> links. The browser first tries <strong>HTTP</strong>, and the server redirects to HTTPS. A network attacker (public Wi-Fi, malicious router) can <strong>intercept that first plaintext request</strong> and run an <strong>SSL stripping</strong> attack: they proxy the connection, keep the victim on HTTP while talking HTTPS to the real server, and read or modify everything. Users may also click through certificate warnings, enabling man-in-the-middle with invalid certificates.</p>
+<h4>HSTS (HTTP Strict Transport Security, RFC 6797)</h4>
+<p>The server sends over HTTPS:</p>
+<pre><code>Strict-Transport-Security: max-age=31536000; includeSubDomains; preload</code></pre>
+<ul><li><strong><code>max-age</code></strong>: seconds the browser remembers to use HTTPS only (31536000 = 1 year; preload requires at least 1 year).</li><li><strong><code>includeSubDomains</code></strong>: applies to all subdomains, including ones you forgot about.</li><li><strong><code>preload</code></strong>: signals consent to be included in the browser preload lists.</li></ul>
+<p>Browser behaviour while the policy is active:</p>
+<ol start="1"><li><strong>Internal redirect</strong>: any <code>http://example.com</code> request is rewritten to <code>https://</code> <strong>before any network traffic</strong> (status 307 Internal Redirect in DevTools).</li><li><strong>Hard failure on certificate errors</strong>: expired, self-signed or mismatched certificates cannot be bypassed by the user (no &quot;proceed anyway&quot; button), blocking MITM with fake certs.</li><li>Mixed content is more strictly handled; cookies without <code>Secure</code> can still leak, so also set <code>Secure</code> on cookies.</li></ol>
+<p>HSTS headers sent over plain HTTP are ignored.</p>
+<h4>Trust on first use (TOFU) and preload</h4>
+<p>HSTS only helps <strong>after</strong> the browser has seen the header once over HTTPS. The very first visit (or after max-age expiry or a fresh browser profile) is unprotected. The <strong>HSTS preload list</strong> (hstspreload.org, maintained by Chrome and used by Firefox, Safari, Edge, Opera) is a list of domains hard-coded in browsers, so HTTPS is enforced <strong>from the first request</strong>.</p>
+<p>Requirements to submit:</p>
+<ol start="1"><li>Valid certificate; <strong>redirect HTTP to HTTPS on the same host</strong>.</li><li>All subdomains served over HTTPS (especially <code>www</code> if DNS exists).</li><li>HSTS header on the <strong>base domain</strong> over HTTPS with <code>max-age</code> at least 31536000, <code>includeSubDomains</code> and <code>preload</code>.</li><li>Submit at hstspreload.org; inclusion ships with browser releases (weeks to months). Removal is possible but slow (months) because it takes new browser versions and user updates to propagate.</li></ol>
+<h4>Risks and rollout plan</h4>
+<ul><li><strong><code>includeSubDomains</code> and preload are effectively irreversible quickly</strong>: any internal or legacy subdomain (<code>intranet.example.com</code>, <code>dev.example.com</code>, printers, partner endpoints, old marketing hosts) that lacks valid HTTPS becomes <strong>unreachable</strong> for users of preloaded browsers.</li><li><strong>Inventory</strong> all subdomains and services (DNS zone, certificate transparency logs, subdomain enumeration); ensure TLS works everywhere; use automated certificates (ACME, Let&#39;s Encrypt).</li><li><strong>Gradual rollout</strong>:</li></ul>
+<ol start="1"><li>Fix HTTP-to-HTTPS redirects and mixed content; monitor.</li><li>Start with a short <code>max-age=300</code> (5 minutes) and no includeSubDomains; test; then increase to 1 day, 1 week, 1 month, 6 months, 1 year, watching for issues.</li><li>Add <code>includeSubDomains</code> after verifying all subdomains.</li><li>Add <code>preload</code> and submit only when confident and when the organisation accepts the commitment.</li></ol>
+<ul><li>Emergency exit: set <code>max-age=0</code> to clear HSTS in browsers that visited (does not clear preload).</li><li>Edge cases: certificate renewal failures become outages (no click-through), development environments on custom ports or <code>.local</code>, services that use IPs, CDNs and load balancers must add the header consistently, <strong>HTTPS must stay reliable</strong> (monitor expiry).</li></ul>
+<h4>Testing</h4>
+<p><code>curl -sI https://example.com | grep -i strict-transport-security</code>, browser DevTools (Security panel, <code>chrome://net-internals/#hsts</code>), SSL Labs and securityheaders.com, hstspreload.org checker, automated tests asserting the header and redirect behaviour on all hosts, and monitoring that certificates renew.</p>
+<h4>Related controls</h4>
+<p>Set <strong><code>Secure</code> and <code>HttpOnly</code> cookies</strong>, use <strong>Upgrade-Insecure-Requests</strong> CSP directive for legacy mixed content, enforce TLS 1.2 or higher with modern ciphers, <strong>CAA records</strong>, OCSP stapling, certificate transparency monitoring, and consider <strong>HTTPS-only mode</strong> in browsers and <strong>HTTPS DNS records (SVCB)</strong>.</p>
+<h4>Pitfalls</h4>
+<p>Setting a long max-age before verifying every subdomain, preloading with an expiring certificate process, sending the header over HTTP only, forgetting non-web services on subdomains, and assuming HSTS protects the first visit without preload.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does HSTS stop SSL stripping and what is the trust-on-first-use gap that preload closes?</li><li>What are the requirements and risks of submitting a domain with includeSubDomains to the preload list?</li><li>How do you roll out HSTS gradually without locking users out of a misconfigured subdomain?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-65">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-65%3A+What+is+HTTP+Strict+Transport+Security+%28HSTS%29+and+how+does+the+HSTS%E2%80%A6&amp;question-id=sec-65&amp;context=Security+engineer%2C+Gear+2%2C+topic%3A+AppSec%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-65.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

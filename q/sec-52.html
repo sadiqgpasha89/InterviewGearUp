@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How does a Web Application Firewall (WAF) inspect HTTP traffic to block common web attacks? | InterviewGearUp</title>
+<meta name="description" content="A WAF sits in front of web applications as a reverse proxy or inline filter and inspects HTTP requests and responses at Layer 7. It matches traffic…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-52.html">
+<meta property="og:title" content="How does a Web Application Firewall (WAF) inspect HTTP traffic to block common web attacks? | InterviewGearUp">
+<meta property="og:description" content="A WAF sits in front of web applications as a reverse proxy or inline filter and inspects HTTP requests and responses at Layer 7. It matches traffic…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-52.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How does a Web Application Firewall (WAF) inspect HTTP traffic to block common web attacks?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 2 (Mid-level) · Perimeter · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A WAF sits in front of web applications as a reverse proxy or inline filter and inspects HTTP requests and responses at Layer 7. It matches traffic against rules and signatures, such as the OWASP Core Rule Set, anomaly scores, rate limits and bot signals, then allows, blocks, challenges or logs requests, mitigating SQL injection, XSS, path traversal and abusive automation.</p></div>
+<h4>Explained in depth</h4>
+<h4>What a WAF does</h4>
+<p>A <strong>Web Application Firewall</strong> operates at <strong>Layer 7</strong> (HTTP and HTTPS, WebSocket, sometimes gRPC and GraphQL). Unlike a network firewall (ports and IPs), it understands application semantics: URLs, headers, cookies, parameters, JSON bodies, file uploads. Deployment models: <strong>cloud WAF</strong> (AWS WAF, Cloudflare, Akamai, Azure Front Door WAF, Google Cloud Armor, Imperva), <strong>reverse-proxy appliance or software</strong> (ModSecurity or Coraza with the OWASP Core Rule Set, NGINX App Protect, F5), <strong>host module</strong> (ModSecurity in Apache or NGINX), and <strong>Kubernetes ingress</strong> integrations.</p>
+<h4>Inspection pipeline</h4>
+<ol start="1"><li><strong>TLS termination</strong> (so traffic can be inspected) and <strong>normalisation</strong>: URL and Unicode decoding, case folding, removing null bytes, decoding base64 or double encoding, parsing JSON and XML, so obfuscated payloads cannot hide.</li><li><strong>Parsing</strong> into fields: request line, headers, cookies, query string, form and JSON parameters, multipart parts.</li><li><strong>Rule evaluation</strong>:</li></ol>
+<ul><li><strong>Signature and regex rules</strong> (negative security model): detect known attack patterns, for example <code>&#39; OR 1=1--</code>, <code>&lt;script&gt;</code>, <code>../../etc/passwd</code>, <code>${jndi:ldap://</code> (Log4Shell), command injection characters, SSRF to <code>169.254.169.254</code>.</li><li><strong>Anomaly scoring</strong> (OWASP CRS): each matching rule adds points; the request is blocked when the total exceeds a threshold (paranoia levels 1 to 4 tune strictness), which reduces single-rule false positives.</li><li><strong>Positive security model</strong>: allow only known-good requests (expected methods, parameter names, types, lengths, content types). Strong but needs per-application tuning; often applied to critical endpoints or APIs defined by an OpenAPI schema.</li><li><strong>Protocol enforcement</strong>: valid HTTP, size and header limits, allowed methods, blocking malformed requests and request smuggling patterns.</li><li><strong>Rate limiting and behaviour</strong>: per IP, token or session limits, brute-force and credential stuffing detection, scraping, L7 DDoS mitigation.</li><li><strong>Bot management and reputation</strong>: IP and ASN reputation, device and JavaScript fingerprinting, CAPTCHA or challenge pages, managed threat intelligence feeds, geo-blocking.</li><li><strong>Response inspection and DLP</strong>: block leakage of stack traces, credit card numbers or sensitive data (more limited).</li></ul>
+<ol start="4"><li><strong>Action</strong>: allow, block (403), challenge, rate limit, redirect, tarpit, log-only (<strong>detection mode</strong>); attach labels for downstream logic.</li><li><strong>Logging and alerting</strong> to SIEM with matched rules, request details (redacting sensitive data), for tuning and incident response.</li></ol>
+<h4>Example rule concept</h4>
+<pre><code>SecRule ARGS|REQUEST_COOKIES|REQUEST_HEADERS &quot;@detectSQLi&quot; \
+  &quot;id:942100,phase:2,block,t:none,t:urlDecodeUni,msg:&#39;SQL injection detected&#39;,logdata:&#39;%{MATCHED_VAR}&#39;,severity:&#39;CRITICAL&#39;,setvar:&#39;tx.anomaly_score=+%{tx.critical_anomaly_score}&#39;&quot;</code></pre>
+<p>Cloud example: AWS WAF web ACL with <strong>AWSManagedRulesCommonRuleSet</strong>, <code>SQLiRuleSet</code>, <code>KnownBadInputsRuleSet</code>, <code>AmazonIpReputationList</code>, and a rate-based rule (2,000 requests per 5 minutes per IP) with CAPTCHA action for suspicious paths.</p>
+<h4>Operating a WAF well</h4>
+<ul><li><strong>Start in count or detection mode</strong>, review logs, tune exclusions (disable a rule for a specific parameter such as a rich-text field, not globally), then enforce. Maintain <strong>exceptions as code</strong> with owners and expiry.</li><li>Protect <strong>APIs</strong> with schema validation (OpenAPI enforcement), JWT validation at the gateway, GraphQL depth and cost limits.</li><li>Place WAF correctly: all public traffic must pass through it; <strong>lock the origin</strong> to accept traffic only from the WAF or CDN (IP allow-list, mTLS, secret header) so attackers cannot bypass by calling the origin directly.</li><li>Keep rules updated; subscribe to managed rule updates; use <strong>virtual patching</strong> to mitigate new CVEs quickly while code is fixed.</li><li>Monitor false positive and block rates, latency overhead, and rule coverage; test regularly with scanners and attack simulators (ZAP, <code>nikto</code>, <code>gotestwaf</code>) and in CI.</li><li>High availability, fail-open vs fail-closed decisions, capacity for peak and DDoS, and DDoS integration.</li></ul>
+<h4>Limits and bypasses</h4>
+<p>WAFs are <strong>compensating controls</strong>, not fixes. Bypass techniques include encoding and obfuscation, parameter pollution, alternative payload syntax, HTTP request smuggling, large bodies that exceed inspection limits, JSON or multipart parsing differences between WAF and application, and attacks on business logic (BOLA, price tampering) which signatures cannot see. Attackers also discover the origin IP. Secure coding, input validation, parameterised queries, authentication and authorisation, patching and runtime protection (RASP) remain essential.</p>
+<h4>Pitfalls</h4>
+<p>Leaving the WAF in log-only mode forever, global rule disablement to fix one false positive, an exposed origin, ignoring API traffic, and treating compliance (PCI-DSS requirement 6.4) as the goal instead of risk reduction.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the difference between a negative (signature) and a positive (allow-list) security model in WAFs?</li><li>How do you tune a WAF to reduce false positives without opening gaps?</li><li>Why is a WAF not a substitute for secure coding and what can attackers do to bypass it?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-52">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-52%3A+How+does+a+Web+Application+Firewall+%28WAF%29+inspect+HTTP+traffic+to%E2%80%A6&amp;question-id=sec-52&amp;context=Security+engineer%2C+Gear+2%2C+topic%3A+Perimeter%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-52.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

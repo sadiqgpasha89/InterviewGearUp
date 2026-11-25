@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you prevent GraphQL Denial of Service attacks using query depth limiting and query cost analysis? | InterviewGearUp</title>
+<meta name="description" content="Prevent GraphQL DoS by limiting what a single query may cost: enforce maximum depth, node and alias counts, calculate query cost with per-field weights…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-73.html">
+<meta property="og:title" content="How do you prevent GraphQL Denial of Service attacks using query depth limiting and query cost analysis? | InterviewGearUp">
+<meta property="og:description" content="Prevent GraphQL DoS by limiting what a single query may cost: enforce maximum depth, node and alias counts, calculate query cost with per-field weights…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-73.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you prevent GraphQL Denial of Service attacks using query depth limiting and query cost analysis?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · APIs · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Prevent GraphQL DoS by limiting what a single query may cost: enforce maximum depth, node and alias counts, calculate query cost with per-field weights and pagination limits, set timeouts and rate limits per client, disable introspection in production if not needed, use persisted queries or allow-lists, limit batching and request size, and use dataloaders and caching to avoid N+1 explosions.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why GraphQL is easy to abuse</h4>
+<p>A REST endpoint has a fixed cost per URL. GraphQL lets the client compose <strong>arbitrary queries</strong> over a graph, so a single small HTTP request can force enormous server work. Attack patterns:</p>
+<ol start="1"><li><strong>Deeply nested queries</strong> on circular relationships: <code>user { friends { friends { friends { ... } } } }</code> exponentially expands joins and resolver calls.</li><li><strong>Wide queries and aliases</strong>: request the same expensive field hundreds of times in one query using aliases (<code>a1: search(q:&quot;x&quot;) a2: search(q:&quot;x&quot;) ...</code>), bypassing per-request rate limits.</li><li><strong>Batching</strong>: arrays of operations in one HTTP request (<code>[ {query}, {query}, ... ]</code>), used for brute-forcing logins or amplifying load.</li><li><strong>Pagination abuse</strong>: <code>first: 1000000</code> or nested connections <code>edges { node { orders(first:1000) { items(first:1000) } } }</code>.</li><li><strong>Fragment cycles and overlapping fields</strong> in malformed queries (validation rules prevent cycles, but parsers can be stressed).</li><li><strong>Introspection abuse</strong> reveals the full schema, helping attackers craft costly queries; <strong>field suggestions</strong> leak schema even if introspection is off.</li><li><strong>Large payloads</strong> and slow clients, subscription floods (WebSocket connections).</li></ol>
+<h4>Defences</h4>
+<ol start="1"><li><strong>Query depth limiting</strong>: reject queries deeper than N (for example 7 to 10). Libraries: <code>graphql-depth-limit</code> (Node), <code>MaxQueryDepthInstrumentation</code> (Java), Strawberry/Graphene depth validators, Hasura limits, Apollo Router config.</li></ol>
+<pre><code>import depthLimit from &#39;graphql-depth-limit&#39;;
+const server = new ApolloServer({ typeDefs, resolvers, validationRules: [depthLimit(8)] });</code></pre>
+<ol start="2"><li><strong>Query complexity or cost analysis</strong>: assign <strong>costs</strong> to fields (scalar 1, object 2, list multiplied by <code>first/limit</code> argument, expensive resolvers 10 or 50), compute the total <strong>before execution</strong> and reject above a budget (for example 1,000 points per request). This handles wide and aliased queries that depth limiting misses. Libraries: <code>graphql-query-complexity</code>, <code>graphql-cost-analysis</code>, GitHub&#39;s and Shopify&#39;s public cost models (GitHub rate limit points, Shopify &quot;calculated query cost&quot; with a leaky bucket), Apollo <code>@cost</code> directives and demand control in Apollo Router.</li></ol>
+<pre><code>import { createComplexityRule, simpleEstimator, fieldExtensionsEstimator } from &#39;graphql-query-complexity&#39;;
+validationRules: [createComplexityRule({ maximumComplexity: 1000, estimators: [fieldExtensionsEstimator(), simpleEstimator({ defaultComplexity: 1 })] })]</code></pre>
+<ol start="3"><li><strong>Pagination limits</strong>: mandatory <code>first/last</code> with sane maximums (100), no unbounded lists, cursor-based pagination, cap nested list multiplication in cost.</li><li><strong>Limit aliases, fields and directives per query</strong>, maximum query size in bytes and tokens, maximum number of operations in a batch (or disable batching), reject duplicate expensive fields.</li><li><strong>Timeouts and resource limits</strong>: per-operation execution timeout and abortable resolvers, database statement timeouts, concurrency limits, circuit breakers on backends.</li><li><strong>Rate limiting by cost, not requests</strong>: per user, API key or IP with token bucket on <strong>query cost</strong> (<code>complexity per minute</code>), plus per-operation limits for sensitive mutations such as <code>login</code> (protect against aliased brute force).</li><li><strong>Persisted queries and allow-lists</strong>: clients register queries at build time (Automatic Persisted Queries, Relay persisted operations, Apollo GraphOS operation safelisting); the server executes only <strong>known operation IDs</strong> and rejects arbitrary queries in production. This is the strongest control for first-party clients.</li><li><strong>Disable introspection and field suggestions in production</strong> for private APIs (<code>introspection: false</code>, <code>graphql-armor</code>, <code>NoSchemaIntrospectionCustomRule</code>), and use schema registries; public APIs may keep introspection but rely on cost limits.</li><li><strong>Efficient execution</strong> to reduce per-query cost: DataLoader batching and caching to avoid N+1, response and field caching, query planning limits in federation gateways, database indexes, separate read replicas, caching of persisted queries.</li><li><strong>Authentication and authorisation first</strong>: require auth before expensive work, field-level and object-level authorisation (stops expensive data fetches before they are authorised).</li><li><strong>Subscriptions</strong>: limit concurrent subscriptions per user, authenticate on connection, heartbeats and idle timeouts, backpressure.</li><li><strong>Gateway protections</strong>: WAF with GraphQL awareness, <code>graphql-armor</code> (depth, cost, aliases, tokens, block field suggestions), Apollo Router and Cosmo Router limits, Cloudflare and Akamai GraphQL protections.</li></ol>
+<h4>Testing and monitoring</h4>
+<p>Fuzz with deep and wide queries and aliases in CI, load test cost limits (k6), review dashboards for slow operations (Apollo Studio, OpenTelemetry traces by operation name), alert on rejected-by-cost spikes and p99 latency, and tune limits using real client query statistics.</p>
+<h4>Pitfalls</h4>
+<p>Depth limits only (aliases bypass), counting cost without multiplying list sizes, rate limiting HTTP requests but not operations in batches, leaving introspection and suggestions enabled while believing the schema is secret, and unbounded <code>first</code> arguments.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does query cost analysis differ from simple depth limiting and why do you need both?</li><li>How do persisted queries and allow-lists eliminate arbitrary query attacks?</li><li>How do aliases, batching and fragment cycles enable amplification attacks in GraphQL?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-73">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-73%3A+How+do+you+prevent+GraphQL+Denial+of+Service+attacks+using+query%E2%80%A6&amp;question-id=sec-73&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+APIs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-73.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

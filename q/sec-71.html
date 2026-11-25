@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you harden reverse proxies: Disabling version disclosure headers and restricting HTTP methods? | InterviewGearUp</title>
+<meta name="description" content="Harden reverse proxies by removing version and technology disclosure headers and verbose error pages, allowing only needed HTTP methods and host names,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-71.html">
+<meta property="og:title" content="How do you harden reverse proxies: Disabling version disclosure headers and restricting HTTP methods? | InterviewGearUp">
+<meta property="og:description" content="Harden reverse proxies by removing version and technology disclosure headers and verbose error pages, allowing only needed HTTP methods and host names,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-71.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you harden reverse proxies: Disabling version disclosure headers and restricting HTTP methods?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 2 (Mid-level) · Perimeter · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Harden reverse proxies by removing version and technology disclosure headers and verbose error pages, allowing only needed HTTP methods and host names, limiting request size and timeouts, enforcing modern TLS and security headers, blocking path traversal and sensitive paths, stripping untrusted forwarding headers, and running as an unprivileged user with logging and rate limits.</p></div>
+<h4>Explained in depth</h4>
+<h4>Role of the reverse proxy</h4>
+<p>Nginx, Apache httpd, HAProxy, Envoy, Traefik and cloud load balancers sit between the internet and application servers, providing TLS termination, routing, caching, rate limiting and often WAF features. They are the <strong>first exposed layer</strong>, so they should reveal little, accept little, and fail safe.</p>
+<h4>Reduce information disclosure</h4>
+<ul><li><strong>Server banners</strong>: <code>Server: nginx/1.18.0 (Ubuntu)</code> helps attackers pick exploits. Nginx: <code>server_tokens off;</code> (and the headers-more module or Nginx Plus <code>more_clear_headers Server;</code>). Apache: <code>ServerTokens Prod</code>, <code>ServerSignature Off</code>. HAProxy and Envoy: remove or override <code>Server</code> header (<code>server_header_transformation</code>). Remove <strong><code>X-Powered-By</code></strong>, <code>X-AspNet-Version</code>, <code>X-Generator</code> (set at the app and strip at the proxy: <code>proxy_hide_header X-Powered-By;</code>).</li><li><strong>Custom error pages</strong> without stack traces, version or internal paths; same response for missing and forbidden where appropriate; hide directory listing (<code>autoindex off</code>).</li><li><strong>Disable debug and status endpoints</strong> publicly (<code>/server-status</code>, <code>/nginx_status</code>, <code>/actuator</code>, <code>/metrics</code>, <code>.git</code>, <code>.env</code>, backup files): deny or restrict to internal IPs.</li></ul>
+<p>Security through obscurity is not a control by itself; it only removes free reconnaissance. Patching and configuration remain essential.</p>
+<h4>Restrict methods and requests</h4>
+<pre><code>server {
+  listen 443 ssl http2;
+  server_name app.example.com;                     # explicit; default server returns 444 for unknown Host headers
+  ssl_protocols TLSv1.2 TLSv1.3;
+  server_tokens off;
+
+  if ($request_method !~ ^(GET|HEAD|POST|PUT|PATCH|DELETE|OPTIONS)$) { return 405; }   # block TRACE, CONNECT, odd verbs
+  client_max_body_size 10m;  client_body_timeout 10s;  client_header_timeout 10s;  keepalive_timeout 15s;
+  large_client_header_buffers 4 8k;
+  limit_req zone=perip burst=20 nodelay;           # rate limiting (limit_req_zone defined in http block)
+
+  add_header Strict-Transport-Security &quot;max-age=31536000; includeSubDomains&quot; always;
+  add_header X-Content-Type-Options nosniff always;
+  add_header Referrer-Policy strict-origin-when-cross-origin always;
+  add_header Content-Security-Policy &quot;default-src &#39;self&#39;; frame-ancestors &#39;self&#39;&quot; always;
+
+  location ~ /\.(?!well-known) { deny all; }       # dotfiles
+  location ~* \.(bak|old|sql|swp|ini|log)$ { deny all; }
+  location /admin/ { allow 10.0.0.0/8; deny all; } # restrict sensitive paths
+
+  location / {
+    proxy_pass http://backend;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $remote_addr;   # do not append client-supplied values unless trusted
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_hide_header X-Powered-By;
+    proxy_http_version 1.1; proxy_set_header Connection &quot;&quot;;
+  }
+}</code></pre>
+<ul><li><strong>Methods</strong>: allow only what the application needs; disable <code>TRACE</code> (cross-site tracing), <code>TRACK</code>, <code>CONNECT</code>; handle <code>OPTIONS</code> deliberately for CORS; ignore method override headers.</li><li><strong>Host header validation</strong>: serve only known <code>server_name</code>s; default catch-all returns <code>444</code> or <code>421</code>, preventing <strong>Host header attacks</strong> (password reset poisoning, cache poisoning, routing abuse).</li><li><strong>Forwarding headers</strong>: overwrite <code>X-Forwarded-For/Proto/Host</code> rather than trusting client values; configure the backend to trust them <strong>only from the proxy IP</strong> (otherwise attackers spoof client IPs to bypass IP allow-lists and rate limits and poison logs).</li><li><strong>Limits</strong>: body size, header size and count, URI length, timeouts, connection limits (<code>limit_conn</code>) and rate limits to mitigate Slowloris, large-payload and brute-force attacks.</li><li><strong>Normalisation and smuggling</strong>: use a <strong>single consistent HTTP parser</strong> where possible, enable strict HTTP/1.1 parsing, reject ambiguous requests (both <code>Content-Length</code> and <code>Transfer-Encoding</code>), prefer <strong>HTTP/2 end to end or at least downgrade carefully</strong>, disable connection reuse across users where required, keep proxy and backend patched; test with Burp&#39;s smuggler tools. Normalise paths so <code>/admin/../</code> or encoded slashes cannot bypass <code>location</code> rules (<code>merge_slashes</code>, check backend rewrite behaviour).</li><li><strong>TLS</strong>: modern protocols and ciphers, HSTS, OCSP stapling, session ticket key rotation, certificates automation, mTLS to backends for internal segmentation.</li><li><strong>Run safely</strong>: unprivileged user, chroot or container with read-only file system, minimal modules, AppArmor or SELinux profile, no write access to config, patched OS, separate management interface.</li><li><strong>Caching safety</strong>: configure <code>proxy_cache_key</code> correctly, avoid caching authenticated responses (<code>Cache-Control: private</code>, <code>proxy_no_cache $http_authorization</code>), include <code>Vary</code> properly.</li><li><strong>Logging and monitoring</strong>: access and error logs shipped to SIEM with request IDs, alerts on 4xx and 5xx spikes, scanning patterns, and configuration drift; <strong>config as code</strong> with review and automated tests (<code>nginx -t</code>, <code>gixy</code>, <code>testssl.sh</code>, Mozilla Observatory, securityheaders.com).</li></ul>
+<h4>Pitfalls</h4>
+<p>Relying on banner removal, trusting client <code>X-Forwarded-For</code>, leaving default virtual host serving the app, exposing status and admin paths, mismatched path normalisation between proxy and backend, and never updating the proxy software.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does hiding the server version help but not replace patching?</li><li>How can inconsistent parsing between proxy and backend lead to request smuggling and how do you reduce that risk?</li><li>How should X-Forwarded-For and Host headers be handled to avoid spoofing and cache poisoning?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-71">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-71%3A+How+do+you+harden+reverse+proxies%3A+Disabling+version+disclosure%E2%80%A6&amp;question-id=sec-71&amp;context=Security+engineer%2C+Gear+2%2C+topic%3A+Perimeter%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-71.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

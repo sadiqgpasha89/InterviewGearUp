@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you conduct architectural threat modeling using DREAD and PASTA methodologies? | InterviewGearUp</title>
+<meta name="description" content="Architectural threat modeling decomposes the system with data flow diagrams and trust boundaries, identifies threats with STRIDE or attack trees, then…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-21.html">
+<meta property="og:title" content="How do you conduct architectural threat modeling using DREAD and PASTA methodologies? | InterviewGearUp">
+<meta property="og:description" content="Architectural threat modeling decomposes the system with data flow diagrams and trust boundaries, identifies threats with STRIDE or attack trees, then…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-21.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you conduct architectural threat modeling using DREAD and PASTA methodologies?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · Threat Modeling · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Architectural threat modeling decomposes the system with data flow diagrams and trust boundaries, identifies threats with STRIDE or attack trees, then ranks them. DREAD scores threats on damage, reproducibility, exploitability, affected users and discoverability, while PASTA is a seven-stage, risk-centric process linking business objectives, attack simulation and countermeasures.</p></div>
+<h4>Explained in depth</h4>
+<h4>What threat modeling answers</h4>
+<p>Four questions (Shostack): <strong>What are we building? What can go wrong? What are we going to do about it? Did we do a good enough job?</strong> The output is a prioritised list of threats with mitigations, ideally produced <strong>at design time</strong> when changes are cheap.</p>
+<h4>Common process</h4>
+<ol start="1"><li><strong>Define scope and objectives</strong>: assets (customer data, credentials, availability), security requirements, compliance drivers, assumptions.</li><li><strong>Model the system</strong>: data flow diagram (DFD) with external entities, processes, data stores, data flows and <strong>trust boundaries</strong> (internet to DMZ, service to database, tenant to tenant, CI to production).</li><li><strong>Identify threats</strong>: <strong>STRIDE</strong> per element (Spoofing, Tampering, Repudiation, Information disclosure, Denial of service, Elevation of privilege), attack trees, abuse cases, MITRE ATT&amp;CK or CAPEC catalogues, LINDDUN for privacy.</li><li><strong>Assess and prioritise risk</strong>: DREAD, CVSS, likelihood and impact matrices, FAIR.</li><li><strong>Mitigate</strong>: remove, reduce, transfer or accept; map to controls (authentication, encryption, input validation, rate limiting, logging); record owners and deadlines.</li><li><strong>Validate</strong>: tests, security requirements in backlog, review, penetration testing, re-modeling after changes.</li></ol>
+<h4>DREAD</h4>
+<p>A qualitative scoring model: each threat is rated (commonly 1 to 10, or low/medium/high) on:</p>
+<ul><li><strong>D</strong>amage potential: how bad is the impact?</li><li><strong>R</strong>eproducibility: how reliably can the attack be repeated?</li><li><strong>E</strong>xploitability: how much skill and effort are required?</li><li><strong>A</strong>ffected users: how many people or systems?</li><li><strong>D</strong>iscoverability: how easy is it to find the vulnerability?</li></ul>
+<p>Risk = average of the five scores. Example: SQL injection in a public search endpoint scores D 9, R 9, E 7, A 8, D 8 giving 8.2 (high). An authenticated-admin-only logic flaw might score 5.2. <strong>Limitations</strong>: scores are subjective and inconsistent between raters, &quot;Discoverability&quot; encourages security through obscurity, and the model double counts likelihood. Microsoft stopped using it; teams today favour <strong>CVSS</strong> for vulnerabilities, <strong>risk matrices or FAIR</strong> for business risk, or simple <strong>High/Medium/Low with agreed criteria</strong> and calibration workshops. Still, DREAD appears in interviews as a lightweight prioritisation concept.</p>
+<h4>PASTA (Process for Attack Simulation and Threat Analysis)</h4>
+<p>A seven-stage, <strong>risk-centric</strong> methodology that aligns business and technical views:</p>
+<ol start="1"><li><strong>Define business objectives</strong>: criticality, compliance, impact analysis.</li><li><strong>Define technical scope</strong>: infrastructure, applications, dependencies, protocols, data stores.</li><li><strong>Application decomposition</strong>: DFDs, trust boundaries, use cases, entry points, assets, roles.</li><li><strong>Threat analysis</strong>: threat intelligence, relevant adversaries, attack patterns from logs and incident history.</li><li><strong>Vulnerability and weakness analysis</strong>: map known vulnerabilities (CVE, CWE), scan results and design flaws to the threats, score with CVSS.</li><li><strong>Attack modeling and simulation</strong>: attack trees, kill chains, abuse case simulation, to determine feasibility and likely paths; link to penetration test scenarios.</li><li><strong>Risk and impact analysis and countermeasures</strong>: quantify residual risk, prioritise mitigations by business impact, produce a risk-mitigation plan.</li></ol>
+<p>PASTA is heavier than STRIDE but ties technical findings to business risk, so it suits regulated or high-value systems and executive reporting.</p>
+<h4>Choosing among methods</h4>
+<div class="md-table"><table><thead><tr><th>Method</th><th>Strength</th><th>Typical use</th></tr></thead><tbody><tr><td>STRIDE</td><td>systematic, developer-friendly</td><td>design reviews, per-component analysis</td></tr><tr><td>DREAD</td><td>quick relative ranking</td><td>prioritising a list of threats (with caveats)</td></tr><tr><td>PASTA</td><td>risk-centric, simulation-driven, business-aligned</td><td>enterprise and regulated systems</td></tr><tr><td>Attack trees</td><td>goal-oriented paths</td><td>specific high-value attacker goals</td></tr><tr><td>LINDDUN</td><td>privacy threats</td><td>GDPR-sensitive systems</td></tr><tr><td>OCTAVE, FAIR</td><td>organisational and quantitative risk</td><td>enterprise risk programs</td></tr></tbody></table></div>
+<h4>Doing it in practice</h4>
+<p>Run lightweight sessions (30 to 60 minutes) at design time with developers, architects and security; use tools (OWASP Threat Dragon, Microsoft Threat Modeling Tool, IriusRisk, ThreatModeler, pytm, threat modeling as code); store models in the repository; create security stories and acceptance criteria from threats; revisit on significant changes (new integrations, data types, trust boundaries); track metrics (threats found per feature, mitigation closure, incidents that were or were not modeled).</p>
+<h4>Worked example</h4>
+<p>Payment API behind an API gateway: spoofing of client identity (mitigate with mTLS and signed tokens), tampering with amounts (server-side price calculation and integrity checks), repudiation (immutable audit logs), information disclosure (tokenisation, field-level encryption, TLS), denial of service (rate limits, quotas, autoscaling), elevation of privilege (least-privilege roles, BOLA checks). DREAD or CVSS then ranks the tampering and elevation items first.</p>
+<h4>Pitfalls</h4>
+<p>One-time workshops that are never updated, diagrams without trust boundaries, producing long lists with no owners, over-trusting numeric scores, and ignoring operational and supply chain threats (CI/CD, third-party code).</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why did Microsoft abandon DREAD and what do teams use instead for prioritisation?</li><li>How do you integrate threat modeling into agile sprints so it is not a one-off exercise?</li><li>How do you validate that the mitigations actually address the identified threats?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-21">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-21%3A+How+do+you+conduct+architectural+threat+modeling+using+DREAD+and%E2%80%A6&amp;question-id=sec-21&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+Threat+Modeling%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-21.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

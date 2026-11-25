@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is digital forensics and how do you preserve volatile memory and disk artifacts following an intrusion? | InterviewGearUp</title>
+<meta name="description" content="Digital forensics collects and analyses evidence in a defensible way. Preserve evidence in order of volatility: capture RAM, network connections and…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-94.html">
+<meta property="og:title" content="What is digital forensics and how do you preserve volatile memory and disk artifacts following an intrusion? | InterviewGearUp">
+<meta property="og:description" content="Digital forensics collects and analyses evidence in a defensible way. Preserve evidence in order of volatility: capture RAM, network connections and…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-94.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is digital forensics and how do you preserve volatile memory and disk artifacts following an intrusion?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · Forensics · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Digital forensics collects and analyses evidence in a defensible way. Preserve evidence in order of volatility: capture RAM, network connections and running processes first, then take forensic disk images through write blockers, hash everything, record chain of custody, and work on copies. Analyse memory with Volatility, disk artifacts with Autopsy or Plaso, and timeline events.</p></div>
+<h4>Explained in depth</h4>
+<h4>Goals and principles</h4>
+<p><strong>Digital forensics (DFIR)</strong> identifies, preserves, analyses and presents digital evidence to establish <strong>what happened, when, how, by whom and what was affected</strong>. Principles: <strong>minimise changes</strong> to evidence, <strong>document everything</strong>, maintain <strong>integrity (hashes)</strong> and <strong>chain of custody</strong>, follow laws and policy, work on <strong>copies</strong>, and ensure repeatability (ISO/IEC 27037, NIST SP 800-86, RFC 3227).</p>
+<h4>Order of volatility (RFC 3227)</h4>
+<p>Collect the most fleeting data first:</p>
+<ol start="1"><li>CPU registers and cache.</li><li><strong>RAM</strong>: running processes, loaded modules and injected code, network connections, encryption keys, decrypted malware, command history, credentials.</li><li><strong>Network state</strong>: connections, listening ports, ARP and routing tables, DNS cache.</li><li><strong>Running system state</strong>: processes, logged-in users, open files, scheduled tasks, services, mounted file systems.</li><li><strong>Temporary files, swap and page files.</strong></li><li><strong>Disk</strong> (file system, deleted files, registry, logs).</li><li>Remote logs and monitoring data.</li><li>Backups and archives.</li></ol>
+<p><strong>Pulling the power loses RAM evidence</strong> and can lose malware that lives only in memory; but sometimes isolation is more important than collection (active ransomware). Decide with IR leads: <strong>isolate from the network</strong> (EDR network containment, VLAN quarantine) rather than shutting down, keep the machine powered, and document the reason for any choices.</p>
+<h4>Preserving volatile memory</h4>
+<ul><li><strong>Tools</strong>: WinPmem, DumpIt, Magnet RAM Capture, Belkasoft (Windows), <strong>AVML</strong> or LiME (Linux kernel module), osxpmem (macOS), hypervisor snapshots (VMware <code>.vmem</code> files, <code>virsh dump</code>), <strong>EBS and cloud instance snapshots do not capture RAM</strong>, so use agent-based capture (EDR live response, AWS SSM) or hibernate and memory-capture features where available.</li></ul>
+<pre><code>sudo ./avml /evidence/host42.mem                 # Linux memory image
+sha256sum /evidence/host42.mem &gt; /evidence/host42.mem.sha256</code></pre>
+<ul><li>Write output to <strong>external, clean, write-protected-after-capture media or a remote evidence server</strong>, not the suspect disk. Record tool, version, command, time (and clock offset), operator.</li><li>Capture <strong>live response artifacts</strong> too: <code>ps</code>, <code>netstat -anob</code>/<code>ss -tupan</code>, <code>lsof</code>, <code>who</code>, <code>last</code>, scheduled tasks, loaded kernel modules, DNS cache, environment variables, <code>Get-Process</code> and <code>Get-NetTCPConnection</code>, using trusted (statically linked) binaries from read-only media, because attackers may have replaced system tools.</li><li><strong>Analyse with Volatility 3</strong> (<code>windows.pslist</code>, <code>windows.pstree</code>, <code>windows.malfind</code> for injected code, <code>windows.netscan</code>, <code>windows.cmdline</code>, <code>windows.hashdump</code>, <code>linux.bash</code>, <code>linux.pslist</code>), Rekall, strings and YARA scans; extract keys and malware samples.</li></ul>
+<h4>Preserving disk and artifacts</h4>
+<ol start="1"><li><strong>Forensic imaging</strong>: bit-for-bit image of the disk (<code>dc3dd</code>, <code>dcfldd</code>, <code>FTK Imager</code>, <code>ewfacquire</code> in E01 format) using a <strong>hardware or software write blocker</strong> so the source is not altered. Take <strong>two copies</strong>: working and master.</li><li><strong>Hash</strong> source and image with <strong>SHA-256</strong> (and MD5 for legacy comparison); verify the match at acquisition and before analysis; re-verify later.</li><li>For encrypted drives (BitLocker, LUKS), capture keys from memory or recovery key before power off; logical acquisition if full images are impractical (large servers, cloud): targeted collection of logs, registry hives, event logs (<code>.evtx</code>), prefetch, <code>$MFT</code>, USN journal, browser data, shell histories, <code>/var/log</code>, <code>auth.log</code>, cron, SSH keys, systemd units, web server logs.</li><li><strong>Cloud</strong>: snapshot volumes, preserve CloudTrail, VPC Flow Logs, GuardDuty, S3 access logs, and Kubernetes audit logs to a separate <strong>forensics account with object lock</strong>; for containers, capture the container filesystem (<code>docker export</code>, <code>docker commit</code> or checkpoint with CRIU), logs, and the node&#39;s memory; do not delete the compromised instance until evidence is secured (<strong>tag and isolate</strong> with a restrictive security group).</li><li><strong>Mobile and network</strong>: logical or physical extraction tools (Cellebrite, Magnet AXIOM), packet captures (full-packet capture, Zeek logs, NetFlow).</li></ol>
+<h4>Analysis</h4>
+<p>Build a <strong>timeline</strong> (Plaso/log2timeline, Timesketch, KAPE and Eric Zimmerman tools, Velociraptor) correlating file system times, event logs, registry, browser history, and logs; look for persistence (Run keys, services, cron, startup), initial access, lateral movement, credential theft, data staging and exfiltration; identify <strong>indicators of compromise</strong> and map to ATT&amp;CK; examine deleted files (file carving: Scalpel, PhotoRec), anti-forensics (timestomping, log clearing), and malware (static and dynamic analysis in a sandbox).</p>
+<h4>Chain of custody and reporting</h4>
+<p>Record for each item: description, serial, hash, <strong>who collected it, when and where</strong>, every transfer (name, date, purpose), storage conditions (sealed evidence bags, locked storage, access logs). <strong>Hashes plus chain of custody</strong> support integrity claims in legal or HR proceedings. Keep working notes, screenshots, and commands. The final report distinguishes <strong>facts, analysis and opinion</strong>, covers scope and limitations, and recommends containment and eradication; coordinate with legal, HR, law enforcement and regulators (GDPR 72-hour breach notification).</p>
+<h4>Pitfalls</h4>
+<p>Rebooting or running tools from the compromised disk, no hashes, analysing the original rather than a copy, ignoring cloud log retention windows (logs expire), overwriting evidence by installing tools, and breaking chain of custody.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is the order of volatility important and what should be captured before powering a compromised host off?</li><li>How do you collect memory and disk evidence from cloud instances and containers?</li><li>How do hashing and chain of custody make evidence admissible and verifiable?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-94">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-94%3A+What+is+digital+forensics+and+how+do+you+preserve+volatile+memory%E2%80%A6&amp;question-id=sec-94&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+Forensics%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-94.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

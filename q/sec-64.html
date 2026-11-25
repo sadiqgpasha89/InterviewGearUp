@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do Subresource Integrity (SRI) hashes prevent compromised third-party CDNs from injecting malware? | InterviewGearUp</title>
+<meta name="description" content="Subresource Integrity lets a page pin a script or stylesheet to an expected cryptographic hash through the integrity attribute. The browser downloads the…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-64.html">
+<meta property="og:title" content="How do Subresource Integrity (SRI) hashes prevent compromised third-party CDNs from injecting malware? | InterviewGearUp">
+<meta property="og:description" content="Subresource Integrity lets a page pin a script or stylesheet to an expected cryptographic hash through the integrity attribute. The browser downloads the…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-64.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do Subresource Integrity (SRI) hashes prevent compromised third-party CDNs from injecting malware?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 2 (Mid-level) · AppSec · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Subresource Integrity lets a page pin a script or stylesheet to an expected cryptographic hash through the integrity attribute. The browser downloads the resource, computes its SHA-256/384/512 digest and refuses to execute it if it differs, so a compromised or tampered CDN cannot silently inject malicious code. It needs CORS headers and does not protect against changes you approve.</p></div>
+<h4>Explained in depth</h4>
+<h4>The risk SRI addresses</h4>
+<p>Pages often load JavaScript and CSS from <strong>third-party CDNs</strong> (jQuery, fonts, analytics, widgets). If that CDN, its account, or the library&#39;s host is compromised (Magecart-style skimmers, <strong>polyfill.io</strong> domain takeover in 2024, event-stream), attacker code runs with full privileges <strong>in your origin</strong>: it can read form fields, steal tokens and credit cards, and modify the page. Traditional TLS only protects transport, not the correctness of the content the third party serves.</p>
+<h4>How SRI works</h4>
+<ol start="1"><li>At build time you compute a <strong>cryptographic hash</strong> of the exact file and put it in the <code>integrity</code> attribute:</li></ol>
+<pre><code>&lt;script src=&quot;https://cdn.example.com/lib/chart-4.4.1.min.js&quot;
+        integrity=&quot;sha384-oqVuAfXRKap7fdgcCY5uykM6+R9GqQ8K/uxy9rx7HNQlGYl1kPzQho1wx4JwY8wC&quot;
+        crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
+&lt;link rel=&quot;stylesheet&quot; href=&quot;https://cdn.example.com/css/theme-2.1.0.min.css&quot;
+      integrity=&quot;sha384-...&quot; crossorigin=&quot;anonymous&quot;&gt;</code></pre>
+<ol start="2"><li>The browser fetches the resource, computes the digest (SHA-256, SHA-384 or SHA-512; multiple hashes allowed, the strongest supported is used) and <strong>compares it with the attribute</strong>.</li><li>If it <strong>matches</strong>, the resource runs. If it <strong>does not</strong>, the browser blocks it and logs a console error (network error), so the attacker&#39;s modified file never executes.</li></ol>
+<p>Generate hashes with <code>openssl dgst -sha384 -binary file.js | openssl base64 -A</code>, <code>srihash.org</code>, or build plugins (<code>webpack-subresource-integrity</code>, <code>vite-plugin-sri</code>, Next.js <code>experimental.sri</code>, Rails <code>javascript_include_tag integrity: true</code>).</p>
+<h4>Requirements and limitations</h4>
+<ul><li><strong>CORS</strong>: for cross-origin resources the <code>crossorigin</code> attribute is needed and the server must send <code>Access-Control-Allow-Origin</code> (or <code>*</code>); otherwise the browser cannot read the bytes to hash and the load fails. Same-origin files work without it.</li><li><strong>Exact bytes</strong>: any change, even whitespace, minification variant, compression differences handled transparently (hash covers the decoded content), or a CDN transforming the file (auto-minify, injected banners, Cloudflare Rocket Loader, Brotli is fine) breaks the hash. Disable CDN optimisations on SRI resources.</li><li><strong>Pin versions</strong>: use immutable versioned URLs (<code>chart-4.4.1.min.js</code>), not <code>latest</code> or unversioned URLs that legitimately change; otherwise updates cause outages (and the page breaks).</li><li><strong>Dynamic scripts</strong>: services that serve personalised or frequently updated JavaScript (tag managers, analytics snippets, ad scripts, chat widgets) <strong>cannot use SRI</strong> because the content changes by design; use isolation instead (sandboxed iframes, server-side tagging, self-hosting a vetted copy, strict CSP, monitoring).</li><li>SRI protects against <strong>tampering</strong>, not against a malicious but unchanged original, and not against code you intentionally update without review.</li><li>Supported by all modern browsers; for <code>import()</code> and module scripts, SRI applies to static module scripts and <code>&lt;link rel=modulepreload&gt;</code>; import maps support integrity metadata in newer specifications. Browsers ignore the attribute where unsupported (fail-open for old browsers).</li></ul>
+<h4>Operational practices</h4>
+<ol start="1"><li><strong>Self-host and vendor</strong> critical dependencies (copy into your build artefacts) when possible, then SRI is less needed; hashes are generated by the build.</li><li>Automate hash generation and verification in CI; fail the build if a hash changes without a version bump; use <strong>dependency pinning and lockfiles</strong>, provenance (<code>npm audit signatures</code>, Sigstore) and review of upgrades.</li><li>Combine with <strong>CSP</strong> (<code>script-src</code> with nonces or hashes, <code>require-sri-for</code> was an experimental directive and was removed; instead enforce SRI by policy and code review, or use Trusted Types and reporting), plus <strong>monitoring</strong> with Report-Only and tools that watch third-party script changes (Feroot, Jscrambler, Source Defense, Content-Security-Policy reports, Reflectiz) and PCI DSS 4.0 requirements 6.4.3 and 11.6.1 (inventory, authorise, assure integrity of all payment-page scripts, and detect tampering).</li><li><strong>Fallbacks</strong>: provide a local fallback if the CDN script fails (<code>window.jQuery || document.write(...)</code> patterns are discouraged; prefer build-time bundling).</li><li>Treat failures as signals: alert on SRI violations (via CSP reports or RUM error telemetry) since they may indicate compromise or a deployment mismatch.</li></ol>
+<h4>Example scenario</h4>
+<p>A widely used CDN library is replaced with a skimmer version. Pages without SRI execute it and steal payment data. Pages with SRI refuse the modified file, showing a blocked script error while the legitimate site remains safe, and monitoring pages on-call.</p>
+<h4>Pitfalls</h4>
+<p>Using SRI with unpinned URLs, forgetting <code>crossorigin</code>, enabling CDN auto-minification, applying SRI to dynamic vendor scripts (permanent breakage), assuming SRI replaces CSP and vendor review, and not monitoring failures.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why does SRI require the crossorigin attribute and CORS headers for cross-origin resources?</li><li>What operational problem occurs when a third-party script legitimately changes and how do you handle it?</li><li>How does SRI complement CSP require-sri-for or version pinning in defending against supply chain attacks like polyfill.io?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-64">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-64%3A+How+do+Subresource+Integrity+%28SRI%29+hashes+prevent+compromised%E2%80%A6&amp;question-id=sec-64&amp;context=Security+engineer%2C+Gear+2%2C+topic%3A+AppSec%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-64.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

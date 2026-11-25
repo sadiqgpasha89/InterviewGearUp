@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare database Encryption at Rest (TDE), Encryption in Transit (TLS), and Application-Level Field Encryption. | InterviewGearUp</title>
+<meta name="description" content="Encryption at rest such as TDE protects database files, backups and disks from physical or storage theft but not from authenticated queries. TLS protects…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-81.html">
+<meta property="og:title" content="Compare database Encryption at Rest (TDE), Encryption in Transit (TLS), and Application-Level Field Encryption. | InterviewGearUp">
+<meta property="og:description" content="Encryption at rest such as TDE protects database files, backups and disks from physical or storage theft but not from authenticated queries. TLS protects…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-81.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare database Encryption at Rest (TDE), Encryption in Transit (TLS), and Application-Level Field Encryption.</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 2 (Mid-level) · Data · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Encryption at rest such as TDE protects database files, backups and disks from physical or storage theft but not from authenticated queries. TLS protects data moving between client and database from sniffing and tampering. Application-level field encryption protects selected columns even from DBAs and database compromise, at the cost of searchability and complexity. Use them in layers.</p></div>
+<h4>Explained in depth</h4>
+<h4>Three layers, three threat models</h4>
+<div class="md-table"><table><thead><tr><th></th><th><strong>At rest (TDE / disk)</strong></th><th><strong>In transit (TLS)</strong></th><th><strong>Application-level field encryption</strong></th></tr></thead><tbody><tr><td>Where encrypted</td><td>storage layer: data files, logs, backups, volumes</td><td>network between client and server (and replication links)</td><td>in the application or client driver before data reaches the database</td></tr><tr><td>Protects against</td><td>stolen disks, snapshots, backups, decommissioned hardware, cloud storage exposure</td><td>eavesdropping, MITM, tampering on the wire</td><td>DB admins, SQL injection reading plaintext, compromised DB server, cloud provider operators, leaked dumps</td></tr><tr><td>Does not protect</td><td>any authenticated SQL access, SQL injection, compromised DB credentials, memory scraping</td><td>data after it reaches the server or at the endpoints</td><td>application compromise (app holds keys), metadata, query patterns</td></tr><tr><td>Transparent to apps</td><td>yes</td><td>mostly (certificate setup)</td><td>no, code changes needed</td></tr><tr><td>Key holder</td><td>DB server or KMS</td><td>certificate authority and servers</td><td>application or client with KMS access</td></tr><tr><td>Query impact</td><td>none</td><td>none</td><td>limits filtering, sorting, joins on encrypted fields</td></tr></tbody></table></div>
+<h4>Encryption at rest</h4>
+<ul><li><strong>Transparent Data Encryption (TDE)</strong>: the DB engine encrypts data pages and logs on write and decrypts on read (SQL Server TDE, Oracle TDE, MySQL InnoDB tablespace encryption, PostgreSQL via extensions/Cybertec or volume-level, MongoDB WiredTiger encryption, Cloud SQL and RDS storage encryption). Keys form a hierarchy: <strong>data encryption key (DEK)</strong> protected by a <strong>master key</strong> in an HSM or KMS (AWS KMS, Azure Key Vault, GCP KMS), with rotation of the master key without re-encrypting all data.</li><li><strong>Disk or volume encryption</strong> (LUKS, BitLocker, EBS and persistent disk encryption) and <strong>object storage</strong> server-side encryption (SSE-S3, SSE-KMS, CMEK).</li><li>Includes <strong>backups, snapshots, replicas, temporary files and swap</strong>; ensure keys are managed separately from data.</li><li>Value: compliance baseline (PCI-DSS, HIPAA, GDPR), physical theft and cloud misconfiguration protection. A person who gets a <strong>logical database connection sees plaintext</strong>.</li></ul>
+<h4>Encryption in transit</h4>
+<ul><li>Enforce <strong>TLS 1.2 or 1.3</strong> for client connections and replication; reject unencrypted (<code>require_secure_transport=ON</code> MySQL, <code>ssl=on</code> and <code>hostssl</code> in <code>pg_hba.conf</code>, <code>rds.force_ssl=1</code>, SQL Server <code>Force Encryption</code>), validate server certificates (<code>sslmode=verify-full</code>), use private CAs, rotate certificates, mutual TLS for service authentication, private networking (VPC endpoints, no public IPs) in addition to TLS.</li><li>Protects against sniffing and MITM on the network, including inside cloud networks and between regions.</li></ul>
+<h4>Application-level (field or column-level) encryption</h4>
+<p>The application (or the database driver on the client side) encrypts sensitive attributes such as national ID, card numbers, health notes <strong>before</strong> sending them to the database, so the database stores only ciphertext.</p>
+<pre><code># envelope encryption with AWS Encryption SDK / KMS (sketch)
+ciphertext, header = client.encrypt(source=ssn.encode(), key_provider=kms_key_provider,
+                                    encryption_context={&quot;table&quot;: &quot;customers&quot;, &quot;field&quot;: &quot;ssn&quot;, &quot;tenant&quot;: tenant_id})
+db.execute(&quot;INSERT INTO customers(id, ssn_enc) VALUES (%s, %s)&quot;, (id, ciphertext))</code></pre>
+<p>Design points:</p>
+<ul><li><strong>AEAD algorithms</strong> (AES-256-GCM) with random nonces; bind <strong>encryption context</strong> (tenant, column, record ID) to detect ciphertext swapping.</li><li><strong>Envelope encryption</strong> with per-tenant or per-record data keys wrapped by KMS keys; IAM controls who can call decrypt; audit every decryption (CloudTrail).</li><li><strong>Searchability trade-offs</strong>:</li><li>Randomised encryption is most secure but <strong>no equality search</strong>.</li><li><strong>Deterministic encryption</strong> (same plaintext gives same ciphertext) enables equality lookups and joins but leaks frequency and equality patterns.</li><li><strong>Blind index</strong>: store an HMAC of the normalised value in a separate column for equality search (truncated to limit leakage), while the actual value stays randomised ciphertext.</li><li><strong>Tokenisation</strong> replaces values with random tokens held in a vault service.</li><li><strong>Searchable and queryable encryption</strong> features (MongoDB Queryable Encryption, Always Encrypted with secure enclaves in SQL Server, ProtectDB, Cipherstash) allow limited queries.</li><li>Order-preserving and homomorphic schemes have significant leakage or performance costs; use sparingly.</li><li><strong>Separation of duties</strong>: DBAs manage storage but cannot read protected fields; application services get decrypt permission only for needed fields; keys stored in KMS or HSM, not in the database or application config. <strong>Always Encrypted (SQL Server)</strong>, <strong>MongoDB CSFLE</strong>, <strong>Google Tink</strong>, <strong>libsodium</strong>, <strong>AWS DynamoDB Encryption Client</strong> and Spring Vault Transit are common options.</li><li><strong>Data lifecycle</strong>: key rotation and re-encryption (envelope rewrap), crypto-shredding (delete the key to destroy data per tenant for erasure requests), backup and restore consistency, data migration, and logging hygiene (no plaintext in logs).</li><li><strong>Performance and complexity</strong>: CPU cost, larger storage, index and query limitations, analytics and reporting need decryption pipelines.</li></ul>
+<h4>Choosing layers</h4>
+<p>Use <strong>all three for sensitive data</strong>: TLS everywhere, TDE or volume encryption as baseline, and field-level encryption for highest-risk attributes (card data, secrets, health, government IDs) or multi-tenant isolation. Combine with access control, least privilege, masking in non-production, auditing, and tokenisation to reduce scope (PCI).</p>
+<h4>Pitfalls</h4>
+<p>Believing TDE stops SQL injection, storing keys beside data, deterministic encryption of low-entropy fields enabling dictionary attacks, rolling custom crypto, unencrypted backups and replicas, and <code>sslmode=require</code> without certificate verification.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What threats does TDE not protect against and why do DBAs still see plaintext through SQL?</li><li>How can you search or index encrypted fields using deterministic encryption, blind indexes or tokenisation?</li><li>How does client-side field-level encryption such as MongoDB CSFLE or AWS Encryption SDK manage keys and separation of duties?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-81">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-81%3A+Compare+database+Encryption+at+Rest+%28TDE%29%2C+Encryption+in+Transit%E2%80%A6&amp;question-id=sec-81&amp;context=Security+engineer%2C+Gear+2%2C+topic%3A+Data%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-81.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

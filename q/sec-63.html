@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do you design a strict Content Security Policy (CSP) without allowing `unsafe-inline` scripts? | InterviewGearUp</title>
+<meta name="description" content="Design a strict CSP with nonces or hashes instead of unsafe-inline: generate a fresh random nonce per response and add it to script tags, use…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-63.html">
+<meta property="og:title" content="How do you design a strict Content Security Policy (CSP) without allowing `unsafe-inline` scripts? | InterviewGearUp">
+<meta property="og:description" content="Design a strict CSP with nonces or hashes instead of unsafe-inline: generate a fresh random nonce per response and add it to script tags, use…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-63.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do you design a strict Content Security Policy (CSP) without allowing `unsafe-inline` scripts?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 2 (Mid-level) · AppSec · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Design a strict CSP with nonces or hashes instead of unsafe-inline: generate a fresh random nonce per response and add it to script tags, use strict-dynamic so trusted scripts can load others, set object-src none, base-uri none and frame-ancestors, move inline handlers into external code, and roll out via Content-Security-Policy-Report-Only with reporting before enforcing.</p></div>
+<h4>Explained in depth</h4>
+<h4>What CSP does</h4>
+<p><strong>Content Security Policy</strong> is a response header that tells the browser which sources of scripts, styles, images, frames and connections are allowed. Its primary job is <strong>defence in depth against XSS</strong>: even if an attacker injects markup, the browser refuses to run unauthorised script. It is not a replacement for output encoding and input validation.</p>
+<h4>Why <code>unsafe-inline</code> defeats the purpose</h4>
+<p>Allowing <code>&#39;unsafe-inline&#39;</code> in <code>script-src</code> lets any injected <code>&lt;script&gt;</code> or <code>onclick=</code> attribute execute, which is exactly what XSS needs. Likewise allow-lists of hostnames (<code>script-src cdn.example.com</code>) are fragile: CDNs host JSONP endpoints and old libraries (AngularJS) that attackers can abuse to run arbitrary code (Google&#39;s research found most allow-list CSPs bypassable).</p>
+<h4>Strict CSP (nonce-based)</h4>
+<pre><code>Content-Security-Policy:
+  script-src &#39;nonce-r4nd0m128bit&#39; &#39;strict-dynamic&#39; https: &#39;unsafe-inline&#39;;
+  object-src &#39;none&#39;;
+  base-uri &#39;none&#39;;
+  frame-ancestors &#39;self&#39;;
+  form-action &#39;self&#39;;
+  upgrade-insecure-requests;
+  report-to csp-endpoint</code></pre>
+<p>How it works:</p>
+<ul><li>The server generates a <strong>cryptographically random nonce per response</strong> (at least 128 bits, base64) and puts it in the header and on every legitimate script tag: <code>&lt;script nonce=&quot;r4nd0m128bit&quot; src=&quot;/app.js&quot;&gt;&lt;/script&gt;</code>. Injected scripts lack the nonce and are blocked. A <strong>static or reused nonce is useless</strong>.</li><li><code>&#39;strict-dynamic&#39;</code> means scripts that a nonce-bearing script loads dynamically (<code>document.createElement(&#39;script&#39;)</code>) are trusted, so you do not need host allow-lists; in browsers that support it, host allow-lists and <code>&#39;unsafe-inline&#39;</code> are <strong>ignored</strong>.</li><li><code>https:</code> and <code>&#39;unsafe-inline&#39;</code> remain as <strong>fallbacks</strong> for old browsers without nonce or strict-dynamic support; modern browsers ignore them when a nonce is present.</li><li><strong>Hash-based</strong> alternative: <code>script-src &#39;sha256-BASE64HASH&#39;</code> for a static inline script (good for fully static sites); add <code>&#39;unsafe-hashes&#39;</code> for event handlers only when unavoidable.</li></ul>
+<h4>Other directives that matter</h4>
+<ul><li><code>object-src &#39;none&#39;</code> (blocks plugins), <code>base-uri &#39;none&#39;</code> or <code>&#39;self&#39;</code> (stops <code>&lt;base&gt;</code> hijacking relative script URLs), <code>frame-ancestors</code> (clickjacking protection, replaces X-Frame-Options), <code>form-action</code> (limits form posts), <code>default-src &#39;self&#39;</code> as a baseline, <code>connect-src</code> (limits XHR, fetch, WebSocket destinations to reduce exfiltration), <code>img-src</code>, <code>font-src</code>, <code>style-src</code> (prefer nonces or hashes for styles; <code>unsafe-inline</code> for styles is lower risk but still allows CSS injection data exfiltration), <code>require-trusted-types-for &#39;script&#39;</code> with <strong>Trusted Types</strong> to prevent DOM XSS sinks (<code>innerHTML</code>, <code>eval</code>).</li><li>Avoid <code>&#39;unsafe-eval&#39;</code> (requires refactoring templating libraries and <code>eval</code>-style code).</li></ul>
+<h4>Implementation</h4>
+<ol start="1"><li><strong>Server-side rendering</strong>: middleware generates the nonce and injects it into templates (helmet in Express, Django CSP middleware, Spring Security, ASP.NET <code>NonceTagHelper</code>). For SPAs, build tooling can add nonce placeholders (Next.js middleware, Angular <code>ngCspNonce</code>, webpack <code>__webpack_nonce__</code>). For static hosting use hashes (Strict-CSP tooling, CSP Evaluator, <code>csp-html-webpack-plugin</code>).</li><li><strong>Remove inline JavaScript</strong>: move <code>onclick</code> handlers to <code>addEventListener</code>, remove <code>javascript:</code> URLs, externalise inline scripts or give them nonces, replace <code>eval</code> and <code>new Function</code>, avoid inline <code>style</code> where practical.</li><li><strong>Third-party scripts</strong> (analytics, tag managers, widgets): load through nonce-bearing loader under <code>strict-dynamic</code>, use <strong>Subresource Integrity</strong> where possible, and consider sandboxed iframes; tag managers can reintroduce risk, so govern who can publish tags.</li><li><strong>Report-Only rollout</strong>: first deploy <code>Content-Security-Policy-Report-Only</code> with <code>report-to</code> (Reporting API) or <code>report-uri</code> to a collector (Sentry, Report URI, custom), analyse violations, fix legitimate breakages, filter noise from browser extensions, then switch to enforcing. Keep a <strong>report-only policy running alongside</strong> the enforced one to test tightening changes.</li><li><strong>Test</strong>: Google <strong>CSP Evaluator</strong>, Lighthouse and <code>csp-auditor</code>, automated browser tests checking console violations, security scanners; add regression tests for headers.</li><li><strong>Operate</strong>: version policies, monitor violation reports (spikes may signal attacks or deployment errors), review exceptions, and educate developers (new inline scripts need nonces).</li></ol>
+<h4>Pitfalls</h4>
+<p>Static nonce values, caching responses with a nonce at a CDN (every user gets the same nonce), adding <code>*</code> or <code>data:</code> to script-src, <code>unsafe-inline</code> or <code>unsafe-eval</code> &quot;temporarily&quot;, relying on host allow-lists, forgetting <code>base-uri</code> and <code>object-src</code>, and enforcing without report-only testing.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the difference between nonce-based, hash-based and allow-list based CSP and why are allow-lists weak?</li><li>How does strict-dynamic interact with nonces for third-party and dynamically injected scripts?</li><li>How do you deploy and monitor CSP safely on a large legacy application?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-63">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-63%3A+How+do+you+design+a+strict+Content+Security+Policy+%28CSP%29+without%E2%80%A6&amp;question-id=sec-63&amp;context=Security+engineer%2C+Gear+2%2C+topic%3A+AppSec%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-63.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

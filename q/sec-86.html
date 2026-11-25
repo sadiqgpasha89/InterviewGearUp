@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What are timing attacks in cryptographic operations, and how do constant-time string comparisons prevent them? | InterviewGearUp</title>
+<meta name="description" content="Timing attacks infer secrets from how long operations take, such as a string comparison that returns at the first mismatching byte or modular…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-86.html">
+<meta property="og:title" content="What are timing attacks in cryptographic operations, and how do constant-time string comparisons prevent them? | InterviewGearUp">
+<meta property="og:description" content="Timing attacks infer secrets from how long operations take, such as a string comparison that returns at the first mismatching byte or modular…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-86.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What are timing attacks in cryptographic operations, and how do constant-time string comparisons prevent them?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · Cryptography · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Timing attacks infer secrets from how long operations take, such as a string comparison that returns at the first mismatching byte or modular exponentiation whose duration depends on key bits. Constant-time code performs the same operations regardless of secret values, so use constant-time comparison for MACs and tokens, avoid secret-dependent branches and table lookups, and use vetted crypto libraries.</p></div>
+<h4>Explained in depth</h4>
+<h4>The idea</h4>
+<p>A <strong>side-channel attack</strong> exploits information leaked by the *implementation* (time, cache behaviour, power, electromagnetic emissions, errors), not weaknesses in the algorithm. A <strong>timing attack</strong> measures how long operations take, which may depend on secret data.</p>
+<h4>Classic example: early-exit comparison</h4>
+<pre><code>def insecure_equal(a: bytes, b: bytes) -&gt; bool:
+    if len(a) != len(b): return False
+    for x, y in zip(a, b):
+        if x != y: return False         # returns as soon as a byte differs: time reveals the length of the matching prefix
+    return True</code></pre>
+<p>An API verifies a signature, session token, or HMAC with <code>if computed == provided</code>. The attacker sends guesses and measures response times: a guess whose <strong>first byte is right</strong> takes slightly longer than one with a wrong first byte. By trying all 256 values for byte 1, picking the slowest, then byte 2, and so on, they recover the secret <strong>one byte at a time</strong> (256 x length attempts instead of 256^length). Over a network, noise is overcome by <strong>many repeated samples and statistics</strong> (Crosby, Wallach and Riedi showed LAN differences of 20 microseconds, and the Lucky 13 and Keyczar HMAC attacks were real). Local or co-resident attackers (shared cloud hosts) measure far more precisely.</p>
+<h4>Other timing leaks</h4>
+<ul><li><strong>Square-and-multiply</strong> modular exponentiation in RSA: extra multiplication when a key bit is 1 reveals bits (Kocher 1996). Mitigated by constant-time <strong>Montgomery ladder</strong> and <strong>RSA blinding</strong> (randomising inputs).</li><li><strong>Padding oracle</strong> and error-message or timing differences distinguishing &quot;bad padding&quot; from &quot;bad MAC&quot; (Lucky 13, Bleichenbacher/ROBOT, Vaudenay). Mitigate with AEAD modes (AES-GCM, ChaCha20-Poly1305), uniform errors and constant-time processing.</li><li><strong>Secret-dependent branches and memory access</strong>: table-based AES S-boxes leak through <strong>cache timing</strong> (Bernstein 2005, Prime+Probe, Flush+Reload), mitigated with AES-NI hardware instructions, bit-sliced implementations or ChaCha20 (no tables).</li><li><strong>Variable-time arithmetic</strong> in elliptic curve scalar multiplication, <code>memcmp</code>, string operations, big integer division, early exits in password and token verification, database lookups and user enumeration (login response time differs for existing vs non-existing users, including slow password hashing only for valid users).</li><li><strong>Microarchitectural attacks</strong>: Spectre and Meltdown, speculative execution, branch predictor, Hertzbleed (frequency scaling), <code>DIT</code> modes in CPUs.</li></ul>
+<h4>Constant-time techniques and fixes</h4>
+<ol start="1"><li><strong>Use constant-time comparison primitives</strong> for all secret comparisons (MACs, tokens, password hashes, API keys):</li></ol>
+<pre><code>import hmac; hmac.compare_digest(a, b)               # Python</code></pre>
+<pre><code>crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b))   // Node.js (lengths must match; compare hashes if lengths differ)</code></pre>
+<pre><code>subtle.ConstantTimeCompare(a, b) == 1                 // Go</code></pre>
+<pre><code>MessageDigest.isEqual(a, b)                           // Java (constant time since Java 6u17)</code></pre>
+<pre><code>CRYPTO_memcmp(a, b, n)  /  sodium_memcmp(a, b, n)    // OpenSSL / libsodium; never memcmp/strcmp</code></pre>
+<p>   A common pattern for variable-length inputs: compare <strong>HMACs of both values</strong> with a random per-process key so length does not leak.</p>
+<ol start="2"><li><strong>Run the full computation regardless of secret values</strong>: no secret-dependent <code>if</code>, loops or early <code>return</code>; use bitwise masks and conditional moves instead of branches (<code>mask = -(uint32_t)(x == y)</code>), constant-length padding, fixed iteration counts, and uniform error responses.</li><li><strong>Avoid secret-dependent memory indexing</strong> (table lookups), use hardware instructions (AES-NI, PCLMULQDQ), or constant-time table scans.</li><li><strong>Blinding and randomisation</strong>: randomise inputs (RSA blinding, ECC scalar blinding) and add <strong>independent noise or jitter</strong> only as a supplementary measure (not a fix; averaging defeats it).</li><li><strong>Rate limiting, lockouts and uniform responses</strong> raise the cost of remote measurement; always return identical error responses and timing for &quot;user not found&quot; vs &quot;wrong password&quot; (run a dummy hash).</li><li><strong>Use well-reviewed libraries</strong>: libsodium, BoringSSL, OpenSSL, Go <code>crypto</code>, Rust <code>subtle</code> crate, Google Tink, rather than hand-written crypto; keep them updated.</li><li><strong>Verify constant-time behaviour</strong>: tools such as <strong>dudect</strong> (statistical timing tests), <strong>ctgrind</strong> and Valgrind-based checks, <strong>Timecop</strong>, <strong>ct-verif</strong>, binary analysis; review compiler output because <strong>compilers may optimise away constant-time constructs</strong> (<code>volatile</code>, barriers, or assembly used by libraries); test on target CPUs.</li><li><strong>Hardware and OS</strong>: apply microcode and kernel mitigations for speculative-execution attacks, isolate sensitive workloads (dedicated hosts, confidential computing), and disable SMT where appropriate.</li></ol>
+<h4>Practical guidance for developers</h4>
+<p>Never implement your own crypto; never compare secrets with <code>==</code>; compare <strong>digests</strong> when lengths vary; keep error paths uniform; design APIs so secrets are not compared in application logic; and treat user enumeration timing as a vulnerability too.</p>
+<h4>Pitfalls</h4>
+<p>Believing network jitter makes timing attacks impractical, adding random sleeps as the only defence, using constant-time compare but leaking length, relying on language <code>equals</code>, and assuming a compiler preserves constant-time source code.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How can a remote attacker measure nanosecond-level differences over a noisy network and recover an HMAC byte by byte?</li><li>Why can compilers and CPUs undo naive constant-time code, and how do libraries verify constant-time properties?</li><li>What other side channels such as cache attacks, Spectre or power analysis threaten cryptographic implementations?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-86">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-86%3A+What+are+timing+attacks+in+cryptographic+operations%2C+and+how+do%E2%80%A6&amp;question-id=sec-86&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+Cryptography%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-86.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

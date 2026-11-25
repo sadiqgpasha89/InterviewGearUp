@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain HashiCorp Vault architecture: Storage backends, dynamic secrets, and leasing/revocation lifecycles. | InterviewGearUp</title>
+<meta name="description" content="Vault encrypts secrets behind a barrier: a storage backend such as integrated Raft holds only ciphertext, and the master key is protected by Shamir…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-50.html">
+<meta property="og:title" content="Explain HashiCorp Vault architecture: Storage backends, dynamic secrets, and leasing/revocation lifecycles. | InterviewGearUp">
+<meta property="og:description" content="Vault encrypts secrets behind a barrier: a storage backend such as integrated Raft holds only ciphertext, and the master key is protected by Shamir…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-50.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain HashiCorp Vault architecture: Storage backends, dynamic secrets, and leasing/revocation lifecycles.</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · Secrets · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Vault encrypts secrets behind a barrier: a storage backend such as integrated Raft holds only ciphertext, and the master key is protected by Shamir shares or auto-unseal through a KMS. Clients authenticate through auth methods, receive tokens bound to policies, and read static secrets or request dynamic secrets generated on demand with leases that Vault can renew or revoke.</p></div>
+<h4>Explained in depth</h4>
+<h4>Architecture overview</h4>
+<p><strong>HashiCorp Vault</strong> is an identity-based secrets and encryption service. Main components:</p>
+<ul><li><strong>Core</strong>: handles requests, policy enforcement, audit and the <strong>barrier</strong> (all data encrypted with an encryption key before it reaches storage).</li><li><strong>Storage backend</strong>: persistent but untrusted; stores <strong>only ciphertext</strong>. Options: <strong>Integrated Storage (Raft)</strong> (recommended: HA with leader election, built in), Consul, DynamoDB, cloud storage, in-memory for development.</li><li><strong>Secrets engines</strong>: KV (v1 and v2 with versions), <strong>Database</strong>, AWS, GCP, Azure, PKI, SSH, <strong>Transit</strong> (encryption as a service), TOTP, Kubernetes, LDAP.</li><li><strong>Auth methods</strong>: AppRole, Kubernetes, AWS IAM and EC2, GCP, Azure, OIDC/JWT, LDAP, GitHub, userpass, TLS certificates. Authentication results in a <strong>token</strong> with attached <strong>policies</strong>.</li><li><strong>Policies</strong>: path-based ACLs (<code>path &quot;secret/data/app/*&quot; { capabilities = [&quot;read&quot;] }</code>), default deny.</li><li><strong>Audit devices</strong>: log every request and response (secrets HMACed); Vault refuses to serve if no audit device can log.</li><li><strong>Namespaces</strong> (Enterprise) for multi-tenancy, replication and sentinel policies.</li></ul>
+<h4>Sealing, unsealing and the key hierarchy</h4>
+<p>Vault starts <strong>sealed</strong>: it can reach storage but cannot decrypt.</p>
+<ul><li>Data is encrypted with the <strong>encryption key (keyring)</strong>, which is encrypted by the <strong>root key (master key)</strong>. The root key is protected by an <strong>unseal key</strong>.</li><li><strong>Shamir secret sharing</strong> splits the unseal key into N shares (for example 5) needing a threshold (for example 3) to unseal, so no single person controls it.</li><li><strong>Auto-unseal</strong> delegates protection of the root key to an external KMS or HSM (AWS KMS, Azure Key Vault, GCP KMS, Transit, PKCS#11), so nodes restart without manual shares, and <strong>recovery keys</strong> are used for sensitive operations. Seal quickly in an emergency (<code>vault operator seal</code>) to stop all secret access.</li></ul>
+<h4>Static vs dynamic secrets</h4>
+<ul><li><strong>Static</strong> (KV): stored values, versioned, subject to rotation and audit, but long-lived and shared.</li><li><strong>Dynamic secrets</strong>: generated <strong>on demand</strong> when requested, unique per client, short-lived, automatically revoked.</li></ul>
+<pre><code>vault secrets enable database
+vault write database/config/orders plugin_name=postgresql-database-plugin \
+    connection_url=&quot;postgresql://{{username}}:{{password}}@db:5432/orders&quot; allowed_roles=&quot;app&quot; username=vault password=...
+vault write database/roles/app db_name=orders default_ttl=1h max_ttl=24h \
+    creation_statements=&quot;CREATE ROLE \&quot;{{name}}\&quot; WITH LOGIN PASSWORD &#39;{{password}}&#39; VALID UNTIL &#39;{{expiration}}&#39;; GRANT SELECT ON ALL TABLES IN SCHEMA public TO \&quot;{{name}}\&quot;;&quot;
+vault read database/creds/app        # returns username, password, lease_id, lease_duration</code></pre>
+<p>Each application instance receives its own database user with a one-hour lease; on expiry or revocation Vault runs the revocation statements and drops the user. Benefits: no shared long-lived passwords, per-instance attribution in logs, automatic cleanup, minimal blast radius, rapid rotation. The same pattern applies to <strong>AWS STS credentials, GCP service account keys, SSH certificates and PKI certificates</strong> (short-lived).</p>
+<h4>Leases and revocation lifecycle</h4>
+<ul><li>Every dynamic secret and every token has a <strong>lease ID</strong> and a <strong>TTL</strong>. The client must <strong>renew</strong> before expiry (up to max TTL) or the secret is revoked automatically.</li><li><strong>Revocation</strong>: <code>vault lease revoke &lt;lease_id&gt;</code>, <strong>prefix revocation</strong> <code>vault lease revoke -prefix database/creds/app</code> (revoke all credentials for a role after a breach), and revoking a token revokes its child tokens and leases.</li><li>Tokens: service tokens, batch tokens, periodic tokens, root token (use only for bootstrap, then revoke), orphan tokens; use short TTLs and renew via <strong>Vault Agent</strong> or the <strong>Vault Secrets Operator / CSI provider</strong> which authenticates, templates secrets into files or environment, and renews automatically.</li><li><strong>Response wrapping</strong> (cubbyhole) delivers a secret once via a single-use wrapped token, used for secure introduction of AppRole SecretIDs.</li></ul>
+<h4>High availability and operations</h4>
+<ul><li>A Raft cluster of 3 or 5 nodes: one active leader, standbys forward requests; <strong>performance replication</strong> and <strong>disaster recovery replication</strong> (Enterprise); snapshots (<code>vault operator raft snapshot save</code>) and tested restores.</li><li>Network security: TLS everywhere, private network, listener limits, firewall; audit logs shipped to SIEM; <strong>monitoring</strong> (telemetry to Prometheus, alerts on seal status, leader changes, error rates and lease counts); capacity planning for lease volume.</li><li><strong>Transit engine</strong> offers encryption, decryption, signing, HMAC and key rotation without the application holding keys, with versioned keys and rewrapping.</li><li><strong>Policy as code and GitOps</strong>: manage mounts, auth methods and policies with Terraform; control root and sudo capabilities tightly.</li></ul>
+<h4>Security considerations</h4>
+<p>Protect unseal or recovery keys by splitting among custodians and storing offline; do not run Vault on shared hosts with other workloads; disable swap and core dumps (<code>mlock</code>); least-privilege policies; rotate the root token and enforce MFA (Enterprise) for sensitive paths; test failure modes (storage outage, KMS outage affecting auto-unseal, clock skew affecting leases).</p>
+<h4>Pitfalls</h4>
+<p>Using the root token day to day, long TTLs defeating dynamic secrets, applications that never renew leases, storing the unseal keys together, a single-node dev-mode server in production, and no tested disaster recovery.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What does sealing and unsealing mean and how does auto-unseal change the operational model?</li><li>How do dynamic database credentials limit the damage of a leaked secret compared with static passwords?</li><li>How do leases, renewals and revocation work, including revoking a whole prefix after a compromise?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-50">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-50%3A+Explain+HashiCorp+Vault+architecture%3A+Storage+backends%2C+dynamic%E2%80%A6&amp;question-id=sec-50&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+Secrets%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-50.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

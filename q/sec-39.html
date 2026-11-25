@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is Privileged Access Management (PAM) and how do Bastion Hosts secure administrative access? | InterviewGearUp</title>
+<meta name="description" content="Privileged Access Management controls, brokers, records and audits the use of powerful accounts through credential vaulting, session management,…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-39.html">
+<meta property="og:title" content="What is Privileged Access Management (PAM) and how do Bastion Hosts secure administrative access? | InterviewGearUp">
+<meta property="og:description" content="Privileged Access Management controls, brokers, records and audits the use of powerful accounts through credential vaulting, session management,…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-39.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is Privileged Access Management (PAM) and how do Bastion Hosts secure administrative access?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · IAM · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Privileged Access Management controls, brokers, records and audits the use of powerful accounts through credential vaulting, session management, just-in-time elevation and analytics. Bastion hosts are hardened jump servers that act as the single audited entry point to private networks, so admins never connect directly to production systems.</p></div>
+<h4>Explained in depth</h4>
+<h4>Why privileged access is special</h4>
+<p>Privileged accounts (domain admins, root, cloud admins, database owners, service accounts, API keys with write power) can change security controls, read all data and erase logs. Most major breaches involve <strong>privilege escalation or stolen privileged credentials</strong>. PAM reduces the risk with <strong>control, visibility and accountability</strong>.</p>
+<h4>PAM capabilities</h4>
+<ol start="1"><li><strong>Discovery and inventory</strong> of privileged accounts (human, service, application, cloud, SSH keys, API tokens) including hidden or orphaned ones.</li><li><strong>Credential vaulting and rotation</strong>: secrets stored in an encrypted vault; checked out for a session; <strong>rotated automatically</strong> after use or on a schedule; users never see or reuse the password (credential injection).</li><li><strong>Least privilege and JIT elevation</strong>: request, approve, time-box; remove standing admin; command filtering and <strong>sudo delegation</strong> (privilege elevation and delegation management, PEDM).</li><li><strong>Session brokering and recording</strong>: access through a gateway/proxy that records keystrokes, commands and video (SSH, RDP, database, Kubernetes), with live monitoring and the ability to terminate sessions; tamper-resistant storage.</li><li><strong>Strong authentication</strong>: MFA and device checks on each privileged session; integration with SSO and ITSM approval workflows.</li><li><strong>Analytics and alerting</strong>: behaviour baselines, anomalous commands, access outside windows, mass data export; forward to SIEM.</li><li><strong>Third-party and vendor access</strong>: scoped, time-limited, recorded access without VPN credentials.</li><li><strong>Secrets management for applications and DevOps</strong> (Vault, CyberArk Conjur), eliminating hard-coded passwords.</li></ol>
+<p>Products: CyberArk, BeyondTrust, Delinea (Thycotic), HashiCorp Vault and Boundary, Teleport, StrongDM, AWS Systems Manager Session Manager and IAM Identity Center, Azure PIM, GCP PAM.</p>
+<h4>Bastion hosts (jump servers)</h4>
+<p>A <strong>bastion</strong> is a hardened host on a public or management network that is the <strong>only path</strong> into private networks.</p>
+<pre><code>Admin -&gt; (MFA, SSH certificate) -&gt; Bastion in public subnet -&gt; private subnet instances (SG allows 22 only from bastion)</code></pre>
+<p>Design and hardening:</p>
+<ul><li>Security groups: bastion accepts SSH or RDP only from corporate IPs or via a zero trust proxy; private hosts accept admin ports <strong>only from the bastion</strong>.</li><li><strong>No password auth</strong>; SSH keys or <strong>short-lived SSH certificates</strong> from an SSH CA; MFA (PAM modules, Duo); restrict users and commands; disable agent forwarding risks (use <code>ProxyJump</code> instead of forwarding the agent: <code>ssh -J bastion target</code>).</li><li>Minimal OS and software, automatic patching, host intrusion detection, auditd and <code>session recording</code> (<code>tlog</code>, <code>script</code>), central log shipping to SIEM, immutable images rebuilt regularly, no data stored.</li><li>High availability (multiple bastions per zone) and <strong>auto-scaling groups</strong> started on demand; ephemeral bastions destroyed after use.</li><li>Network: private subnets for targets, no direct internet routes, egress restrictions, VPC flow logs.</li></ul>
+<h4>Modern alternatives to classic bastions</h4>
+<p>Public inbound ports are an exposure. <strong>Session-based access</strong> removes them:</p>
+<ul><li><strong>AWS Systems Manager Session Manager</strong> or EC2 Instance Connect Endpoint: no inbound ports, IAM-based authorisation, CloudTrail audit, session logs to S3 or CloudWatch.</li><li><strong>Google IAP TCP forwarding</strong>, <strong>Azure Bastion</strong>: managed, no public IP on targets.</li><li><strong>Teleport, StrongDM, Boundary</strong>: identity-aware proxies with short-lived certificates, per-session recording, role-based access to servers, databases and Kubernetes.</li><li><strong>Zero trust network access</strong> (ZTNA) applying device posture and continuous verification.</li></ul>
+<h4>Operational policies</h4>
+<p>Separate admin accounts from daily accounts; enforce <strong>break-glass</strong> accounts with monitoring; tier model (control plane, server, workstation) preventing credential exposure across tiers (privileged access workstations for domain admin); quarterly access reviews; log retention aligned with compliance (PCI: at least 1 year); periodic penetration tests of the PAM path itself; protect the vault with HSM, quorum and DR plans.</p>
+<h4>Metrics</h4>
+<p>Percentage of privileged accounts vaulted, standing admins count, average session duration, unmanaged service accounts, recorded session coverage, time to revoke leavers, and policy exceptions.</p>
+<h4>Pitfalls</h4>
+<p>Using a bastion as an unmonitored shared account, agent forwarding to untrusted hosts, leaving other paths (direct SSH, VPN) open, storing vault recovery keys carelessly, and treating PAM as only a tool rather than a process with ownership and reviews.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>How does modern session-based access such as Teleport or SSM Session Manager improve on classic bastions?</li><li>How do you handle credential vaulting and automatic rotation for shared privileged accounts?</li><li>How do you detect misuse of privileged sessions?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-39">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-39%3A+What+is+Privileged+Access+Management+%28PAM%29+and+how+do+Bastion+Hosts%E2%80%A6&amp;question-id=sec-39&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+IAM%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-39.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

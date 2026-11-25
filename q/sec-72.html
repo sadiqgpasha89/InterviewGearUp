@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Design a secure file upload architecture featuring antivirus scanning, MIME validation, and S3 isolation. | InterviewGearUp</title>
+<meta name="description" content="A secure upload design treats every file as hostile: authenticate and authorise the upload, enforce size and type limits, store files outside the web…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-72.html">
+<meta property="og:title" content="Design a secure file upload architecture featuring antivirus scanning, MIME validation, and S3 isolation. | InterviewGearUp">
+<meta property="og:description" content="A secure upload design treats every file as hostile: authenticate and authorise the upload, enforce size and type limits, store files outside the web…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-72.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Design a secure file upload architecture featuring antivirus scanning, MIME validation, and S3 isolation.</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · AppSec · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A secure upload design treats every file as hostile: authenticate and authorise the upload, enforce size and type limits, store files outside the web root in isolated private object storage under random names, scan with antivirus in a quarantine stage, validate real content type and structure, process in sandboxed workers, and serve through a separate domain with safe headers or signed URLs.</p></div>
+<h4>Explained in depth</h4>
+<h4>Threats from uploads</h4>
+<p>Attackers upload: <strong>web shells</strong> (executable scripts in the web root), <strong>malware</strong> shared with other users, <strong>HTML or SVG with JavaScript</strong> (stored XSS on your domain), <strong>oversized files or zip bombs</strong> (denial of service), <strong>path traversal filenames</strong> (<code>../../etc/cron.d/x</code>), <strong>polyglot</strong> files (valid image and script), crafted images exploiting parser bugs (ImageTragick), <strong>XXE</strong> in XML or Office documents, <strong>SSRF</strong> via URL fetch features, <strong>sensitive data leakage</strong> through overly public storage, and <strong>content abuse</strong> (illegal material, phishing pages).</p>
+<h4>Architecture (defence in depth)</h4>
+<pre><code>Client --(1 request upload, authz)--&gt; API  --(2 presigned PUT URL, constraints)--&gt; Client
+Client --(3 upload directly)--&gt; S3 &quot;quarantine/uploads-raw&quot; (private, no public access, SSE-KMS, size cap)
+S3 event --&gt; Queue --&gt; Scanner workers (isolated, no internet, non-root, seccomp)
+   ├─ size/type validation (magic bytes), AV scan (ClamAV / commercial), CDR (content disarm and reconstruction), image re-encode
+   ├─ clean --&gt; copy to &quot;clean/&quot; bucket with new random key + metadata, mark DB record &#39;available&#39;
+   └─ infected/invalid --&gt; &quot;rejected/&quot; bucket, alert, user notified
+Serving: CDN or API issues short-lived signed URLs from a separate cookieless domain, Content-Disposition: attachment, nosniff</code></pre>
+<h4>Controls in detail</h4>
+<ol start="1"><li><strong>Authentication and authorisation</strong>: only authenticated users with permission; per-user and per-tenant quotas; rate limiting; CSRF protection on upload forms; link uploads to the owning object (BOLA checks).</li><li><strong>Direct-to-storage uploads with presigned URLs</strong>: the app never handles the bytes (reduces memory and CPU DoS risk). Use <strong>presigned POST policies</strong> with conditions: <code>content-length-range</code> (for example 1 byte to 10 MB), exact <code>key</code> prefix with server-generated UUID, allowed <code>Content-Type</code>, expiry of minutes, and checksum (<code>x-amz-checksum-sha256</code>). Storage buckets are <strong>private</strong> with Block Public Access, no website hosting, versioning and encryption.</li><li><strong>Quarantine first</strong>: nothing is trusted or served until validated. Use separate buckets or prefixes with different IAM policies: the scanner role can read quarantine and write clean; applications cannot read quarantine.</li><li><strong>Validation</strong>:</li></ol>
+<ul><li><strong>Allow-list extensions and MIME types</strong> by business need (avoid blocklists), but <strong>verify the real content</strong>: check <strong>magic bytes</strong> and parse with a safe library (<code>libmagic</code>, Apache Tika, <code>file</code>), never trust the client <code>Content-Type</code> or filename extension.</li><li>Enforce <strong>size limits</strong> at multiple layers (proxy <code>client_max_body_size</code>, application, storage policy) and for decompressed size, page counts, pixel dimensions, archive entry counts and nesting.</li><li><strong>Sanitise filenames</strong>: discard the user-supplied name, generate random IDs (UUID), keep the original only as metadata (escaped when displayed); strip paths, null bytes, double extensions (<code>shell.php.jpg</code>), Unicode tricks (RTLO).</li></ul>
+<ol start="5"><li><strong>Antivirus and content disarm</strong>: scan with <strong>ClamAV</strong> (open source), commercial engines, cloud services (Amazon GuardDuty Malware Protection for S3, Microsoft Defender for Storage, VirusTotal API only for non-sensitive files), YARA rules; rescan periodically as signatures update; <strong>CDR</strong> to strip active content from PDFs and Office documents (macros, embedded scripts, JavaScript) by reconstructing a clean version.</li><li><strong>Safe processing</strong>: <strong>re-encode images</strong> (ImageMagick/libvips with policies disabling dangerous coders, resize to canonical formats, strip EXIF/GPS), render PDFs to images or sanitise, process in <strong>sandboxed, ephemeral workers</strong> (containers with no network, read-only filesystem, CPU and memory limits, gVisor or Firecracker), time limits. Block <strong>zip bombs</strong> (limit expansion ratio and entries), path traversal in archives (Zip Slip), and disable XML external entities.</li><li><strong>Serving files safely</strong>:</li></ol>
+<ul><li>Serve from a <strong>separate domain</strong> (<code>usercontent.example.net</code>) without cookies to isolate origin (XSS in uploaded HTML cannot access the main site).</li><li>Headers: <code>Content-Disposition: attachment</code> for downloads, correct <code>Content-Type</code>, <strong><code>X-Content-Type-Options: nosniff</code></strong>, strict <code>Content-Security-Policy: sandbox</code> or <code>default-src &#39;none&#39;</code>, <code>Cache-Control</code> appropriate.</li><li>Never serve user HTML or SVG inline; convert or sanitise (DOMPurify for SVG); private files via <strong>short-lived signed URLs</strong> with authorisation checks.</li><li>Do not store uploads in the web root or any executable path; set no-execute permissions.</li></ul>
+<ol start="8"><li><strong>Logging, monitoring and abuse handling</strong>: audit uploads (user, IP, hash, verdict), alert on scan failures, spikes, and repeated rejected types; hash-based blocklists; retention and deletion policies; legal takedown and illegal content reporting flow; privacy and data residency.</li><li><strong>Testing</strong>: upload EICAR test file, double-extension files, SVG with script, oversized files, zip bombs, malformed images, filenames with traversal and Unicode, polyglots; automated tests and periodic pen tests.</li></ol>
+<h4>Pitfalls</h4>
+<p>Trusting extension or Content-Type, storing in the web root, proxying large uploads through app servers, serving uploads from the main domain, scanning only once, running scanners with broad IAM or network access, and public buckets by default.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is checking the Content-Type header or file extension insufficient and what should you validate instead?</li><li>How do presigned URLs and a quarantine bucket reduce risk compared with uploading through your application servers?</li><li>What additional risks exist for images, PDFs and archives such as image parsing exploits, zip bombs and polyglot files?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-72">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-72%3A+Design+a+secure+file+upload+architecture+featuring+antivirus%E2%80%A6&amp;question-id=sec-72&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+AppSec%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-72.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

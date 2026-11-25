@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What defenses prevent automated Credential Stuffing and Account Takeover (ATO) attacks on login portals? | InterviewGearUp</title>
+<meta name="description" content="Credential stuffing replays username and password pairs leaked elsewhere against your login at scale, causing account takeover. Defend in layers: block…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-101.html">
+<meta property="og:title" content="What defenses prevent automated Credential Stuffing and Account Takeover (ATO) attacks on login portals? | InterviewGearUp">
+<meta property="og:description" content="Credential stuffing replays username and password pairs leaked elsewhere against your login at scale, causing account takeover. Defend in layers: block…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-101.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What defenses prevent automated Credential Stuffing and Account Takeover (ATO) attacks on login portals?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · AppSec · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Credential stuffing replays username and password pairs leaked elsewhere against your login at scale, causing account takeover. Defend in layers: block breached or weak passwords, support MFA and passkeys, rate-limit by account, IP and device fingerprint, add bot detection and adaptive challenges, detect anomalies and risky logins, avoid user enumeration, and monitor leaked-credential feeds with fast recovery flows.</p></div>
+<h4>Explained in depth</h4>
+<h4>The attack</h4>
+<p><strong>Credential stuffing</strong>: attackers take billions of leaked email and password pairs and automate login attempts (tools like OpenBullet, SentryMBA, Snipr, custom scripts with headless browsers) against many sites, relying on <strong>password reuse</strong>, typically a <strong>0.1 to 2 percent success rate</strong>, which is still thousands of accounts. They use <strong>residential proxy networks and botnets</strong> so each IP makes few attempts, rotate user agents, solve CAPTCHAs via farms or ML, and target mobile APIs. <strong>Password spraying</strong> is different (few common passwords against many accounts) and <strong>brute force</strong> targets one account with many guesses. Successful <strong>account takeover (ATO)</strong> leads to fraud, stolen loyalty points and stored cards, data theft, resale of accounts, and further attacks on linked services.</p>
+<h4>Defences (layered)</h4>
+<ol start="1"><li><strong>Strong authentication (highest impact)</strong></li></ol>
+<ul><li><strong>MFA</strong>, ideally <strong>phishing-resistant passkeys (WebAuthn)</strong>, make stolen passwords insufficient. Encourage and, for sensitive accounts, require it; avoid SMS where possible.</li><li><strong>Passwordless and social/SSO</strong> options reduce reuse.</li></ul>
+<ol start="2"><li><strong>Password policy aligned with NIST SP 800-63B</strong>: minimum length (8+, prefer 12+), allow long passphrases and password managers (paste), <strong>no composition rules and no forced periodic rotation</strong>, <strong>check candidates against breached and common password lists</strong> at signup, password change and also at login. <strong>HIBP Pwned Passwords</strong> uses <strong>k-anonymity</strong>: send only the first five hex characters of the SHA-1 hash; the API returns matching suffixes; compare locally, so the password is never revealed:</li></ol>
+<pre><code>import hashlib, requests
+h = hashlib.sha1(pw.encode()).hexdigest().upper()
+resp = requests.get(f&quot;https://api.pwnedpasswords.com/range/{h[:5]}&quot;, headers={&quot;Add-Padding&quot;: &quot;true&quot;})
+breached = any(line.split(&quot;:&quot;)[0] == h[5:] for line in resp.text.splitlines())</code></pre>
+<p>   Force reset (and notify the user) when a <strong>login succeeds with a known-breached password</strong>. Subscribe to breach feeds and credential intelligence (HIBP domain notification, Enzoic, SpyCloud, Okta Credential Intelligence).</p>
+<ol start="3"><li><strong>Rate limiting and throttling that match the threat</strong>:</li></ol>
+<ul><li>Limit by <strong>account (username)</strong>, <strong>IP</strong>, <strong>IP subnet or ASN</strong>, <strong>device fingerprint</strong>, and <strong>global failure rate</strong>; use progressive delays and temporary lockouts. Be careful: hard account lockout lets attackers <strong>lock out real users (DoS)</strong>; prefer step-up challenges or soft locks with notifications.</li><li>Because botnets distribute across thousands of IPs, track <strong>aggregate failure ratios, velocity per username and password, one password tried across many accounts, and many accounts from one device or fingerprint</strong>.</li></ul>
+<ol start="4"><li><strong>Bot detection and traffic scoring</strong>: WAF and bot-management products (Cloudflare Bot Management, Akamai Bot Manager, DataDome, HUMAN, Imperva, AWS WAF Fraud Control <strong>ATP: Account Takeover Prevention</strong>) analysing <strong>TLS and HTTP fingerprints (JA3/JA4), headless-browser signals, JavaScript challenges, behavioural biometrics, IP reputation and residential proxy detection</strong>. Add <strong>CAPTCHA or proof-of-work challenges adaptively</strong> (on risk), not for everyone; consider Cloudflare Turnstile, hCaptcha, reCAPTCHA Enterprise. Protect <strong>mobile and API login endpoints</strong> equally, with app attestation (Play Integrity, App Attest), and block outdated API versions.</li><li><strong>Risk-based and adaptive authentication</strong>: score each login using <strong>new device or browser, geo-velocity (impossible travel), IP and ASN reputation, time, behaviour</strong>, previous trusted device cookies; on elevated risk require MFA, email confirmation or block. Remember devices with signed, bound cookies.</li><li><strong>Avoid helping attackers</strong>: return <strong>identical generic messages and timing</strong> for unknown user vs wrong password (also on signup, forgot password and API endpoints) to prevent <strong>user enumeration</strong>; do not reveal whether MFA is enabled before the password check; hash with <strong>Argon2id/bcrypt</strong> (slows offline cracking but does not stop online stuffing).</li><li><strong>Protect sensitive actions after login</strong>: re-authentication or step-up for changing email, password, phone, payout details, adding devices, shipping address changes, high-value transactions; <strong>notify users</strong> of new device logins and critical changes with a &quot;this wasn&#39;t me&quot; link; delay or limit changes just after login from a new device.</li><li><strong>Secure account recovery</strong>: password reset tokens that are single-use, short-lived, and bound to the account; do not allow recovery to bypass MFA with weak fallbacks (SMS or knowledge questions); rate-limit reset requests; monitor mass resets.</li><li><strong>Session and token hygiene</strong>: revoke sessions on password reset, allow users to see and terminate active sessions, secure cookies (HttpOnly, Secure, SameSite), short-lived access tokens.</li><li><strong>Monitoring, response and metrics</strong>: dashboards for login success and failure rates by region, user agent and endpoint, spikes in <code>401</code> responses, password reset volume, new-device logins; automated playbooks that <strong>force password reset, revoke sessions, and notify</strong> affected accounts; coordinate with fraud teams; track <strong>ATO rate, blocked bot percentage, MFA adoption, time to detect</strong>; red team with credential-stuffing simulation; share indicators with industry groups.</li><li><strong>Business and legal</strong>: breach notification obligations (GDPR, state laws) for confirmed ATO, user education about unique passwords and password managers, and offer incentives for MFA.</li></ol>
+<h4>Pitfalls</h4>
+<p>Relying on CAPTCHA alone, per-IP limits only, lockout policies that enable denial of service, protecting the website but not the mobile API, revealing whether an email is registered, and forced periodic password changes that encourage weak, predictable variants.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why do per-IP rate limits fail against distributed residential-proxy botnets and what signals work better?</li><li>How do breached password checks using k-anonymity (Pwned Passwords) work and how do you apply them at login and signup?</li><li>How do you design step-up authentication and account recovery that do not become the new attack path?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-101">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-101%3A+What+defenses+prevent+automated+Credential+Stuffing+and+Account%E2%80%A6&amp;question-id=sec-101&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+AppSec%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-101.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

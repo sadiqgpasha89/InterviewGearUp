@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What container security best practices prevent container breakout attacks (minimal images, rootless mode)? | InterviewGearUp</title>
+<meta name="description" content="Prevent container breakout by shrinking the attack surface and removing privileges: use minimal or distroless images, run as non-root or rootless with…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-44.html">
+<meta property="og:title" content="What container security best practices prevent container breakout attacks (minimal images, rootless mode)? | InterviewGearUp">
+<meta property="og:description" content="Prevent container breakout by shrinking the attack surface and removing privileges: use minimal or distroless images, run as non-root or rootless with…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-44.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What container security best practices prevent container breakout attacks (minimal images, rootless mode)?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 2 (Mid-level) · Containers · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Prevent container breakout by shrinking the attack surface and removing privileges: use minimal or distroless images, run as non-root or rootless with user namespaces, drop all capabilities and add back only needed ones, forbid privileged mode, use read-only root filesystems, seccomp, AppArmor or SELinux profiles, no-new-privileges, patched kernels, and avoid mounting the Docker socket or host paths.</p></div>
+<h4>Explained in depth</h4>
+<h4>Containers are not VMs</h4>
+<p>Containers share the <strong>host kernel</strong>, isolated by Linux namespaces, cgroups, capabilities, seccomp and LSM profiles. A kernel vulnerability or a dangerous configuration lets code in a container reach the host (a <strong>breakout or escape</strong>). Defence is layered: reduce what is inside, reduce what the container may do, and reduce what a breakout would gain.</p>
+<h4>Image hardening</h4>
+<ol start="1"><li><strong>Minimal base images</strong>: <code>distroless</code>, <code>scratch</code> for static binaries, <code>alpine</code> or Chainguard/Wolfi images; fewer packages means fewer CVEs and no shell or package manager for attackers. Multi-stage builds keep compilers and secrets out of the final image.</li><li><strong>Pin and verify</strong>: use digests (<code>image@sha256:...</code>) not <code>latest</code>; sign images (Cosign/Sigstore) and verify at admission; build from trusted registries; generate SBOMs.</li><li><strong>Scan continuously</strong>: Trivy, Grype, Snyk, Clair for OS and dependency CVEs; rebuild regularly to pick up patches; fail builds on critical vulnerabilities with fixes.</li><li><strong>No secrets in layers</strong>: use BuildKit secret mounts, runtime secret injection.</li><li><strong>Dockerfile linting</strong>: Hadolint, Dockle, CIS Docker Benchmark.</li></ol>
+<h4>Runtime configuration (Docker or Kubernetes)</h4>
+<pre><code>FROM gcr.io/distroless/static-debian12:nonroot
+COPY --chown=nonroot:nonroot app /app
+USER 65532:65532
+ENTRYPOINT [&quot;/app&quot;]</code></pre>
+<pre><code>docker run --read-only --tmpfs /tmp \
+  --cap-drop=ALL --cap-add=NET_BIND_SERVICE \
+  --security-opt=no-new-privileges:true \
+  --security-opt seccomp=default.json --security-opt apparmor=docker-default \
+  --pids-limit 200 --memory 512m --cpus 1 \
+  --user 65532:65532 myapp@sha256:...</code></pre>
+<pre><code># Kubernetes securityContext
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities: { drop: [&quot;ALL&quot;] }
+  seccompProfile: { type: RuntimeDefault }</code></pre>
+<p>Key controls:</p>
+<ul><li><strong>Non-root user</strong> inside the container; root in a container maps to host root unless user namespaces are used.</li><li><strong>Rootless containers</strong> (rootless Docker, Podman) and <strong>user namespaces</strong> (<code>userns-remap</code>, Kubernetes user namespaces) so UID 0 inside is an unprivileged UID on the host, greatly limiting breakout impact.</li><li><strong>Never <code>--privileged</code></strong>: it disables most isolation, grants all capabilities and device access. Avoid dangerous capabilities (<code>CAP_SYS_ADMIN</code>, <code>CAP_SYS_PTRACE</code>, <code>CAP_NET_ADMIN</code>, <code>CAP_SYS_MODULE</code>).</li><li><strong>Do not mount <code>/var/run/docker.sock</code></strong> (lets the container create privileged containers and control the host), <code>/proc</code>, <code>/sys</code>, host root <code>/</code>, or sensitive host paths; avoid <code>hostPID</code>, <code>hostIPC</code>, <code>hostNetwork</code>, <code>hostPath</code> volumes.</li><li><strong>Seccomp</strong> default profile blocks risky syscalls (<code>unshare</code>, <code>mount</code>, <code>keyctl</code>, <code>bpf</code> etc.), <strong>AppArmor or SELinux</strong> enforce mandatory access control.</li><li><strong>Read-only root filesystem</strong>, writable <code>tmpfs</code> only where required; limit <strong>PIDs, memory, CPU</strong> to contain denial of service and fork bombs.</li><li><strong>Network segmentation</strong>: Kubernetes NetworkPolicies, egress control, no access to the cloud metadata service (IMDSv2 hop limit 1, block 169.254.169.254) to stop credential theft.</li><li><strong>Service account hygiene</strong>: disable automounting of Kubernetes API tokens when unnecessary, least-privilege RBAC.</li></ul>
+<h4>Platform and host</h4>
+<ul><li>Keep <strong>kernel and container runtime patched</strong> (runc CVE-2019-5736 and CVE-2024-21626 &quot;Leaky Vessels&quot; were breakout bugs); use hardened container-optimised OSes (Bottlerocket, Flatcar, Talos) with immutable file systems.</li><li><strong>Sandboxed runtimes</strong> for untrusted or multi-tenant code: <strong>gVisor</strong> (user-space kernel), <strong>Kata Containers</strong> and <strong>Firecracker</strong> microVMs (hardware virtualisation boundary) so a kernel exploit does not directly compromise the host.</li><li>Enforce policy centrally with <strong>Pod Security Standards (restricted)</strong>, OPA Gatekeeper or Kyverno; CIS Benchmarks audits with <code>docker-bench-security</code> or <code>kube-bench</code>.</li><li><strong>Runtime detection</strong>: Falco, Tetragon, Sysdig detect suspicious behaviour such as shells in containers, writes to sensitive paths, or <code>nsenter</code> and <code>mount</code> calls; alert and auto-kill.</li><li>Isolate workloads by trust level on separate nodes or clusters; avoid colocating privileged system pods with untrusted tenants.</li></ul>
+<h4>Typical escape paths to mitigate</h4>
+<p>Privileged containers, exposed Docker socket, writable <code>hostPath</code>, excessive capabilities, kernel exploits (Dirty COW, Dirty Pipe), vulnerable runtimes, shared PID namespace with host, misconfigured cgroups (<code>release_agent</code> abuse), stolen service account tokens and cloud credentials after compromise.</p>
+<h4>Pitfalls</h4>
+<p>Using root users &quot;for convenience&quot;, relying on the image scanner alone, giving developers <code>docker</code> group membership (equivalent to root), running CI builders as privileged containers, and ignoring node patching because workloads are &quot;containerised&quot;.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is mounting /var/run/docker.sock into a container equivalent to giving root on the host?</li><li>How do user namespaces and rootless mode change the impact of a breakout?</li><li>Why are sandboxed runtimes such as gVisor or Kata Containers used for untrusted workloads?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-44">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-44%3A+What+container+security+best+practices+prevent+container+breakout%E2%80%A6&amp;question-id=sec-44&amp;context=Security+engineer%2C+Gear+2%2C+topic%3A+Containers%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-44.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

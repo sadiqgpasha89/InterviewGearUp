@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Compare traditional VPN architectures with Zero Trust Network Access (ZTNA) and BeyondCorp models. | InterviewGearUp</title>
+<meta name="description" content="Traditional VPNs grant network-level access to a trusted internal perimeter once a user authenticates, so a stolen credential or compromised device can…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-79.html">
+<meta property="og:title" content="Compare traditional VPN architectures with Zero Trust Network Access (ZTNA) and BeyondCorp models. | InterviewGearUp">
+<meta property="og:description" content="Traditional VPNs grant network-level access to a trusted internal perimeter once a user authenticates, so a stolen credential or compromised device can…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-79.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Compare traditional VPN architectures with Zero Trust Network Access (ZTNA) and BeyondCorp models.</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · Network · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>Traditional VPNs grant network-level access to a trusted internal perimeter once a user authenticates, so a stolen credential or compromised device can move laterally. ZTNA and BeyondCorp never trust network location: every request is authenticated, authorised per application using identity, device posture and context, and brokered through an identity-aware proxy without exposing the network.</p></div>
+<h4>Explained in depth</h4>
+<h4>Traditional VPN model: castle and moat</h4>
+<p>Remote users connect through a VPN concentrator (IPsec or SSL VPN) and receive an address in the internal network. After authentication (password and perhaps MFA) they usually see <strong>large network segments</strong>: file shares, admin ports, databases. Trust is based on <strong>being inside the perimeter</strong>. Weaknesses:</p>
+<ul><li><strong>Implicit trust and lateral movement</strong>: one compromised laptop or stolen VPN credential exposes the flat network; ransomware and attackers pivot freely.</li><li><strong>Broad access</strong> rather than per-application least privilege; ACLs become complex and stale.</li><li><strong>VPN appliances are high-value targets</strong> (Pulse Secure, Fortinet, Citrix, Ivanti CVEs exploited widely) exposed on the internet.</li><li>Poor user experience, backhauling traffic through the data centre, scaling limits, split-tunnel risks.</li><li>No continuous verification: access persists for the whole session even if device health or risk changes.</li><li>Poor fit for cloud and SaaS and contractors.</li></ul>
+<h4>Zero Trust principles (NIST SP 800-207)</h4>
+<p>&quot;<strong>Never trust, always verify</strong>&quot;: no implicit trust from network location; <strong>authenticate and authorise every access request</strong> based on identity, device, and context; apply <strong>least privilege</strong>; <strong>assume breach</strong> and minimise blast radius; verify explicitly; monitor continuously. Components: policy engine and administrator, policy enforcement points, identity provider, device management and posture signals, SIEM and threat intelligence.</p>
+<h4>ZTNA architecture</h4>
+<p>Users connect to <strong>specific applications</strong>, not networks.</p>
+<ul><li><strong>Client-initiated</strong> (agent on the device) or <strong>service-initiated</strong> (connector in the application&#39;s network makes an outbound-only connection to the broker, so no inbound firewall holes).</li><li>A <strong>broker / identity-aware proxy</strong> in the cloud or on-premises receives the request, authenticates the user through the <strong>IdP with MFA (phishing-resistant)</strong>, evaluates <strong>device posture</strong> (managed, disk encryption, OS patched, EDR running, not jailbroken), <strong>context</strong> (location, time, network risk, behaviour anomaly), and the <strong>application policy</strong> (&quot;finance group on managed devices may reach the ERP web app&quot;). If allowed, it creates an encrypted, <strong>application-specific session</strong> (TLS or WireGuard-based tunnel) to the application; the app is <strong>invisible (dark)</strong> to others.</li><li><strong>Continuous evaluation</strong>: sessions are re-checked; access is revoked when posture degrades or risk rises (CAEP signals).</li><li>Products: Zscaler Private Access, Cloudflare Access, Palo Alto Prisma Access, Netskope, Cisco Duo and Secure Access, Microsoft Entra Private Access, Okta, Tailscale, Twingate, HashiCorp Boundary, Teleport.</li><li><strong>Microsegmentation</strong> inside data centres and clouds (Illumio, Cilium, NSX, service mesh with mTLS) limits east-west movement.</li></ul>
+<h4>BeyondCorp</h4>
+<p>Google&#39;s implementation of zero trust after Operation Aurora (2009): <strong>access depends on device and user, not network</strong>. Elements: <strong>device inventory and trust tiers</strong> (managed devices with certificates), <strong>user and group database</strong>, <strong>access proxy</strong> (single entry point, internet-facing) enforcing an <strong>access control engine</strong> with policy per resource, a <strong>trust inferer</strong> assigning trust levels from device state, and <strong>resource-based authorisation</strong>. All employees use the same internet-facing access paths from any network; corporate network is treated like the internet. Later commercialised as <strong>BeyondCorp Enterprise</strong> and Identity-Aware Proxy.</p>
+<h4>Comparison</h4>
+<div class="md-table"><table><thead><tr><th></th><th>VPN</th><th>ZTNA / BeyondCorp</th></tr></thead><tbody><tr><td>Trust basis</td><td>network location after login</td><td>identity, device posture, context per request</td></tr><tr><td>Access scope</td><td>network segments</td><td>individual applications and actions</td></tr><tr><td>Visibility to attackers</td><td>open gateway on internet</td><td>applications hidden, outbound-only connectors</td></tr><tr><td>Lateral movement risk</td><td>high</td><td>low, per-app tunnels</td></tr><tr><td>Device checks</td><td>at connect, often none</td><td>continuous posture evaluation</td></tr><tr><td>Performance</td><td>hairpinning via data centre</td><td>direct to app through nearby edge</td></tr><tr><td>Operations</td><td>appliance management, ACLs</td><td>policy-based, cloud delivered, per-app</td></tr></tbody></table></div>
+<h4>Migration approach</h4>
+<ol start="1"><li>Inventory applications, users, devices, data flows; classify sensitivity.</li><li>Strengthen <strong>identity foundation</strong>: SSO, phishing-resistant MFA, device management (MDM/EDR) and certificates, clean joiner-mover-leaver.</li><li>Start with <strong>web and SSH/RDP apps</strong> behind an access proxy (quick wins, replace VPN for contractors); then thick-client and legacy protocols via connectors; finally decommission VPN for most users, keeping break-glass.</li><li>Define <strong>policies per app and risk tier</strong>, begin in monitor mode, tune, enforce.</li><li>Add microsegmentation, logging to SIEM, user education, and measure (VPN usage reduction, access denials, MTTR).</li></ol>
+<p>Challenges: legacy apps with hard-coded IPs or peer-to-peer protocols, unmanaged devices (use browser isolation or agentless access), user adoption, vendor lock-in, policy sprawl, and ensuring the <strong>ZTNA vendor itself</strong> is secured and resilient.</p>
+<h4>Pitfalls</h4>
+<p>Calling a VPN with MFA &quot;zero trust&quot;, broad &quot;allow all&quot; ZTNA policies, ignoring device posture, forgetting internal east-west controls, and single points of failure in the proxy.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why do VPNs enable lateral movement and what does &#39;assume breach&#39; change about architecture?</li><li>How does an identity-aware proxy evaluate device posture and user context on each request?</li><li>What are the migration steps and challenges in replacing a corporate VPN with ZTNA?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-79">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-79%3A+Compare+traditional+VPN+architectures+with+Zero+Trust+Network+Access%E2%80%A6&amp;question-id=sec-79&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+Network%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-79.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

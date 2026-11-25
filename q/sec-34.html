@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>What is OpenID Connect (OIDC) and how does it add an identity layer on top of OAuth 2.0? | InterviewGearUp</title>
+<meta name="description" content="OpenID Connect is an identity layer on top of OAuth 2.0. OAuth only delegates authorization with access tokens, while OIDC adds an ID token (a signed JWT…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-34.html">
+<meta property="og:title" content="What is OpenID Connect (OIDC) and how does it add an identity layer on top of OAuth 2.0? | InterviewGearUp">
+<meta property="og:description" content="OpenID Connect is an identity layer on top of OAuth 2.0. OAuth only delegates authorization with access tokens, while OIDC adds an ID token (a signed JWT…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-34.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>What is OpenID Connect (OIDC) and how does it add an identity layer on top of OAuth 2.0?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 2 (Mid-level) · IAM · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>OpenID Connect is an identity layer on top of OAuth 2.0. OAuth only delegates authorization with access tokens, while OIDC adds an ID token (a signed JWT with claims about who authenticated and when), the openid scope, a UserInfo endpoint, discovery metadata and standard claims, so apps can log users in securely.</p></div>
+<h4>Explained in depth</h4>
+<h4>The gap OIDC fills</h4>
+<p><strong>OAuth 2.0</strong> answers &quot;may this client call this API on the user&#39;s behalf?&quot; It deliberately says nothing about <strong>who the user is</strong>. Using an access token as proof of login was a common vulnerability. <strong>OpenID Connect (OIDC 1.0)</strong> standardises authentication: it tells the client who authenticated, how, when, and gives basic profile data.</p>
+<h4>Roles</h4>
+<ul><li><strong>End user</strong>; <strong>Relying Party (RP)</strong> or client application; <strong>OpenID Provider (OP)</strong> or identity provider (Okta, Entra ID, Auth0, Keycloak, Google); <strong>resource server</strong> (API).</li></ul>
+<h4>What OIDC adds</h4>
+<ol start="1"><li><strong><code>openid</code> scope</strong> in the authorization request signals an OIDC login (plus <code>profile</code>, <code>email</code>, <code>address</code>, <code>phone</code>, <code>offline_access</code>).</li><li><strong>ID token</strong>: a <strong>JWT signed by the OP</strong> containing claims:</li></ol>
+<ul><li><code>iss</code> (issuer), <code>sub</code> (stable unique user ID), <code>aud</code> (client ID), <code>exp</code>, <code>iat</code>, <code>auth_time</code>, <code>nonce</code>, <code>acr</code>/<code>amr</code> (authentication context and methods such as MFA), <code>at_hash</code>, plus optional profile claims (<code>email</code>, <code>name</code>).</li></ul>
+<ol start="3"><li><strong>UserInfo endpoint</strong>: returns claims using the access token.</li><li><strong>Discovery</strong>: <code>/.well-known/openid-configuration</code> lists endpoints, supported algorithms and scopes; <strong>JWKS URI</strong> publishes signing keys.</li><li><strong>Standard flows</strong>: <strong>Authorization Code (with PKCE)</strong> is the recommended flow for web, SPA and mobile; implicit and hybrid flows are legacy.</li><li>Session and logout specs: RP-initiated logout, front-channel and back-channel logout, session management, dynamic client registration.</li></ol>
+<h4>Authorization code flow with PKCE</h4>
+<pre><code>1. App generates state, nonce, code_verifier -&gt; code_challenge = BASE64URL(SHA256(verifier))
+2. Redirect: GET /authorize?response_type=code&amp;client_id=..&amp;redirect_uri=..&amp;scope=openid%20profile%20email
+                           &amp;state=..&amp;nonce=..&amp;code_challenge=..&amp;code_challenge_method=S256
+3. User authenticates (MFA, consent); OP redirects back: redirect_uri?code=...&amp;state=...
+4. App checks state; POST /token (code, code_verifier, client auth) -&gt; { id_token, access_token, refresh_token }
+5. App validates the ID token, creates its own session; calls APIs with the access token</code></pre>
+<ul><li><strong>state</strong> prevents CSRF on the redirect. <strong>nonce</strong> binds the ID token to the session (prevents replay). <strong>PKCE</strong> prevents authorization code interception, especially for public clients.</li></ul>
+<h4>ID token validation checklist</h4>
+<ol start="1"><li>Verify the <strong>signature</strong> using the OP&#39;s JWKS (match <code>kid</code>; allow-list algorithms such as RS256 or ES256; reject <code>none</code>).</li><li><code>iss</code> equals the expected issuer; <code>aud</code> contains your client ID (and <code>azp</code> if multiple); <code>exp</code> not past and <code>iat</code> reasonable with small clock skew; <code>nonce</code> matches.</li><li>Optionally check <code>acr</code> and <code>amr</code> and <code>auth_time</code> for step-up requirements; verify <code>at_hash</code> and <code>c_hash</code> where present.</li><li>Use <code>sub</code> combined with <code>iss</code> as the <strong>unique user key</strong>, not the email (emails can change or be reassigned).</li></ol>
+<h4>ID token vs access token</h4>
+<div class="md-table"><table><thead><tr><th></th><th>ID token</th><th>Access token</th></tr></thead><tbody><tr><td>Audience</td><td>the client (RP)</td><td>the resource server (API)</td></tr><tr><td>Purpose</td><td>proves authentication, carries identity claims</td><td>authorises API calls</td></tr><tr><td>Format</td><td>always a JWT</td><td>opaque or JWT</td></tr><tr><td>Send to APIs?</td><td><strong>No</strong></td><td>Yes in <code>Authorization: Bearer</code></td></tr><tr><td>Lifetime</td><td>short, used at login</td><td>short, refreshed</td></tr></tbody></table></div>
+<h4>Security notes</h4>
+<p>Never accept tokens from the browser without server validation; keep client secrets out of SPAs; use exact redirect URI matching; store tokens carefully (backend-for-frontend or HttpOnly cookies); refresh token rotation; request minimal scopes; handle account linking by <code>sub</code>; consider <strong>FAPI</strong> profiles for high security. Compared with SAML, OIDC is JSON and REST based, friendlier for mobile and SPAs.</p>
+<h4>Pitfalls</h4>
+<p>Treating the access token as identity, skipping nonce or issuer checks, trusting unsigned or unvalidated tokens, using email as primary key, and long-lived tokens in local storage.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>What is the difference between an ID token and an access token, and who should consume each?</li><li>Why do you need state, nonce and PKCE in the authorization code flow?</li><li>How should a client validate an ID token?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-34">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-34%3A+What+is+OpenID+Connect+%28OIDC%29+and+how+does+it+add+an+identity+layer%E2%80%A6&amp;question-id=sec-34&amp;context=Security+engineer%2C+Gear+2%2C+topic%3A+IAM%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-34.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

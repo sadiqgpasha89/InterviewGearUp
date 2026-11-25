@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>How do SIEM (Security Information and Event Management) platforms ingest and correlate security logs? | InterviewGearUp</title>
+<meta name="description" content="A SIEM collects logs and events from endpoints, networks, cloud and applications through agents, syslog and APIs, parses and normalises them into a…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-56.html">
+<meta property="og:title" content="How do SIEM (Security Information and Event Management) platforms ingest and correlate security logs? | InterviewGearUp">
+<meta property="og:description" content="A SIEM collects logs and events from endpoints, networks, cloud and applications through agents, syslog and APIs, parses and normalises them into a…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-56.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>How do SIEM (Security Information and Event Management) platforms ingest and correlate security logs?</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · Operations · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>A SIEM collects logs and events from endpoints, networks, cloud and applications through agents, syslog and APIs, parses and normalises them into a common schema, enriches them with context, and stores them for search. Correlation rules and analytics detect multi-step attack patterns across sources, generating prioritised alerts for investigation and automated response.</p></div>
+<h4>Explained in depth</h4>
+<h4>What a SIEM does</h4>
+<p><strong>Security Information and Event Management</strong> combines SIM (log management and long-term retention) and SEM (real-time monitoring and correlation). Products: Splunk Enterprise Security, Microsoft Sentinel, IBM QRadar, Elastic Security, Google Chronicle (SecOps), Sumo Logic, Exabeam, LogRhythm, Wazuh (open source).</p>
+<h4>Pipeline: from source to alert</h4>
+<ol start="1"><li><strong>Sources</strong>: endpoints and servers (Windows Event Logs, Sysmon, Linux auditd, EDR telemetry), identity (Active Directory, Entra ID, Okta), network (firewalls, proxies, DNS, DHCP, VPN, NetFlow, IDS/IPS, Zeek), cloud (CloudTrail, VPC Flow Logs, Azure Activity, GCP Audit, GuardDuty), applications and databases, SaaS (M365, Google Workspace, GitHub), email security, vulnerability scanners, threat intelligence feeds.</li><li><strong>Collection</strong>: agents and forwarders (Splunk Universal Forwarder, Elastic Agent, Beats, Azure Monitor Agent, NXLog), <strong>syslog</strong> (UDP/TCP/TLS), cloud APIs and event streams (Kinesis, Event Hubs, Pub/Sub), webhooks; <strong>log shippers with buffering</strong> to avoid loss; secure transport with TLS and authentication.</li><li><strong>Parsing and normalisation</strong>: extract fields (timestamp, source IP, user, action, outcome) and <strong>map to a common data model</strong>: Elastic Common Schema (ECS), Splunk CIM, <strong>OCSF</strong>, Microsoft ASIM, UDM (Chronicle). Normalisation lets one rule cover &quot;failed login&quot; across Windows, Linux, VPN and SaaS. Fix time zones and clock drift (NTP), and keep the raw log for forensics.</li><li><strong>Enrichment</strong>: asset inventory and criticality (CMDB), user and HR context (department, privileged), geolocation and ASN, threat intelligence (IOCs, reputation), vulnerability data, identity risk scores, DNS and WHOIS.</li><li><strong>Storage and indexing</strong>: hot, warm and cold tiers (fast search for recent data, cheaper object storage for compliance retention such as 1 year for PCI-DSS), data lake integrations, compression, retention and legal hold, immutability for audit logs.</li><li><strong>Detection and correlation</strong>:</li></ol>
+<ul><li><strong>Rules</strong> (Sigma, KQL, SPL, EQL, YARA-L) for known patterns: impossible travel, new admin created, disabled logging, PowerShell with encoded commands, credential dumping (LSASS access), mass file deletion, anomalous data egress.</li><li><strong>Correlation</strong> across sources and time: &quot;5 failed logins from one IP across 20 accounts (password spray) followed by a success, then MFA reset, then mailbox forwarding rule created within 30 minutes&quot;.</li><li><strong>Statistical and UEBA analytics</strong>: baselines per user and host, peer-group comparison, rare process or destination detection, ML models.</li><li><strong>Threat hunting</strong>: ad hoc queries and notebooks guided by hypotheses and MITRE ATT&amp;CK.</li></ul>
+<pre><code>// Microsoft Sentinel (KQL): brute force followed by success from the same IP
+let failures = SigninLogs | where TimeGenerated &gt; ago(1h) and ResultType != 0 | summarize fails=count(), users=dcount(UserPrincipalName) by IPAddress | where fails &gt; 20;
+SigninLogs | where TimeGenerated &gt; ago(1h) and ResultType == 0
+| join kind=inner failures on IPAddress
+| project TimeGenerated, UserPrincipalName, IPAddress, fails, users, Location</code></pre>
+<ol start="7"><li><strong>Alerting and case management</strong>: severity from rule risk plus asset criticality, deduplication and grouping into incidents, ticketing (ServiceNow, Jira), chat notifications.</li><li><strong>Response automation (SOAR)</strong>: playbooks to enrich alerts, disable accounts, isolate hosts via EDR, block IPs on firewalls, revoke tokens, with human approvals for risky actions.</li><li><strong>Reporting and compliance</strong>: dashboards, executive metrics, audit reports (PCI, SOX, HIPAA, ISO 27001).</li></ol>
+<h4>Design considerations</h4>
+<ul><li><strong>Log source onboarding priority</strong>: identity, endpoint, cloud control plane and perimeter first; ensure coverage by mapping to ATT&amp;CK techniques and measuring blind spots.</li><li><strong>Volume and cost</strong>: pricing by ingest (GB per day) or events per second; filter noise at source (drop successful health checks), route high-volume low-value logs to cheap storage with on-demand search, use summarisation and sampling carefully (never drop security-relevant fields).</li><li><strong>Detection engineering as code</strong>: store rules in Git, peer review, test against replayed attack data (Atomic Red Team, Caldera), measure precision and recall, tag with ATT&amp;CK, retire stale rules, track false positive rate and mean time to triage.</li><li><strong>Reliability</strong>: monitor ingestion health (silent log sources are an alert), clock sync, parser failures, queue depth; high availability and scaling.</li><li><strong>Security and privacy</strong>: restrict SIEM access (it holds sensitive data), mask PII, role-based access, tamper-evident storage, separation of duties between log admins and system admins.</li><li><strong>Integration with SOC processes</strong>: runbooks for each alert type, tiered triage, feedback loop from incidents into detection improvements.</li></ul>
+<h4>Common pitfalls</h4>
+<p>Collecting everything and detecting nothing, unparsed logs, wrong time stamps, no baselining, alert fatigue from default rules, no ownership of data quality, ignoring cloud and SaaS logs, and not testing that detections fire.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Why is log normalisation critical and what schemas such as ECS, OCSF or CIM help?</li><li>How do you design a correlation rule that detects brute force followed by a successful login from a new geography?</li><li>How do you control SIEM cost and noise while keeping detection coverage?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-56">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-56%3A+How+do+SIEM+%28Security+Information+and+Event+Management%29+platforms%E2%80%A6&amp;question-id=sec-56&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+Operations%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-56.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

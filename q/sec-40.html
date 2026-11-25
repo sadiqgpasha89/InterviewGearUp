@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Explain the Cloud Shared Responsibility Model across IaaS, PaaS, and SaaS deployment models. | InterviewGearUp</title>
+<meta name="description" content="In the shared responsibility model the provider secures the cloud itself, meaning facilities, hardware and the virtualisation layer, while the customer…">
+<link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-40.html">
+<meta property="og:title" content="Explain the Cloud Shared Responsibility Model across IaaS, PaaS, and SaaS deployment models. | InterviewGearUp">
+<meta property="og:description" content="In the shared responsibility model the provider secures the cloud itself, meaning facilities, hardware and the virtualisation layer, while the customer…">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-40.html">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
+<main id="main" class="static-page">
+<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<h1>Explain the Cloud Shared Responsibility Model across IaaS, PaaS, and SaaS deployment models.</h1>
+<p class="muted small-text meta-line">Security engineer · Gear 2 (Mid-level) · Cloud · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
+<div class="short"><h4>In 30 seconds</h4>
+<p>In the shared responsibility model the provider secures the cloud itself, meaning facilities, hardware and the virtualisation layer, while the customer secures what they put in the cloud. The customer&#39;s share is largest in IaaS (OS, network config, data, identity), smaller in PaaS (application and data), and smallest in SaaS (data, users and configuration), but identity and data are always the customer&#39;s.</p></div>
+<h4>Explained in depth</h4>
+<h4>The model</h4>
+<p>Cloud security is a partnership. Providers (AWS, Azure, GCP) describe it as <strong>security of the cloud</strong> (provider) versus <strong>security in the cloud</strong> (customer). Misunderstanding the boundary leads to gaps: customers assume the provider protects their data, while the provider only guarantees the platform.</p>
+<h4>Responsibility by layer</h4>
+<div class="md-table"><table><thead><tr><th>Layer</th><th>On-premises</th><th>IaaS</th><th>PaaS</th><th>SaaS</th></tr></thead><tbody><tr><td>Data classification and protection</td><td>Customer</td><td>Customer</td><td>Customer</td><td>Customer</td></tr><tr><td>Identities, accounts, access management</td><td>Customer</td><td>Customer</td><td>Customer</td><td>Customer</td></tr><tr><td>Endpoints and devices</td><td>Customer</td><td>Customer</td><td>Customer</td><td>Customer</td></tr><tr><td>Application code and configuration</td><td>Customer</td><td>Customer</td><td>Customer</td><td>Shared (SaaS settings customer)</td></tr><tr><td>Runtime, middleware</td><td>Customer</td><td>Customer</td><td>Provider</td><td>Provider</td></tr><tr><td>Operating system and patching</td><td>Customer</td><td><strong>Customer</strong></td><td>Provider</td><td>Provider</td></tr><tr><td>Network controls (firewall rules, segmentation)</td><td>Customer</td><td><strong>Customer</strong> (security groups)</td><td>Shared</td><td>Provider</td></tr><tr><td>Virtualisation, hypervisor</td><td>Customer</td><td>Provider</td><td>Provider</td><td>Provider</td></tr><tr><td>Physical servers, storage, network</td><td>Customer</td><td>Provider</td><td>Provider</td><td>Provider</td></tr><tr><td>Physical data centre security</td><td>Customer</td><td>Provider</td><td>Provider</td><td>Provider</td></tr></tbody></table></div>
+<h4>Examples</h4>
+<ul><li><strong>IaaS (EC2, Azure VMs, Compute Engine)</strong>: provider secures hardware and hypervisor. Customer patches the guest OS, hardens images, configures security groups, installs endpoint protection, manages disks encryption keys, backups, and application security.</li><li><strong>PaaS (RDS, App Service, Cloud SQL, managed Kubernetes control plane, Lambda)</strong>: provider patches the database engine or runtime and platform. Customer manages data, schemas, access policies and credentials, network exposure (public endpoints), encryption settings, application code, and for managed Kubernetes the <strong>worker node configuration, workloads, RBAC and network policies</strong>; serverless: function code, dependencies, IAM permissions, event source security.</li><li><strong>SaaS (Microsoft 365, Salesforce, Google Workspace)</strong>: provider runs the application and infrastructure. Customer manages users, <strong>MFA and conditional access</strong>, sharing and DLP settings, retention, third-party app integrations (OAuth grants), data export, and backups (providers often do not guarantee point-in-time recovery of deleted customer data).</li></ul>
+<h4>Always the customer&#39;s job</h4>
+<ol start="1"><li><strong>Data</strong>: classification, encryption choices, backups, retention and deletion, compliance obligations (GDPR controller duties).</li><li><strong>Identity and access</strong>: strong authentication, least privilege, key management, lifecycle.</li><li><strong>Configuration</strong>: secure settings and monitoring of the services used.</li><li><strong>Compliance and governance</strong>: mapping controls to frameworks, vendor risk management, incident response.</li><li><strong>User behaviour</strong> and device security.</li></ol>
+<h4>Provider obligations and evidence</h4>
+<p>Providers publish <strong>attestations</strong> (SOC 1/2/3, ISO 27001/27017/27018, PCI-DSS AOC, FedRAMP, HIPAA BAAs) through portals (AWS Artifact, Azure Service Trust Portal, GCP Compliance Reports). Customers inherit controls for the provider&#39;s layers but must prove their own controls. Use <strong>customer responsibility matrices (CRM)</strong> (for example in FedRAMP and PCI) listing which requirement is provider, customer or shared.</p>
+<h4>Operationalising it</h4>
+<ul><li>Maintain a <strong>RACI per service</strong> documenting who handles patching, backups, logging, key rotation and incident response.</li><li>Use cloud-native baselines (CIS Benchmarks, AWS Security Best Practices), CSPM for continuous checks, Infrastructure as Code with policy as code, and landing zones with guardrails.</li><li>Include provider SLAs and incident communication (status pages, shared incident response procedures) in runbooks.</li><li>Review shared responsibility when adopting new services, as boundaries differ per product (for example managed databases still require you to restrict network access and manage credentials).</li><li>Train teams: developers must know that &quot;managed&quot; does not mean &quot;secured&quot;.</li></ul>
+<h4>Common failures</h4>
+<p>Public S3 buckets and open databases (customer config), unpatched VMs, leaked access keys, over-privileged service accounts, disabled logging, and assuming SaaS backups exist. Well-known breaches trace to customer configuration, not provider compromise.</p>
+<h4>Pitfalls</h4>
+<p>Equating provider certifications with your own compliance, ignoring the SaaS configuration layer, assuming managed services patch your application, and lacking a documented division of duties for audits.</p>
+<h4>Likely follow-ups</h4>
+<ul><li>Which responsibilities are always retained by the customer regardless of service model?</li><li>How does the shared responsibility split differ for managed Kubernetes or serverless?</li><li>How do you document and audit your side of the model for compliance?</li></ul>
+<p><a class="btn primary" href="../#/q/sec-40">Practise this question in the app</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-40%3A+Explain+the+Cloud+Shared+Responsibility+Model+across+IaaS%2C+PaaS%2C+and%E2%80%A6&amp;question-id=sec-40&amp;context=Security+engineer%2C+Gear+2%2C+topic%3A+Cloud%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-40.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+</main>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+</body>
+</html>

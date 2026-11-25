@@ -20,7 +20,7 @@
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
 <h1>Questions with written answers</h1>
-<p class="muted">940 of 1056 questions have a written answer so far. Answers are AI-drafted and not yet reviewed by a person unless a page says Reviewed.</p>
+<p class="muted">1001 of 1056 questions have a written answer so far. Answers are AI-drafted and not yet reviewed by a person unless a page says Reviewed.</p>
 <h2>Software engineer (core)</h2>
 <h3>Gear 1: Junior</h3>
 <ul><li><a href="gen-1.html">What is Big-O notation? Explain with examples.</a></li>
@@ -900,6 +900,7 @@
 <li><a href="sec-11.html">Explain Cross-Site Request Forgery (CSRF): Attack mechanics, Anti-CSRF tokens, and `SameSite` cookie flags.</a></li>
 <li><a href="sec-13.html">Explain Broken Object-Level Authorization (BOLA/IDOR) and how to enforce object ownership checks.</a></li>
 <li><a href="sec-15.html">Explain XML External Entity (XXE) attacks and how disabling external DTD parsing prevents file exfiltration.</a></li>
+<li><a href="sec-16.html">What are common Security Misconfigurations in cloud infrastructure, and how do you detect exposed S3 buckets?</a></li>
 <li><a href="sec-17.html">What is Software Composition Analysis (SCA) and how does it detect vulnerabilities in open-source dependencies?</a></li>
 <li><a href="sec-18.html">Compare Static Application Security Testing (SAST) and Dynamic Application Security Testing (DAST).</a></li>
 <li><a href="sec-22.html">Compare Symmetric Encryption (AES-GCM) and Asymmetric Encryption (RSA, ECC): Speed and use cases.</a></li>
@@ -908,7 +909,28 @@
 <li><a href="sec-25.html">Explain password hashing best practices: Why are Argon2id, bcrypt, and scrypt preferred over SHA-256?</a></li>
 <li><a href="sec-26.html">How do digital signatures guarantee non-repudiation and data integrity using asymmetric key pairs?</a></li>
 <li><a href="sec-33.html">Explain OAuth 2.0 grant types and why Authorization Code with PKCE is required for public and SPA clients.</a></li>
-<li><a href="sec-36.html">Compare Multi-Factor Authentication (MFA) mechanisms: SMS versus TOTP apps versus FIDO2/WebAuthn hardware keys.</a></li></ul>
+<li><a href="sec-34.html">What is OpenID Connect (OIDC) and how does it add an identity layer on top of OAuth 2.0?</a></li>
+<li><a href="sec-36.html">Compare Multi-Factor Authentication (MFA) mechanisms: SMS versus TOTP apps versus FIDO2/WebAuthn hardware keys.</a></li>
+<li><a href="sec-37.html">Compare Role-Based Access Control (RBAC) and Attribute-Based Access Control (ABAC) in enterprise applications.</a></li>
+<li><a href="sec-38.html">What is the Principle of Least Privilege (PoLP) and how does Just-in-Time (JIT) access enforcement work?</a></li>
+<li><a href="sec-40.html">Explain the Cloud Shared Responsibility Model across IaaS, PaaS, and SaaS deployment models.</a></li>
+<li><a href="sec-43.html">How do you automate Infrastructure as Code (IaC) security scanning using Checkov, tfsec, and Trivy?</a></li>
+<li><a href="sec-44.html">What container security best practices prevent container breakout attacks (minimal images, rootless mode)?</a></li>
+<li><a href="sec-51.html">How do pre-commit hooks and tools like GitGuardian and TruffleHog prevent API keys from leaking into Git?</a></li>
+<li><a href="sec-52.html">How does a Web Application Firewall (WAF) inspect HTTP traffic to block common web attacks?</a></li>
+<li><a href="sec-55.html">Compare Intrusion Detection Systems (IDS) and Intrusion Prevention Systems (IPS) in network defense.</a></li>
+<li><a href="sec-61.html">Explain the Common Vulnerability Scoring System (CVSS): Base, Temporal, and Environmental metrics.</a></li>
+<li><a href="sec-63.html">How do you design a strict Content Security Policy (CSP) without allowing `unsafe-inline` scripts?</a></li>
+<li><a href="sec-64.html">How do Subresource Integrity (SRI) hashes prevent compromised third-party CDNs from injecting malware?</a></li>
+<li><a href="sec-65.html">What is HTTP Strict Transport Security (HSTS) and how does the HSTS preload list enforce HTTPS?</a></li>
+<li><a href="sec-68.html">How do cookie security flags (`HttpOnly`, `Secure`, `SameSite`) protect authentication tokens against theft?</a></li>
+<li><a href="sec-70.html">How do you secure outgoing and incoming webhooks using HMAC signatures and timestamp replay checks?</a></li>
+<li><a href="sec-71.html">How do you harden reverse proxies: Disabling version disclosure headers and restricting HTTP methods?</a></li>
+<li><a href="sec-78.html">How do you harden SSH access: Disabling password authentication, enforcing Ed25519 keys, and using bastions?</a></li>
+<li><a href="sec-81.html">Compare database Encryption at Rest (TDE), Encryption in Transit (TLS), and Application-Level Field Encryption.</a></li>
+<li><a href="sec-83.html">How do phishing-resistant MFA credentials (FIDO2/WebAuthn) defeat advanced adversary-in-the-middle phishing?</a></li>
+<li><a href="sec-90.html">What is Cross-Site WebSocket Hijacking (CSWSH) and how do you protect WebSocket handshakes with origin checks?</a></li>
+<li><a href="sec-99.html">How do you monitor and alert on impending SSL/TLS certificate expirations to avoid production outages?</a></li></ul>
 <h3>Gear 3: Senior</h3>
 <ul><li><a href="sec-5.html">How do you threat-model a new feature?</a></li>
 <li><a href="sec-6.html">A cloud access key was committed to a public repository. What do you do?</a></li>
@@ -916,15 +938,54 @@
 <li><a href="sec-14.html">How does Insecure Deserialization lead to Remote Code Execution (RCE) in modern runtimes?</a></li>
 <li><a href="sec-19.html">What is Interactive Application Security Testing (IAST) and how does it combine SAST and DAST advantages?</a></li>
 <li><a href="sec-20.html">Explain the STRIDE threat modeling framework: Spoofing, Tampering, Repudiation, Info Disclosure, DoS, Elevation.</a></li>
+<li><a href="sec-21.html">How do you conduct architectural threat modeling using DREAD and PASTA methodologies?</a></li>
 <li><a href="sec-27.html">Explain Public Key Infrastructure (PKI): Certificate Authorities (CA), Root Certificates, and CRLs/OCSP.</a></li>
 <li><a href="sec-28.html">Explain the TLS 1.3 handshake: What cipher suites are supported and how does 0-RTT resumption work?</a></li>
 <li><a href="sec-29.html">What is Perfect Forward Secrecy (PFS) and how does ephemeral Diffie-Hellman prevent historical decryption?</a></li>
 <li><a href="sec-30.html">Explain Key Management Services (KMS): Hardware Security Modules (HSM) and Envelope Encryption.</a></li>
+<li><a href="sec-31.html">How do you design an automated cryptographic key rotation pipeline without service downtime?</a></li>
+<li><a href="sec-35.html">Explain SAML 2.0 Single Sign-On (SSO): Identity Provider (IdP), Service Provider (SP), and SAML Assertions.</a></li>
+<li><a href="sec-39.html">What is Privileged Access Management (PAM) and how do Bastion Hosts secure administrative access?</a></li>
 <li><a href="sec-41.html">How do AWS IAM policy evaluation mechanics work: Explicit Deny, SCPs, Permission Boundaries, and Role Assumption?</a></li>
+<li><a href="sec-42.html">What is Cloud Security Posture Management (CSPM) and how does it detect configuration drift?</a></li>
 <li><a href="sec-45.html">How do Linux seccomp profiles, AppArmor, and dropping capabilities (`cap-drop`) harden Docker containers?</a></li>
 <li><a href="sec-46.html">Explain Kubernetes Pod Security Standards: Privileged, Baseline, and Restricted security profiles.</a></li>
 <li><a href="sec-47.html">How do you audit and harden Kubernetes RBAC to prevent excessive ClusterRoleBinding permissions?</a></li>
-<li><a href="sec-48.html">How do Kubernetes NetworkPolicies enforce default-deny ingress and egress rules between namespaces?</a></li></ul>
+<li><a href="sec-48.html">How do Kubernetes NetworkPolicies enforce default-deny ingress and egress rules between namespaces?</a></li>
+<li><a href="sec-49.html">How do Admission Controllers (OPA Gatekeeper, Kyverno) enforce security guardrails on Kubernetes manifests?</a></li>
+<li><a href="sec-50.html">Explain HashiCorp Vault architecture: Storage backends, dynamic secrets, and leasing/revocation lifecycles.</a></li>
+<li><a href="sec-53.html">How do you mitigate Distributed Denial of Service (DDoS) attacks across Layer 4 (SYN floods) and Layer 7 (HTTP floods)?</a></li>
+<li><a href="sec-56.html">How do SIEM (Security Information and Event Management) platforms ingest and correlate security logs?</a></li>
+<li><a href="sec-57.html">What are the core workflows and responsibilities of Tier 1, Tier 2, and Tier 3 SOC analysts?</a></li>
+<li><a href="sec-58.html">Explain the NIST Incident Response lifecycle: Preparation, Detection, Containment, Eradication, and Recovery.</a></li>
+<li><a href="sec-59.html">Compare Red Team, Blue Team, and Purple Team security exercises in evaluating organizational resilience.</a></li>
+<li><a href="sec-60.html">How do you establish and manage a Bug Bounty program and Coordinated Vulnerability Disclosure (CVD) policy?</a></li>
+<li><a href="sec-62.html">Overview of SOC 2 Type II, ISO 27001, and PCI-DSS compliance frameworks for enterprise software.</a></li>
+<li><a href="sec-66.html">What is DNSSEC and how does public-key cryptography prevent DNS spoofing and cache poisoning?</a></li>
+<li><a href="sec-67.html">What is SSL/TLS Certificate Pinning in mobile applications, and what operational risks does it introduce?</a></li>
+<li><a href="sec-69.html">How do you prevent Mass Assignment and Broken Function-Level Authorization in RESTful APIs?</a></li>
+<li><a href="sec-72.html">Design a secure file upload architecture featuring antivirus scanning, MIME validation, and S3 isolation.</a></li>
+<li><a href="sec-73.html">How do you prevent GraphQL Denial of Service attacks using query depth limiting and query cost analysis?</a></li>
+<li><a href="sec-74.html">How do AWS CloudTrail and GCP Cloud Audit Logs provide tamper-evident security audit trails?</a></li>
+<li><a href="sec-75.html">How does AWS GuardDuty use machine learning and threat intelligence to detect account compromises?</a></li>
+<li><a href="sec-76.html">How do you secure CI/CD build environments against software supply chain attacks and poisoned pipelines?</a></li>
+<li><a href="sec-79.html">Compare traditional VPN architectures with Zero Trust Network Access (ZTNA) and BeyondCorp models.</a></li>
+<li><a href="sec-80.html">How do Data Loss Prevention (DLP) engines scan and redact sensitive PII and payment data in transit?</a></li>
+<li><a href="sec-82.html">How do immutable backups and air-gapped storage protect organizations against ransomware extortion?</a></li>
+<li><a href="sec-84.html">What is a TPM (Trusted Platform Module) and how does Secure Boot verify kernel integrity during boot?</a></li>
+<li><a href="sec-85.html">Explain memory safety vulnerabilities (buffer overflow, use-after-free) and the role of memory-safe languages.</a></li>
+<li><a href="sec-86.html">What are timing attacks in cryptographic operations, and how do constant-time string comparisons prevent them?</a></li>
+<li><a href="sec-88.html">Explain OAuth 2.0 Token Revocation (RFC 7009) and Token Introspection (RFC 7662) architectures.</a></li>
+<li><a href="sec-89.html">What is Prototype Pollution in JavaScript and how do attackers pollute the Object prototype to hijack logic?</a></li>
+<li><a href="sec-91.html">How do you tune Linux kernel parameters via `sysctl` to harden network stacks against SYN flood attacks?</a></li>
+<li><a href="sec-92.html">What are common AWS IAM privilege escalation paths and how do you audit permissions using IAM Access Analyzer?</a></li>
+<li><a href="sec-93.html">What are the primary phases of a professional penetration test: Scoping, Recon, Exploitation, and Reporting?</a></li>
+<li><a href="sec-94.html">What is digital forensics and how do you preserve volatile memory and disk artifacts following an intrusion?</a></li>
+<li><a href="sec-95.html">How do Canary Tokens and Honeytokens alert security teams when unauthorized actors access sensitive data?</a></li>
+<li><a href="sec-96.html">How do security teams respond to zero-day vulnerabilities using virtual patching at the WAF layer?</a></li>
+<li><a href="sec-97.html">What security considerations apply when designing serverless functions (AWS Lambda, Cloud Functions)?</a></li>
+<li><a href="sec-100.html">How do you secure database and cache instances: Enforcing TLS, VPC endpoints, and disabling default ports?</a></li>
+<li><a href="sec-101.html">What defenses prevent automated Credential Stuffing and Account Takeover (ATO) attacks on login portals?</a></li></ul>
 <h3>Gear 4: Lead / Staff</h3>
 <ul><li><a href="sec-7.html">How would you build an application security program for a 200-engineer company?</a></li>
 <li><a href="sec-54.html">What is Zero Trust Architecture (ZTA) and how do microsegmentation and continuous verification enforce it?</a></li>
