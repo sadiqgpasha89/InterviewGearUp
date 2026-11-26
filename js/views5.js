@@ -138,7 +138,7 @@
             (function () { const fillEl = h('i'); fillEl.style.width = d.interview.pct + '%'; // CSSOM, allowed by the CSP (inline style attributes are not)
               return h('span', { class: 'progress', role: 'img', 'aria-label': d.interview.pct + '% of your gear prepared' }, fillEl); })(),
             h('p', { class: 'muted small-text' }, plural(d.interview.upcoming7, 'review') + ' scheduled in the next 7 days. This counts what you have done; it is not a prediction of the result.'),
-            h('a', { href: '#/progress' }, 'See all progress')])
+            h('a', { href: '#/readiness' }, 'See readiness evidence'), ' · ', h('a', { href: '#/progress' }, 'All progress')])
           : null;
 
         /* What have I completed? */

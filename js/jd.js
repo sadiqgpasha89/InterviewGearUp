@@ -22,7 +22,7 @@
     ['css', 'CSS', 'Frontend', ['css', 'sass', 'tailwind'], ['frontend']],
     ['accessibility', 'Accessibility', 'Frontend', ['accessibility', 'a11y', 'wcag'], ['frontend']],
     ['webperf', 'Web performance', 'Frontend', ['web vitals', 'core web vitals', 'lighthouse'], ['frontend']],
-    ['rest', 'REST / APIs', 'Backend', ['rest', 'restful', 'api design', 'apis', 'graphql', 'grpc'], ['backend']],
+    ['rest', 'REST / APIs', 'Backend', ['restful', 'rest apis?', 'rest services?', 'api design', 'apis', 'graphql', 'grpc'], ['backend'], ['(?:^|[^A-Za-z0-9])REST(?![A-Za-z0-9])']],
     ['microservices', 'Microservices', 'Backend', ['microservices', 'microservice', 'service-oriented'], ['backend']],
     ['messaging', 'Messaging / streaming', 'Backend', ['kafka', 'rabbitmq', 'pub/sub', 'sqs', 'event-driven', 'message queue'], ['backend', 'data']],
     ['kubernetes', 'Kubernetes', 'DevOps', ['kubernetes', 'k8s', 'helm'], ['devops']],
@@ -99,20 +99,43 @@
     return sentences(text).map(function (s) { return s.replace(/^(you will|you'll|you would|will|responsibilities include:?)\s+/i, ''); }).filter(function (s) { return s.length > 25 && s.length < 220 && /^(build|design|develop|own|lead|drive|implement|maintain|collaborate|work|partner|write|ship|deliver|improve|manage|mentor|monitor|create|define|support|architect|optimi[sz]e|troubleshoot|ensure)/i.test(s); }).slice(0, 8);
   }
 
-  /* text -> { skills:[{id,name,category,roles,hits,evidence}], seniority, themes, responsibilities } */
+  /* Skills implied by a framework or service that names no skill directly. Shown as "inferred", with the phrase that implied them. */
+  const INFER = [
+    ['spring boot|spring framework|hibernate', 'java'], ['django|flask|fastapi', 'python'], ['node\\.js|nodejs|express\\.js', 'javascript'],
+    ['angular|vue(\\.js)?|svelte', 'javascript'], ['eks|ecs|fargate', 'aws'], ['aks', 'azure'], ['gke|cloud run', 'gcp'],
+    ['eks|aks|gke|openshift', 'kubernetes'], ['postgres(ql)?|mysql|oracle database|sql server', 'sql'], ['microservices', 'design'],
+    ['datadog|splunk|new relic|pagerduty', 'observability'], ['jest|mocha|vitest', 'testing'], ['pytorch|tensorflow', 'ml'], ['airflow|dbt', 'etl']
+  ];
+
+  /* text -> { skills:[{id,name,category,roles,hits,evidence,phrases,match:'exact'|'inferred'}], seniority, themes, responsibilities }
+     `phrases` are the exact words found in the posting; `match` says whether the skill was named or only implied. */
   function extract(text) {
-    text = String(text || '').slice(0, 12000);
+    text = String(text || '').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, ' ').slice(0, 12000);
     const sents = sentences(text);
     const skills = [];
+    const phraseOf = function (re, s) { const m = s.match(re); return m ? m[0].replace(/^[^A-Za-z0-9.#+]+/, '').trim() : ''; };
     SKILLS.forEach(function (sk) {
       let hits = 0, evidence = '';
+      const phrases = [];
       const tests = (sk.cs ? sk.cs.map(function (x) { return new RegExp(x); }) : []).concat(sk.aliases.map(reFor));
       sents.forEach(function (s) {
-        if (tests.some(function (re) { return re.test(s); })) { hits++; if (!evidence) evidence = s.slice(0, 180); }
+        const hit = tests.filter(function (re) { return re.test(s); });
+        if (hit.length) {
+          hits++; if (!evidence) evidence = s.slice(0, 180);
+          hit.forEach(function (re) { const p = phraseOf(re, s); if (p && phrases.indexOf(p) < 0 && phrases.length < 4) phrases.push(p); });
+        }
       });
-      if (hits) skills.push({ id: sk.id, name: sk.name, category: sk.category, roles: sk.roles, hits: hits, evidence: evidence });
+      if (hits) skills.push({ id: sk.id, name: sk.name, category: sk.category, roles: sk.roles, hits: hits, evidence: evidence, phrases: phrases, match: 'exact' });
     });
-    skills.sort(function (a, b) { return b.hits - a.hits || (a.name < b.name ? -1 : 1); });
+    INFER.forEach(function (r) {
+      if (skills.some(function (x) { return x.id === r[1]; })) return;
+      const re = reFor(r[0]);
+      const s = sents.filter(function (x) { return re.test(x); })[0];
+      if (!s) return;
+      const sk = SKILLS.filter(function (x) { return x.id === r[1]; })[0];
+      skills.push({ id: sk.id, name: sk.name, category: sk.category, roles: sk.roles, hits: 1, evidence: s.slice(0, 180), phrases: [phraseOf(re, s)], match: 'inferred' });
+    });
+    skills.sort(function (a, b) { return (a.match === b.match ? 0 : a.match === 'exact' ? -1 : 1) || b.hits - a.hits || (a.name < b.name ? -1 : 1); });
     return { skills: skills, seniority: seniority(text), themes: THEMES.filter(function (t) { return t[1].test(text); }).map(function (t) { return t[0]; }),
       responsibilities: responsibilities(text) };
   }
@@ -135,14 +158,26 @@
     const sk = SKILLS.filter(function (s) { return s.id === skillId; })[0];
     if (!sk) return { confidence: 'none', ids: [], withAnswer: 0, how: 'Unknown skill.' };
     const tests = (sk.cs ? sk.cs.map(function (x) { return new RegExp(x); }) : []).concat(sk.aliases.map(reFor));
+    const why = {}, strength = {};
     const hit = bank.filter(function (e) {
-      const hay = e.q + ' ' + e.topic + ' ' + (e.tags || []).filter(function (t) { return !GENERIC_TAGS[String(t).toLowerCase()]; }).join(' ');
-      return tests.some(function (re) { return re.test(hay); });
+      const fields = [['question', e.q], ['tag', (e.tags || []).filter(function (t) { return !GENERIC_TAGS[String(t).toLowerCase()]; }).join(' ')], ['topic', e.topic]];
+      for (let i = 0; i < fields.length; i++) {
+        for (let j = 0; j < tests.length; j++) {
+          const m = String(fields[i][1]).match(tests[j]);
+          if (m) { why[e.id] = 'matched "' + m[0].replace(/^[^A-Za-z0-9.#+]+/, '').trim() + '" in the ' + fields[i][0]; strength[e.id] = i === 2 ? 1 : 2; return true; }
+        }
+      }
+      return false;
     });
-    hit.sort(function (a, b) { return (Q.isReal(b) - Q.isReal(a)) || ((b.role === role) - (a.role === role)) || (a.id < b.id ? -1 : 1); });
+    hit.sort(function (a, b) { return (Q.isReal(b) - Q.isReal(a)) || ((b.role === role) - (a.role === role)) || (strength[b.id] - strength[a.id]) || (a.id < b.id ? -1 : 1); });
     const withAnswer = hit.filter(Q.isReal).length;
-    return { confidence: withAnswer >= 2 ? 'high' : hit.length ? 'medium' : 'none', ids: hit.slice(0, 6).map(function (e) { return e.id; }), total: hit.length, withAnswer: withAnswer,
-      how: 'Matched the words in the question text, topic or specific tags. This is keyword matching, not an understanding of the question.' };
+    const direct = hit.filter(function (e) { return strength[e.id] === 2 && Q.isReal(e); }).length;
+    const ids = hit.slice(0, 6).map(function (e) { return e.id; });
+    const reasons = {}; ids.forEach(function (id) { reasons[id] = why[id]; });
+    const confidence = direct >= 2 ? 'high' : hit.length ? 'medium' : 'none';
+    return { confidence: confidence, ids: ids, total: hit.length, withAnswer: withAnswer, reasons: reasons,
+      confidenceWhy: confidence === 'high' ? direct + ' answered questions name it in the question or its tags.' : confidence === 'medium' ? 'Only weaker matches (topic name, or questions without a written answer).' : 'No question mentions it.',
+      how: 'Keyword matching on the question text, its tags and its topic. It does not understand the question, so check that each one is relevant.' };
   }
 
   /* selected: skill ids the user kept. Returns the targeted prep summary. */
@@ -153,9 +188,16 @@
     const checklist = [];
     covered.forEach(function (m) { checklist.push('Review ' + Math.min(m.map.total, 6) + ' question' + (m.map.total === 1 ? '' : 's') + ' on ' + m.name + (m.map.withAnswer ? ' (' + m.map.withAnswer + ' with a written answer)' : ' (no written answer yet, practise out loud)') + '.'); });
     uncovered.forEach(function (m) { checklist.push('No ' + m.name + ' questions in the bank yet: use official documentation and build something small.'); });
+    /* Practice modules matched to the skills, each with the reason it is suggested. */
+    const has = function (ids) { return selected.some(function (id) { return ids.indexOf(id) >= 0; }); };
+    const modules = [];
+    if (has(['algorithms', 'javascript', 'typescript', 'python', 'java', 'golang', 'cpp', 'csharp', 'concurrency'])) modules.push({ href: '#/coding', label: 'Coding lab', why: 'The posting names programming languages or algorithms.' });
+    if (has(['design', 'microservices', 'messaging', 'redis', 'nosql', 'rest'])) modules.push({ href: '#/design', label: 'System design workspace', why: 'The posting names architecture, distributed-systems or API skills.' });
+    if (has(['leadership', 'management', 'agile']) || (level || 2) >= 3) modules.push({ href: '#/stories', label: 'Behavioral story bank', why: (level || 2) >= 3 ? 'Senior and lead interviews weigh behavioral rounds heavily.' : 'The posting names leadership or delivery skills.' });
+    modules.push({ href: '#/mock?role=' + role + '&level=' + (level || 2), label: 'Mock interview for this role', why: 'Practise answering under time pressure at the estimated gear.' });
     checklist.push('Prepare two or three stories from your own experience that show the responsibilities in the posting.');
     checklist.push('Run one mock interview configured for this role and gear.');
-    return { maps: maps, covered: covered, uncovered: uncovered, checklist: checklist, mock: { role: role, level: level || 2, type: 'mixed', count: 5 } };
+    return { maps: maps, covered: covered, uncovered: uncovered, checklist: checklist, modules: modules, mock: { role: role, level: level || 2, type: 'mixed', count: 5 } };
   }
 
   const AI_SYSTEM =
@@ -174,5 +216,5 @@
     try { const x = new URL(u); return x.protocol === 'https:' ? x.href : ''; } catch (e) { return ''; }
   }
 
-  IGU.jd = { SKILLS: SKILLS, extract: extract, seniority: seniority, guessRole: guessRole, mapSkill: mapSkill, plan: plan, AI_SYSTEM: AI_SYSTEM, aiPrompt: aiPrompt, cleanUrl: cleanUrl };
+  IGU.jd = { INFER: INFER, SKILLS: SKILLS, extract: extract, seniority: seniority, guessRole: guessRole, mapSkill: mapSkill, plan: plan, AI_SYSTEM: AI_SYSTEM, aiPrompt: aiPrompt, cleanUrl: cleanUrl };
 })();

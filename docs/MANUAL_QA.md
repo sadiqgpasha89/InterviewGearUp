@@ -21,6 +21,7 @@ Automated tests (`npm test`) cover the logic. These checks need a person and a r
 - [ ] Home with a screen reader: each dashboard card is announced as a labelled region; the gear progress bar has a text label.
 - [ ] Mock (v1.6): open "How answers are assessed" before starting; after a round each answer shows Content and Delivery rows with evidence and at most three next steps; a deliberately unrelated answer is labelled Off topic.
 - [ ] Plan (v1.6): set a rest day and workload limits in Edit plan; Swap and Tomorrow work on tasks; the This week section reads sensibly with a screen reader.
+- [ ] JD analyzer and Readiness (v1.7): paste a posting, check named and inferred skills show their phrases, choose "Use as my target job", then open Prepare > Readiness: statuses have evidence, Not assessed is shown with no data, Reset readiness assessment and Use all evidence again work.
 - [ ] Answer marked Needs correction (set one temporarily in a data file): the warning appears above the answer in the app and on its static page.
 
 ## Content
