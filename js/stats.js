@@ -3,9 +3,9 @@
   const IGU = (window.IGU = window.IGU || {});
 
   /* Keys that a backup file may contain. API keys and sync tokens are deliberately excluded. */
-  const BACKUP_KEYS = ['done', 'saved', 'notes', 'practice', 'activity', 'posts', 'profile', 'srs', 'plan', 'mocks', 'stories', 'storyPractice', 'jds', 'designs', 'coding', 'voice', 'paths', 'history', 'jdTarget', 'readiness', 'flashcards'];
+  const BACKUP_KEYS = ['done', 'saved', 'notes', 'practice', 'activity', 'posts', 'profile', 'srs', 'plan', 'mocks', 'stories', 'storyPractice', 'jds', 'designs', 'coding', 'voice', 'paths', 'history', 'jdTarget', 'readiness', 'flashcards', 'warmup'];
   const MAP_KEYS = ['done', 'saved', 'notes', 'practice', 'profile', 'srs', 'plan', 'designs', 'coding', 'jdTarget', 'readiness'];
-  const ARRAY_KEYS = ['activity', 'posts', 'mocks', 'stories', 'storyPractice', 'jds', 'voice', 'paths', 'history', 'flashcards'];
+  const ARRAY_KEYS = ['activity', 'posts', 'mocks', 'stories', 'storyPractice', 'jds', 'voice', 'paths', 'history', 'flashcards', 'warmup'];
 
   /* Prepared counts per role and gear. */
   function matrix(bank, done, meta) {

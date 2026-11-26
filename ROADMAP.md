@@ -177,9 +177,15 @@ Source: the product improvement plan (23 phases). This release does Phases 0 to 
 |---|---|---|
 | 19 Topic dependency map | Done | Added `#/map` (`js/topic-map.js`, `js/views7.js`): curated prerequisite, related, and extension DAGs across all 10 roles with topological learning order, verified question links, weak-prerequisite alerts from local progress, and direct Drill/Bank links. |
 
+## v1.18: daily interview warm-up (plan phase 20)
+
+| Phase | Status | What changed |
+|---|---|---|
+| 20 Daily interview warm-up | Done | Added `#/warmup` (`js/warmup.js`, `js/views7.js`, linked from Home & Practice menu): 10-minute 3-question session mixing technical, scenario/debugging, and behavioral questions prioritizing weak topics while avoiding repeats, with timer, offline self-check, optional AI feedback, and full SRS/progress integration. |
+
 ## Next
 
-- [ ] Phases 20 to 22 from the product improvement plan (see `docs/PRODUCT_GAP_AUDIT.md` for priorities).
+- [ ] Phases 21 to 22 from the product improvement plan (see `docs/PRODUCT_GAP_AUDIT.md` for priorities).
 - [ ] People to work through the review queue in `docs/CONTENT_QUALITY.md`; merge single-question topics.
 - [ ] Run real-device checks in `docs/MANUAL_QA.md` (no real phones/screen readers/Safari/Firefox tested automatically).
 

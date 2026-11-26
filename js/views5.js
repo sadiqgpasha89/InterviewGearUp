@@ -92,13 +92,14 @@
             h('p', { class: 'eyebrow' }, 'Next up' + (d.next.minutes ? ' · about ' + d.next.minutes + ' min' : '')),
             h('p', { class: 'next-title' }, d.next.title),
             h('p', { class: 'muted small-text' }, d.next.why),
-            h('a', { class: 'btn primary', href: d.next.href }, d.isNew ? 'Start preparation' : 'Continue preparation'));
+            h('a', { class: 'btn primary', href: d.next.href }, d.isNew ? 'Start preparation' : 'Continue preparation'), ' ',
+            h('a', { class: 'btn', href: '#/warmup' }, '10-min warm-up'));
         } else {
           nextCard = h('section', { class: 'hcard next', 'aria-label': 'Next up' },
             h('p', { class: 'eyebrow' }, 'Today'),
             h('p', { class: 'next-title' }, 'All done for today.'),
-            h('p', { class: 'muted small-text' }, 'Extra practice if you have time: a drill round or a mock interview.'),
-            h('div', { class: 'q-actions' }, h('a', { class: 'btn primary', href: '#/drill' }, 'Drill a question'), h('a', { class: 'btn', href: d.mock.href }, 'Mock interview')));
+            h('p', { class: 'muted small-text' }, 'Extra practice if you have time: a 10-minute warm-up, a drill round, or a mock interview.'),
+            h('div', { class: 'q-actions' }, h('a', { class: 'btn primary', href: '#/warmup' }, '10-min warm-up'), h('a', { class: 'btn', href: '#/drill' }, 'Drill a question'), h('a', { class: 'btn', href: d.mock.href }, 'Mock interview')));
         }
 
         /* How much time today, and what is in it */
