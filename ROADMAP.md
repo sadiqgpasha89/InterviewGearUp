@@ -114,6 +114,13 @@ Source: the product improvement plan (23 phases). This release does Phases 0 to 
 | 5 Job description analyzer | Done | Shows the exact phrases found, separates skills named in the posting from skills inferred from a framework or service (Spring Boot implies Java, EKS implies AWS and Kubernetes), explains each question match and each confidence level, fixes "rest" being read as REST, labels role and seniority as heuristic, links matched skills to the coding lab, design workspace, story bank and mock, and lets you pick a target job that feeds Readiness. Tested with empty, noisy, control-character and prompt-injection input. |
 | 6 Readiness evidence | Done | New `#/readiness` page (`js/readiness.js`): Strong, Developing, Needs practice or Not assessed per topic and per interview round (technical, coding, system design, behavioral, mock), and per skill of the target job. Every status follows a published rule and shows its evidence; sparse evidence is labelled; no overall score and no predictions. Next three actions, six-week progression rebuilt from dated history, and a non-destructive reset that counts evidence from today. |
 
+## v1.8: coding lab and system design workspace (plan phases 7 and 8)
+
+| Phase | Status | What changed |
+|---|---|---|
+| 7 Coding lab | Done, async problems still open | Seven new JavaScript problems covering linked lists, trees, graphs, queues (topological sort), backtracking, heaps and dynamic programming (15 in total), each with reference solution, edge-case tests and wrong-solution tests. Every problem shows a target complexity and an estimated time. Test summaries name the first failure; errors say whether the code did not run, timed out or crashed. Phone editor uses 16 px text and no wrapping. The lab states that client-side tests are practice feedback, not a secure grading boundary. New problems are JavaScript-only for now and say so. Still open: JavaScript async/concurrency problems need async support in the worker runner. |
+| 8 System design workspace | Done | Interview steps as checkpoints, an editable capacity calculator that shows its arithmetic, nine failure scenarios (database, queue lag, hot keys, retry storms, regional outage, inconsistency, traffic spike, cache failure, abuse), separate observability and security sections, an SVG diagram preview with SVG and Mermaid downloads, a print or PDF view, staged reference reveal with a stage counter, and a rubric that shows the evidence behind each score and covers failures, observability and security. |
+
 ## Next
 
 - [ ] Phases 5 to 17 and 18 to 22 from the product improvement plan (see `docs/PRODUCT_GAP_AUDIT.md` for priorities).

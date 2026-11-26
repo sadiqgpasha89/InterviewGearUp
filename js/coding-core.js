@@ -47,6 +47,7 @@
      from code alone, so they are left to the learner's self-check. */
   const isEdge = function (t) {
     const a = JSON.stringify(t.args);
+    if (t.args[0] === null) return true;
     return /\[\]|""|\[\[\]\]|^\[0\]$|^\[\[-?\d+\]\]$|^\["."\]$/.test(a) || (Array.isArray(t.args[0]) && t.args[0].length <= 1) || (typeof t.args[0] === 'string' && t.args[0].length <= 1);
   };
   function loopDepth(code) {
