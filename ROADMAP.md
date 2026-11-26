@@ -159,9 +159,15 @@ Source: the product improvement plan (23 phases). This release does Phases 0 to 
 |---|---|---|
 | 16 Accessibility, mobile & PWA | Done (automated checks; real-device QA still open in `docs/MANUAL_QA.md`) | Fixed dark-mode contrast bug where desktop `.menu-list` used hardcoded `#162029` behind dark text, defined missing `--muted`/`--bad`/`--link`/`--card` CSS tokens, tightened narrow-screen nav/filters/onboarding grids down to 320 px, added global `prefers-reduced-motion: reduce`, restored focus on Settings dialog close, and generated 192/512 PNG manifest icons + 180 px Apple touch icon. |
 
+## v1.15: service worker and release quality (plan phase 17)
+
+| Phase | Status | What changed |
+|---|---|---|
+| 17 Service worker & release | Done | Added `scripts/check-sw.js` (`npm run sw:check`) to verify cache versioning, duplicate-free `SHELL`, zero missing precache files, manifest icon precaching, and cache cleanup; guarded `sw.js` offline HTML fallback to navigation/document requests with `SKIP_WAITING` update handling; added live offline status and update-ready reload banner (`#app-banner`) in `js/app.js`; wired `sw:check` into CI. |
+
 ## Next
 
-- [ ] Phases 17 and 18 to 22 from the product improvement plan (see `docs/PRODUCT_GAP_AUDIT.md` for priorities).
+- [ ] Phases 18 to 22 from the product improvement plan (see `docs/PRODUCT_GAP_AUDIT.md` for priorities).
 - [ ] People to work through the review queue in `docs/CONTENT_QUALITY.md`; merge single-question topics.
 - [ ] Run real-device checks in `docs/MANUAL_QA.md` (no real phones/screen readers/Safari/Firefox tested automatically).
 

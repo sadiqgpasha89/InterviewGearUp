@@ -1135,10 +1135,48 @@
     });
   }
 
+  /* Offline status and service-worker update notifications. */
+  const netBanner = document.getElementById('app-banner');
+  let updateReady = false, waitingWorker = null;
+  function paintBanner() {
+    if (!netBanner || !netBanner.replaceChildren) return;
+    const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+    if (!offline && !updateReady) { netBanner.hidden = true; netBanner.replaceChildren(); return; }
+    const bits = [];
+    if (offline) {
+      bits.push(h('span', null, h('strong', null, 'Offline mode. '), 'Core preparation (question bank, plan, review, drill, coding lab, design, stories) continues to work; AI feedback and GitHub sync require a connection.'));
+    }
+    if (updateReady) {
+      bits.push(h('span', null, h('strong', null, 'Update ready. '), 'A newer version of InterviewGearUp is cached.'),
+        h('button', { class: 'btn small primary', type: 'button', onclick: function () {
+          if (waitingWorker) waitingWorker.postMessage({ type: 'SKIP_WAITING' });
+          location.reload();
+        } }, 'Reload to update'));
+    }
+    netBanner.replaceChildren.apply(netBanner, bits);
+    netBanner.hidden = false;
+  }
+  if (typeof window !== 'undefined' && window.addEventListener) {
+    window.addEventListener('online', paintBanner);
+    window.addEventListener('offline', paintBanner);
+  }
+  paintBanner();
+
   /* Offline support: cache the app shell and question bank so it works on a flight or a patchy commute. */
   if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator && location.protocol === 'https:') {
     window.addEventListener('load', function () {
-      navigator.serviceWorker.register('sw.js').catch(function (e) { console.warn('Offline mode unavailable:', e); });
+      navigator.serviceWorker.register('sw.js').then(function (reg) {
+        if (reg.waiting && navigator.serviceWorker.controller) { updateReady = true; waitingWorker = reg.waiting; paintBanner(); }
+        reg.addEventListener('updatefound', function () {
+          const nw = reg.installing;
+          if (!nw) return;
+          nw.addEventListener('statechange', function () {
+            if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+              updateReady = true; waitingWorker = nw; paintBanner();
+            }
+          });
+        });
+      }).catch(function (e) { console.warn('Offline mode unavailable:', e); });
     });
   }
 
