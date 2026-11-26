@@ -100,6 +100,27 @@
     return f;
   }
 
+  function outlinePanel(e) {
+    if (!IGU.flashcards) return null;
+    const steps = IGU.flashcards.outlineFor(e);
+    let shown = 1;
+    const box = h('details', { class: 'outline-box' });
+    const body = h('div');
+    function paintOutline() {
+      const list = h('ol', null, steps.slice(0, shown).map(function (st) {
+        return h('li', null, h('strong', null, st.title + ': '), st.prompt);
+      }));
+      const actions = h('div', { class: 'q-actions' },
+        shown < steps.length ? h('button', { class: 'btn small', type: 'button', onclick: function () { shown++; paintOutline(); } }, 'Next prompt (' + (shown + 1) + ' of ' + steps.length + ')') : null,
+        shown < steps.length ? h('button', { class: 'btn small ghost', type: 'button', onclick: function () { shown = steps.length; paintOutline(); } }, 'Show all 6 prompts') : null);
+      body.replaceChildren(h('p', { class: 'muted small-text' }, 'Structure your own answer step by step before reading the full explanation. Works offline.'), list, actions);
+    }
+    paintOutline();
+    box.appendChild(h('summary', null, 'Answer outline mode (6 progressive prompts)'));
+    box.appendChild(body);
+    return box;
+  }
+
   function answerBody(e) {
     if (Q.isPlaceholder(e)) return placeholderBody(e);
     const f = document.createDocumentFragment();
@@ -107,6 +128,8 @@
     if (ml) f.appendChild(ml);
     const cn = correctionNotice(e);
     if (cn) f.appendChild(cn);
+    const op = outlinePanel(e);
+    if (op) f.appendChild(op);
     f.appendChild(h('div', { class: 'short' }, h('h4', null, 'In 30 seconds'), md(e.short)));
     f.appendChild(h('h4', null, 'Explained in depth'));
     f.appendChild(md(e.detail));
@@ -405,6 +428,18 @@
         d.appendChild(h('div', { class: 'q-body' }, answerBody(e),
           h('div', { class: 'notes' }, h('label', { for: noteId }, 'My notes ', noteState), noteBox),
           h('div', { class: 'q-actions' }, prepared, save, copy,
+            IGU.flashcards ? (function () {
+              const fcBtn = h('button', { class: 'btn small ghost', type: 'button' }, '+ Flashcard');
+              fcBtn.addEventListener('click', function () {
+                const cards = (store.get('flashcards', []) || []).map(IGU.flashcards.cleanCard);
+                if (!cards.some(function (c) { return c.qid === e.id; })) {
+                  cards.unshift(IGU.flashcards.fromQuestion(e));
+                  store.set('flashcards', cards.slice(0, IGU.flashcards.MAX_CARDS));
+                }
+                fcBtn.textContent = 'In flashcards';
+              });
+              return fcBtn;
+            })() : null,
             h('a', { class: 'btn small ghost', href: '#/drill?id=' + encodeURIComponent(e.id) }, 'Drill this'),
             h('a', { class: 'btn small ghost', href: '#/questions?role=' + encodeURIComponent(e.role) + '&topic=' + encodeURIComponent(e.topic) }, 'More on ' + e.topic)),
           discovery));
@@ -577,6 +612,8 @@
         hist ? h('p', { class: 'muted small-text' }, 'Drilled ' + hist.n + (hist.n === 1 ? ' time' : ' times') + ': ' + hist.ok + ' confident, ' + hist.again + ' to revisit.') : null,
         h('p', { class: 'muted' }, 'Answer out loud first. Aim for about two minutes, then reveal the answer and compare.'));
       if (!st.shown) {
+        const op = outlinePanel(e);
+        if (op) card.appendChild(op);
         card.appendChild(h('div', { class: 'drill-row' },
           h('button', { class: 'btn primary', type: 'button', onclick: reveal }, 'Reveal answer'),
           h('button', { class: 'btn ghost', type: 'button', onclick: draw }, 'Skip'),

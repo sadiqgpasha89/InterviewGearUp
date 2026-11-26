@@ -165,9 +165,15 @@ Source: the product improvement plan (23 phases). This release does Phases 0 to 
 |---|---|---|
 | 17 Service worker & release | Done | Added `scripts/check-sw.js` (`npm run sw:check`) to verify cache versioning, duplicate-free `SHELL`, zero missing precache files, manifest icon precaching, and cache cleanup; guarded `sw.js` offline HTML fallback to navigation/document requests with `SKIP_WAITING` update handling; added live offline status and update-ready reload banner (`#app-banner`) in `js/app.js`; wired `sw:check` into CI. |
 
+## v1.16: flashcards and answer outline mode (plan phase 18)
+
+| Phase | Status | What changed |
+|---|---|---|
+| 18 Flashcards & outline mode | Done | Added `#/flashcards` (`js/flashcards.js`, `js/views7.js`): create concise local flashcards from weak questions or custom prompts, edit front/back, reveal, and grade recall directly into `IGU.srs` and `IGU.adaptive` (persisted in `igu.flashcards` and included in backups). Added offline 6-step progressive Answer Outline Mode (Define → How it works → Example → Trade-offs → Failures → Advanced) inside question cards and Drill before reveal. |
+
 ## Next
 
-- [ ] Phases 18 to 22 from the product improvement plan (see `docs/PRODUCT_GAP_AUDIT.md` for priorities).
+- [ ] Phases 19 to 22 from the product improvement plan (see `docs/PRODUCT_GAP_AUDIT.md` for priorities).
 - [ ] People to work through the review queue in `docs/CONTENT_QUALITY.md`; merge single-question topics.
 - [ ] Run real-device checks in `docs/MANUAL_QA.md` (no real phones/screen readers/Safari/Firefox tested automatically).
 
