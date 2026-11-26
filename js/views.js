@@ -27,14 +27,16 @@
   /* ================= Plan ================= */
   IGU.routes.plan = {
     title: 'Plan',
-    render: function () {
+    render: function (params) {
       const u = ui(), h = u.h, store = u.store, app = u.app;
       const day = u.today();
       const plan = store.get('plan', {});
-      const save = function (p) { store.set('plan', p); u.render(); };
+      const editing = !!(params && params.get && params.get('edit') === '1');
+      const save = function (p) { store.set('plan', p); if (editing) u.go('#/plan'); else u.render(); };
       fill(app);
 
       if (!plan.profile) { onboarding(); return; }
+      if (editing) { onboarding(plan.profile); return; }
       dashboard();
 
       function onboarding(existing, errs) {
@@ -65,7 +67,7 @@
           field(h, 'pl-weak', 'Topics you want extra time on', weak, '(optional, comma separated)'),
           h('div', { class: 'formfoot' },
             h('button', { class: 'btn primary', type: 'submit' }, existing ? 'Save changes' : 'Create my plan'),
-            existing ? h('button', { class: 'btn ghost', type: 'button', onclick: function () { u.render(); } }, 'Cancel') : null))));
+            existing ? h('button', { class: 'btn ghost', type: 'button', onclick: function () { if (editing) u.go('#/plan'); else u.render(); } }, 'Cancel') : null))));
       }
 
       function dashboard() {

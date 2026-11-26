@@ -15,7 +15,11 @@ Automated tests (`npm test`) cover the logic. These checks need a person and a r
 - [ ] Voice practice: in Chrome and Safari, start dictation, accept and decline the microphone prompt, and confirm the cloud-speech warning appears first and typing still works after a denial. Confirm no transcript is stored unless the box is ticked.
 - [ ] Company pages with a real labelled issue: apply `approved`, `needs-review` and `rejected` on a test issue and check the board and company page for each.
 - [ ] Screen reader pass on Stories, Design, Coding (results and timer) and Voice.
-- [ ] Open Practice and Community menus with keyboard only; Escape closes them.
+- [ ] Open Prepare, Practice and Community menus with keyboard only; Escape closes them.
+- [ ] Home (v1.5): in a fresh browser profile the onboarding appears; complete it in under a minute with keyboard only (gear choices are radio buttons). Skip for now leads to a dashboard with a "Set up in 30 seconds" card. Reset profile brings the onboarding back without losing progress.
+- [ ] Home on a phone at 320, 360, 390 and 430 px: no sideways scrolling; the Next up card and its Continue button are visible without scrolling far.
+- [ ] Home with a screen reader: each dashboard card is announced as a labelled region; the gear progress bar has a text label.
+- [ ] Answer marked Needs correction (set one temporarily in a data file): the warning appears above the answer in the app and on its static page.
 
 ## Content
 - [ ] Open five random answers marked "AI-drafted" and check them against an authoritative source before changing their status to `reviewed`.

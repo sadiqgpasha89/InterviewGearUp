@@ -10,7 +10,7 @@ const root = path.join(__dirname, '..');
 const ctx = { setTimeout, clearTimeout, AbortController, URL };
 ctx.window = ctx;
 vm.createContext(ctx);
-['js/config.js', 'js/quality.js', 'js/engine.js', 'js/srs.js', 'js/migrate.js', 'js/ai.js', 'js/planner.js', 'js/mock.js', 'js/stories.js', 'js/jd.js', 'js/design.js', 'data/design.js', 'js/coding-core.js', 'data/coding.js', 'data/coding-langs.js', 'js/company.js', 'js/voice.js']
+['js/config.js', 'js/quality.js', 'js/engine.js', 'js/srs.js', 'js/migrate.js', 'js/ai.js', 'js/planner.js', 'js/mock.js', 'js/dashboard.js', 'js/stories.js', 'js/jd.js', 'js/design.js', 'data/design.js', 'js/coding-core.js', 'data/coding.js', 'data/coding-langs.js', 'js/company.js', 'js/voice.js']
   .concat(require('../scripts/lib/data-files').dataFiles(root))
   .forEach((f) => vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f }));
 
@@ -1157,4 +1157,70 @@ test('new files are registered: index.html loads them and the service worker pre
   assert.ok(html.includes('href="#/paths"'));
   assert.ok(fs.readFileSync(path.join(root, 'js/app.js'), 'utf8').includes("'#/sync'"));
   ['learning-path.yml'].forEach((f) => assert.ok(fs.existsSync(path.join(root, '.github/ISSUE_TEMPLATE', f))));
+});
+
+/* ---------- Phase 2: home dashboard and onboarding ---------- */
+test('dashboard: a brand-new learner without a profile gets a concrete first action and honest empty states', () => {
+  const DB = IGU.dashboard;
+  const d = DB.summarize({ profile: null, bank, today: '2026-11-26' });
+  assert.equal(d.hasProfile, false);
+  assert.ok(d.isNew);
+  assert.equal(d.next.href, '#/drill');
+  assert.equal(d.today, null);
+  assert.equal(d.weak.length, 0);
+  assert.equal(d.mock.kind, 'first');
+  assert.equal(d.completed.prepared, 0);
+});
+
+test('dashboard: with a profile it surfaces the first unfinished plan task, time left, due reviews and gear progress', () => {
+  const DB = IGU.dashboard, PL = IGU.planner;
+  const today = '2026-11-26';
+  const profile = PL.validateProfile({ role: 'backend', level: 2, minutes: 60, createdDay: today }, today).profile;
+  const srs = { 'be-3': { due: '2026-11-24', interval: 1, reps: 1, lapses: 1, last: '2026-11-23', grade: 'again' } };
+  const practice = { 'be-3': { n: 1, ok: 0, again: 1, secs: 20, last: 'again' }, 'be-20': { n: 1, ok: 0, again: 1, secs: 20, last: 'again' } };
+  const done = { 'be-13': 1 };
+  const d = DB.summarize({ profile, bank, done, practice, srs, plan: {}, mocks: [], streak: 2, today });
+  assert.ok(d.hasProfile && !d.isNew);
+  assert.equal(d.due, 1); assert.equal(d.overdue, 1);
+  assert.equal(d.next.kind, 'review', 'overdue reviews come first');
+  assert.ok(d.today.minutesLeft > 0 && d.today.minutesLeft <= 60 + 10, 'time estimate within the budget');
+  assert.equal(d.today.left, d.today.total);
+  const first = d.today.tasks[0];
+  const plan = { completed: { [today]: { [first.kind + ':' + first.id]: 1 } } };
+  const d2 = DB.summarize({ profile, bank, done, practice, srs, plan, mocks: [], today });
+  assert.equal(d2.today.left, d.today.left - 1, 'completed tasks drop out');
+  assert.notEqual(d2.next.href + d2.next.title, d.next.href + d.next.title);
+  assert.equal(d.interview.gearPrepared, bank.filter((e) => e.role === 'backend' && e.level === 2 && done[e.id]).length);
+  assert.ok(d.interview.gearTotal > 0);
+  assert.equal(d.weak[0].topic, bank.find((e) => e.id === 'be-3').topic, 'the topic with the most evidence leads');
+  assert.ok(d.weak[0].href.startsWith('#/questions?role=backend&show=weak'));
+  assert.equal(d.completed.streak, 2);
+});
+
+test('dashboard: mock advice depends on history and never predicts results', () => {
+  const DB = IGU.dashboard;
+  const e = bank.find((x) => x.id === 'be-3');
+  const item = { qid: e.id, q: e.q, secs: 60, answer: 'ACID means atomicity. For example a bank transfer.', result: IGU.mock.score('ACID means atomicity. For example a bank transfer.', e) };
+  assert.equal(DB.mockAdvice([{ day: '2026-11-10', items: [item] }], null, '2026-11-26').kind, 'stale');
+  const focus = DB.mockAdvice([{ day: '2026-11-25', items: [item] }], null, '2026-11-26');
+  assert.equal(focus.kind, 'focus');
+  assert.ok(focus.focus);
+  [focus, DB.mockAdvice([], null, '2026-11-26')].forEach((m) => assert.ok(!/pass|hire|probab|chance/i.test(m.text), m.text));
+});
+
+test('home is the default route, onboarding is optional, and navigation is grouped', () => {
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  ['js/dashboard.js', 'js/views5.js'].forEach((f) => assert.ok(html.includes('src="' + f + '"'), f));
+  assert.ok(html.indexOf('src="js/dashboard.js"') < html.indexOf('src="js/views5.js"'));
+  assert.ok(html.includes('href="#/home" data-tab="home"') && html.includes('class="brand" href="#/home"'));
+  ['#/plan', '#/review', '#/progress', '#/drill', '#/mock', '#/coding', '#/design', '#/stories', '#/voice', '#/paths', '#/jd', '#/community', '#/company', '#/post', '#/questions']
+    .forEach((r) => assert.ok(html.includes('href="' + r + '"'), 'nav lost ' + r));
+  assert.equal((html.match(/<details class="menu">/g) || []).length, 3, 'three grouped menus');
+  const app = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
+  assert.ok(app.includes("|| '/home'") && app.includes("(r.seg[0] || 'home')"));
+  const v = fs.readFileSync(path.join(root, 'js/views5.js'), 'utf8');
+  assert.ok(v.includes('Skip for now') && v.includes("store.set('onboarding', { skipped: day })"), 'onboarding can be skipped');
+  assert.ok(v.includes('Reset profile'), 'profile can be reset from home');
+  assert.ok(!/innerHTML|fetch\(|IGU\.ai\./.test(v), 'home must not use innerHTML, the network or AI');
+  assert.ok(JSON.parse(fs.readFileSync(path.join(root, 'manifest.webmanifest'), 'utf8')).start_url.endsWith('#/home'));
 });

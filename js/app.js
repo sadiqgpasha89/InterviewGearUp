@@ -17,7 +17,7 @@
 
   /* ---------------- routing ---------------- */
   function parseRoute() {
-    const raw = location.hash.replace(/^#/, '') || '/questions';
+    const raw = location.hash.replace(/^#/, '') || '/home';
     const parts = raw.split('?');
     return { seg: parts[0].split('/').filter(Boolean), params: new URLSearchParams(parts[1] || '') };
   }
@@ -27,7 +27,7 @@
   function render() {
     if (cleanup) { cleanup(); cleanup = null; }
     const r = parseRoute();
-    const tab = r.seg[0] === 'q' ? 'questions' : (r.seg[0] || 'questions');
+    const tab = r.seg[0] === 'q' ? 'questions' : (r.seg[0] || 'home');
     document.querySelectorAll('#tabs a').forEach(function (a) {
       if (a.dataset.tab === tab) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });

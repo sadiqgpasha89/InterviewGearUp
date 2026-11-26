@@ -90,7 +90,23 @@ The plan marks Phase 14 as exploratory. These parts are built because they fit a
 | Localization | Not built | Needs a string catalogue across all views and human translators. Machine translations of interview answers would be unreviewed twice over. |
 | Privacy-preserving, opt-in usage analytics | Not built, on purpose | There is no server to receive it, and the plan says the default product stays tracker-free. |
 
+## v1.5: content trust and a front door (this release)
+
+Source: the product improvement plan (23 phases). This release does Phases 0 to 2; the rest stay open below.
+
+| Phase | Status | What changed |
+|---|---|---|
+| 0 Re-baseline | Done | `docs/PRODUCT_GAP_AUDIT.md`: test and content results, feature status, verified defects, UX, content, technical and accessibility gaps, prioritised backlog. Layout checked in headless Chromium only; no real devices. |
+| 1 Content quality and trust | Done (tooling and first fixes); human review still open | Five honest states (Pending, Origin not recorded, AI-drafted, Human-reviewed, Needs correction with a required note and an in-app warning). 66 answers that showed no label now say their origin is not recorded. Rubric signals, flags and a review priority in `js/quality.js`; `npm run content:audit` writes `docs/CONTENT_QUALITY.md` (checked by `npm test`). The 10 thinnest, most-studied fundamentals rewritten (version 2, still AI-drafted). Primary-source references on 41 questions; `npm run refs:check`. Human review workflow and rubric in CONTRIBUTING. README statistics are now tested against the data. |
+| 2 First-run and dashboard | Done (needs device testing) | `#/home` is the new start page: optional 4-question onboarding with Skip, a privacy note, and a dashboard with Continue preparation, today's tasks and minutes, reviews due, weak topics, mock suggestion, gear progress and completed counts (`js/dashboard.js`, pure and tested). Navigation regrouped into Home, Questions, Prepare, Practice and Community. Profile can be changed or reset from Home. |
+
 ## Next
+
+- [ ] Phase 3: tie mock and practice feedback to missing concepts; at most three next actions.
+- [ ] Phase 4: task deferral, workload limits, weekly summary, mastery from repeated attempts.
+- [ ] Phases 5 to 17 and 18 to 22 from the product improvement plan (see `docs/PRODUCT_GAP_AUDIT.md` for priorities).
+- [ ] People to work through the review queue in `docs/CONTENT_QUALITY.md`; merge single-question topics.
+- [ ] Mobile header still wraps to two rows below about 420 px; move focus to the main region on route change.
 
 - [ ] Keep writing answers for the questions that still have only a practice structure (`npm run content:status` lists them) and have people review the AI-drafted ones, then set `reviewStatus: 'reviewed'` with a date.
 - [ ] Retire semantic-duplicate placeholder questions.
