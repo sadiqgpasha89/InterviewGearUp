@@ -19,6 +19,8 @@ Automated tests (`npm test`) cover the logic. These checks need a person and a r
 - [ ] Home (v1.5): in a fresh browser profile the onboarding appears; complete it in under a minute with keyboard only (gear choices are radio buttons). Skip for now leads to a dashboard with a "Set up in 30 seconds" card. Reset profile brings the onboarding back without losing progress.
 - [ ] Home on a phone at 320, 360, 390 and 430 px: no sideways scrolling; the Next up card and its Continue button are visible without scrolling far.
 - [ ] Home with a screen reader: each dashboard card is announced as a labelled region; the gear progress bar has a text label.
+- [ ] Mock (v1.6): open "How answers are assessed" before starting; after a round each answer shows Content and Delivery rows with evidence and at most three next steps; a deliberately unrelated answer is labelled Off topic.
+- [ ] Plan (v1.6): set a rest day and workload limits in Edit plan; Swap and Tomorrow work on tasks; the This week section reads sensibly with a screen reader.
 - [ ] Answer marked Needs correction (set one temporarily in a data file): the warning appears above the answer in the app and on its static page.
 
 ## Content

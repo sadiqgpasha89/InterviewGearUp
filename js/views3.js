@@ -110,7 +110,18 @@
               return h('li', null, h('strong', null, (x.pass ? 'Pass' : 'Fail') + ' · '), h('code', null, p.fn + '(' + t.args.map(function (a) { return JSON.stringify(a); }).join(', ') + ')'),
                 x.pass ? null : h('div', { class: 'muted small-text' }, x.error ? 'Error: ' + x.error : 'Got ' + x.got + ', expected ' + x.expected));
             })) : null,
-            r.logs.length ? h('details', null, h('summary', null, 'Console output (' + r.logs.length + ')'), h('pre', { class: 'code' }, r.logs.join('\n'))) : null);
+            r.logs.length ? h('details', null, h('summary', null, 'Console output (' + r.logs.length + ')'), h('pre', { class: 'code' }, r.logs.join('\n'))) : null,
+            r.state === 'done' ? (function () {
+              const fb = IGU.codingCore.review(codes.javascript, p, r);
+              return h('details', { class: 'feedback', open: r.passed === r.total },
+                h('summary', null, 'Feedback on this attempt'),
+                h('table', { class: 'rubric' }, h('caption', { class: 'sr-only' }, 'Coding rubric'),
+                  h('tbody', null, fb.dims.map(function (d) {
+                    return h('tr', null, h('th', { scope: 'row' }, d.label), h('td', { class: 'lv l' + d.level }, IGU.mock.LEVELS[d.level]), h('td', null, h('span', { class: 'why' }, d.why + ' '), d.level < 3 ? d.note : null));
+                  }))),
+                fb.actions.length ? h('div', { class: 'next-actions' }, h('h4', null, 'Next steps'), h('ol', null, fb.actions.map(function (a) { return h('li', null, a); }))) : null,
+                h('p', { class: 'muted small-text' }, 'Correctness and edge cases come from the tests. Complexity, decomposition and quality are hints read from your code, not proof. Testing and explaining your approach aloud are up to you: say which extra cases you would test.'));
+            })() : null);
           paintSolution();
         };
         editor.addEventListener('input', function () { codes[lang] = editor.value; clearTimeout(timeout); timeout = setTimeout(save, 400); });

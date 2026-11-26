@@ -1,6 +1,6 @@
 /* Offline support. Network first for same-origin files (so a new deploy shows up immediately when online),
    falling back to the cache when offline. Cross-origin requests (GitHub API, LLM providers) are never touched. */
-const CACHE = 'igu-v8';
+const CACHE = 'igu-v9';
 const SHELL = [
   './',
   'index.html',
@@ -16,6 +16,7 @@ const SHELL = [
   'js/stats.js',
   'js/srs.js',
   'js/migrate.js',
+  'js/adaptive.js',
   'js/planner.js',
   'js/dashboard.js',
   'js/mock.js',

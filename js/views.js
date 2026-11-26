@@ -25,6 +25,26 @@
   const clock = function (s) { return Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0'); };
 
   /* ================= Plan ================= */
+  /* Weekly summary (Phase 4): counts and topic trends from local data, with the reason behind each focus topic. */
+  function weeklyBlock(h, wk, u) {
+    const li = function (label, val) { return h('li', null, h('strong', null, label + ': '), val); };
+    const trend = function (rows, word) { return rows.length ? rows.map(function (r) { return r.topic + ' (' + u.roleName(r.role) + ', ' + word + ' ' + Math.round(Math.abs(r.delta) * 100) + ' points)'; }).join('; ') : 'none yet (needs at least two attempts in each of the last two windows)'; };
+    return h('section', { class: 'weekly', 'aria-label': 'This week' },
+      h('h2', null, 'This week'),
+      h('p', { class: 'muted small-text' }, wk.from + ' to ' + wk.to + '. Counted from what you did in this browser; not a prediction.'),
+      h('ul', { class: 'plain-list' },
+        li('Completed', wk.tasksCompleted + ' plan tasks, ' + wk.attempts + ' graded attempts, active on ' + wk.activeDays + ' of 7 days'),
+        li('Missed', wk.missedDays ? wk.missedDays + (wk.missedDays === 1 ? ' day' : ' days') + ' with no practice. The plan carries reviews forward instead of piling them up.' : 'no days missed'),
+        li('Improving', trend(wk.improving, 'up')),
+        li('Declining', trend(wk.declining, 'down')),
+        li('Reviews', wk.reviewsDue + ' due now, ' + wk.reviewsNext7 + ' in the next 7 days'),
+        li('Mock interviews', wk.mock.rounds ? wk.mock.rounds + (wk.mock.rounds === 1 ? ' round' : ' rounds') + ', ' + wk.mock.pct + '% of rubric points' : 'none this week')),
+      h('h3', null, 'Focus next week'),
+      wk.focus.length ? h('ol', null, wk.focus.map(function (f) {
+        return h('li', null, h('a', { href: '#/questions?role=' + encodeURIComponent(f.role) + '&q=' + encodeURIComponent(f.topic) }, f.topic), ' (' + u.roleName(f.role) + '): ' + f.reasons.join('; ') + '.');
+      })) : h('p', { class: 'muted' }, 'No weak topics yet. Grade questions in Drill or Review, or run a mock, and the evidence shows up here.'));
+  }
+
   IGU.routes.plan = {
     title: 'Plan',
     render: function (params) {
@@ -49,13 +69,20 @@
         const date = h('input', { id: 'pl-date', type: 'date', min: day, value: prof.interviewDate || '' });
         const mins = h('input', { id: 'pl-mins', type: 'number', min: '15', max: '240', step: '5', value: String(prof.minutes || 45) });
         const weak = h('input', { id: 'pl-weak', placeholder: 'e.g. caching, SQL, concurrency', value: (prof.weakTopics || []).join(', ') });
+        const maxNew = h('input', { id: 'pl-maxnew', type: 'number', min: '0', max: '10', step: '1', value: String(prof.maxNew || 0) });
+        const maxRev = h('input', { id: 'pl-maxrev', type: 'number', min: '0', max: '60', step: '1', value: String(prof.maxReviews || 0) });
+        const restBoxes = PL.WEEKDAYS.map(function (name, i) {
+          return h('label', { class: 'chk' }, h('input', { type: 'checkbox', value: String(i), checked: (prof.restDays || []).indexOf(i) >= 0 }), ' ' + name.slice(0, 3));
+        });
         fill(app, h('div', { class: 'plan-page' },
           h('h1', null, existing ? 'Edit your plan' : 'Plan your preparation'),
           h('p', { class: 'lede' }, 'Answer five questions and get a short daily list: reviews that are due, then new questions with a written answer. Stored only in this browser.'),
           h('form', { class: 'plan-form', novalidate: true, onsubmit: function (ev) {
             ev.preventDefault();
             const res = PL.validateProfile({ role: role.value, level: level.value, company: company.value, interviewDate: date.value, minutes: mins.value,
-              weakTopics: weak.value, createdDay: (plan.profile && plan.profile.createdDay) || day }, day);
+              weakTopics: weak.value, createdDay: (plan.profile && plan.profile.createdDay) || day,
+              maxNew: maxNew.value, maxReviews: maxRev.value,
+              restDays: restBoxes.map(function (l) { return l.querySelector('input'); }).filter(function (c) { return c.checked; }).map(function (c) { return Number(c.value); }) }, day);
             if (!res.ok) { err.textContent = res.errors.join(' '); err.hidden = false; return; }
             save(Object.assign({}, plan, { profile: res.profile, skipped: {}, completed: plan.completed || {} }));
           } },
@@ -65,6 +92,11 @@
           field(h, 'pl-date', 'Interview date', date, '(optional)'),
           field(h, 'pl-mins', 'Minutes per day', mins),
           field(h, 'pl-weak', 'Topics you want extra time on', weak, '(optional, comma separated)'),
+          h('details', { class: 'plan-limits', open: !!(prof.maxNew || prof.maxReviews || (prof.restDays || []).length) },
+            h('summary', null, 'Workload limits (optional)'),
+            field(h, 'pl-maxnew', 'Most new questions per day', maxNew, '(0 = fit to your time)'),
+            field(h, 'pl-maxrev', 'Most reviews per day', maxRev, '(0 = automatic; extra reviews wait for the next days)'),
+            h('fieldset', { class: 'rest-days' }, h('legend', null, 'Rest days ', h('span', { class: 'hint' }, '(only a 15-minute review session)')), restBoxes)),
           h('div', { class: 'formfoot' },
             h('button', { class: 'btn primary', type: 'submit' }, existing ? 'Save changes' : 'Create my plan'),
             existing ? h('button', { class: 'btn ghost', type: 'button', onclick: function () { if (editing) u.go('#/plan'); else u.render(); } }, 'Cancel') : null))));
@@ -74,8 +106,11 @@
         const profile = PL.validateProfile(plan.profile, null).profile;
         profile.createdDay = plan.profile.createdDay || day;
         const skip = (plan.skipped && plan.skipped[day]) || [];
-        const ctx = { done: u.done.all(), practice: store.get('practice', {}), srs: store.get('srs', {}) };
+        const activity = store.get('activity', []);
+        const ctx = { done: u.done.all(), practice: store.get('practice', {}), srs: store.get('srs', {}), history: store.get('history', []), mocks: store.get('mocks', []),
+          lastActive: activity.filter(function (d) { return d < day; }).sort().pop() || '' };
         const t = PL.daily(profile, u.bank, ctx, day, { skip: skip });
+        const wk = IGU.adaptive.weekly({ today: day, plan: plan, bank: u.bank, history: ctx.history, mocks: ctx.mocks, srs: ctx.srs, practice: ctx.practice, activity: activity });
         const doneToday = (plan.completed && plan.completed[day]) || {};
         const key = function (x) { return x.kind + ':' + x.id; };
         const left = t.tasks.filter(function (x) { return !doneToday[key(x)]; });
@@ -108,7 +143,8 @@
             h('div', { class: 'task-main' },
               h('a', { href: x.href }, x.kind === 'review' ? 'Review: ' + x.title : x.title),
               h('div', { class: 'muted small-text' }, x.why + ' · about ' + x.minutes + ' min')),
-            x.kind !== 'mock' && !on ? h('button', { class: 'btn small ghost', type: 'button', onclick: function () { skipTask(x); }, 'aria-label': 'Skip: ' + x.title }, 'Skip') : null);
+            x.kind === 'new' && !on ? h('button', { class: 'btn small ghost', type: 'button', onclick: function () { skipTask(x); }, 'aria-label': 'Swap for another question: ' + x.title, title: 'Swap for another question' }, 'Swap') : null,
+            x.kind === 'review' && !on ? h('button', { class: 'btn small ghost', type: 'button', onclick: function () { skipTask(x); }, 'aria-label': 'Move to tomorrow: ' + x.title, title: 'It stays due and comes back tomorrow' }, 'Tomorrow') : null);
         })) : h('div', { class: 'empty' }, h('p', null, 'Nothing is scheduled for today.'));
 
         fill(app, h('div', { class: 'plan-page' },
@@ -122,6 +158,7 @@
           t.notes.map(function (n) { return h('p', { class: 'notice' }, n); }),
           list,
           t.tasks.length && !left.length ? h('p', { class: 'notice ok' }, 'All done for today. Come back tomorrow for the next set.') : null,
+          weeklyBlock(h, wk, u),
           h('div', { class: 'q-actions' },
             left.length ? h('a', { class: 'btn primary', href: left[0].href }, 'Continue preparation') : null,
             h('button', { class: 'btn', type: 'button', onclick: function () {
@@ -162,6 +199,7 @@
         const cur = st.queue[st.i];
         if (!cur || !st.shown) return;
         store.set('srs', SRS.review(store.get('srs', {}), cur.id, g, day));
+        store.set('history', IGU.adaptive.logAttempt(store.get('history', []), cur.id, g, day));
         store.set('practice', S.record(store.get('practice', {}), cur.id, (g === 'solid' || g === 'mastered') ? 'ok' : 'again', (Date.now() - st.t0) / 1000));
         u.touchActivity();
         st.session++; st.i++; st.shown = false; st.t0 = Date.now();
@@ -245,6 +283,44 @@
   };
 
   /* ================= Mock interview ================= */
+  /* Rubric shown before practice: all three rubrics on the setup screen, the relevant one under each question. */
+  function rubricGuide(h, kind) {
+    const kinds = kind ? [kind] : Object.keys(MK.RUBRICS);
+    return h('details', { class: 'rubric-guide' },
+      h('summary', null, kind ? 'How this answer is assessed' : 'How answers are assessed'),
+      kinds.map(function (k) {
+        const R = MK.RUBRICS[k];
+        return h('div', null, kind ? null : h('h3', null, R.title),
+          h('ul', { class: 'rubric-criteria' }, R.criteria.map(function (c) {
+            return h('li', null, h('strong', null, c[2]), h('span', { class: 'muted small-text' }, ' (' + (c[1] === 'content' ? 'content' : 'delivery') + ') '), c[3]);
+          })));
+      }),
+      h('p', { class: 'muted small-text' }, 'Each criterion scores Missing, Thin, Good or Strong. The checks look for the ideas, not for exact words, and cannot verify correctness.'));
+  }
+
+  /* Per-answer feedback: content and delivery separately, the evidence behind each score, missing concepts and at most three next actions.
+     Sessions saved by older versions lack group, why and actions; they still render. */
+  function feedbackBlock(h, r, idx) {
+    const groups = [['content', 'Content'], ['delivery', 'Delivery']];
+    const rows = function (ds) {
+      return ds.map(function (d) {
+        return h('tr', null, h('th', { scope: 'row' }, d.label), h('td', { class: 'lv l' + d.level }, MK.LEVELS[d.level]),
+          h('td', null, d.why ? h('span', { class: 'why' }, d.why + ' ') : null, d.level < 3 || !d.why ? d.note : null));
+      });
+    };
+    const hasGroups = r.dims.some(function (d) { return d.group; });
+    return h('div', { class: 'feedback' },
+      r.offTopic ? h('p', { class: 'notice bad' }, 'This answer does not seem to address the question, so the content criteria score Missing.') : null,
+      h('table', { class: 'rubric' }, h('caption', { class: 'sr-only' }, 'Rubric for question ' + (idx + 1)),
+        hasGroups ? groups.map(function (g) {
+          const ds = r.dims.filter(function (d) { return d.group === g[0]; });
+          return ds.length ? h('tbody', null, h('tr', { class: 'rubric-group' }, h('th', { colspan: '3', scope: 'colgroup' }, g[1])), rows(ds)) : null;
+        }) : h('tbody', null, rows(r.dims))),
+      r.concepts && r.concepts.miss && r.concepts.miss.length ? h('p', { class: 'small-text' }, h('strong', null, 'Not mentioned from the reference answer: '), r.concepts.miss.slice(0, 6).join(', ') + '.') : null,
+      r.actions && r.actions.length ? h('div', { class: 'next-actions' }, h('h4', null, 'Next ' + (r.actions.length === 1 ? 'step' : r.actions.length + ' steps')),
+        h('ol', null, r.actions.map(function (a) { return h('li', null, a.text, a.example ? h('div', { class: 'muted small-text' }, 'For example: ' + a.example) : null); }))) : null);
+  }
+
   IGU.routes.mock = {
     title: 'Mock interview',
     render: function (params) {
@@ -274,7 +350,8 @@
           } },
             err,
             field(h, 'mk-role', 'Role', role), field(h, 'mk-level', 'Gear', level), field(h, 'mk-type', 'Round', type), field(h, 'mk-count', 'Length', count),
-            h('p', { class: 'muted small-text' }, 'Answer each question in writing or out loud, about three minutes each. You see feedback at the end, like a real round. Feedback is a fixed rubric on the shape of your answer; it cannot judge whether you are right.'),
+            h('p', { class: 'muted small-text' }, 'Answer each question in writing or out loud, about three minutes each. You see feedback at the end, like a real round. Feedback is a fixed rubric that checks which ideas and elements your answer contains; it cannot judge whether you are right.'),
+            rubricGuide(h, null),
             h('div', { class: 'formfoot' }, h('button', { class: 'btn primary', type: 'submit' }, 'Start mock'))),
           history.length ? h('section', { class: 'mock-history' }, h('h2', null, 'Past mocks'),
             h('ul', { class: 'plain-list' }, history.map(function (s, idx) {
@@ -294,6 +371,7 @@
         const clockEl = h('span', { class: 'timer', role: 'timer', 'aria-label': 'Time on this question' }, '0:00');
         const progress = h('p', { class: 'muted small-text', 'aria-live': 'polite' });
         const qEl = h('div', { class: 'drill-q' });
+        const criteriaEl = h('div');
         const next = function (skip) {
           const e = built.questions[i];
           const secs = (Date.now() - t0) / 1000;
@@ -305,7 +383,8 @@
         };
         function show() {
           const e = built.questions[i];
-          qEl.textContent = e.q; area.value = ''; t0 = Date.now(); clockEl.textContent = '0:00'; clockEl.classList.remove('late');
+          qEl.textContent = e.q; area.value = '';
+          fill(criteriaEl, rubricGuide(h, MK.kindForRubric(e))); t0 = Date.now(); clockEl.textContent = '0:00'; clockEl.classList.remove('late');
           progress.textContent = 'Question ' + (i + 1) + ' of ' + built.questions.length;
           area.focus();
         }
@@ -323,7 +402,7 @@
         fill(stage, h('div', { class: 'drill-card' },
           h('div', { class: 'drill-row' }, progress, h('span', { class: 'grow' }), clockEl),
           built.shortfall ? h('p', { class: 'notice' }, 'Only ' + built.questions.length + ' matching questions exist for this selection.') : null,
-          qEl, h('label', { for: 'mk-answer', class: 'sr-only' }, 'Your answer'), area,
+          qEl, criteriaEl, h('label', { for: 'mk-answer', class: 'sr-only' }, 'Your answer'), area,
           h('div', { class: 'drill-row' },
             h('button', { class: 'btn primary', type: 'button', onclick: function () { next(false); } }, 'Submit and continue'),
             h('button', { class: 'btn ghost', type: 'button', onclick: function () { next(true); } }, 'Skip'),
@@ -360,20 +439,18 @@
           return h('section', { class: 'mock-item' },
             h('h3', null, (idx + 1) + '. ' + it.q),
             h('p', { class: 'muted small-text' }, Math.round(it.secs) + 's · ' + (r.words || 0) + (r.words === 1 ? ' word' : ' words') + (r.empty ? '' : ' · ' + r.band + ' (' + r.total + ' of ' + r.max + ')')),
-            r.empty ? h('p', { class: 'muted' }, 'No answer recorded for this question.') :
-              h('table', { class: 'rubric' }, h('caption', { class: 'sr-only' }, 'Rubric for question ' + (idx + 1)),
-                h('tbody', null, r.dims.map(function (d) { return h('tr', null, h('th', { scope: 'row' }, d.label), h('td', { class: 'lv l' + d.level }, MK.LEVELS[d.level]), h('td', null, d.note)); }))),
+            r.empty ? h('p', { class: 'muted' }, 'No answer recorded for this question.') : feedbackBlock(h, r, idx),
             it.answer ? h('details', null, h('summary', null, 'Your answer'), h('p', { class: 'userq plain' }, it.answer)) : null,
             e ? h('p', { class: 'small-text' }, h('a', { href: '#/q/' + e.id }, Q.isReal(e) ? 'Open the reference answer' : 'Open this question'),
               e.follow && e.follow.length ? ' · Likely follow-ups: ' + e.follow.slice(0, 2).join(' / ') : '') : null,
             it.answer ? aiBtn : null, aiMsg, aiOut);
         });
-        const weakIds = session.items.filter(function (it) { return it.result.empty || it.result.band === 'Needs work' || it.result.band === 'Developing'; })
+        const weakIds = session.items.filter(function (it) { return it.result.empty || it.result.band === 'Needs work' || it.result.band === 'Developing' || it.result.band === 'Off topic'; })
           .map(function (it) { return it.qid; }).filter(function (id) { return u.bank.some(function (e) { return e.id === id; }); });
         const addMsg = h('p', { class: 'notice ok', hidden: true, role: 'status' });
         fill(stage, h('div', { class: 'mock-results' },
           h('h2', null, 'Results' + (fromHistory ? ' (' + session.day + ')' : '')),
-          h('p', { class: 'muted small-text' }, 'A rubric of surface checks: structure, specifics, trade-offs and the points in the reference answer. It cannot tell whether an answer is correct and is not a prediction of interview results.'),
+          h('p', { class: 'muted small-text' }, 'Content criteria check which ideas your answer mentions (key concepts from the reference answer, examples, trade-offs, failure modes, or the STAR and system design elements). Delivery checks structure and length. Each score says what it found. None of it can tell whether an answer is correct, and it is not a prediction of interview results.'),
           h('p', null, sum.answered + ' answered, ' + sum.skipped + ' skipped.' + (sum.weakest ? ' Weakest area: ' + sum.weakest.label + '.' : '')),
           sum.rows.length ? h('ul', { class: 'plain-list' }, sum.rows.map(function (r) { return h('li', null, r.label + ': ' + r.avg.toFixed(1) + ' of 3 on average'); })) : null,
           itemsEl,

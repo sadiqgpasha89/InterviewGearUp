@@ -69,7 +69,7 @@
     let todayPlan = null, next = null, interview = null;
     if (profile) {
       const skip = (plan.skipped && plan.skipped[today]) || [];
-      const t = PL.daily(profile, bank, { done: done, practice: practice, srs: srs }, today, { skip: skip });
+      const t = PL.daily(profile, bank, { done: done, practice: practice, srs: srs, history: input.history, mocks: input.mocks, lastActive: input.lastActive }, today, { skip: skip });
       const doneToday = (plan.completed && plan.completed[today]) || {};
       const left = t.tasks.filter(function (x) { return !doneToday[x.kind + ':' + x.id]; });
       todayPlan = {

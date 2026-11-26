@@ -100,10 +100,15 @@ Source: the product improvement plan (23 phases). This release does Phases 0 to 
 | 1 Content quality and trust | Done (tooling and first fixes); human review still open | Five honest states (Pending, Origin not recorded, AI-drafted, Human-reviewed, Needs correction with a required note and an in-app warning). 66 answers that showed no label now say their origin is not recorded. Rubric signals, flags and a review priority in `js/quality.js`; `npm run content:audit` writes `docs/CONTENT_QUALITY.md` (checked by `npm test`). The 10 thinnest, most-studied fundamentals rewritten (version 2, still AI-drafted). Primary-source references on 41 questions; `npm run refs:check`. Human review workflow and rubric in CONTRIBUTING. README statistics are now tested against the data. |
 | 2 First-run and dashboard | Done (needs device testing) | `#/home` is the new start page: optional 4-question onboarding with Skip, a privacy note, and a dashboard with Continue preparation, today's tasks and minutes, reviews due, weak topics, mock suggestion, gear progress and completed counts (`js/dashboard.js`, pure and tested). Navigation regrouped into Home, Questions, Prepare, Practice and Community. Profile can be changed or reset from Home. |
 
+## v1.6: feedback and adaptive planning (plan phases 3 and 4)
+
+| Phase | Status | What changed |
+|---|---|---|
+| 3 Answer evaluation and feedback | Done | Mock answers are scored with one of three published rubrics (technical; behavioral STAR with ownership, impact and reflection; system design with requirements, scale, architecture, APIs, data model, reliability, security, trade-offs), shown before practice and under each question. Content and delivery are scored separately, each score states the evidence it found, missing reference concepts are listed, off-topic answers are detected, and every answer gets at most three prioritised next steps with an example. Coding lab attempts get a rubric from the real test run (correctness, edge-case tests) plus code hints (complexity versus the reference, decomposition, quality). Fixed question classification that treated technical questions about failures or write conflicts as behavioral. |
+| 4 Adaptive preparation | Done | `js/adaptive.js`: local attempt history, recency-weighted mastery over repeated attempts, weak-topic evidence from drills, reviews and mock scores, topic trends and a weekly summary on the Plan page. Planner: reviews are capped so one new-question slot is always kept, the backlog is carried forward with a note, welcome-back note after missed days, notes when the interview date leaves less time than the gear needs, estimated minutes per question, workload limits (new questions, reviews, rest days), at most two questions per topic per day, Swap and Tomorrow per task, and a reason on every task. Deterministic and tested. |
+
 ## Next
 
-- [ ] Phase 3: tie mock and practice feedback to missing concepts; at most three next actions.
-- [ ] Phase 4: task deferral, workload limits, weekly summary, mastery from repeated attempts.
 - [ ] Phases 5 to 17 and 18 to 22 from the product improvement plan (see `docs/PRODUCT_GAP_AUDIT.md` for priorities).
 - [ ] People to work through the review queue in `docs/CONTENT_QUALITY.md`; merge single-question topics.
 - [ ] Mobile header still wraps to two rows below about 420 px; move focus to the main region on route change.

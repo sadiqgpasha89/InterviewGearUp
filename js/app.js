@@ -428,6 +428,7 @@
       const e = st.current;
       const outcome = (g === 'solid' || g === 'mastered') ? 'ok' : 'again';
       store.set('practice', S.record(store.get('practice', {}), e.id, outcome, st.secs));
+      if (IGU.adaptive) store.set('history', IGU.adaptive.logAttempt(store.get('history', []), e.id, outcome, today()));
       store.set('srs', IGU.srs.review(store.get('srs', {}), e.id, g, today()));
       touchActivity();
       if (outcome === 'ok' && !done.has(e.id)) done.toggle(e.id);
