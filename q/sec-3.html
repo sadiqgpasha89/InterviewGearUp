@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>How does the TLS handshake work? | InterviewGearUp</title>
-<meta name="description" content="The client authenticates the server through its certificate, both sides agree on fresh session keys with an ephemeral key exchange, and from then on…">
+<meta name="description" content="In TLS 1.3 the client sends supported ciphers and a key share; the server picks a cipher, sends its key share and its certificate, and proves it owns the…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-3.html">
 <meta property="og:title" content="How does the TLS handshake work? | InterviewGearUp">
-<meta property="og:description" content="The client authenticates the server through its certificate, both sides agree on fresh session keys with an ephemeral key exchange, and from then on…">
+<meta property="og:description" content="In TLS 1.3 the client sends supported ciphers and a key share; the server picks a cipher, sends its key share and its certificate, and proves it owns the…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-3.html">
 <meta name="color-scheme" content="light dark">
@@ -21,22 +21,25 @@
 <main id="main" class="static-page">
 <p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
 <h1>How does the TLS handshake work?</h1>
-<p class="muted small-text meta-line">Security engineer · Gear 2 (Mid-level) · Networking · AI-drafted, not yet reviewed by a person</p>
+<p class="muted small-text meta-line">Security engineer · Gear 2 (Mid-level) · Networking · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
-<p>The client authenticates the server through its certificate, both sides agree on fresh session keys with an ephemeral key exchange, and from then on traffic is encrypted with fast symmetric ciphers.</p></div>
+<p>In TLS 1.3 the client sends supported ciphers and a key share; the server picks a cipher, sends its key share and its certificate, and proves it owns the private key by signing the handshake. Both sides derive the same session keys from an ephemeral Diffie-Hellman exchange, then switch to fast symmetric encryption. It takes one round trip.</p></div>
 <h4>Explained in depth</h4>
-<h4>TLS 1.3 in outline</h4>
-<ol start="1"><li><strong>ClientHello</strong>: supported cipher suites and the client&#39;s key share.</li><li><strong>ServerHello</strong>: chosen suite and the server&#39;s key share, then the certificate and a signature proving it holds the private key.</li><li>Both sides derive session keys using ephemeral Diffie-Hellman.</li><li><strong>Finished</strong> messages confirm the handshake. Application data is then encrypted. Takes one round trip.</li></ol>
-<h4>Certificate validation</h4>
-<p>The client checks the chain up to a trusted certificate authority, the hostname, validity dates and revocation status (OCSP stapling).</p>
-<h4>Why ephemeral keys</h4>
-<p><strong>Forward secrecy</strong>: if the server&#39;s long-term key leaks later, recorded past traffic still cannot be decrypted.</p>
-<p><strong>Mutual TLS</strong> has the client present a certificate as well, common between internal services.</p>
-<p>Common problems: expired certificates, incomplete chains, old protocol versions, weak ciphers. Use HSTS to force HTTPS, and debug with <code>openssl s_client -connect host:443</code>.</p>
+<h4>TLS 1.3 handshake</h4>
+<ol start="1"><li><strong>ClientHello</strong>: supported versions and cipher suites, a random value, and a key share (an ephemeral ECDHE public key), plus SNI saying which host it wants.</li><li><strong>ServerHello</strong>: chosen cipher and the server&#39;s key share. Both sides now compute the shared secret, and everything after this is encrypted.</li><li><strong>Certificate + CertificateVerify</strong>: the server&#39;s certificate chain and a signature over the handshake transcript with its private key, proving it holds the key for that certificate.</li><li><strong>Finished</strong> from both sides: a MAC over the transcript, so any tampering with earlier messages is detected.</li></ol>
+<p>The client validates the certificate: chain to a trusted root, hostname matches, not expired, not revoked.</p>
+<p>For example, <code>openssl s_client -connect example.com:443 -tls1_3</code> prints the negotiated cipher (such as <code>TLS_AES_256_GCM_SHA384</code>), the key exchange group and the certificate chain, which is a quick way to debug a failing handshake.</p>
+<h4>What each part buys you</h4>
+<ul><li><strong>Ephemeral Diffie-Hellman</strong> gives forward secrecy: stealing the server&#39;s private key later does not decrypt recorded traffic.</li><li><strong>Certificate + signature</strong> gives authentication: you are talking to the holder of the key for that name.</li><li><strong>AEAD ciphers</strong> (AES-GCM, ChaCha20-Poly1305) give confidentiality and integrity for the data.</li></ul>
+<h4>Compared with TLS 1.2</h4>
+<p>1.2 needed two round trips and allowed static RSA key exchange (no forward secrecy) and weaker ciphers. 1.3 removed them. 1.3 also offers 0-RTT resumption, which is fast but replayable, so only use it for idempotent requests.</p>
+<h4>Pitfalls</h4>
+<p>Disabling certificate validation in clients &quot;to make it work&quot;, expired certificates (automate renewal), missing intermediate certificates, and terminating TLS at a load balancer and then sending sensitive traffic unencrypted inside the network.</p>
 <h4>Likely follow-ups</h4>
-<ul><li>What is forward secrecy?</li><li>What is mutual TLS used for?</li><li>How does certificate pinning work?</li></ul>
+<ul><li>What is forward secrecy?</li><li>What is mutual TLS used for?</li><li>How does certificate pinning work?</li><li>Why is 0-RTT data a replay risk?</li></ul>
+<p class="muted small-text">References: <a href="https://www.rfc-editor.org/rfc/rfc8446" rel="noopener noreferrer">RFC 8446: TLS 1.3</a></p>
 <p><a class="btn primary" href="../#/q/sec-3">Practise this question in the app</a></p>
-<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-3%3A+How+does+the+TLS+handshake+work%3F&amp;question-id=sec-3&amp;context=Security+engineer%2C+Gear+2%2C+topic%3A+Networking%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-3.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-3%3A+How+does+the+TLS+handshake+work%3F&amp;question-id=sec-3&amp;context=Security+engineer%2C+Gear+2%2C+topic%3A+Networking%2C+content+version+2.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-3.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
 <footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>

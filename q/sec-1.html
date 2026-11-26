@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>What is the difference between encoding, encryption and hashing? | InterviewGearUp</title>
-<meta name="description" content="Encoding transforms data for transport and is trivially reversible (Base64). Encryption hides data and is reversible with a key. Hashing is one-way and…">
+<meta name="description" content="Encoding changes the representation of data so a system can carry it (Base64, UTF-8) and anyone can reverse it. Encryption hides data so only key holders…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-1.html">
 <meta property="og:title" content="What is the difference between encoding, encryption and hashing? | InterviewGearUp">
-<meta property="og:description" content="Encoding transforms data for transport and is trivially reversible (Base64). Encryption hides data and is reversible with a key. Hashing is one-way and…">
+<meta property="og:description" content="Encoding changes the representation of data so a system can carry it (Base64, UTF-8) and anyone can reverse it. Encryption hides data so only key holders…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-1.html">
 <meta name="color-scheme" content="light dark">
@@ -21,17 +21,22 @@
 <main id="main" class="static-page">
 <p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
 <h1>What is the difference between encoding, encryption and hashing?</h1>
-<p class="muted small-text meta-line">Security engineer · Gear 1 (Junior) · Cryptography · AI-drafted, not yet reviewed by a person</p>
+<p class="muted small-text meta-line">Security engineer · Gear 1 (Junior) · Cryptography · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
-<p>Encoding transforms data for transport and is trivially reversible (Base64). Encryption hides data and is reversible with a key. Hashing is one-way and used to verify integrity or store passwords.</p></div>
+<p>Encoding changes the representation of data so a system can carry it (Base64, UTF-8) and anyone can reverse it. Encryption hides data so only key holders can reverse it (AES, RSA). Hashing is a one-way fingerprint of fixed length (SHA-256) used to check integrity or store passwords, and is not meant to be reversed.</p></div>
 <h4>Explained in depth</h4>
-<ul><li><strong>Encoding</strong> gives no secrecy. Anyone can decode Base64.</li><li><strong>Symmetric encryption</strong> (AES-GCM): one shared key, fast, for bulk data.</li><li><strong>Asymmetric encryption</strong> (RSA, elliptic curves): a key pair. Used for key exchange, signatures and certificates. Slower.</li><li><strong>Hashing</strong> (SHA-256): a fixed-size fingerprint for integrity checks.</li><li><strong>Password hashing</strong>: use a deliberately slow, salted algorithm (Argon2id, bcrypt, scrypt) so brute force is expensive. Never encrypt stored passwords, and never use MD5 or SHA-1 for security.</li><li><strong>HMAC</strong>: a hash combined with a secret key to authenticate a message.</li><li><strong>Digital signature</strong>: sign with a private key, verify with the public key.</li></ul>
-<p>TLS combines these: asymmetric cryptography to agree on a session key, symmetric encryption for the data.</p>
-<p>A <strong>salt</strong> is a unique random value per password that defeats precomputed rainbow tables.</p>
+<h4>Side by side</h4>
+<div class="md-table"><table><thead><tr><th></th><th>Reversible?</th><th>Needs a key?</th><th>Purpose</th><th>Examples</th></tr></thead><tbody><tr><td>Encoding</td><td>Yes, by anyone</td><td>No</td><td>Transport and compatibility</td><td>Base64, URL encoding, UTF-8</td></tr><tr><td>Encryption</td><td>Yes, with the key</td><td>Yes</td><td>Confidentiality</td><td>AES-GCM, ChaCha20-Poly1305, RSA-OAEP</td></tr><tr><td>Hashing</td><td>No (one-way)</td><td>No (HMAC adds one)</td><td>Integrity, lookup, password storage</td><td>SHA-256, BLAKE2; bcrypt, Argon2 for passwords</td></tr></tbody></table></div>
+<h4>Example</h4>
+<p>A JWT header looks scrambled, but it is only Base64url-encoded: paste it into a decoder and you can read the claims. That is why a JWT must be <strong>signed</strong> (integrity) and should not carry secrets unless it is also encrypted (JWE).</p>
+<h4>Passwords are a special case</h4>
+<p>Store passwords with a slow, salted password hash (Argon2id, scrypt or bcrypt), never with encryption (an attacker who steals the key gets every password) and never with a fast hash like plain SHA-256 (GPUs try billions of guesses a second). The salt makes identical passwords hash differently, which defeats precomputed tables.</p>
+<h4>Trade-offs and pitfalls</h4>
+<ul><li>Symmetric encryption (AES) is fast but both sides need the same key; asymmetric (RSA, ECDH) solves key exchange but is slower, so TLS uses asymmetric crypto to agree a symmetric key.</li><li>A plain hash proves nothing about who produced it. To detect tampering by someone without the key, use an HMAC or a digital signature.</li><li>Use authenticated encryption (AES-GCM) so tampered ciphertext is rejected, and never reuse a nonce with the same key.</li><li>Calling Base64 &quot;encryption&quot; in a design review is a red flag interviewers listen for.</li></ul>
 <h4>Likely follow-ups</h4>
-<ul><li>Why do we salt passwords?</li><li>What does GCM give you over CBC mode?</li><li>Hash versus HMAC versus signature?</li></ul>
+<ul><li>Why do we salt passwords?</li><li>What does GCM give you over CBC mode?</li><li>Hash versus HMAC versus signature?</li><li>Why is a fast hash like SHA-256 a poor choice for passwords?</li></ul>
 <p><a class="btn primary" href="../#/q/sec-1">Practise this question in the app</a></p>
-<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-1%3A+What+is+the+difference+between+encoding%2C+encryption+and+hashing%3F&amp;question-id=sec-1&amp;context=Security+engineer%2C+Gear+1%2C+topic%3A+Cryptography%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-1.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-1%3A+What+is+the+difference+between+encoding%2C+encryption+and+hashing%3F&amp;question-id=sec-1&amp;context=Security+engineer%2C+Gear+1%2C+topic%3A+Cryptography%2C+content+version+2.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-1.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
 <footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>

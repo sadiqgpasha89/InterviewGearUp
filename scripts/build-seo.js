@@ -42,7 +42,7 @@ function build(root) {
     const lv = level(e.level);
     const bits = [roleName(e.role), 'Gear ' + e.level + ' (' + lv.name + ')', e.topic];
     if (e.difficulty) bits.push('Difficulty: ' + e.difficulty);
-    const review = e.reviewStatus === 'reviewed' ? 'Reviewed ' + e.lastReviewed : 'AI-drafted, not yet reviewed by a person';
+    const review = quality.label(e);
     const app = '../';
     const issue = repo + '/issues/new?' + new URLSearchParams({ template: 'content-feedback.yml', title: '[Answer feedback] ' + e.id + ': ' + trim(e.q, 70), 'question-id': e.id, context: roleName(e.role) + ', Gear ' + e.level + ', topic: ' + e.topic + ', content version ' + (e.contentVersion || 1) + '. Link: ' + site + '/q/' + e.id + '.html' }).toString();
     const refs = Array.isArray(e.references) && e.references.length
@@ -51,6 +51,7 @@ function build(root) {
       '<body>\n<a class="skip" href="#main">Skip to content</a>\n' + topbar +
       '<main id="main" class="static-page">\n<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>\n<h1>' + esc(e.q) + '</h1>\n' +
       '<p class="muted small-text meta-line">' + esc(bits.join(' · ')) + ' · ' + esc(review) + '</p>\n' +
+      (quality.status(e) === 'needs-correction' ? '<p class="notice bad"><strong>Needs correction.</strong> ' + esc(e.correctionNote) + '</p>\n' : '') +
       '<div class="short"><h4>In 30 seconds</h4>\n' + mdToHtml(e.short, app) + '</div>\n<h4>Explained in depth</h4>\n' + mdToHtml(e.detail, app) + '\n' +
       (e.follow && e.follow.length ? '<h4>Likely follow-ups</h4>\n<ul>' + e.follow.map((x) => '<li>' + esc(x) + '</li>').join('') + '</ul>\n' : '') + refs +
       '<p><a class="btn primary" href="' + app + '#/q/' + esc(e.id) + '">Practise this question in the app</a></p>\n' +
@@ -66,9 +67,9 @@ function build(root) {
       return g.length ? '<h3>Gear ' + l.n + ': ' + esc(l.name) + '</h3>\n<ul>' + g.map((e) => '<li><a href="' + esc(e.id) + '.html">' + esc(e.q) + '</a></li>').join('\n') + '</ul>\n' : '';
     }).join('');
   });
-  files['q/index.html'] = head('Interview questions with written answers | InterviewGearUp', 'Interview questions for ' + meta.roles.length + ' IT roles with written answers, by role and gear. Answers are AI-drafted unless marked reviewed.', site + '/q/', '../css/style.css') +
+  files['q/index.html'] = head('Interview questions with written answers | InterviewGearUp', 'Interview questions for ' + meta.roles.length + ' IT roles with written answers, by role and gear. Each page states whether a person has reviewed it.', site + '/q/', '../css/style.css') +
     '<body>\n<a class="skip" href="#main">Skip to content</a>\n' + topbar + '<main id="main" class="static-page">\n<h1>Questions with written answers</h1>\n<p class="muted">' + real.length + ' of ' + bank.length +
-    ' questions have a written answer so far. Answers are AI-drafted and not yet reviewed by a person unless a page says Reviewed.</p>\n' + list + '</main>\n' + foot;
+    ' questions have a written answer so far. Answers are not yet reviewed by a person unless a page says Human-reviewed; each page states its review status.</p>\n' + list + '</main>\n' + foot;
 
   files['sitemap.xml'] = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
     [site + '/', site + '/q/'].concat(real.map((e) => site + '/q/' + e.id + '.html')).map((u) => '  <url><loc>' + esc(u) + '</loc></url>').join('\n') + '\n</urlset>\n';

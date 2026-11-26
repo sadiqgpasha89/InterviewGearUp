@@ -13,7 +13,8 @@ Interview preparation for IT roles, organised by **gear**:
 
 ## Highlights
 
-- **Question bank**: 1,153 interview questions across 10 tech roles and 4 gears, **every one with a full written answer** (30-second answer, in-depth breakdown, pitfalls, follow-ups). Written answers are currently marked *AI-drafted, not yet reviewed by a person*, so treat them as strong study material and see [CONTRIBUTING.md](CONTRIBUTING.md) to help review and correct them. Questions that come in later and have no answer yet are labelled as pending, with a practice structure instead of filler.
+- **Home**: the app opens on a short, skippable first-run setup (target role, gear, optional interview date, daily time) and then a dashboard that answers *what next?*: a Continue preparation button, today's tasks with a time estimate, reviews due, weak topics, a mock-interview suggestion, progress in your gear and what you have completed. All counts of what you did; nothing predicts interview results. Stored only in this browser and resettable.
+- **Question bank**: 1,153 interview questions across 10 tech roles and 4 gears, **every one with a full written answer** (30-second answer, in-depth breakdown, pitfalls, follow-ups). Every answer states its review status (AI-drafted, origin not recorded, Human-reviewed or Needs correction); none has been reviewed by a person yet, so treat them as strong study material and see [CONTRIBUTING.md](CONTRIBUTING.md) to help review and correct them. The measured state of the content (status by role and gear, rubric gaps, near-duplicates and the human review queue) is in [docs/CONTENT_QUALITY.md](docs/CONTENT_QUALITY.md). Key questions cite primary sources (RFCs, specs, official docs). Questions that come in later and have no answer yet are labelled as pending, with a practice structure instead of filler.
 - **Plan**: a daily list built from your role, gear, optional interview date and time budget: reviews that are due first, then new questions with a written answer, plus a mock round every third day. It is a rule-based schedule, not a readiness prediction.
 - **Review (spaced repetition)**: questions you grade in Drill or Review come back on a schedule (again 1 day, partly 3, good 7 then growing, mastered 14 then 30 and up). Daily goal, role and gear filters, a "how it works" explainer and a reset. Days are your local calendar days.
 - **Mock interview**: a timed round of 3, 5 or 7 questions (mixed, technical, behavioral or design). You get a deterministic rubric at the end (structure, specifics, trade-offs, coverage of the reference points, fit to the question type), likely follow-ups, a history, a downloadable Markdown report, and optional AI feedback with your own key. The rubric checks the shape of an answer, not correctness, and is not a prediction of interview results.
@@ -146,9 +147,11 @@ npm test                  # all automated tests
 npm run test:goal         # also enforces the 15-real-answers-per-role-and-gear target (met since content batch 9)
 npm run seo               # regenerate the static pages in q/ after any answer change
 npm run content:status    # real vs placeholder answers per role and gear, and the next questions to write
+npm run content:audit     # review status, rubric gaps, near-duplicates and the review queue (-- --write updates docs/CONTENT_QUALITY.md)
+npm run refs:check        # needs network: checks every reference link still resolves
 ```
 
-Manual checks that need a person and real devices are listed in [docs/MANUAL_QA.md](docs/MANUAL_QA.md). The starting-point audit is in [docs/BASELINE_AUDIT.md](docs/BASELINE_AUDIT.md).
+Manual checks that need a person and real devices are listed in [docs/MANUAL_QA.md](docs/MANUAL_QA.md). The starting-point audits are in [docs/BASELINE_AUDIT.md](docs/BASELINE_AUDIT.md) and [docs/PRODUCT_GAP_AUDIT.md](docs/PRODUCT_GAP_AUDIT.md).
 
 Test the answer generation script in standalone mode:
 

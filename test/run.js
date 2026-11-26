@@ -10,7 +10,7 @@ const root = path.join(__dirname, '..');
 const ctx = { setTimeout, clearTimeout, AbortController, URL };
 ctx.window = ctx;
 vm.createContext(ctx);
-['js/config.js', 'js/quality.js', 'js/engine.js', 'js/srs.js', 'js/migrate.js', 'js/ai.js', 'js/planner.js', 'js/mock.js', 'js/stories.js', 'js/jd.js', 'js/design.js', 'data/design.js', 'js/coding-core.js', 'data/coding.js', 'data/coding-langs.js', 'js/company.js', 'js/voice.js']
+['js/config.js', 'js/quality.js', 'js/engine.js', 'js/srs.js', 'js/migrate.js', 'js/ai.js', 'js/planner.js', 'js/mock.js', 'js/dashboard.js', 'js/stories.js', 'js/jd.js', 'js/design.js', 'data/design.js', 'js/coding-core.js', 'data/coding.js', 'data/coding-langs.js', 'js/company.js', 'js/voice.js']
   .concat(require('../scripts/lib/data-files').dataFiles(root))
   .forEach((f) => vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f }));
 
@@ -321,6 +321,65 @@ test('stored review status is honest: nothing is marked reviewed without a perso
   const drafted = bank.filter((e) => e.reviewStatus === 'ai-drafted');
   assert.ok(drafted.length >= 40, 'expected the curated AI-drafted answers');
   drafted.forEach((e) => assert.ok(Q.isReal(e) && !/requires balancing performance/.test(e.short), e.id + ' still has filler'));
+});
+
+test('review states: needs-correction requires a note, every state has a label, AI drafts are never called reviewed', () => {
+  assert.deepEqual(Array.from(Q.metaProblems({ reviewStatus: 'needs-correction', correctionNote: 'Mixes up liveness and readiness probes.' })), []);
+  assert.ok(Q.metaProblems({ reviewStatus: 'needs-correction' }).length, 'needs-correction without a note');
+  assert.ok(Q.metaProblems({ reviewStatus: 'ai-drafted', correctionNote: 'stray note here' }).length, 'note only with needs-correction');
+  assert.equal(Q.label({ reviewStatus: 'reviewed', lastReviewed: '2026-11-01' }), 'Human-reviewed 2026-11-01');
+  assert.ok(/not yet reviewed by a person/.test(Q.label({ reviewStatus: 'ai-drafted' })));
+  assert.ok(/Needs correction/.test(Q.label({ reviewStatus: 'needs-correction', correctionNote: 'x'.repeat(12) })));
+  assert.ok(/origin not recorded/.test(Q.label({ short: 'A real hand written answer.' })));
+  Q.STATUSES.forEach((s) => assert.ok(Q.STATUS_NAMES[s], 'no display name for ' + s));
+  bank.forEach((e) => { if (Q.status(e) !== 'reviewed') assert.ok(!/^Human-reviewed/.test(Q.label(e)), e.id); });
+});
+
+test('rubric signals separate a shallow answer from a strong one, and the review queue is deterministic', () => {
+  const weak = { id: 'x-1', level: 3, q: 'Explain caching?', short: 'Caching makes things fast.', detail: 'Caching stores data in memory so it is faster to read.', follow: ['Why?'], tags: [] };
+  const strong = { id: 'x-2', level: 3, q: 'Explain caching?', short: 'x',
+    detail: 'For example, a product page. ' + 'word '.repeat(200) + 'The trade-off is staleness versus speed. A pitfall is a stampede when a hot key expires. Decide the TTL from requirements.',
+    follow: ['a?', 'b?', 'c?'], tags: [], references: [{ title: 'Doc', url: 'https://example.com' }] };
+  const fw = Q.flags(weak);
+  ['thin', 'no-example', 'no-tradeoffs', 'no-edge-cases', 'few-follow-ups', 'no-references', 'senior-calibration'].forEach((f) => assert.ok(fw.includes(f), 'weak answer should be flagged ' + f));
+  assert.deepEqual(Array.from(Q.flags(strong)), []);
+  assert.ok(Q.flags({ id: 'g-1', level: 2, short: 'x', detail: "In today's world it plays a crucial role, and various factors matter.", follow: [] }).includes('generic'));
+  assert.ok(Q.reviewPriority(weak) > Q.reviewPriority(strong));
+  assert.equal(Q.reviewPriority({ reviewStatus: 'reviewed', lastReviewed: '2026-01-01', short: 'a', detail: 'b', follow: [] }), 0, 'reviewed answers leave the queue');
+  assert.ok(Q.reviewPriority(Object.assign({}, strong, { reviewStatus: 'needs-correction', correctionNote: 'Wrong TTL advice.' })) >= 50, 'corrections jump the queue');
+  Object.keys(Q.FLAG_TEXT).forEach((k) => assert.ok(Q.FLAG_TEXT[k].length > 5));
+});
+
+test('content quality report is current and README statistics match the data', () => {
+  const ca = require('../scripts/content-audit.js');
+  const a = ca.audit(root);
+  const fresh = ca.markdown(a);
+  assert.equal(fs.readFileSync(path.join(root, ca.REPORT), 'utf8'), fresh, 'docs/CONTENT_QUALITY.md is stale: run npm run content:audit -- --write');
+  const readme = fs.readFileSync(path.join(root, 'README.md'), 'utf8');
+  assert.ok(readme.includes(bank.length.toLocaleString('en-US') + ' interview questions'), 'README question total is out of date');
+  assert.ok(readme.includes(meta.roles.length + ' tech roles'), 'README role count is out of date');
+  meta.roles.forEach((r) => {
+    const n = bank.filter((e) => e.role === r.id).length;
+    const row = readme.split('\n').find((l) => l.startsWith('| **') && l.includes('| ' + n + ' |'));
+    assert.ok(row, 'README role table has no row with ' + n + ' questions for ' + r.id);
+  });
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  assert.ok(!/Interview prep for \d+ IT roles/.test(html) || html.includes('Interview prep for ' + meta.roles.length + ' IT roles'), 'index.html meta role count is out of date');
+});
+
+test('references point at known questions over https, and the second-version fundamentals keep their identity', () => {
+  Object.keys(IGU.referenceMap).forEach((id) => {
+    const e = bank.find((x) => x.id === id);
+    assert.ok(e, 'reference for unknown question ' + id);
+    assert.ok(e.references.length && e.references.every((r) => /^https:\/\//.test(r.url) && r.title), id);
+  });
+  ['do-5', 'sec-1', 'be-4', 'fe-5', 'be-1', 'do-3', 'fe-3', 'sec-3', 'fe-1', 'ml-2'].forEach((id) => {
+    const e = bank.find((x) => x.id === id);
+    assert.equal(e.contentVersion, 2, id);
+    assert.equal(e.reviewStatus, 'ai-drafted', id + ' must stay labelled AI-drafted');
+    assert.ok(e.follow.length >= 4, id);
+    assert.deepEqual(Array.from(Q.flags(e)).filter((f) => ['thin', 'no-example', 'no-tradeoffs', 'no-edge-cases'].includes(f)), [], id + ' still shallow');
+  });
 });
 
 test('placeholder detection finds exactly the generated filler', () => {
@@ -1089,7 +1148,7 @@ test('static pages: committed q/ pages, sitemap and robots.txt match the current
     assert.ok(/Content-Security-Policy/.test(files[f]) && /rel="canonical"/.test(files[f]), f);
   });
   assert.ok(files['sitemap.xml'].includes('/q/be-3.html') && files['robots.txt'].includes('Sitemap:'));
-  assert.ok(/AI-drafted, not yet reviewed|Reviewed \d{4}/.test(files['q/be-3.html']), 'review status is disclosed');
+  ['q/be-3.html', 'q/be-2.html', 'q/fe-14.html'].forEach((f) => assert.ok(/AI-drafted, not yet reviewed|Human-reviewed \d{4}|Not yet reviewed by a person|Needs correction/.test(files[f]), f + ': review status is disclosed'));
 });
 
 test('new files are registered: index.html loads them and the service worker precaches them (checked above), nav links the new routes', () => {
@@ -1098,4 +1157,70 @@ test('new files are registered: index.html loads them and the service worker pre
   assert.ok(html.includes('href="#/paths"'));
   assert.ok(fs.readFileSync(path.join(root, 'js/app.js'), 'utf8').includes("'#/sync'"));
   ['learning-path.yml'].forEach((f) => assert.ok(fs.existsSync(path.join(root, '.github/ISSUE_TEMPLATE', f))));
+});
+
+/* ---------- Phase 2: home dashboard and onboarding ---------- */
+test('dashboard: a brand-new learner without a profile gets a concrete first action and honest empty states', () => {
+  const DB = IGU.dashboard;
+  const d = DB.summarize({ profile: null, bank, today: '2026-11-26' });
+  assert.equal(d.hasProfile, false);
+  assert.ok(d.isNew);
+  assert.equal(d.next.href, '#/drill');
+  assert.equal(d.today, null);
+  assert.equal(d.weak.length, 0);
+  assert.equal(d.mock.kind, 'first');
+  assert.equal(d.completed.prepared, 0);
+});
+
+test('dashboard: with a profile it surfaces the first unfinished plan task, time left, due reviews and gear progress', () => {
+  const DB = IGU.dashboard, PL = IGU.planner;
+  const today = '2026-11-26';
+  const profile = PL.validateProfile({ role: 'backend', level: 2, minutes: 60, createdDay: today }, today).profile;
+  const srs = { 'be-3': { due: '2026-11-24', interval: 1, reps: 1, lapses: 1, last: '2026-11-23', grade: 'again' } };
+  const practice = { 'be-3': { n: 1, ok: 0, again: 1, secs: 20, last: 'again' }, 'be-20': { n: 1, ok: 0, again: 1, secs: 20, last: 'again' } };
+  const done = { 'be-13': 1 };
+  const d = DB.summarize({ profile, bank, done, practice, srs, plan: {}, mocks: [], streak: 2, today });
+  assert.ok(d.hasProfile && !d.isNew);
+  assert.equal(d.due, 1); assert.equal(d.overdue, 1);
+  assert.equal(d.next.kind, 'review', 'overdue reviews come first');
+  assert.ok(d.today.minutesLeft > 0 && d.today.minutesLeft <= 60 + 10, 'time estimate within the budget');
+  assert.equal(d.today.left, d.today.total);
+  const first = d.today.tasks[0];
+  const plan = { completed: { [today]: { [first.kind + ':' + first.id]: 1 } } };
+  const d2 = DB.summarize({ profile, bank, done, practice, srs, plan, mocks: [], today });
+  assert.equal(d2.today.left, d.today.left - 1, 'completed tasks drop out');
+  assert.notEqual(d2.next.href + d2.next.title, d.next.href + d.next.title);
+  assert.equal(d.interview.gearPrepared, bank.filter((e) => e.role === 'backend' && e.level === 2 && done[e.id]).length);
+  assert.ok(d.interview.gearTotal > 0);
+  assert.equal(d.weak[0].topic, bank.find((e) => e.id === 'be-3').topic, 'the topic with the most evidence leads');
+  assert.ok(d.weak[0].href.startsWith('#/questions?role=backend&show=weak'));
+  assert.equal(d.completed.streak, 2);
+});
+
+test('dashboard: mock advice depends on history and never predicts results', () => {
+  const DB = IGU.dashboard;
+  const e = bank.find((x) => x.id === 'be-3');
+  const item = { qid: e.id, q: e.q, secs: 60, answer: 'ACID means atomicity. For example a bank transfer.', result: IGU.mock.score('ACID means atomicity. For example a bank transfer.', e) };
+  assert.equal(DB.mockAdvice([{ day: '2026-11-10', items: [item] }], null, '2026-11-26').kind, 'stale');
+  const focus = DB.mockAdvice([{ day: '2026-11-25', items: [item] }], null, '2026-11-26');
+  assert.equal(focus.kind, 'focus');
+  assert.ok(focus.focus);
+  [focus, DB.mockAdvice([], null, '2026-11-26')].forEach((m) => assert.ok(!/pass|hire|probab|chance/i.test(m.text), m.text));
+});
+
+test('home is the default route, onboarding is optional, and navigation is grouped', () => {
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  ['js/dashboard.js', 'js/views5.js'].forEach((f) => assert.ok(html.includes('src="' + f + '"'), f));
+  assert.ok(html.indexOf('src="js/dashboard.js"') < html.indexOf('src="js/views5.js"'));
+  assert.ok(html.includes('href="#/home" data-tab="home"') && html.includes('class="brand" href="#/home"'));
+  ['#/plan', '#/review', '#/progress', '#/drill', '#/mock', '#/coding', '#/design', '#/stories', '#/voice', '#/paths', '#/jd', '#/community', '#/company', '#/post', '#/questions']
+    .forEach((r) => assert.ok(html.includes('href="' + r + '"'), 'nav lost ' + r));
+  assert.equal((html.match(/<details class="menu">/g) || []).length, 3, 'three grouped menus');
+  const app = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
+  assert.ok(app.includes("|| '/home'") && app.includes("(r.seg[0] || 'home')"));
+  const v = fs.readFileSync(path.join(root, 'js/views5.js'), 'utf8');
+  assert.ok(v.includes('Skip for now') && v.includes("store.set('onboarding', { skipped: day })"), 'onboarding can be skipped');
+  assert.ok(v.includes('Reset profile'), 'profile can be reset from home');
+  assert.ok(!/innerHTML|fetch\(|IGU\.ai\./.test(v), 'home must not use innerHTML, the network or AI');
+  assert.ok(JSON.parse(fs.readFileSync(path.join(root, 'manifest.webmanifest'), 'utf8')).start_url.endsWith('#/home'));
 });

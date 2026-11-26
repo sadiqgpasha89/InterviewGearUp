@@ -369,3 +369,42 @@ pre.code { overflow: auto; padding: 10px; background: rgba(127,127,127,.12); bor
 .static-page h1 { font-size: 1.6rem; line-height: 1.25; }
 .static-page .btn { display: inline-block; text-decoration: none; }
 .static-page ul { padding-left: 22px; }
+
+/* ---------- Home: onboarding and dashboard (js/views5.js) ---------- */
+.home { max-width: 980px; }
+.home h1 { margin-bottom: 6px; }
+.ob-points { padding-left: 20px; margin: 0 0 18px; max-width: 70ch; }
+.ob-points li { margin-bottom: 6px; }
+.ob-form { max-width: 680px; }
+.ob-form .label { font-weight: 700; margin: 18px 0 6px; }
+.ob-gears { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.ob-gear { display: flex; gap: 8px; align-items: center; margin: 0; padding: 10px; border: 1.5px solid var(--line); border-radius: 8px; cursor: pointer; min-height: 44px; font-weight: 400; }
+.ob-gear input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.ob-gear:has(input:checked) { border-color: var(--ink); background: var(--panel); box-shadow: inset 0 0 0 1px var(--ink); }
+.ob-gear:has(input:focus-visible) { outline: 3px solid var(--signal); outline-offset: 2px; }
+.ob-gear .gear { width: 30px; height: 30px; font-size: 14px; flex: none; }
+.ob-gear > span:last-child { display: flex; flex-direction: column; line-height: 1.2; }
+.hcard { background: var(--panel); border: 1.5px solid var(--line); border-radius: 10px; padding: 16px 18px; }
+.hcard h2 { font-size: 17px; margin: 0 0 8px; }
+.hcard p { margin: 0 0 10px; }
+.hcard .tiles { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
+.hcard .tile { padding: 10px 12px; }
+.hcard .tile strong { font-size: 22px; }
+.hcard .progress { display: block; width: 100%; height: 8px; margin: 0 0 10px; }
+.hcard.next { border: 1.5px solid var(--ink); border-left: 6px solid var(--signal); margin: 14px 0 16px; }
+.eyebrow { text-transform: uppercase; letter-spacing: .06em; font-size: 12px; font-weight: 800; color: var(--steel); }
+.next-title { font-size: clamp(18px, 2.4vw, 22px); font-weight: 800; letter-spacing: -0.01em; line-height: 1.3; }
+.hgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.hlist li { display: block; padding: 6px 0; }
+.home-profile { margin-top: 18px; }
+.menu-head { margin: 6px 14px 2px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; opacity: .65; font-weight: 800; }
+@media (max-width: 720px) {
+  .hgrid { grid-template-columns: minmax(0, 1fr); }
+  .ob-gears { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 480px) {
+  .tabs a, .menu summary { padding: 10px 6px 8px; font-size: 13.5px; }
+}
+@media (max-width: 360px) {
+  .tabs a, .menu summary { padding: 10px 4px 8px; font-size: 13px; }
+}

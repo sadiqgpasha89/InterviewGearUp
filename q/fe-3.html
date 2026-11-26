@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>Explain the JavaScript event loop. What is the output order of a script mixing setTimeout and Promises? | InterviewGearUp</title>
-<meta name="description" content="JavaScript runs one task at a time. After each task it drains the microtask queue (promise callbacks) before taking the next macrotask (timers, I/O, UI…">
+<meta name="description" content="JavaScript runs one task at a time on a call stack. After each task, the engine drains the whole microtask queue (Promise callbacks, queueMicrotask)…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-3.html">
 <meta property="og:title" content="Explain the JavaScript event loop. What is the output order of a script mixing setTimeout and Promises? | InterviewGearUp">
-<meta property="og:description" content="JavaScript runs one task at a time. After each task it drains the microtask queue (promise callbacks) before taking the next macrotask (timers, I/O, UI…">
+<meta property="og:description" content="JavaScript runs one task at a time on a call stack. After each task, the engine drains the whole microtask queue (Promise callbacks, queueMicrotask)…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-3.html">
 <meta name="color-scheme" content="light dark">
@@ -21,22 +21,30 @@
 <main id="main" class="static-page">
 <p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
 <h1>Explain the JavaScript event loop. What is the output order of a script mixing setTimeout and Promises?</h1>
-<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · JavaScript · AI-drafted, not yet reviewed by a person</p>
+<p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · JavaScript · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
-<p>JavaScript runs one task at a time. After each task it drains the microtask queue (promise callbacks) before taking the next macrotask (timers, I/O, UI events), so a resolved promise&#39;s callback runs before a setTimeout of 0.</p></div>
+<p>JavaScript runs one task at a time on a call stack. After each task, the engine drains the whole microtask queue (Promise callbacks, queueMicrotask) before taking the next task (setTimeout, events) and before rendering. So synchronous code runs first, then all microtasks, then timers.</p></div>
 <h4>Explained in depth</h4>
+<h4>The loop in one picture</h4>
+<ol start="1"><li>Run one task to completion (a script, an event handler, a timer callback).</li><li>Drain the <strong>microtask</strong> queue completely: <code>.then</code> callbacks, <code>await</code> continuations, <code>queueMicrotask</code>, MutationObserver. Microtasks added while draining run in the same drain.</li><li>The browser may render (style, layout, paint), running <code>requestAnimationFrame</code> callbacks just before.</li><li>Take the next <strong>task</strong> (macrotask) and repeat.</li></ol>
+<h4>Worked example</h4>
 <pre><code>console.log(&#39;A&#39;);
 setTimeout(() =&gt; console.log(&#39;B&#39;), 0);
-Promise.resolve().then(() =&gt; console.log(&#39;C&#39;));
-console.log(&#39;D&#39;);
-// A D C B</code></pre>
-<p>Synchronous code runs first (A, D). Then the microtask queue is drained (C). Then the timer callback, a macrotask, runs (B).</p>
-<p>Code after an <code>await</code> is a microtask continuation. The browser can render between macrotasks, after microtasks have finished, so a long synchronous task or an endless microtask chain blocks painting and makes the page feel frozen.</p>
-<p><strong>Practical consequences</strong>: move heavy CPU work to a Web Worker, split long loops into chunks, and avoid recursive promise chains that never yield. In Node the idea is the same, with phases (timers, poll, check) and <code>process.nextTick</code> running before promise callbacks.</p>
+Promise.resolve().then(() =&gt; console.log(&#39;C&#39;))
+  .then(() =&gt; console.log(&#39;D&#39;));
+queueMicrotask(() =&gt; console.log(&#39;E&#39;));
+console.log(&#39;F&#39;);
+// A F C E D B</code></pre>
+<p>A and F are synchronous. C and E were queued as microtasks during the script; D is queued when C finishes, still in the same drain. B is a task, so it runs last even with a 0 ms delay.</p>
+<h4>Why it matters</h4>
+<ul><li>A long synchronous loop blocks clicks, typing and painting. Split work into chunks (<code>setTimeout</code>, <code>scheduler.yield()</code> where available) or move it to a Web Worker.</li><li>An endless chain of microtasks starves rendering just as badly as a busy loop.</li><li><code>setTimeout(fn, 0)</code> is not immediate: it waits for a task slot and is clamped after nesting.</li></ul>
+<h4>Trade-offs and edge cases</h4>
+<p>Workers keep the page responsive but need message passing and cannot touch the DOM. In Node the loop has phases; <code>process.nextTick</code> runs before Promise microtasks, and <code>setImmediate</code> runs in the check phase after I/O.</p>
 <h4>Likely follow-ups</h4>
-<ul><li>Where does requestAnimationFrame fit?</li><li>How do you keep the UI responsive during heavy computation?</li><li>What is the difference between process.nextTick and setImmediate in Node?</li></ul>
+<ul><li>Where does requestAnimationFrame fit?</li><li>How do you keep the UI responsive during heavy computation?</li><li>What is the difference between process.nextTick and setImmediate in Node?</li><li>What does await do to the code after it?</li></ul>
+<p class="muted small-text">References: <a href="https://html.spec.whatwg.org/multipage/webappapis.html#event-loops" rel="noopener noreferrer">HTML Standard: event loops</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise" rel="noopener noreferrer">MDN: Promise</a></p>
 <p><a class="btn primary" href="../#/q/fe-3">Practise this question in the app</a></p>
-<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-3%3A+Explain+the+JavaScript+event+loop.+What+is+the+output+order+of+a%E2%80%A6&amp;question-id=fe-3&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+JavaScript%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-3.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-3%3A+Explain+the+JavaScript+event+loop.+What+is+the+output+order+of+a%E2%80%A6&amp;question-id=fe-3&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+JavaScript%2C+content+version+2.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-3.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
 <footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
