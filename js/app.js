@@ -24,7 +24,7 @@
 
   function go(hash) { if (location.hash === hash) render(); else location.hash = hash; }
 
-  function render() {
+  function render(fromNav) {
     if (cleanup) { cleanup(); cleanup = null; }
     const r = parseRoute();
     const tab = r.seg[0] === 'q' ? 'questions' : (r.seg[0] || 'home');
@@ -46,6 +46,7 @@
     else if (tab === 'post') postView();
     else questionsView(r);
     if (!(r.seg[0] === 'q')) { window.scrollTo(0, 0); }
+    if (fromNav && app.focus) { try { app.focus({ preventScroll: true }); } catch (e) { app.focus(); } }
   }
 
   /* ---------------- shared pieces ---------------- */
@@ -179,12 +180,14 @@
   }
 
   /* ---------------- question bank ---------------- */
+  const SE = IGU.search;
   function questionsView(r) {
     const rawId = r.seg[0] === 'q' ? r.seg[1] : null;
     const openId = rawId && (IGU.retired && IGU.retired[rawId]) || rawId;
     const f = {
       role: r.params.get('role') || '',
       level: Number(r.params.get('level')) || 0,
+      topic: r.params.get('topic') || '',
       q: r.params.get('q') || '',
       show: r.params.get('show') || '',
       limit: PAGE
@@ -192,38 +195,60 @@
     if (!SHOW.some(function (s) { return s.id === f.show; })) f.show = '';
     const openEntry = openId ? bank.filter(function (e) { return e.id === openId; })[0] : null;
     let showOk = showFilter(f.show);
+    let lastRandomId = '';
 
-    function matches(e, skipRole) {
-      if (!skipRole && f.role && e.role !== f.role) return false;
-      if (f.level && e.level !== f.level) return false;
-      if (!showOk(e)) return false;
-      if (f.q.trim()) {
-        const hay = (e.q + ' ' + e.topic + ' ' + (e.tags || []).join(' ') + ' ' + e.short + ' ' + e.detail).toLowerCase();
-        return f.q.toLowerCase().split(/\s+/).filter(Boolean).every(function (t) { return hay.indexOf(t) >= 0; });
+    function queryBank(opts) {
+      opts = opts || {};
+      if (SE) {
+        return SE.query(bank, 'q' in opts ? opts.q : f.q, {
+          role: 'role' in opts ? opts.role : f.role,
+          level: 'level' in opts ? opts.level : f.level,
+          topic: 'topic' in opts ? opts.topic : f.topic,
+          filterFn: 'filterFn' in opts ? opts.filterFn : showOk
+        });
       }
-      return true;
+      const q = String('q' in opts ? opts.q : f.q).toLowerCase().trim();
+      const role = 'role' in opts ? opts.role : f.role;
+      const level = 'level' in opts ? opts.level : f.level;
+      const topic = 'topic' in opts ? opts.topic : f.topic;
+      const fn = 'filterFn' in opts ? opts.filterFn : showOk;
+      const items = bank.filter(function (e) {
+        if (role && e.role !== role) return false;
+        if (level && e.level !== level) return false;
+        if (topic && e.topic !== topic) return false;
+        if (!fn(e)) return false;
+        if (!q) return true;
+        const hay = (e.q + ' ' + e.topic + ' ' + (e.tags || []).join(' ') + ' ' + e.short + ' ' + e.detail).toLowerCase();
+        return q.split(/\s+/).filter(Boolean).every(function (t) { return hay.indexOf(t) >= 0; });
+      }).sort(function (a, b) { return a.level - b.level || a.id.localeCompare(b.id, undefined, { numeric: true }); });
+      return { items: items, suggestions: [], relaxedCount: items.length };
     }
 
     const shifter = h('ol', { class: 'shifter', 'aria-label': 'Level' });
     const knob = h('span', { class: 'knob', 'aria-hidden': 'true' });
     const roleList = h('ul', { class: 'roles' });
+    const topicSel = h('select', { id: 'q-topic', class: 'topic-select', 'aria-label': 'Filter by topic' });
     const list = h('div', { class: 'qlist' });
     const status = h('div', { class: 'status', 'aria-live': 'polite' });
     const more = h('div', { class: 'more' });
     const input = h('input', {
-      type: 'search', id: 'search', value: f.q, autocomplete: 'off', placeholder: 'Search: caching, closures, Kubernetes, CAP theorem',
+      type: 'search', id: 'search', value: f.q, autocomplete: 'off', placeholder: 'Search: caching, k8s, closures, CAP theorem',
       'aria-label': 'Search questions',
-      oninput: function () { f.q = input.value; f.limit = PAGE; sync(); paint(); }
+      oninput: function () { f.q = input.value; f.limit = PAGE; sync(false); paint(); }
     });
+    topicSel.addEventListener('change', function () { f.topic = topicSel.value; f.limit = PAGE; sync(true); paint(); });
 
-    function sync() {
+    function sync(push) {
       const p = new URLSearchParams();
       if (f.role) p.set('role', f.role);
       if (f.level) p.set('level', f.level);
+      if (f.topic) p.set('topic', f.topic);
       if (f.q.trim()) p.set('q', f.q.trim());
       if (f.show) p.set('show', f.show);
       const s = p.toString();
-      history.replaceState(null, '', '#/questions' + (s ? '?' + s : ''));
+      const target = '#/questions' + (s ? '?' + s : '');
+      if (push && location.hash !== target) history.pushState(null, '', target);
+      else history.replaceState(null, '', target);
     }
 
     function paintSide() {
@@ -232,7 +257,7 @@
       stops.forEach(function (l) {
         shifter.appendChild(h('li', null, h('button', {
           type: 'button', 'aria-pressed': f.level === l.n ? 'true' : 'false',
-          onclick: function () { f.level = l.n; f.limit = PAGE; sync(); paint(); }
+          onclick: function () { f.level = l.n; f.limit = PAGE; sync(true); paint(); }
         }, h('span', { class: 'detent' }, l.n ? String(l.n) : 'N'),
         h('span', null, h('span', { class: 'gname' }, l.name), h('span', { class: 'gyears' }, l.years)))));
       });
@@ -243,26 +268,51 @@
       roleList.replaceChildren();
       const all = [{ id: '', name: 'All roles' }].concat(meta.roles);
       all.forEach(function (ro) {
-        const c = bank.filter(function (e) { return (!ro.id || e.role === ro.id) && matches(e, true); }).length;
+        const c = queryBank({ role: ro.id, topic: '' }).items.length;
         roleList.appendChild(h('li', null, h('button', {
           type: 'button', 'aria-pressed': f.role === ro.id ? 'true' : 'false',
-          onclick: function () { f.role = ro.id; f.limit = PAGE; sync(); paint(); }
+          onclick: function () { f.role = ro.id; f.topic = ''; f.limit = PAGE; sync(true); paint(); }
         }, h('span', null, ro.name), h('span', { class: 'count' }, String(c)))));
       });
+
+      const topicsList = SE ? SE.topics(bank, { role: f.role, level: f.level, filterFn: showOk }) : [];
+      if (f.topic && !topicsList.some(function (t) { return t.topic === f.topic; })) f.topic = '';
+      topicSel.replaceChildren(h('option', { value: '' }, 'All topics (' + topicsList.length + ')'));
+      topicsList.forEach(function (t) {
+        topicSel.appendChild(h('option', { value: t.topic, selected: t.topic === f.topic }, t.topic + ' (' + t.count + ')'));
+      });
+      topicSel.value = f.topic;
     }
 
     function paintList() {
-      const rows = bank.filter(function (e) { return matches(e, false); })
-        .sort(function (a, b) { return a.level - b.level || a.id.localeCompare(b.id, undefined, { numeric: true }); });
+      const res = queryBank();
+      const rows = res.items;
       list.replaceChildren();
       more.replaceChildren();
       const shown = rows.slice(0, f.limit);
-      if (openEntry && shown.indexOf(openEntry) < 0 && matches(openEntry, false)) shown.unshift(openEntry);
+      if (openEntry && shown.indexOf(openEntry) < 0 && rows.indexOf(openEntry) >= 0) shown.unshift(openEntry);
       shown.forEach(function (e) { list.appendChild(qRow(e, openEntry && e.id === openId)); });
       if (!rows.length) {
+        const actions = [];
+        if (res.suggestions && res.suggestions.length) {
+          actions.push(h('p', { class: 'small-text' }, 'Did you mean: ',
+            res.suggestions.map(function (s, i) {
+              return [i ? ', ' : '', h('button', { class: 'linkish', type: 'button', onclick: function () { f.q = s; input.value = s; f.limit = PAGE; sync(true); paint(); } }, s)];
+            }), '?'));
+        }
+        if ((f.role || f.level || f.topic || f.show) && res.relaxedCount > 0) {
+          actions.push(h('button', { class: 'btn small primary', type: 'button', onclick: function () {
+            f.role = ''; f.level = 0; f.topic = ''; f.show = ''; showOk = showFilter(''); f.limit = PAGE; sync(true); paint();
+          } }, 'Search all roles & gears (' + res.relaxedCount + ' match' + (res.relaxedCount === 1 ? '' : 'es') + ')'));
+        } else if (f.role || f.level || f.topic || f.show || f.q) {
+          actions.push(h('button', { class: 'btn small', type: 'button', onclick: function () {
+            f.role = ''; f.level = 0; f.topic = ''; f.show = ''; f.q = ''; input.value = ''; showOk = showFilter(''); f.limit = PAGE; sync(true); paint();
+          } }, 'Clear all filters'));
+        }
         list.appendChild(h('div', { class: 'empty' }, h('strong', null, 'No questions match.'),
-          'Try fewer words or a different gear. Something missing? ',
-          h('a', { href: '#/post' }, 'Post the question you were asked'), '.'));
+          ' Try fewer words, a broader topic, or another gear. ',
+          actions.length ? h('div', { class: 'q-actions' }, actions) : null,
+          'Something missing? ', h('a', { href: '#/post' }, 'Post the question you were asked'), '.'));
       }
       if (rows.length > f.limit) {
         more.appendChild(h('button', { class: 'btn ghost', type: 'button', onclick: function () { f.limit += PAGE; paintList(); } },
@@ -274,7 +324,7 @@
     /* Counts and progress. The bar width is set through the CSSOM because the page's
        Content Security Policy blocks inline style attributes. */
     function paintStatus(rows) {
-      rows = rows || bank.filter(function (e) { return matches(e, false); });
+      rows = rows || queryBank().items;
       const d = done.all();
       const total = rows.length, doneN = rows.filter(function (e) { return d[e.id]; }).length;
       const fill = h('i');
@@ -293,7 +343,7 @@
         if ((s.id === 'pending' || s.id === 'real') && !anyPending && f.show !== s.id) return; // nothing to separate: every question has an answer
         chips.appendChild(h('button', {
           type: 'button', class: 'chip', 'aria-pressed': f.show === s.id ? 'true' : 'false',
-          onclick: function () { f.show = s.id; showOk = showFilter(f.show); f.limit = PAGE; sync(); paint(); }
+          onclick: function () { f.show = s.id; showOk = showFilter(f.show); f.limit = PAGE; sync(true); paint(); }
         }, s.label));
       });
     }
@@ -343,20 +393,40 @@
           clearTimeout(noteTimer);
           noteTimer = setTimeout(function () { notes.set(e.id, noteBox.value); noteState.textContent = 'Saved'; }, 400);
         });
+        const prereqs = SE ? SE.prerequisites(e, bank, 3) : [];
+        const rel = SE ? SE.related(e, bank, 4) : [];
+        const discovery = (prereqs.length || rel.length) ? h('div', { class: 'related-box' },
+          prereqs.length ? [h('h4', null, 'Prerequisite concepts'), h('ul', null, prereqs.map(function (x) {
+            return h('li', null, gearBadge(x.level), ' ', h('a', { href: '#/q/' + x.id }, x.q), ' ', h('span', { class: 'muted small-text' }, '(' + x.topic + ')'));
+          }))] : null,
+          rel.length ? [h('h4', null, 'Related questions'), h('ul', null, rel.map(function (x) {
+            return h('li', null, gearBadge(x.level), ' ', h('a', { href: '#/q/' + x.id }, x.q), ' ', h('span', { class: 'muted small-text' }, '(' + roleName(x.role) + ')'));
+          }))] : null) : null;
         d.appendChild(h('div', { class: 'q-body' }, answerBody(e),
           h('div', { class: 'notes' }, h('label', { for: noteId }, 'My notes ', noteState), noteBox),
           h('div', { class: 'q-actions' }, prepared, save, copy,
-            h('a', { class: 'btn small ghost', href: '#/drill?id=' + encodeURIComponent(e.id) }, 'Drill this'))));
+            h('a', { class: 'btn small ghost', href: '#/drill?id=' + encodeURIComponent(e.id) }, 'Drill this'),
+            h('a', { class: 'btn small ghost', href: '#/questions?role=' + encodeURIComponent(e.role) + '&topic=' + encodeURIComponent(e.topic) }, 'More on ' + e.topic)),
+          discovery));
       }
       d.addEventListener('toggle', function () { if (d.open) build(); });
       if (open) build();
       return d;
     }
 
+    const randomBtn = h('button', { class: 'btn ghost', type: 'button', onclick: function () {
+      const items = queryBank().items;
+      const pick = SE ? SE.pickRandom(items, lastRandomId) : items[Math.floor(Math.random() * items.length)];
+      if (!pick) return;
+      lastRandomId = pick.id;
+      go('#/q/' + encodeURIComponent(pick.id));
+    } }, 'Random question');
+
     app.appendChild(h('div', { class: 'bank' },
       h('aside', { class: 'side' },
         h('div', { class: 'block' }, h('h2', null, 'Gear'), shifter),
-        h('div', { class: 'block' }, h('h2', null, 'Role'), roleList)),
+        h('div', { class: 'block' }, h('h2', null, 'Role'), roleList),
+        h('div', { class: 'block' }, h('h2', null, h('label', { for: 'q-topic' }, 'Topic')), topicSel)),
       h('section', null,
         h('h1', null, 'Pick your gear'),
         h('p', { class: 'lede' }, 'Questions run from first gear (junior) to fourth (lead or staff). Open one for a 30-second answer, then the full explanation.'),
@@ -372,7 +442,7 @@
             h('a', { href: 'https://github.com/' + cfg.owner + '/' + cfg.repo + '/blob/main/docs/CONTENT_QUALITY.md', rel: 'noopener noreferrer' }, 'Content quality report'), '.');
         })(),
         openId && !openEntry ? h('p', { class: 'notice bad' }, 'That question link is not in the bank. Showing everything instead.') : null,
-        h('div', { class: 'search' }, input),
+        h('div', { class: 'search-bar' }, h('div', { class: 'search' }, input), randomBtn),
         chips,
         status, list, more)));
     paint();
@@ -392,8 +462,15 @@
 
   /* ---------------- drill ---------------- */
   function drillView(params) {
-    const st = { role: '', level: 0, pool: '', current: null, shown: false, t0: 0, secs: 0, timer: null, last: null,
-      session: { n: 0, ok: 0, again: 0, secs: 0 } };
+    const st = {
+      role: (params && params.get('role')) || '',
+      level: Number(params && params.get('level')) || 0,
+      pool: (params && params.get('pool')) || '',
+      topic: (params && params.get('topic')) || '',
+      current: null, shown: false, t0: 0, secs: 0, timer: null, last: null,
+      session: { n: 0, ok: 0, again: 0, secs: 0 }
+    };
+    if (!SHOW.some(function (s) { return s.id === st.pool; })) st.pool = '';
     const POOLS = [
       { id: '', label: 'Everything (unprepared first)' },
       { id: 'weak', label: 'Needs practice' },
@@ -402,9 +479,18 @@
     ];
     const stage = h('div');
     const summary = h('p', { class: 'muted small-text', 'aria-live': 'polite' });
+    function syncDrill() {
+      const p = new URLSearchParams();
+      if (st.role) p.set('role', st.role);
+      if (st.level) p.set('level', st.level);
+      if (st.pool) p.set('pool', st.pool);
+      if (st.topic) p.set('topic', st.topic);
+      const s = p.toString();
+      history.replaceState(null, '', '#/drill' + (s ? '?' + s : ''));
+    }
     function pool() {
       const ok = showFilter(st.pool);
-      return bank.filter(function (e) { return (!st.role || e.role === st.role) && (!st.level || e.level === st.level) && ok(e); });
+      return bank.filter(function (e) { return (!st.role || e.role === st.role) && (!st.level || e.level === st.level) && (!st.topic || e.topic === st.topic) && ok(e); });
     }
     function begin(e) {
       st.current = e;
@@ -510,13 +596,16 @@
       stage.appendChild(card);
     }
 
-    const resetDraw = function () { st.current = null; stopTimer(); paint(); };
+    const resetDraw = function () { st.current = null; stopTimer(); syncDrill(); paint(); };
     const roleSel = h('select', { id: 'd-role', onchange: function () { st.role = roleSel.value; resetDraw(); } },
       [h('option', { value: '' }, 'All roles')].concat(meta.roles.map(function (r) { return h('option', { value: r.id }, r.name); })));
+    roleSel.value = st.role;
     const lvlSel = h('select', { id: 'd-level', onchange: function () { st.level = Number(lvlSel.value); resetDraw(); } },
       [h('option', { value: '0' }, 'All gears')].concat(meta.levels.map(function (l) { return h('option', { value: String(l.n) }, l.n + ' ' + l.name); })));
+    lvlSel.value = String(st.level);
     const poolSel = h('select', { id: 'd-pool', onchange: function () { st.pool = poolSel.value; resetDraw(); } },
       POOLS.map(function (p) { return h('option', { value: p.id }, p.label); }));
+    poolSel.value = st.pool;
 
     app.appendChild(h('div', { class: 'drill' },
       h('h1', null, 'Drill'),
@@ -682,6 +771,8 @@
         const q = question.value.trim();
         if (company.value.trim().length < 2) { err.textContent = 'Enter the company name.'; err.hidden = false; return; }
         if (q.length < 15) { err.textContent = 'Write the full question (at least 15 characters).'; err.hidden = false; return; }
+        const sens = IGU.company && IGU.company.hasSensitiveHint ? IGU.company.hasSensitiveHint(q + ' ' + answer.value) : [];
+        if (sens.length && !confirm('Your post appears to include ' + sens.join(' and ') + '. Do not post confidential, NDA-covered, or personally identifying information. Save anyway?')) return;
         const p = {
           id: 'local-' + U.uid(), createdAt: new Date().toISOString(),
           author: { name: profile.name, gh: profile.gh },
@@ -889,7 +980,10 @@
         if (d.dataset.built) return;
         d.dataset.built = '1';
         const actions = h('div', { class: 'q-actions' });
-        if (p.remote) actions.appendChild(h('a', { class: 'btn small ghost', href: p.url, rel: 'noopener noreferrer' }, 'View on GitHub'));
+        if (p.remote) {
+          actions.appendChild(h('a', { class: 'btn small ghost', href: p.url, rel: 'noopener noreferrer' }, 'View on GitHub'));
+          if (IGU.company && IGU.company.reportUrl) actions.appendChild(h('a', { class: 'btn small ghost', href: IGU.company.reportUrl(p, cfg), rel: 'noopener noreferrer', target: '_blank' }, 'Report outdated or PII'));
+        }
         else {
           actions.appendChild(h('a', { class: 'btn small signal', href: shareUrl(p), rel: 'noopener noreferrer', target: '_blank' }, 'Share with the community'));
           actions.appendChild(h('button', { class: 'btn small danger-ghost', type: 'button', onclick: function () {
@@ -897,9 +991,10 @@
             posts.save(posts.all().filter(function (x) { return x.id !== p.id; })); paint();
           } }, 'Delete'));
         }
+        const fr = IGU.company && IGU.company.freshness ? IGU.company.freshness(p) : null;
         d.appendChild(h('div', { class: 'q-body' },
           h('h4', null, 'Question'), h('p', { class: 'userq' }, p.question),
-          h('p', { class: 'muted small-text' }, IGU.company.STATUS_TEXT[p.remote ? (p.review || 'unreviewed') : 'local'] + '. Reported by a community member, not confirmed by ' + p.company + '. Posted by ' + (p.author && p.author.name || 'unknown') + ' on ' + String(p.createdAt).slice(0, 10) + '. Level: ' + levelLabel(p.level) + '.'),
+          h('p', { class: 'muted small-text' }, IGU.company.STATUS_TEXT[p.remote ? (p.review || 'unreviewed') : 'local'] + '. Reported by a community member, not confirmed by ' + p.company + '. Posted by ' + (p.author && p.author.name || 'unknown') + ' on ' + String(p.createdAt).slice(0, 10) + (fr && fr.id !== 'unknown' ? ' (' + fr.label + ')' : '') + '. Level: ' + levelLabel(p.level) + '.'),
           p.answer ? h('div', null, h('h4', null, 'Answer from the contributor'), h('p', { class: 'userq' }, p.answer)) : null,
           answerBlock(p), actions));
       }
@@ -1035,6 +1130,13 @@
     document.querySelectorAll('#tabs details.menu[open]').forEach(function (d) { if (!d.contains(ev.target)) d.removeAttribute('open'); });
   });
 
-  window.addEventListener('hashchange', render);
-  render();
+  let lastHash = location.hash;
+  function onNav() {
+    if (location.hash === lastHash) return;
+    lastHash = location.hash;
+    render(true);
+  }
+  window.addEventListener('hashchange', onNav);
+  window.addEventListener('popstate', onNav);
+  render(false);
 })();

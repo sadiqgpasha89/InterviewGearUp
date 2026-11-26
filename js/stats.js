@@ -3,7 +3,7 @@
   const IGU = (window.IGU = window.IGU || {});
 
   /* Keys that a backup file may contain. API keys are deliberately excluded. */
-  const BACKUP_KEYS = ['done', 'saved', 'notes', 'practice', 'activity', 'posts', 'profile', 'srs', 'plan', 'mocks', 'stories', 'jds', 'designs', 'coding', 'voice', 'paths', 'history', 'jdTarget', 'readiness'];
+  const BACKUP_KEYS = ['done', 'saved', 'notes', 'practice', 'activity', 'posts', 'profile', 'srs', 'plan', 'mocks', 'stories', 'storyPractice', 'jds', 'designs', 'coding', 'voice', 'paths', 'history', 'jdTarget', 'readiness'];
 
   /* Prepared counts per role and gear. */
   function matrix(bank, done, meta) {
@@ -93,6 +93,7 @@
     if ('srs' in out && !isMap(out.srs)) return { error: 'Backup "srs" section is malformed.' };
     if ('plan' in out && !isMap(out.plan)) return { error: 'Backup "plan" section is malformed.' };
     if ('stories' in out && !Array.isArray(out.stories)) return { error: 'Backup "stories" section is malformed.' };
+    if ('storyPractice' in out && !Array.isArray(out.storyPractice)) return { error: 'Backup "storyPractice" section is malformed.' };
     if ('jds' in out && !Array.isArray(out.jds)) return { error: 'Backup "jds" section is malformed.' };
     if ('designs' in out && !isMap(out.designs)) return { error: 'Backup "designs" section is malformed.' };
     if ('coding' in out && !isMap(out.coding)) return { error: 'Backup "coding" section is malformed.' };
