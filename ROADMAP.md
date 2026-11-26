@@ -171,9 +171,15 @@ Source: the product improvement plan (23 phases). This release does Phases 0 to 
 |---|---|---|
 | 18 Flashcards & outline mode | Done | Added `#/flashcards` (`js/flashcards.js`, `js/views7.js`): create concise local flashcards from weak questions or custom prompts, edit front/back, reveal, and grade recall directly into `IGU.srs` and `IGU.adaptive` (persisted in `igu.flashcards` and included in backups). Added offline 6-step progressive Answer Outline Mode (Define → How it works → Example → Trade-offs → Failures → Advanced) inside question cards and Drill before reveal. |
 
+## v1.17: topic dependency map (plan phase 19)
+
+| Phase | Status | What changed |
+|---|---|---|
+| 19 Topic dependency map | Done | Added `#/map` (`js/topic-map.js`, `js/views7.js`): curated prerequisite, related, and extension DAGs across all 10 roles with topological learning order, verified question links, weak-prerequisite alerts from local progress, and direct Drill/Bank links. |
+
 ## Next
 
-- [ ] Phases 19 to 22 from the product improvement plan (see `docs/PRODUCT_GAP_AUDIT.md` for priorities).
+- [ ] Phases 20 to 22 from the product improvement plan (see `docs/PRODUCT_GAP_AUDIT.md` for priorities).
 - [ ] People to work through the review queue in `docs/CONTENT_QUALITY.md`; merge single-question topics.
 - [ ] Run real-device checks in `docs/MANUAL_QA.md` (no real phones/screen readers/Safari/Firefox tested automatically).
 
