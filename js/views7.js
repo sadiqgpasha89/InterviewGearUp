@@ -2,7 +2,7 @@
 (function () {
   const IGU = window.IGU;
   IGU.routes = IGU.routes || {};
-  const FC = IGU.flashcards, TM = IGU.topicMap, WU = IGU.warmup, PL = IGU.planner, meta = IGU.meta;
+  const FC = IGU.flashcards, TM = IGU.topicMap, WU = IGU.warmup, GD = IGU.guide, PL = IGU.planner, meta = IGU.meta;
   const ui = function () { return IGU.ui; };
 
   function fill(el) {
@@ -345,6 +345,101 @@
                       paint();
                     } }, g[1], h('span', { class: 'sub' }, g[2]));
                   })))));
+      }
+    }
+  };
+
+  IGU.routes.guide = {
+    title: 'Guide & feedback',
+    render: function () {
+      const u = ui(), h = u.h, store = u.store, app = u.app, day = u.today();
+      const root = h('div', { class: 'plan-page' });
+      fill(app, root);
+      let notice = '', report = null;
+
+      paint();
+
+      function applyDemo(sc) {
+        const existingDone = Object.keys(u.done.all()).length + Object.keys(store.get('practice', {})).length;
+        if (existingDone && !confirm('Merge "' + sc.label + '" into your local browser plan? Existing prepared items are preserved, and your profile switches to this sample role/gear.')) return;
+        const plan = store.get('plan', {}) || {};
+        const prof = PL.validateProfile(Object.assign({}, sc.profile, { createdDay: day }), day).profile;
+        store.set('plan', Object.assign({}, plan, { profile: prof, skipped: {}, completed: plan.completed || {} }));
+        store.set('onboarding', { done: day });
+        const curPractice = Object.assign({}, store.get('practice', {}));
+        Object.keys(sc.practice).forEach(function (id) { if (!curPractice[id]) curPractice[id] = sc.practice[id]; });
+        store.set('practice', curPractice);
+        Object.keys(sc.done).forEach(function (id) { u.done.set(id, true); });
+        notice = 'Loaded sample scenario "' + sc.label + '". Open Home, Plan, or Readiness to explore it with real local evidence.';
+        paint();
+      }
+
+      function paint() {
+        const plan = store.get('plan', {}) || {};
+        const prof = plan.profile && PL.validateProfile(plan.profile, null).ok ? plan.profile : null;
+        const fRole = h('select', { id: 'gd-role' }, [h('option', { value: 'Not specified' }, 'Any / General')].concat(meta.roles.map(function (r) { return h('option', { value: r.id, selected: prof && prof.role === r.id }, r.name); })));
+        const fGear = h('select', { id: 'gd-gear' }, [1, 2, 3, 4].map(function (n) { return h('option', { value: String(n), selected: prof && prof.level === n }, 'Gear ' + n); }));
+        const fTime = h('input', { id: 'gd-time', type: 'text', maxlength: '40', placeholder: 'e.g. ~45 seconds' });
+        const fMod = h('select', { id: 'gd-mod' }, [h('option', { value: 'Not selected' }, 'Choose module')].concat(GD.MODULES.map(function (m) { return h('option', { value: m }, m); })));
+        const fWorked = h('select', { id: 'gd-worked' }, ['Yes — clear and complete', 'Mostly — minor friction', 'No — found a bug or unclear step'].map(function (x) { return h('option', { value: x }, x); }));
+        const fConfusing = h('textarea', { id: 'gd-confuse', rows: '2', maxlength: '600', placeholder: 'Which screen or workflow felt confusing, slow, or unclear?' });
+        const fSuggest = h('textarea', { id: 'gd-suggest', rows: '3', maxlength: '1200', placeholder: 'What would make InterviewGearUp more useful for your real interviews?' });
+
+        fill(root,
+          h('h1', null, 'Guide, demo scenarios & opt-in feedback'),
+          h('p', { class: 'lede' }, 'InterviewGearUp runs 100% locally in your browser with zero analytics, zero tracking cookies, and zero accounts. Explore the end-to-end loop, load a sample study setup, check recent updates, or share structured feedback only when you choose.'),
+          notice ? h('p', { class: 'notice ok', role: 'status' }, notice) : null,
+
+          h('section', { class: 'hcard', 'aria-label': '5-step preparation workflow' },
+            h('h2', null, 'How the preparation loop works'),
+            h('ol', { class: 'plain-list' }, GD.WALKTHROUGH.map(function (w) {
+              return h('li', null, h('a', { href: w.route }, h('strong', null, w.step + '. ' + w.title)), ' — ', w.summary);
+            }))),
+
+          h('section', { class: 'hcard', 'aria-label': 'Try a sample scenario' },
+            h('h2', null, 'Sample scenarios (zero-commitment preview)'),
+            h('p', { class: 'muted small-text' }, 'Want to see Dashboard, Adaptive Plan, Topic Map, and Readiness populated right away? Load a sample profile in your browser; API keys and existing stories/notes stay untouched.'),
+            h('div', { class: 'tm-grid' }, GD.DEMO_SCENARIOS.map(function (sc) {
+              return h('div', { class: 'hcard' },
+                h('h3', null, sc.label),
+                h('p', { class: 'small-text' }, sc.description),
+                h('button', { class: 'btn small', type: 'button', onclick: function () { applyDemo(sc); } }, 'Load sample'));
+            }))),
+
+          h('section', { class: 'hcard', 'aria-label': 'Recent releases' },
+            h('h2', null, 'What shipped recently'),
+            h('ul', { class: 'plain-list' }, GD.RELEASES.map(function (rel) {
+              return h('li', null, h('strong', null, rel.version + ' · '), h('a', { href: rel.route }, rel.title), ' — ', rel.notes);
+            }))),
+
+          h('section', { class: 'hcard', 'aria-label': 'Opt-in usability and product feedback' },
+            h('h2', null, 'Share opt-in feedback or usability notes'),
+            h('p', { class: 'muted small-text' }, 'Nothing is sent automatically. Build a local Markdown report (any accidental API keys are scrubbed) to save or paste into GitHub.'),
+            h('div', { class: 'drill-filters two' },
+              h('div', null, h('label', { for: 'gd-role' }, 'Role'), fRole),
+              h('div', null, h('label', { for: 'gd-gear' }, 'Gear'), fGear),
+              h('div', null, h('label', { for: 'gd-time' }, 'Time to start preparing'), fTime),
+              h('div', null, h('label', { for: 'gd-mod' }, 'Most useful module'), fMod),
+              h('div', null, h('label', { for: 'gd-worked' }, 'Workflow clarity'), fWorked)),
+            h('div', { class: 'field' }, h('label', { for: 'gd-confuse' }, 'Confusing UI or friction'), fConfusing),
+            h('div', { class: 'field' }, h('label', { for: 'gd-suggest' }, 'Suggestions / next priority'), fSuggest),
+            h('div', { class: 'q-actions' },
+              h('button', { class: 'btn primary', type: 'button', onclick: function () {
+                report = GD.buildFeedbackReport({
+                  role: fRole.value, gear: fGear.value, timeToStart: fTime.value,
+                  mostUseful: fMod.value, worked: fWorked.value, confusing: fConfusing.value, suggestions: fSuggest.value, day: day
+                });
+                paint();
+              } }, 'Generate feedback report')),
+            report ? h('div', { class: 'related-box' },
+              h('h3', null, 'Generated report (local preview)'),
+              h('pre', { class: 'small-text' }, report.markdown),
+              h('div', { class: 'q-actions' },
+                h('button', { class: 'btn small', type: 'button', onclick: function () {
+                  const a = h('a', { href: URL.createObjectURL(new Blob([report.markdown], { type: 'text/markdown' })), download: 'interviewgearup-feedback-' + day + '.md' });
+                  document.body.appendChild(a); a.click(); a.remove();
+                } }, 'Download Markdown'),
+                h('a', { class: 'btn small', href: report.githubIssueUrl, target: '_blank', rel: 'noopener noreferrer' }, 'Open pre-filled GitHub issue'))) : null));
       }
     }
   };

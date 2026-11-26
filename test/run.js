@@ -10,7 +10,7 @@ const root = path.join(__dirname, '..');
 const ctx = { setTimeout, clearTimeout, AbortController, URL };
 ctx.window = ctx;
 vm.createContext(ctx);
-['js/config.js', 'js/quality.js', 'js/engine.js', 'js/search.js', 'js/srs.js', 'js/migrate.js', 'js/ai.js', 'js/adaptive.js', 'js/planner.js', 'js/mock.js', 'js/dashboard.js', 'js/stories.js', 'js/jd.js', 'js/design.js', 'data/design.js', 'js/coding-core.js', 'data/coding.js', 'data/coding-langs.js', 'js/company.js', 'js/voice.js', 'js/readiness.js', 'js/flashcards.js', 'js/topic-map.js', 'js/warmup.js', 'js/calendar.js']
+['js/config.js', 'js/quality.js', 'js/engine.js', 'js/search.js', 'js/srs.js', 'js/migrate.js', 'js/ai.js', 'js/adaptive.js', 'js/planner.js', 'js/mock.js', 'js/dashboard.js', 'js/stories.js', 'js/jd.js', 'js/design.js', 'data/design.js', 'js/coding-core.js', 'data/coding.js', 'data/coding-langs.js', 'js/company.js', 'js/voice.js', 'js/readiness.js', 'js/flashcards.js', 'js/topic-map.js', 'js/warmup.js', 'js/calendar.js', 'js/guide.js']
   .concat(require('../scripts/lib/data-files').dataFiles(root))
   .forEach((f) => vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f }));
 
@@ -1970,4 +1970,34 @@ test('calendar: exports valid RFC 5545 .ics events with local time, folding, esc
   assert.ok(taskIcs.includes('DTSTART:20261126T180000'));
   assert.ok(taskIcs.includes('DTEND:20261126T181500'));
   assert.ok(taskIcs.includes('MY_STUDY_NOTE'), 'notes included only when explicitly requested');
+});
+
+/* ---------- Phase 22: product validation, walkthroughs & opt-in feedback ---------- */
+const GD = IGU.guide;
+test('guide: walkthrough, demo scenarios, zero hidden tracking, and secret-scrubbing feedback export', () => {
+  assert.equal(GD.WALKTHROUGH.length, 5);
+  assert.ok(GD.DEMO_SCENARIOS.length >= 3);
+  GD.DEMO_SCENARIOS.forEach((sc) => {
+    const res = PL.validateProfile(Object.assign({}, sc.profile, { createdDay: '2026-11-26' }), '2026-11-26');
+    assert.equal(res.ok, true, 'valid demo profile ' + sc.id);
+    Object.keys(sc.practice).forEach((qid) => assert.ok(bank.some((e) => e.id === qid), 'real qid ' + qid));
+  });
+
+  const rep = GD.buildFeedbackReport({
+    role: 'backend', gear: '2', timeToStart: '40s', mostUseful: 'Daily Warm-up',
+    worked: 'Yes', confusing: 'Note with AIzaSyAbcdefghijklmnopqrstuvwxyz12345',
+    suggestions: 'Do not include sk-proj-abcdefghijklmnopqrstuvwxyz1234 or ghp_abcdefghijklmnopqrstuvwxyz12345',
+    day: '2026-11-26'
+  });
+  assert.ok(rep.markdown.includes('[REDACTED_KEY]'));
+  assert.ok(rep.markdown.includes('[REDACTED_TOKEN]'));
+  assert.ok(!rep.markdown.includes('AIzaSyAbcdefghijklmnopqrstuvwxyz12345'));
+  assert.ok(!rep.markdown.includes('sk-proj-abcdefghijklmnopqrstuvwxyz1234'));
+  assert.ok(rep.githubIssueUrl.startsWith('https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?'));
+
+  // Confirm no third-party analytics or beacon calls anywhere in app JS or index.html
+  const allClientSrc = [fs.readFileSync(path.join(root, 'index.html'), 'utf8')].concat(
+    fs.readdirSync(path.join(root, 'js')).map((f) => fs.readFileSync(path.join(root, 'js', f), 'utf8'))
+  ).join('\n');
+  assert.ok(!/navigator\.sendBeacon\s*\(|google-analytics|googletagmanager|mixpanel|amplitude\.com|segment\.io|posthog/i.test(allClientSrc), 'zero analytics/beacons');
 });

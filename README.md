@@ -40,6 +40,7 @@ Interview preparation for IT roles, organised by **gear**:
 - **Progress page**: Overall %, study streak, and a role × gear coverage matrix. **Backup and restore** your progress, review schedule, plan and mock history as a JSON file (API keys are never exported).
 - **Works offline**: Installable as an app (PWA); the question bank, plan, review and mock keep working without a connection (AI features need a connection).
 - **Light / Dark / Auto theme** toggle.
+- **Guide, demo scenarios & opt-in feedback**: `#/guide` walks new learners through the end-to-end preparation loop, offers safe sample starter scenarios, summarizes recent updates, and exports secret-scrubbed feedback Markdown only when requested (zero hidden tracking).
 - **Community board**: Interview questions reported by community members, filterable by company, role, gear, round and business domain, with a clear status on each (reviewed, awaiting review or unreviewed).
 - **LLM answers for community questions**: answered by a GitHub Action for maintainers' issues or after a maintainer adds the `approved` label (to prevent cost abuse). The bot marks them with an `ai-answered` label; treat them as study aids.
 - **Post a question**: Register locally with a display name, write questions you were asked in real interviews, and receive an instant answer.

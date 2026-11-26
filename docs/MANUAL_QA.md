@@ -24,6 +24,9 @@ Automated tests (`npm test`) cover the logic. These checks need a person and a r
 - [ ] JD analyzer and Readiness (v1.7): paste a posting, check named and inferred skills show their phrases, choose "Use as my target job", then open Prepare > Readiness: statuses have evidence, Not assessed is shown with no data, Reset readiness assessment and Use all evidence again work.
 - [ ] Coding and design (v1.8): on a phone, type in the coding editor without the page zooming; run a wrong coin-change solution and read the first-failure summary; in a design problem, change the calculator, answer a failure scenario, check the SVG preview and the print view.
 - [ ] Answer marked Needs correction (set one temporarily in a data file): the warning appears above the answer in the app and on its static page.
+- [ ] Search & SEO (v1.13–v1.14): search abbreviations (`k8s`, `authn`), check typo suggestions, verify `q/role-backend.html` links back into Drill/App, and open offline/update banners without errors.
+- [ ] Flashcards, Topic Map, Warm-up & Calendar Export (v1.16–v1.19): create flashcards from `#/flashcards` and confirm SRS intervals update; navigate prerequisites on `#/map`; complete a 3-question timed `#/warmup`; download today and week `.ics` files from `#/plan` and verify import in Apple/Google/Outlook calendar with local times and without private notes unless ticked.
+- [ ] Guide & Opt-in Feedback (v1.20): open Community > Guide & feedback (`#/guide`), verify walkthrough links, test loading a sample scenario, and generate an opt-in feedback Markdown export confirming no network tracking calls occur.
 
 ## Content
 - [ ] Open five random answers marked "AI-drafted" and check them against an authoritative source before changing their status to `reviewed`.
