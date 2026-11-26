@@ -1063,7 +1063,10 @@
   }
   if (providerSel) providerSel.addEventListener('change', updateSettingsPlaceholders);
 
+  const openSettingsBtn = document.getElementById('open-settings');
+  let settingsReturnFocus = null;
   function openSettings() {
+    settingsReturnFocus = document.activeElement;
     const s = store.get('settings', {});
     if (providerSel) providerSel.value = s.provider || detectProvider(s) || 'gemini';
     if (keyInput) keyInput.value = s.key || '';
@@ -1071,16 +1074,19 @@
     updateSettingsPlaceholders();
     if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
   }
-  document.getElementById('open-settings').addEventListener('click', openSettings);
+  openSettingsBtn.addEventListener('click', openSettings);
   dlg.addEventListener('close', function () {
-    if (dlg.returnValue !== 'save') return;
-    const prov = providerSel ? providerSel.value : 'gemini';
-    store.set('settings', {
-      provider: prov,
-      key: keyInput ? keyInput.value.trim() : '',
-      model: modelInput ? modelInput.value.trim() : ''
-    });
-    render();
+    if (dlg.returnValue === 'save') {
+      const prov = providerSel ? providerSel.value : 'gemini';
+      store.set('settings', {
+        provider: prov,
+        key: keyInput ? keyInput.value.trim() : '',
+        model: modelInput ? modelInput.value.trim() : ''
+      });
+      render();
+    }
+    const target = settingsReturnFocus && settingsReturnFocus.isConnected ? settingsReturnFocus : openSettingsBtn;
+    if (target && target.focus) target.focus();
   });
   const clearKeyBtn = document.getElementById('clear-key');
   if (clearKeyBtn) {

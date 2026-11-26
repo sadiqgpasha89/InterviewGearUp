@@ -11,6 +11,10 @@
   --on-signal: #111A23;
   --ok: #157A4B;
   --danger: #B3261E;
+  --bad: var(--danger);
+  --muted: var(--steel);
+  --link: var(--cobalt);
+  --card: var(--panel);
   --focus: #2A47F5;
   --font: "Avenir Next", "Segoe UI Variable Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --code: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -59,6 +63,10 @@ body {
   flex-direction: column;
 }
 main { flex: 1; width: 100%; max-width: 1120px; margin: 0 auto; padding: 28px 16px 56px; outline: none; }
+main > * { min-width: 0; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
 a { color: var(--cobalt); text-underline-offset: 2px; }
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 3px; }
 .skip { position: absolute; left: -999px; top: 0; background: var(--signal); color: var(--on-signal); padding: 8px 12px; z-index: 50; }
@@ -324,12 +332,15 @@ a.tile:hover { border-color: var(--ink); }
 .menu summary::after { content: ' \25BE'; }
 .menu summary:hover, .menu[open] summary, .menu.current summary { opacity: 1; }
 .menu.current summary { border-bottom-color: var(--signal); }
-.menu-list { position: absolute; z-index: 30; top: 100%; left: 0; min-width: 210px; display: grid; background: #162029; border: 1px solid rgba(255,255,255,.18); border-radius: 10px; padding: 6px; box-shadow: 0 8px 24px rgba(0,0,0,.35); }
-.menu-list a { padding: 12px 14px; border-bottom: 0; border-radius: 6px; min-height: 44px; display: flex; align-items: center; }
-.menu-list a:hover, .menu-list a[aria-current="page"] { background: rgba(255,255,255,.1); }
+.menu-list { position: absolute; z-index: 30; top: 100%; left: 0; min-width: 210px; display: grid; background: var(--ink); color: var(--bg); border: 1px solid color-mix(in srgb, var(--bg) 22%, transparent); border-radius: 10px; padding: 6px; box-shadow: 0 8px 24px rgba(0,0,0,.35); }
+.menu-list a { padding: 12px 14px; border-bottom: 0; border-radius: 6px; min-height: 44px; display: flex; align-items: center; color: inherit; }
+.menu-list a:hover, .menu-list a[aria-current="page"] { background: color-mix(in srgb, var(--bg) 14%, transparent); }
 @media (max-width: 640px) {
-  .menu summary { padding: 10px 8px 8px; font-size: 14px; }
+  .menu summary { padding: 10px 6px 8px; font-size: 13.5px; }
   .menu-list { position: static; box-shadow: none; border: 0; background: transparent; width: 100%; }
+  .chip, .btn.small { min-height: 40px; }
+  .roles button { min-height: 44px; }
+  .search-bar { flex-wrap: wrap; }
 }
 .story-list, .design-list { list-style: none; padding: 0; margin: 12px 0; display: grid; gap: 10px; }
 .story-list li, .design-list li { border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
@@ -403,10 +414,15 @@ pre.code { overflow: auto; padding: 10px; background: rgba(127,127,127,.12); bor
   .ob-gears { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 480px) {
-  .tabs a, .menu summary { padding: 10px 6px 8px; font-size: 13.5px; }
+  .tabs a, .menu summary { padding: 10px 5px 8px; font-size: 13px; }
+  .kbd-hint { display: none; }
+}
+@media (max-width: 420px) {
+  .filters { grid-template-columns: 1fr; }
+  .ob-gears { grid-template-columns: 1fr; }
 }
 @media (max-width: 360px) {
-  .tabs a, .menu summary { padding: 10px 4px 8px; font-size: 13px; }
+  .tabs a, .menu summary { padding: 10px 3.5px 8px; font-size: 12.5px; }
 }
 
 /* Mock feedback (Phase 3) */
