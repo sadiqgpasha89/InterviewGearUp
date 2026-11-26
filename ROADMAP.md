@@ -135,16 +135,22 @@ Source: the product improvement plan (23 phases). This release does Phases 0 to 
 |---|---|---|
 | 12 SEO and landing page | Done | Static role landing pages (`q/role-<id>.html`) in `scripts/build-seo.js` and `sitemap.xml`, prerequisite and related-question links plus in-app practice CTAs on every `q/<id>.html`, branded 1200×630 social preview (`assets/og-preview.png`), canonical URL on `index.html`, richer `<noscript>` summary, and sharper landing-page value proposition on `#/home`. |
 
+## v1.11: community workflow hardening and provenance (plan phase 13)
+
+| Phase | Status | What changed |
+|---|---|---|
+| 13 Community and AI workflow | Done | Pinned GitHub Actions (`actions/checkout` and `actions/setup-node`) to commit SHAs across `ci.yml` and `generate-answer.yml`, aligned workflows to Node 22 with explicit permissions, added privacy/originality checkboxes to issue templates, moved Gemini key to header with 30s timeout and bounded retries in `scripts/generate-answer.js`, added confidential/PII and bank-duplicate checks, and surfaced provider, model, and generation date provenance on `#/community`. |
+
 ## Next
 
-- [ ] Phases 13 to 17 and 18 to 22 from the product improvement plan (see `docs/PRODUCT_GAP_AUDIT.md` for priorities).
+- [ ] Phases 14 to 17 and 18 to 22 from the product improvement plan (see `docs/PRODUCT_GAP_AUDIT.md` for priorities).
 - [ ] People to work through the review queue in `docs/CONTENT_QUALITY.md`; merge single-question topics.
 - [ ] Mobile header still wraps to two rows below about 420 px.
 
 - [ ] Keep writing answers for the questions that still have only a practice structure (`npm run content:status` lists them) and have people review the AI-drafted ones, then set `reviewStatus: 'reviewed'` with a date.
 - [ ] Retire semantic-duplicate placeholder questions.
 - [x] Moderation labels for community posts (done in v1.3; a maintainer still has to apply them).
-- [ ] Pin GitHub Actions to commit SHAs.
+- [x] Pin GitHub Actions to commit SHAs.
 - [ ] Real-device accessibility testing.
 - [x] Phases 5 to 10 from the plan.
 - [x] Phase 14 parts that fit a static site (sync, paths, SEO pages, contribution templates). Role tracks, localization and analytics are still open.
