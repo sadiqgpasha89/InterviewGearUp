@@ -8,6 +8,10 @@ on:
 # - Anyone can open an issue from the form (which applies `community-question`), so strangers do NOT trigger an LLM call by themselves.
 #   Maintainers, members and collaborators run automatically; for anyone else a maintainer adds the `approved` label.
 # - One run per issue at a time, and issues that already carry `ai-answered` are skipped.
+permissions:
+  contents: read
+  issues: write
+
 concurrency:
   group: answer-${{ github.event.issue.number }}
   cancel-in-progress: false
@@ -28,12 +32,12 @@ jobs:
       contents: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Auto-generate Answer using LLM
         env:

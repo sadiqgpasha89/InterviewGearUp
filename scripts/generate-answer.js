@@ -16,6 +16,8 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 const root = path.join(__dirname, '..');
+const TIMEOUT_MS = 30000;
+const MAX_RETRIES = 2;
 
 // Load site config and engine
 function loadAppEngine() {
@@ -76,26 +78,76 @@ function parseLevel(val) {
 }
 
 /**
- * Calls Google Gemini API
+ * Detect potential confidential, NDA, or PII content before calling an LLM or publishing.
  */
-async function callGemini(apiKey, model, systemPrompt, userPrompt) {
-  const m = model || process.env.GEMINI_MODEL || 'gemini-2.5-flash';
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent?key=${encodeURIComponent(apiKey)}`;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-      systemInstruction: { parts: [{ text: systemPrompt }] }
-    })
-  });
+function hasSensitiveInput(text) {
+  const s = String(text || '');
+  const hits = [];
+  if (/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(s)) hits.push('email address');
+  if (/\b(?:\+?\d{1,3}[\s.-]?)?\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}\b/.test(s)) hits.push('phone number');
+  if (/\b(under nda|strictly confidential|internal only|proprietary|trade secret)\b/i.test(s)) hits.push('confidential/NDA wording');
+  return hits;
+}
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Gemini API error (${res.status}): ${errText}`);
+/**
+ * Find an existing bank question with high word overlap (>= 0.75 Jaccard on meaningful words) to avoid duplicate answers.
+ */
+function findBankDuplicate(question, bank) {
+  const stop = new Set(['the', 'and', 'how', 'what', 'why', 'when', 'does', 'did', 'you', 'your', 'for', 'with', 'from', 'that', 'this', 'explain', 'describe', 'tell']);
+  const words = (s) => new Set(String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().split(/\s+/)
+    .map((w) => (w.length > 4 && w.endsWith('s') ? w.slice(0, -1) : w))
+    .filter((w) => w.length > 2 && !stop.has(w)));
+  const qw = words(question);
+  if (qw.size < 3 || !Array.isArray(bank)) return null;
+  let best = null, bestSim = 0;
+  for (const e of bank) {
+    const ew = words(e.q);
+    if (!ew.size) continue;
+    let inter = 0;
+    qw.forEach((w) => { if (ew.has(w)) inter++; });
+    const sim = inter / (qw.size + ew.size - inter);
+    if (sim >= 0.75 && sim > bestSim) { bestSim = sim; best = { entry: e, similarity: Math.round(sim * 100) }; }
   }
+  return best;
+}
 
-  const data = await res.json();
+async function postJson(url, headers, body, opts) {
+  opts = opts || {};
+  const doFetch = opts.fetch || fetch;
+  const sleep = opts.sleep || ((ms) => new Promise((r) => setTimeout(r, ms)));
+  const retries = opts.retries === undefined ? MAX_RETRIES : opts.retries;
+  const timeoutMs = opts.timeoutMs || TIMEOUT_MS;
+
+  for (let attempt = 1; ; attempt++) {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), timeoutMs);
+    try {
+      const res = await doFetch(url, { method: 'POST', headers, body: JSON.stringify(body), signal: ctl.signal });
+      clearTimeout(timer);
+      if (res.ok) return await res.json();
+      const retryable = res.status === 429 || res.status >= 500;
+      const errText = await res.text();
+      if (!retryable || attempt > retries) throw new Error(`API error (${res.status}): ${errText.slice(0, 300)}`);
+      const ra = res.headers && res.headers.get && Number(res.headers.get('retry-after'));
+      await sleep(ra > 0 ? Math.min(ra * 1000, 5000) : 500 * Math.pow(2, attempt - 1));
+    } catch (err) {
+      clearTimeout(timer);
+      if (attempt > retries || /API error \(4(?!29)\d\d\)/.test(err.message)) throw err;
+      await sleep(500 * Math.pow(2, attempt - 1));
+    }
+  }
+}
+
+/**
+ * Calls Google Gemini API (key in header, never in URL)
+ */
+async function callGemini(apiKey, model, systemPrompt, userPrompt, opts) {
+  const m = model || process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent`;
+  const data = await postJson(url, { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey }, {
+    contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+    systemInstruction: { parts: [{ text: systemPrompt }] }
+  }, opts);
   const parts = data.candidates?.[0]?.content?.parts || [];
   const text = parts.map((p) => p.text || '').join('\n').trim();
   if (!text) throw new Error('Gemini returned an empty response.');
@@ -105,34 +157,19 @@ async function callGemini(apiKey, model, systemPrompt, userPrompt) {
 /**
  * Calls Anthropic Claude API
  */
-async function callAnthropic(apiKey, model, systemPrompt, userPrompt) {
+async function callAnthropic(apiKey, model, systemPrompt, userPrompt, opts) {
   const m = model || process.env.ANTHROPIC_MODEL || 'claude-sonnet-5-5';
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01'
-    },
-    body: JSON.stringify({
-      model: m,
-      max_tokens: 1800,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }]
-    })
-  });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Anthropic API error (${res.status}): ${errText}`);
-  }
-
-  const data = await res.json();
-  const text = (data.content || [])
-    .filter((b) => b.type === 'text')
-    .map((b) => b.text)
-    .join('\n')
-    .trim();
+  const data = await postJson('https://api.anthropic.com/v1/messages', {
+    'content-type': 'application/json',
+    'x-api-key': apiKey,
+    'anthropic-version': '2023-06-01'
+  }, {
+    model: m,
+    max_tokens: 1800,
+    system: systemPrompt,
+    messages: [{ role: 'user', content: userPrompt }]
+  }, opts);
+  const text = (data.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim();
   if (!text) throw new Error('Anthropic returned an empty response.');
   return { text, model: m, provider: 'Anthropic Claude' };
 }
@@ -140,30 +177,19 @@ async function callAnthropic(apiKey, model, systemPrompt, userPrompt) {
 /**
  * Calls OpenAI or OpenAI-compatible endpoint
  */
-async function callOpenAI(apiKey, model, systemPrompt, userPrompt, endpoint = 'https://api.openai.com/v1/chat/completions') {
+async function callOpenAI(apiKey, model, systemPrompt, userPrompt, endpoint = 'https://api.openai.com/v1/chat/completions', opts) {
   const m = model || process.env.OPENAI_MODEL || 'gpt-4o-mini';
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      authorization: `Bearer ${apiKey}`
-    },
-    body: JSON.stringify({
-      model: m,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt }
-      ],
-      max_tokens: 1800
-    })
-  });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`OpenAI API error (${res.status}): ${errText}`);
-  }
-
-  const data = await res.json();
+  const data = await postJson(endpoint, {
+    'content-type': 'application/json',
+    authorization: `Bearer ${apiKey}`
+  }, {
+    model: m,
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt }
+    ],
+    max_tokens: 1800
+  }, opts);
   const text = data.choices?.[0]?.message?.content || '';
   if (!text.trim()) throw new Error('OpenAI returned an empty response.');
   return { text: text.trim(), model: m, provider: 'OpenAI' };
@@ -176,25 +202,19 @@ async function generateAnswerWithLlm(IGU, postData) {
   const prompt = IGU.engine.aiPrompt(postData);
   const systemPrompt = IGU.engine.AI_SYSTEM;
 
-  // 1. Google Gemini
   if (process.env.GEMINI_API_KEY) {
     console.log('Generating answer using Google Gemini...');
     return await callGemini(process.env.GEMINI_API_KEY, process.env.GEMINI_MODEL, systemPrompt, prompt);
   }
-
-  // 2. Anthropic Claude
   if (process.env.ANTHROPIC_API_KEY) {
     console.log('Generating answer using Anthropic Claude...');
     return await callAnthropic(process.env.ANTHROPIC_API_KEY, process.env.ANTHROPIC_MODEL, systemPrompt, prompt);
   }
-
-  // 3. OpenAI
   if (process.env.OPENAI_API_KEY) {
     console.log('Generating answer using OpenAI...');
     return await callOpenAI(process.env.OPENAI_API_KEY, process.env.OPENAI_MODEL, systemPrompt, prompt);
   }
 
-  // 4. GitHub Models (Azure AI Inference endpoint)
   const ghToken = process.env.GITHUB_MODELS_TOKEN || process.env.GITHUB_TOKEN;
   if (ghToken) {
     try {
@@ -211,7 +231,6 @@ async function generateAnswerWithLlm(IGU, postData) {
     }
   }
 
-  // 5. Offline template fallback
   console.log('No LLM API keys provided; falling back to template engine with setup guide...');
   const offline = IGU.engine.generate(postData, IGU.bank || []);
   const note =
@@ -237,13 +256,15 @@ function neutralise(text) {
 }
 
 /**
- * Appends the generated answer to the issue body under the '### Auto-generated Answer' header.
+ * Appends the generated answer to the issue body under the '### Auto-generated Answer' header with provenance metadata.
  */
 function appendAnswerToBody(originalBody, answerMarkdown, metaInfo) {
   const trimmed = String(originalBody || '').trimEnd();
   answerMarkdown = neutralise(answerMarkdown);
   const header = '### Auto-generated Answer';
-  const metaNote = `*Answer generated by ${metaInfo.model || 'LLM'} for ${metaInfo.roleName || 'Software engineer'} · Gear ${metaInfo.level}*\n\n`;
+  const date = (metaInfo && metaInfo.generatedAt) || new Date().toISOString().slice(0, 10);
+  const provider = metaInfo && metaInfo.provider ? ` (${neutralise(metaInfo.provider)})` : '';
+  const metaNote = `*Answer generated by ${neutralise(metaInfo.model || 'LLM')}${provider} on ${date} for ${metaInfo.roleName || 'Software engineer'} · Gear ${metaInfo.level}*\n\n`;
 
   return `${trimmed}\n\n${header}\n\n${metaNote}${answerMarkdown.trim()}\n`;
 }
@@ -282,7 +303,6 @@ async function main() {
   const IGU = loadAppEngine();
   console.log(`Processing issue #${issueNumber} in repository ${repo}...`);
 
-  // Fetch issue details
   const issueUrl = `https://api.github.com/repos/${repo}/issues/${issueNumber}`;
   const res = await fetch(issueUrl, {
     headers: {
@@ -313,18 +333,24 @@ async function main() {
   }
 
   const fields = parseIssueBody(issue.body);
-
   if (fields['auto-generated answer']) {
     console.log(`Issue #${issueNumber} already has an auto-generated answer. Skipping.`);
     return;
   }
 
   const question = fields.question || issue.title;
-  if (!question || question.trim().length < 10) {
-    console.log(`Issue #${issueNumber} has no valid question text. Skipping.`);
+  if (!question || question.trim().length < 15) {
+    console.log(`Issue #${issueNumber} question is too short or missing. Skipping.`);
     return;
   }
 
+  const sensitive = hasSensitiveInput(question + '\n' + (fields.answer || ''));
+  if (sensitive.length) {
+    console.log(`Issue #${issueNumber} flagged for possible ${sensitive.join(', ')}. Skipping LLM generation.`);
+    return;
+  }
+
+  const dup = findBankDuplicate(question, IGU.bank);
   const level = parseLevel(fields.level);
   const roleName = fields.role || 'Software engineer';
   const roleObj = (IGU.meta && IGU.meta.roles ? IGU.meta.roles : []).find(
@@ -343,12 +369,13 @@ async function main() {
     answer: fields.answer || ''
   };
 
-  // Generate answer using LLM
   const result = await generateAnswerWithLlm(IGU, postData);
+  const generatedAt = new Date().toISOString().slice(0, 10);
 
-  // Update issue body
   const updatedBody = appendAnswerToBody(issue.body, result.text, {
     model: result.model,
+    provider: result.provider,
+    generatedAt: generatedAt,
     roleName: roleName,
     level: level
   });
@@ -369,8 +396,6 @@ async function main() {
     throw new Error(`Failed to update issue #${issueNumber}: HTTP ${patchRes.status} ${await patchRes.text()}`);
   }
 
-  // Provenance: only the bot can apply this label (contributors cannot forge it), and the site only
-  // shows a section as LLM-written when the issue carries it.
   const labelRes = await fetch(`https://api.github.com/repos/${repo}/issues/${issueNumber}/labels`, {
     method: 'POST',
     headers: {
@@ -383,7 +408,9 @@ async function main() {
   });
   if (!labelRes.ok) console.warn(`Could not label issue #${issueNumber}: HTTP ${labelRes.status}`);
 
-  // A short pointer, not a second copy of the answer.
+  const dupNote = dup
+    ? `\n\nNote: This looks ${dup.similarity}% similar to existing question \`${dup.entry.id}\` ("${neutralise(dup.entry.q)}").`
+    : '';
   const commentRes = await fetch(`https://api.github.com/repos/${repo}/issues/${issueNumber}/comments`, {
     method: 'POST',
     headers: {
@@ -393,8 +420,8 @@ async function main() {
       'User-Agent': 'InterviewGearUp-AutoAnswerBot'
     },
     body: JSON.stringify({
-      body: `An AI-generated study draft (${neutralise(result.provider || 'LLM')}, ${neutralise(result.model || 'unknown model')}) was added to this post. ` +
-        `It is a starting point, not a verified answer. Read it on the [Community tab](https://${repo.split('/')[0]}.github.io/${repo.split('/')[1]}/#/community).`
+      body: `An AI-generated study draft (${neutralise(result.provider || 'LLM')}, \`${neutralise(result.model || 'unknown')}\`, ${generatedAt}) was added to this post. ` +
+        `It is labelled \`ai-answered\` as a starting point, not a human-verified answer. Read it on the [Community tab](https://${repo.split('/')[0]}.github.io/${repo.split('/')[1]}/#/community?open=gh-${issueNumber}).${dupNote}`
     })
   });
   if (!commentRes.ok) console.warn(`Could not post comment to issue #${issueNumber}: HTTP ${commentRes.status}`);
@@ -406,6 +433,9 @@ module.exports = {
   loadAppEngine,
   parseIssueBody,
   parseLevel,
+  hasSensitiveInput,
+  findBankDuplicate,
+  postJson,
   appendAnswerToBody,
   neutralise,
   callGemini,

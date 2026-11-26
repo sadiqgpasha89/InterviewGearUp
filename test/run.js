@@ -1710,3 +1710,47 @@ test('seo: unique titles/descriptions, role landing pages, og:image, internal pr
   const homeJs = fs.readFileSync(path.join(root, 'js/views5.js'), 'utf8');
   assert.ok(/no account/i.test(homeJs) && /offline/i.test(homeJs) && /Private/i.test(homeJs));
 });
+
+/* ---------- Phase 13: community and AI workflow quality ---------- */
+test('workflows: GitHub Actions pinned to commit SHAs with explicit permissions', () => {
+  ['.github/workflows/ci.yml', '.github/workflows/generate-answer.yml'].forEach((wf) => {
+    const y = fs.readFileSync(path.join(root, wf), 'utf8');
+    assert.ok(y.includes('permissions:'), wf + ' missing permissions');
+    assert.ok(y.includes('timeout-minutes:'), wf + ' missing timeout');
+    const uses = [...y.matchAll(/uses:\s*([^\s#]+)/g)].map((m) => m[1]);
+    assert.ok(uses.length >= 2);
+    uses.forEach((u) => assert.ok(/@[0-9a-f]{40}$/.test(u), wf + ' action not pinned to 40-char SHA: ' + u));
+  });
+});
+
+test('workflow script: Gemini header auth, retry, duplicate/PII guard and provenance date', async () => {
+  const genScript = require(path.join(root, 'scripts/generate-answer.js'));
+  assert.ok(genScript.hasSensitiveInput('Email me at test@example.com under NDA').length >= 2);
+  assert.equal(genScript.hasSensitiveInput('Explain consistent hashing in distributed caches.').length, 0);
+  const dup = genScript.findBankDuplicate('What is the CAP theorem and how does it affect your choice of database?', bank);
+  assert.ok(dup && dup.entry.id === 'be-6');
+
+  let calls = 0;
+  const gRes = await genScript.callGemini('AIzaTestKey', 'gemini-2.5-flash', 'sys', 'prompt', {
+    fetch: async (url, init) => {
+      calls++;
+      assert.ok(!url.includes('AIzaTestKey'), 'Gemini key must not be in URL');
+      assert.equal(init.headers['x-goog-api-key'], 'AIzaTestKey');
+      if (calls === 1) return { ok: false, status: 503, headers: { get: () => null }, text: async () => 'busy' };
+      return { ok: true, status: 200, json: async () => ({ candidates: [{ content: { parts: [{ text: 'Answer text' }] } }] }) };
+    },
+    sleep: async () => {}
+  });
+  assert.equal(calls, 2);
+  assert.equal(gRes.text, 'Answer text');
+
+  const body = genScript.appendAnswerToBody('### Question\nQ?', '*Answer*', {
+    model: 'gemini-2.5-flash', provider: 'Google Gemini', generatedAt: '2026-11-26', roleName: 'Backend engineer', level: 3
+  });
+  assert.ok(body.includes('on 2026-11-26') && body.includes('Google Gemini'));
+
+  ['question.yml', 'content-feedback.yml'].forEach((tpl) => {
+    const t = fs.readFileSync(path.join(root, '.github/ISSUE_TEMPLATE', tpl), 'utf8');
+    assert.ok(t.includes('type: checkboxes') && /confidential/i.test(t), tpl + ' missing privacy checkbox');
+  });
+});
