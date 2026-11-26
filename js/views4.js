@@ -192,8 +192,9 @@
         const g = gather(); if (!g) return;
         run(pullBtn, 'Downloading...', async function () {
           const r = await SY.pull({ token: g.token, pass: g.pass, gistId: g.gistId });
-          if (!confirm('Replace the progress, notes and drafts in this browser with the synced copy saved ' + (r.savedAt || 'earlier') + '? Your AI key is not affected.')) return;
-          Object.keys(r.backup).forEach(function (k) { store.set(k, r.backup[k]); });
+          if (!confirm('Replace all progress, notes and drafts in this browser with the synced copy saved ' + (r.savedAt || 'earlier') + '? (Replaces rather than merges. Your AI key is not affected.)')) return;
+          const applied = S.applyBackup({ app: 'InterviewGearUp', version: 1, data: r.backup }, store);
+          if (!applied.ok) { say(applied.error, true); return; }
           saveState({ gistId: g.gistId, last: { remoteSavedAt: r.savedAt, at: new Date().toISOString() } });
           say('Done. This browser now matches the synced copy.');
         });

@@ -64,7 +64,7 @@
   }
 
   function describe(status) {
-    if (status === 401) return 'GitHub rejected the token. Check that it is valid and not expired.';
+    if (status === 401) return 'GitHub rejected the token (it may be invalid, revoked, or expired).';
     if (status === 403) return 'GitHub refused the request (the token may lack the "gist" permission, or the rate limit was reached).';
     if (status === 404) return 'That gist was not found with this token. Check the gist id and that the token belongs to the same account.';
     if (status === 422) return 'GitHub could not accept the data.';
@@ -122,6 +122,7 @@
     const file = cur.files && cur.files[FILE];
     if (!file) throw new Error('That gist has no InterviewGearUp sync file.');
     if (file.truncated || typeof file.content !== 'string') throw new Error('The synced file is too large to read here. Use a downloaded backup instead.');
+    if (!file.content.trim()) throw new Error('The synced file is empty or damaged.');
     const res = await open(file.content, opts.pass);
     if (res.error) throw new Error(res.error);
     return res;

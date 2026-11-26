@@ -139,6 +139,10 @@
       mem[key] = value;
       try { window.localStorage.setItem('igu.' + key, JSON.stringify(value)); } catch (e) { /* in-memory only */ }
     },
+    remove: function (key) {
+      delete mem[key];
+      try { window.localStorage.removeItem('igu.' + key); } catch (e) { /* ignore */ }
+    },
     wipe: function () {
       Object.keys(mem).forEach(function (k) { delete mem[k]; });
       try {

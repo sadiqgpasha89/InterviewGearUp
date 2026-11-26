@@ -1786,3 +1786,49 @@ test('ai reliability: quota errors are not retried, cancellation works, usage an
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   assert.ok(html.includes('id="clear-key"'));
 });
+
+/* ---------- Phase 15: backup, sync and local data resilience ---------- */
+test('backup resilience: invalid imports never partially overwrite local data, restore is atomic and replaces cleanly', () => {
+  const mem = { done: { 'be-1': 1 }, notes: { 'be-1': 'keep me' }, settings: { key: 'sk-keep' }, sync: { token: 'ghp_keep' } };
+  const fakeStore = {
+    get: (k, fb) => (k in mem ? mem[k] : fb),
+    set: (k, v) => { mem[k] = v; },
+    remove: (k) => { delete mem[k]; }
+  };
+  const bad = S.applyBackup({ app: 'InterviewGearUp', version: 99, data: { done: { 'be-2': 1 } } }, fakeStore);
+  assert.equal(bad.ok, false);
+  assert.deepEqual(mem.done, { 'be-1': 1 }, 'rejected version leaves existing data intact');
+
+  const malformed = S.applyBackup({ app: 'InterviewGearUp', version: 1, data: { done: { 'be-2': 1 }, history: 'not-array' } }, fakeStore);
+  assert.equal(malformed.ok, false);
+  assert.equal(mem.notes['be-1'], 'keep me', 'partial malformed section never overwrites');
+
+  const ok = S.applyBackup({ app: 'InterviewGearUp', version: 1, data: { done: { 'fe-1': 1 } } }, fakeStore);
+  assert.equal(ok.ok, true);
+  assert.deepEqual(mem.done, { 'fe-1': 1 });
+  assert.equal(mem.notes, undefined, 'replace-not-merge clears stale keys');
+  assert.equal(mem.settings.key, 'sk-keep', 'API key preserved');
+  assert.equal(mem.sync.token, 'ghp_keep', 'sync token preserved');
+
+  // Rollback if storage throws mid-restore
+  const throwingStore = {
+    get: (k, fb) => (k in mem ? mem[k] : fb),
+    set: (k, v) => { if (k === 'notes') throw new Error('QuotaExceededError'); mem[k] = v; },
+    remove: (k) => { delete mem[k]; }
+  };
+  const rb = S.applyBackup({ app: 'InterviewGearUp', version: 1, data: { done: { 'be-9': 1 }, notes: { 'be-9': 'boom' } } }, throwingStore);
+  assert.equal(rb.ok, false);
+  assert.deepEqual(mem.done, { 'fe-1': 1 }, 'rollback restores previous state');
+
+  assert.equal(S.backupReminder({ preparedCount: 2, drilledCount: 1 }).due, false);
+  assert.equal(S.backupReminder({ preparedCount: 6, lastBackupAt: '', now: '2026-11-26T00:00:00Z' }).due, true);
+  assert.equal(S.backupReminder({ preparedCount: 6, lastBackupAt: '2026-11-20T00:00:00Z', now: '2026-11-26T00:00:00Z' }).due, false);
+  assert.equal(S.backupReminder({ preparedCount: 6, lastBackupAt: '2026-11-01T00:00:00Z', now: '2026-11-26T00:00:00Z' }).due, true);
+});
+
+test('sync resilience: corrupted base64, empty file and unsupported iter rejected safely', async () => {
+  assert.ok((await SY.open(JSON.stringify({ app: 'InterviewGearUp', format: 'igu-sync-1', iter: 999, salt: 'AA==', iv: 'AA==', data: 'AA==' }), 'correct horse battery')).error);
+  assert.ok((await SY.open(JSON.stringify({ app: 'InterviewGearUp', format: 'igu-sync-1', iter: 210000, salt: '!!!', iv: 'AA==', data: 'AA==' }), 'correct horse battery')).error);
+  const emptyGist = async () => ({ ok: true, status: 200, json: async () => ({ id: 'g1', files: { [SY.FILE]: { content: '   ', truncated: false } } }) });
+  await assert.rejects(SY.pull({ token: TOKEN, pass: 'correct horse battery', gistId: 'g1', fetch: emptyGist }), /empty/);
+});
