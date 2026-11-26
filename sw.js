@@ -1,12 +1,15 @@
 /* Offline support. Network first for same-origin files (so a new deploy shows up immediately when online),
    falling back to the cache when offline. Cross-origin requests (GitHub API, LLM providers) are never touched. */
-const CACHE = 'igu-v15';
+const CACHE = 'igu-v16';
 const SHELL = [
   './',
   'index.html',
   'css/style.css',
   'favicon.svg',
   'manifest.webmanifest',
+  'assets/apple-touch-icon.png',
+  'assets/icon-192.png',
+  'assets/icon-512.png',
   'js/theme.js',
   'js/config.js',
   'js/util.js',

@@ -1832,3 +1832,19 @@ test('sync resilience: corrupted base64, empty file and unsupported iter rejecte
   const emptyGist = async () => ({ ok: true, status: 200, json: async () => ({ id: 'g1', files: { [SY.FILE]: { content: '   ', truncated: false } } }) });
   await assert.rejects(SY.pull({ token: TOKEN, pass: 'correct horse battery', gistId: 'g1', fetch: emptyGist }), /empty/);
 });
+
+/* ---------- Phase 16: accessibility, mobile and PWA icons ---------- */
+test('a11y and PWA: CSS theme tokens defined, dark dropdown readable, reduced motion and PNG icons present', () => {
+  const css = fs.readFileSync(path.join(root, 'css/style.css'), 'utf8');
+  assert.ok(css.includes('--muted:') && css.includes('--bad:') && css.includes('--link:'));
+  assert.ok(!/\.menu-list\s*\{[^}]*#162029/.test(css), 'menu-list must use theme variables so dark mode stays readable');
+  assert.ok(css.includes('prefers-reduced-motion: reduce'));
+  assert.ok(css.includes('@media (max-width: 420px)') && css.includes('@media (max-width: 360px)'));
+
+  const mf = JSON.parse(fs.readFileSync(path.join(root, 'manifest.webmanifest'), 'utf8'));
+  assert.ok(mf.icons.some((i) => i.sizes === '192x192' && i.type === 'image/png'));
+  assert.ok(mf.icons.some((i) => i.sizes === '512x512' && i.type === 'image/png'));
+  ['assets/icon-192.png', 'assets/icon-512.png', 'assets/apple-touch-icon.png'].forEach((p) => {
+    assert.ok(fs.existsSync(path.join(root, p)), 'missing ' + p);
+  });
+});

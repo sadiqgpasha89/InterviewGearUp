@@ -153,11 +153,17 @@ Source: the product improvement plan (23 phases). This release does Phases 0 to 
 |---|---|---|
 | 15 Backup & sync resilience | Done | Validated all 20 `BACKUP_KEYS` and version in `readBackup()`, added atomic `applyBackup()` replace-not-merge restore with rollback on write error, added a non-intrusive 14-day backup reminder on Progress, guarded empty sync files and expired tokens in `js/sync.js`, and aligned `docs/THREAT_MODEL.md`. |
 
+## v1.14: accessibility, mobile layout and PWA icons (plan phase 16)
+
+| Phase | Status | What changed |
+|---|---|---|
+| 16 Accessibility, mobile & PWA | Done (automated checks; real-device QA still open in `docs/MANUAL_QA.md`) | Fixed dark-mode contrast bug where desktop `.menu-list` used hardcoded `#162029` behind dark text, defined missing `--muted`/`--bad`/`--link`/`--card` CSS tokens, tightened narrow-screen nav/filters/onboarding grids down to 320 px, added global `prefers-reduced-motion: reduce`, restored focus on Settings dialog close, and generated 192/512 PNG manifest icons + 180 px Apple touch icon. |
+
 ## Next
 
-- [ ] Phases 16 to 17 and 18 to 22 from the product improvement plan (see `docs/PRODUCT_GAP_AUDIT.md` for priorities).
+- [ ] Phases 17 and 18 to 22 from the product improvement plan (see `docs/PRODUCT_GAP_AUDIT.md` for priorities).
 - [ ] People to work through the review queue in `docs/CONTENT_QUALITY.md`; merge single-question topics.
-- [ ] Mobile header still wraps to two rows below about 420 px.
+- [ ] Run real-device checks in `docs/MANUAL_QA.md` (no real phones/screen readers/Safari/Firefox tested automatically).
 
 - [ ] Keep writing answers for the questions that still have only a practice structure (`npm run content:status` lists them) and have people review the AI-drafted ones, then set `reviewStatus: 'reviewed'` with a date.
 - [ ] Retire semantic-duplicate placeholder questions.
