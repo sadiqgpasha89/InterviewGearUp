@@ -1,8 +1,8 @@
-/* Views for Phase 18+ features: Flashcards (#/flashcards). Registered in IGU.routes. No innerHTML. */
+/* Views for Phase 18+ features: Flashcards (#/flashcards) and Topic Map (#/map). Registered in IGU.routes. No innerHTML. */
 (function () {
   const IGU = window.IGU;
   IGU.routes = IGU.routes || {};
-  const FC = IGU.flashcards;
+  const FC = IGU.flashcards, TM = IGU.topicMap, PL = IGU.planner, meta = IGU.meta;
   const ui = function () { return IGU.ui; };
 
   function fill(el) {
@@ -105,6 +105,83 @@
                     save(load().filter(function (x) { return x.id !== c.id; })); paint();
                   } }, 'Delete')));
             }))) : null);
+      }
+    }
+  };
+
+  /* ================= Topic dependency map (#/map) ================= */
+  IGU.routes.map = {
+    title: 'Topic map',
+    render: function (params) {
+      const u = ui(), h = u.h, store = u.store, app = u.app;
+      const plan = store.get('plan', {}) || {};
+      const prof = plan.profile && PL && PL.validateProfile(plan.profile, null).ok ? plan.profile : null;
+      let role = (params && params.get('role')) || (prof ? prof.role : 'backend');
+      if (!TM.MAPS[role]) role = 'backend';
+      let selectedId = (params && params.get('topic')) || '';
+      const root = h('div', { class: 'plan-page' });
+      fill(app, root);
+      paint();
+
+      function paint() {
+        const res = TM.forRole(role, u.bank, { done: u.done.all(), practice: store.get('practice', {}), history: store.get('history', []) });
+        const nodes = res.nodes;
+        const active = (selectedId && res.byId[selectedId]) || nodes[0];
+        if (active) selectedId = active.id;
+
+        const roleSel = h('select', { id: 'tm-role', 'aria-label': 'Role', onchange: function () {
+          role = roleSel.value; selectedId = ''; u.go('#/map?role=' + encodeURIComponent(role));
+        } }, meta.roles.map(function (r) { return h('option', { value: r.id, selected: r.id === role }, r.name); }));
+
+        const weakNodes = nodes.filter(function (n) { return n.weakPrereqs && n.weakPrereqs.length; });
+        const statusLabel = { strong: 'Strong', weak: 'Needs practice', 'in-progress': 'In progress', unstarted: 'Not started' };
+        const statusCls = { strong: 'conf-high', weak: 'rd-needs-practice', 'in-progress': 'conf-medium', unstarted: '' };
+
+        const linkList = function (ids, emptyTxt) {
+          if (!ids || !ids.length) return h('span', { class: 'muted small-text' }, emptyTxt);
+          return h('span', { class: 'q-actions' }, ids.map(function (id) {
+            const n = res.byId[id];
+            if (!n) return null;
+            return h('button', { type: 'button', class: 'btn small ghost', onclick: function () { selectedId = n.id; paint(); } }, n.step + '. ' + n.title);
+          }));
+        };
+
+        fill(root,
+          h('h1', null, 'Topic dependency map'),
+          h('p', { class: 'lede' }, 'Curated learning order for ' + u.roleName(role) + '. Follow prerequisites before tackling advanced topics, and spot weak foundations early.'),
+          h('div', { class: 'field' }, h('label', { for: 'tm-role' }, 'Role'), roleSel),
+          weakNodes.length ? h('div', { class: 'notice' },
+            h('strong', null, 'Weak prerequisites spotted: '),
+            h('ul', null, weakNodes.map(function (n) {
+              return h('li', null, h('strong', null, n.title), ' depends on ',
+                n.weakPrereqs.map(function (w, i) { return [i ? ', ' : '', h('button', { type: 'button', class: 'linkish', onclick: function () { selectedId = w.id; paint(); } }, w.title + ' (' + w.reason + ')')]; }));
+            }))) : null,
+          h('h2', null, 'Suggested learning sequence'),
+          h('ol', { class: 'tm-grid' }, nodes.map(function (n) {
+            return h('li', { class: 'tm-node' + (active && active.id === n.id ? ' active' : '') },
+              h('button', { type: 'button', class: 'tm-btn', 'aria-pressed': active && active.id === n.id ? 'true' : 'false', onclick: function () { selectedId = n.id; paint(); } },
+                h('span', { class: 'tm-step' }, String(n.step)),
+                h('span', { class: 'tm-info' },
+                  h('strong', null, n.title),
+                  h('span', { class: 'muted small-text' }, n.prepared + '/' + n.total + ' prepared' + (n.weakPrereqs.length ? ' · weak prereq' : ''))),
+                h('span', { class: 'pill ' + statusCls[n.status] }, statusLabel[n.status])));
+          })),
+          active ? h('section', { class: 'hcard', 'aria-label': active.title },
+            h('p', { class: 'eyebrow' }, 'Step ' + active.step + ' of ' + nodes.length),
+            h('h2', null, active.title),
+            h('p', null, active.summary),
+            active.weakPrereqs.length ? h('p', { class: 'notice bad' }, 'Strengthen prerequisite first: ' + active.weakPrereqs.map(function (w) { return w.title + ' (' + w.reason + ')'; }).join('; ') + '.') : null,
+            h('p', null, h('strong', null, 'Prerequisites: '), linkList(active.prereqs, 'None (foundational topic)')),
+            h('p', null, h('strong', null, 'Related concepts: '), linkList(active.related, 'None listed')),
+            h('p', null, h('strong', null, 'Next / advanced extensions: '), linkList(active.next, 'Capstone / advanced topic')),
+            h('h3', null, 'Curated questions'),
+            h('ul', { class: 'plain-list' }, active.questions.map(function (e) {
+              return h('li', null, u.gearBadge(e.level), h('a', { href: '#/q/' + encodeURIComponent(e.id) }, e.q),
+                u.done.has(e.id) ? h('span', { class: 'pill conf-high' }, 'prepared') : null);
+            })),
+            h('div', { class: 'q-actions' },
+              h('a', { class: 'btn primary small', href: active.href }, 'Open topic in bank'),
+              h('a', { class: 'btn small', href: '#/drill?role=' + encodeURIComponent(role) + '&topic=' + encodeURIComponent(active.topic) }, 'Drill ' + active.topic))) : null);
       }
     }
   };

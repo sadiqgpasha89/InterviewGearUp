@@ -10,7 +10,7 @@ const root = path.join(__dirname, '..');
 const ctx = { setTimeout, clearTimeout, AbortController, URL };
 ctx.window = ctx;
 vm.createContext(ctx);
-['js/config.js', 'js/quality.js', 'js/engine.js', 'js/search.js', 'js/srs.js', 'js/migrate.js', 'js/ai.js', 'js/adaptive.js', 'js/planner.js', 'js/mock.js', 'js/dashboard.js', 'js/stories.js', 'js/jd.js', 'js/design.js', 'data/design.js', 'js/coding-core.js', 'data/coding.js', 'data/coding-langs.js', 'js/company.js', 'js/voice.js', 'js/readiness.js', 'js/flashcards.js']
+['js/config.js', 'js/quality.js', 'js/engine.js', 'js/search.js', 'js/srs.js', 'js/migrate.js', 'js/ai.js', 'js/adaptive.js', 'js/planner.js', 'js/mock.js', 'js/dashboard.js', 'js/stories.js', 'js/jd.js', 'js/design.js', 'data/design.js', 'js/coding-core.js', 'data/coding.js', 'data/coding-langs.js', 'js/company.js', 'js/voice.js', 'js/readiness.js', 'js/flashcards.js', 'js/topic-map.js']
   .concat(require('../scripts/lib/data-files').dataFiles(root))
   .forEach((f) => vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f }));
 
@@ -1889,4 +1889,18 @@ test('flashcards: builds from weak questions, edits, integrates with SRS and pro
   const due = FC.dueCards(g.cards, g.srs, '2026-11-26');
   assert.equal(due[0].isDue, false);
   assert.ok(S.BACKUP_KEYS.includes('flashcards'));
+});
+
+/* ---------- Phase 19: topic dependency map ---------- */
+const TM = IGU.topicMap;
+test('topic map: curated DAGs exist for all roles, resolve to real questions, and surface weak prerequisites', () => {
+  meta.roles.forEach((r) => assert.ok(TM.MAPS[r.id] && TM.MAPS[r.id].length >= 6, 'missing map for ' + r.id));
+  const v = TM.validate(bank);
+  assert.equal(v.ok, true, v.errors.join('; '));
+
+  const res = TM.forRole('backend', bank, { practice: { 'be-1': { last: 'again' } }, done: { 'be-4': 1 } });
+  const cacheNode = res.byId.cache;
+  assert.ok(cacheNode.prereqs.includes('apis'));
+  assert.ok(cacheNode.weakPrereqs.some((w) => w.id === 'apis'), 'weak prerequisite apis flagged on cache');
+  assert.ok(res.nodes[0].step === 1 && res.nodes[res.nodes.length - 1].step === res.nodes.length);
 });
