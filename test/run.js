@@ -10,7 +10,7 @@ const root = path.join(__dirname, '..');
 const ctx = { setTimeout, clearTimeout, AbortController, URL };
 ctx.window = ctx;
 vm.createContext(ctx);
-['js/config.js', 'js/quality.js', 'js/engine.js', 'js/search.js', 'js/srs.js', 'js/migrate.js', 'js/ai.js', 'js/adaptive.js', 'js/planner.js', 'js/mock.js', 'js/dashboard.js', 'js/stories.js', 'js/jd.js', 'js/design.js', 'data/design.js', 'js/coding-core.js', 'data/coding.js', 'data/coding-langs.js', 'js/company.js', 'js/voice.js', 'js/readiness.js']
+['js/config.js', 'js/quality.js', 'js/engine.js', 'js/search.js', 'js/srs.js', 'js/migrate.js', 'js/ai.js', 'js/adaptive.js', 'js/planner.js', 'js/mock.js', 'js/dashboard.js', 'js/stories.js', 'js/jd.js', 'js/design.js', 'data/design.js', 'js/coding-core.js', 'data/coding.js', 'data/coding-langs.js', 'js/company.js', 'js/voice.js', 'js/readiness.js', 'js/flashcards.js']
   .concat(require('../scripts/lib/data-files').dataFiles(root))
   .forEach((f) => vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f }));
 
@@ -1861,4 +1861,32 @@ test('service worker: precache consistency, zero missing files, cache cleanup an
   assert.ok(html.includes('id="app-banner"'));
   const appSrc = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
   assert.ok(appSrc.includes('updatefound') && appSrc.includes('offline'));
+});
+
+/* ---------- Phase 18: flashcards and answer outline mode ---------- */
+const FC = IGU.flashcards;
+test('flashcards: builds from weak questions, edits, integrates with SRS and provides 6-step outline offline', () => {
+  const e = bank.find((x) => x.id === 'be-4');
+  const outline = FC.outlineFor(e);
+  assert.equal(outline.length, 6);
+  assert.deepEqual(arr(outline.map((s) => s.id)), ['define', 'how', 'example', 'tradeoffs', 'failures', 'advanced']);
+
+  const res = FC.buildFromWeak(bank, { 'be-4': { last: 'again' } }, {}, []);
+  assert.equal(res.added, 1);
+  assert.equal(res.cards[0].qid, 'be-4');
+  // Calling again does not duplicate or overwrite edited card
+  const edited = Object.assign({}, res.cards[0], { front: 'Custom front prompt' });
+  const res2 = FC.buildFromWeak(bank, { 'be-4': { last: 'again' } }, {}, [edited]);
+  assert.equal(res2.added, 0);
+  assert.equal(res2.cards[0].front, 'Custom front prompt');
+
+  const g = FC.gradeCard(res2.cards, edited.id, 'solid', {}, [], '2026-11-26');
+  assert.equal(g.cards[0].stats.attempts, 1);
+  assert.equal(g.cards[0].stats.ok, 1);
+  assert.ok(g.srs['be-4'] && g.srs['be-4'].due > '2026-11-26');
+  assert.equal(g.history.length, 1);
+
+  const due = FC.dueCards(g.cards, g.srs, '2026-11-26');
+  assert.equal(due[0].isDue, false);
+  assert.ok(S.BACKUP_KEYS.includes('flashcards'));
 });
