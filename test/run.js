@@ -860,6 +860,7 @@ test('coding languages: every problem has a starter and a solution in every list
   const names = { typescript: (f) => f, python: (f) => f.replace(/[A-Z]/g, (c) => '_' + c.toLowerCase()), java: (f) => f, cpp: (f) => f, go: (f) => f, csharp: (f) => f[0].toUpperCase() + f.slice(1) };
   IGU.codingProblems.forEach((p) => {
     const set = IGU.codingLangs[p.id];
+    if (p.jsOnly) { assert.ok(!set, p.id + ' is marked JavaScript-only but has other-language entries'); return; }
     assert.ok(set, p.id + ' has no other-language entries');
     langs.filter((l) => l.id !== 'javascript').forEach((l) => {
       const e = set[l.id];
@@ -1499,4 +1500,80 @@ test('readiness: rounds use coding, design, story and mock evidence; target job 
   r.jd.skills.forEach((s) => assert.ok(s.evidence));
   assert.equal(RD.assess(rdBase({ coding: { 'two-sum': { runs: 1, status: 'attempted', at: '2026-11-25T00:00:00Z' } } })).rounds.find((x) => x.id === 'coding').status, 'needs-practice');
   RD.RULES.forEach((x) => assert.ok(x.length > 40));
+});
+
+/* ---------- Phase 7: coding lab coverage ---------- */
+test('coding lab covers the core interview topics, and every problem has a target complexity and time estimate', () => {
+  const topics = IGU.codingProblems.map((p) => p.topic.toLowerCase()).join(' | ');
+  ['hash', 'two pointers', 'sliding window', 'stack', 'linked list', 'tree', 'graph', 'backtracking', 'heap', 'dynamic programming', 'recursion', 'search'].forEach((t) => assert.ok(topics.includes(t), 'no problem on ' + t));
+  assert.ok(IGU.codingProblems.length >= 15);
+  IGU.codingProblems.forEach((p) => {
+    assert.ok(p.target && /O\(|Proportional/.test(p.target), p.id + ' target');
+    assert.ok(p.minutes >= 5 && p.minutes <= 45, p.id + ' minutes');
+    assert.ok(p.tests.some((t) => { const a = JSON.stringify(t.args); return t.args[0] === null || /\[\]|""|\[0\]|^\[1,\[\]\]$/.test(a) || (Array.isArray(t.args[0]) && t.args[0].length <= 2) || typeof t.args[0] === 'number' || (typeof t.args[0] === 'string' && t.args[0].length <= 2); }), p.id + ' should test a smallest input');
+  });
+});
+
+test('coding lab: plausible wrong solutions to the new problems fail', () => {
+  const wrong = {
+    'reverse-linked-list': 'function reverseList(h){ return h; }',
+    'max-depth-tree': 'function maxDepth(r){ return r ? 1 + maxDepth(r.left) : 0; }',
+    'number-of-islands': 'function numIslands(g){ let c = 0; for (const row of g) for (const x of row) if (x === "1") c++; return c; }',
+    'course-schedule': 'function canFinish(n, p){ return true; }',
+    'generate-parentheses': 'function generateParenthesis(n){ return ["()".repeat(n)]; }',
+    'kth-largest': 'function findKthLargest(nums, k){ return [...new Set(nums)].sort((a, b) => b - a)[k - 1]; }',
+    'coin-change': 'function coinChange(coins, amount){ let n = 0; for (const c of [...coins].sort((a, b) => b - a)) { while (amount >= c) { amount -= c; n++; } } return amount ? -1 : n; }'
+  };
+  Object.keys(wrong).forEach((id) => {
+    const p = IGU.codingProblems.find((x) => x.id === id);
+    assert.ok(CC.runTests(wrong[id], p.fn, p.tests).results.some((r) => !r.pass), id + ': wrong solution passed');
+  });
+  const tree = IGU.codingProblems.find((x) => x.id === 'max-depth-tree');
+  assert.ok(CC.review('function maxDepth(r){ return 0; }', tree, Object.assign({ state: 'done' }, CC.runTests('function maxDepth(r){ return 0; }', tree.fn, tree.tests))).dims.some((d) => d.id === 'edges'), 'null input counts as an edge case');
+});
+
+/* ---------- Phase 8: system design workspace ---------- */
+test('design: capacity calculator shows its arithmetic and clamps bad input', () => {
+  const e = DS.estimate({ dau: 10000000, perUser: 20, writeShare: 10, peak: 3, bytes: 500, years: 5 });
+  assert.equal(Math.round(e.avgRps), 2315);
+  assert.equal(Math.round(e.peakRps), 6944);
+  assert.equal(Math.round(e.writesPerSec), 231);
+  assert.ok(Math.abs(e.storageBytes - 231.48 * 86400 * 365 * 5 * 500) / e.storageBytes < 0.001);
+  assert.equal(e.lines.length, 4);
+  assert.ok(/peak x3/.test(e.lines[1]) && /before replication/.test(e.lines[3]));
+  const bad = DS.cleanAssumptions({ dau: -5, perUser: 'abc', writeShare: 400, peak: 0, bytes: '', years: 1e9 });
+  assert.equal(bad.dau, 1); assert.equal(bad.perUser, 20); assert.equal(bad.writeShare, 100); assert.equal(bad.peak, 1); assert.equal(bad.bytes, 1000); assert.equal(bad.years, 50);
+});
+
+test('design: failure scenarios, observability and security are part of the workspace, steps and rubric', () => {
+  const p = IGU.designProblems[0];
+  assert.equal(DS.FAILURES.length, 9);
+  ['db', 'queue', 'hotkey', 'retry', 'region', 'consistency', 'spike', 'cache', 'abuse'].forEach((id) => assert.ok(DS.FAILURES.some((f) => f.id === id && f.prompt.length > 30), id));
+  const ws = DS.clean({ failures: { db: 'Reads fail over to the replica within 30 seconds and writes queue with retries and backoff.', cache: 'Rate limit the warm-up with a token bucket and serve stale data where we can.', region: 'Fail over DNS to the second region; recovery point is about one minute of writes.', bogus: 'ignored' },
+    sections: { observability: 'SLO: 99.9% of redirects under 100 ms p99. Metrics in Prometheus with dashboards, alert on error budget burn, and traces with a correlation id.', security: 'OAuth tokens for creation, per-tenant permission checks, TLS everywhere and PII encrypted with KMS keys; rate limit per API key to stop abuse.' } }, p.id);
+  assert.equal(Object.keys(ws.failures).length, 3, 'unknown scenario ids are dropped');
+  const r = DS.review(ws, p);
+  const d = (id) => r.dims.find((x) => x.id === id);
+  assert.equal(d('failures').level, 2); assert.ok(/3 of 9/.test(d('failures').why));
+  assert.ok(d('observability').level >= 3 && d('security').level >= 3);
+  assert.ok(d('reliability').level >= 2);
+  r.dims.forEach((x) => assert.ok(x.why, x.id + ' has no evidence'));
+  const st = DS.steps(ws);
+  assert.equal(st.length, 7);
+  assert.ok(st.find((x) => x.id === 'failures').done && st.find((x) => x.id === 'operate').done && !st.find((x) => x.id === 'tradeoffs').done);
+  const md = DS.toMarkdown(Object.assign(ws, { assumptionsSet: true, assumptions: DS.cleanAssumptions({}) }), p);
+  assert.ok(/## Failure scenarios/.test(md) && /### Database failure/.test(md) && /## Capacity assumptions/.test(md) && /## Observability/.test(md));
+  assert.equal(DS.review(DS.blank(p.id), p).total, 0);
+});
+
+test('design: diagram layout puts nodes after their predecessors and survives cycles', () => {
+  const f = DS.parseFlows('Client -> LB\nLB -> API\nAPI -> DB\nAPI -> Cache\nCache -> API');
+  const L = DS.layout(f);
+  const x = (n) => L.nodes[f.nodes.indexOf(n)].x;
+  assert.ok(x('Client') < x('LB') && x('LB') < x('API') && x('API') < x('DB'));
+  assert.ok(L.width > 0 && L.height > 0 && L.nodes.every((n) => n.x >= 0 && n.y >= 0));
+  const self = DS.layout(DS.parseFlows('A -> A\nA -> B\nB -> A'));
+  assert.equal(self.nodes.length, 2);
+  const v = fs.readFileSync(path.join(root, 'js/views2.js'), 'utf8');
+  assert.ok(v.includes('createElementNS') && v.includes("'image/svg+xml'") && v.includes('window.print()'));
 });

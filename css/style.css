@@ -450,3 +450,24 @@ pre.code { overflow: auto; padding: 10px; background: rgba(127,127,127,.12); bor
 .rd-weeks td, .rd-weeks th { text-align: center; }
 .rd-rules { margin: 18px 0; }
 .rd-rules summary { cursor: pointer; font-weight: 700; min-height: 44px; display: flex; align-items: center; }
+/* Coding lab on phones (Phase 7): 16px stops iOS from zooming the page when the editor gets focus; no line wrapping keeps indentation readable. */
+@media (max-width: 720px) {
+  .code-editor { font-size: 16px; white-space: pre; overflow-x: auto; min-height: 260px; }
+}
+
+/* System design workspace (Phase 8) */
+.ds-steps { display: flex; flex-wrap: wrap; gap: 6px; padding: 0; margin: 8px 0 16px; list-style: none; counter-reset: step; }
+.ds-steps li { counter-increment: step; border: 1.5px solid var(--line); border-radius: 999px; padding: 4px 12px 4px 8px; font-size: 13px; }
+.ds-steps li::before { content: counter(step) ". "; font-weight: 700; }
+.ds-steps li.done { border-color: var(--ok, #2e7d32); }
+.ds-steps li.done::after { content: " ✓"; color: var(--ok, #2e7d32); font-weight: 700; }
+.ds-calc { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px 14px; }
+.ds-fail { border: 1.5px solid var(--line); border-radius: 8px; padding: 6px 12px; margin: 8px 0; }
+.ds-fail summary { cursor: pointer; font-weight: 700; min-height: 40px; display: flex; align-items: center; }
+.ds-svg { max-width: 100%; height: auto; display: block; margin: 10px 0; background: #fff; border: 1px solid var(--line); border-radius: 8px; }
+@media print {
+  .top, header, nav, footer, .q-actions, .btn, .skip, .ds-steps-wrap, button { display: none !important; }
+  body { background: #fff; color: #000; }
+  textarea { border: 1px solid #999; min-height: 0; height: auto; overflow: visible; }
+  details { display: block; } details > * { display: block; }
+}

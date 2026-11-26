@@ -24,7 +24,7 @@
   const gearOptions = function (h) { return meta.levels.map(function (l) { return h('option', { value: String(l.n) }, l.n + ' ' + l.name); }); };
   const rubricTable = function (h, dims, labels, caption) {
     return h('table', { class: 'rubric' }, h('caption', { class: 'sr-only' }, caption),
-      h('tbody', null, dims.map(function (d) { return h('tr', null, h('th', { scope: 'row' }, d.label), h('td', { class: 'lv l' + d.level }, labels[d.level]), h('td', null, d.note)); })));
+      h('tbody', null, dims.map(function (d) { return h('tr', null, h('th', { scope: 'row' }, d.label), h('td', { class: 'lv l' + d.level }, labels[d.level]), h('td', null, d.why ? h('span', { class: 'why' }, d.why + ' ') : null, d.note)); })));
   };
 
   /* A button that asks an AI provider (only after explicit confirmation of what is sent) and shows the reply in `out`. */
@@ -295,6 +295,7 @@
           const cur = store.get('designs', {}); cur[p.id] = ws; store.set('designs', cur);
           status.textContent = 'Saved'; u.touchActivity();
           if (typeof paintRef === 'function') paintRef();
+          if (typeof paintSteps === 'function') paintSteps();
         };
         const later = function () { status.textContent = 'Saving...'; clearTimeout(timer); timer = setTimeout(persist, 400); };
         u.setCleanup(function () { clearTimeout(timer); });
@@ -317,8 +318,34 @@
           fill(flowOut, 
             parsed.bad.length ? h('p', { class: 'notice' }, 'Could not read line' + (parsed.bad.length === 1 ? ' ' : 's ') + parsed.bad.join(', ') + '. Use "A -> B: label".') : null,
             parsed.edges.length ? h('ul', null, parsed.edges.map(function (e) { return h('li', null, parsed.nodes[e.from] + ' → ' + parsed.nodes[e.to] + (e.label ? ' (' + e.label + ')' : '')); })) : h('p', { class: 'muted small-text' }, 'No connections yet.'),
+            parsed.nodes.length ? diagramSvg(parsed) : null,
+            parsed.nodes.length ? h('div', { class: 'q-actions' },
+              h('button', { class: 'btn small', type: 'button', onclick: function () { download('design-' + p.id + '.svg', new XMLSerializer().serializeToString(diagramSvg(parsed)), 'image/svg+xml'); } }, 'Download diagram (.svg)'),
+              h('button', { class: 'btn small ghost', type: 'button', onclick: function () { download('design-' + p.id + '.mmd', DS.toMermaid(parsed), 'text/plain'); } }, 'Download Mermaid')) : null,
             parsed.nodes.length ? h('details', null, h('summary', null, 'Mermaid code'), h('pre', { class: 'code' }, DS.toMermaid(parsed))) : null);
         };
+        /* Diagram preview drawn as SVG with DOM calls (no innerHTML); text is set as text nodes. */
+        function diagramSvg(parsed) {
+          const L = DS.layout(parsed), NS = 'http://www.w3.org/2000/svg';
+          const el = function (tag, attrs, text) { const x = document.createElementNS(NS, tag); Object.keys(attrs).forEach(function (k) { x.setAttribute(k, String(attrs[k])); }); if (text) x.textContent = text; return x; };
+          const svg = el('svg', { xmlns: NS, viewBox: '0 0 ' + L.width + ' ' + L.height, width: L.width, height: L.height, role: 'img', class: 'ds-svg', 'aria-label': 'Diagram: ' + parsed.edges.map(function (e) { return parsed.nodes[e.from] + ' to ' + parsed.nodes[e.to]; }).join(', ') });
+          const defs = el('defs', {}); const mk = el('marker', { id: 'arrow-' + p.id, viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: 'auto-start-reverse' });
+          mk.appendChild(el('path', { d: 'M 0 0 L 10 5 L 0 10 z', fill: '#5b6475' })); defs.appendChild(mk); svg.appendChild(defs);
+          L.edges.forEach(function (e) {
+            const a = L.nodes[e.from], b = L.nodes[e.to];
+            const x1 = a.x + L.nodeW, y1 = a.y + L.nodeH / 2, x2 = b.x, y2 = b.y + L.nodeH / 2;
+            const back = x2 <= x1;
+            const d = back ? 'M ' + (a.x + L.nodeW / 2) + ' ' + (a.y + L.nodeH) + ' C ' + (a.x + L.nodeW / 2) + ' ' + (a.y + L.nodeH + 30) + ', ' + (b.x + L.nodeW / 2) + ' ' + (b.y + L.nodeH + 30) + ', ' + (b.x + L.nodeW / 2) + ' ' + (b.y + L.nodeH)
+              : 'M ' + x1 + ' ' + y1 + ' C ' + (x1 + 30) + ' ' + y1 + ', ' + (x2 - 30) + ' ' + y2 + ', ' + x2 + ' ' + y2;
+            svg.appendChild(el('path', { d: d, fill: 'none', stroke: '#5b6475', 'stroke-width': 1.5, 'marker-end': 'url(#arrow-' + p.id + ')' }));
+            if (e.label && !back) svg.appendChild(el('text', { x: (x1 + x2) / 2, y: (y1 + y2) / 2 - 6, 'text-anchor': 'middle', 'font-size': 11, fill: '#5b6475' }, e.label.slice(0, 22)));
+          });
+          L.nodes.forEach(function (n) {
+            svg.appendChild(el('rect', { x: n.x, y: n.y, width: L.nodeW, height: L.nodeH, rx: 8, fill: '#ffffff', stroke: '#1d2433', 'stroke-width': 1.5 }));
+            svg.appendChild(el('text', { x: n.x + L.nodeW / 2, y: n.y + L.nodeH / 2 + 4, 'text-anchor': 'middle', 'font-size': 13, fill: '#1d2433' }, n.name.length > 20 ? n.name.slice(0, 19) + '…' : n.name));
+          });
+          return svg;
+        }
         diagram.addEventListener('input', function () { ws.diagram = diagram.value; paintFlow(); later(); });
 
         const reviewOut = h('div', { 'aria-live': 'polite' });
@@ -328,20 +355,63 @@
           fill(refOut, 
             ws.revealed ? h('div', null, p.reference.slice(0, ws.revealed).map(function (st, i) { return h('section', { class: 'ref-stage' }, h('h3', null, (i + 1) + '. ' + st.stage), h('ul', null, st.points.map(function (x) { return h('li', null, x); }))); })) : null,
             ws.revealed < p.reference.length ? h('div', null,
-              h('button', { class: 'btn', type: 'button', disabled: written < 80, onclick: function () { ws.revealed++; persist(); paintRef(); } }, ws.revealed ? 'Reveal next stage' : 'Reveal first stage'),
+              h('button', { class: 'btn', type: 'button', disabled: written < 80, onclick: function () { ws.revealed++; persist(); paintRef(); } }, (ws.revealed ? 'Reveal next stage' : 'Reveal first stage') + ' (' + (ws.revealed + 1) + ' of ' + p.reference.length + ')'),
               written < 80 ? h('p', { class: 'muted small-text' }, 'Write some of your own design first (at least a few sentences). The reference is talking points, not the one right answer.') : null)
               : h('p', { class: 'muted small-text' }, 'All stages revealed. AI-drafted talking points, not yet reviewed by a person.'));
         };
+        /* Checkpoints: the steps of a design interview, ticked as the workspace fills in. */
+        const stepsOut = h('ol', { class: 'ds-steps', 'aria-label': 'Design steps' });
+        const paintSteps = function () {
+          fill(stepsOut, DS.steps(ws).map(function (st) { return h('li', { class: st.done ? 'done' : '' }, h('span', { class: 'sr-only' }, st.done ? 'Done: ' : 'To do: '), st.label); }));
+        };
+
+        /* Editable capacity assumptions with the arithmetic shown. */
+        const calcOut = h('div', { 'aria-live': 'polite' });
+        const aIn = {};
+        const cur = ws.assumptions || DS.cleanAssumptions({});
+        const calcFields = DS.ASSUMPTION_FIELDS.map(function (f) {
+          const inp = h('input', { id: 'as-' + f.id, type: 'number', min: String(f.min), max: String(f.max), step: 'any', inputmode: 'decimal', value: String(cur[f.id]) });
+          aIn[f.id] = inp;
+          inp.addEventListener('input', function () { readCalc(); later(); });
+          return field(h, 'as-' + f.id, f.label, inp);
+        });
+        const readCalc = function () {
+          const a = {}; Object.keys(aIn).forEach(function (k) { a[k] = aIn[k].value; });
+          ws.assumptions = DS.cleanAssumptions(a); ws.assumptionsSet = true;
+          fill(calcOut, h('ul', null, DS.estimate(ws.assumptions).lines.map(function (l) { return h('li', null, l); })));
+        };
+        const copyCalc = h('button', { class: 'btn small', type: 'button', onclick: function () {
+          readCalc();
+          const t = document.getElementById('ds-estimation');
+          const add = DS.estimate(ws.assumptions).lines.join('\n');
+          ws.sections.estimation = (ws.sections.estimation.trim() ? ws.sections.estimation.trim() + '\n' : '') + add;
+          if (t) t.value = ws.sections.estimation;
+          persist();
+        } }, 'Add these numbers to my estimate');
+
+        /* Failure scenarios. */
+        const failures = DS.FAILURES.map(function (f) {
+          const t = h('textarea', { id: 'fail-' + f.id, rows: '3', maxlength: '1500', placeholder: 'What users see, how you detect it, how you recover.' });
+          t.value = (ws.failures && ws.failures[f.id]) || '';
+          t.addEventListener('input', function () { ws.failures = ws.failures || {}; if (t.value.trim()) ws.failures[f.id] = t.value; else delete ws.failures[f.id]; later(); });
+          return h('details', { class: 'ds-fail', open: !!t.value.trim() }, h('summary', null, f.label), h('p', { class: 'muted small-text' }, f.prompt), h('label', { for: 'fail-' + f.id, class: 'sr-only' }, f.label), t);
+        });
+
         const related = DS.relatedQuestions(u.bank, p);
         fill(root, 
           h('p', null, h('a', { href: '#/design' }, '← All problems')),
           h('h1', null, p.title), h('p', { class: 'lede' }, p.summary),
+          h('section', { class: 'ds-steps-wrap' }, h('h2', { class: 'sr-only' }, 'Steps'), stepsOut),
           h('section', null, h('h2', null, 'Clarify requirements'), h('p', { class: 'muted small-text' }, 'Tick the questions you would ask the interviewer, and write the answers you assume.'),
             h('h3', null, 'Functional'), tick('f', p.functional), h('h3', null, 'Non-functional'), tick('n', p.nonfunctional),
             h('h3', null, 'Scale hints'), h('ul', null, p.constraints.map(function (c) { return h('li', null, c); })),
             h('details', null, h('summary', null, 'Estimation hints'), h('ul', null, p.estimate.map(function (c) { return h('li', null, c); })))),
+          h('section', null, h('h2', null, 'Capacity calculator'),
+            h('p', { class: 'muted small-text' }, 'Change the assumptions to match what the interviewer told you. The arithmetic is shown so you can say it out loud.'),
+            h('div', { class: 'plan-form ds-calc' }, calcFields), calcOut, copyCalc),
           h('section', null, h('h2', null, 'Your design'), h('div', { class: 'plan-form' }, areas),
-            h('h3', null, 'Components and flow'), field(h, 'ds-diagram', 'Connections', diagram, '(text diagram, exports to Mermaid)'), flowOut, status),
+            h('h3', null, 'Components and flow'), field(h, 'ds-diagram', 'Connections', diagram, '(text diagram, exports to Mermaid and SVG)'), flowOut, status),
+          h('section', null, h('h2', null, 'Failure scenarios'), h('p', { class: 'muted small-text' }, 'Interviewers probe what happens when things break. Answer at least three.'), failures),
           h('div', { class: 'q-actions' },
             h('button', { class: 'btn primary', type: 'button', onclick: function () {
               persist();
@@ -349,6 +419,7 @@
               fill(reviewOut, h('h2', null, 'Self-review: ' + r.band + ' (' + r.total + ' of ' + r.max + ')'), h('p', { class: 'muted small-text' }, 'A fixed rubric on whether each part was addressed. It cannot judge whether the design is good.'), rubricTable(h, r.dims, DS.LEVELS, 'Design review rubric'));
             } }, 'Review my design'),
             h('button', { class: 'btn', type: 'button', onclick: function () { persist(); download('design-' + p.id + '.md', DS.toMarkdown(ws, p), 'text/markdown'); } }, 'Export (.md)'),
+            h('button', { class: 'btn', type: 'button', onclick: function () { persist(); window.print(); } }, 'Print or save as PDF'),
             h('button', { class: 'btn ghost', type: 'button', onclick: function () {
               if (!confirm('Clear everything you wrote for this problem?')) return;
               const cur = store.get('designs', {}); delete cur[p.id]; store.set('designs', cur); u.render();
@@ -356,7 +427,8 @@
           reviewOut,
           h('section', null, h('h2', null, 'Reference (revealed in stages)'), refOut),
           related.length ? h('section', null, h('h2', null, 'Related questions'), h('ul', null, related.map(function (e) { return h('li', null, h('a', { href: '#/q/' + e.id }, e.q), Q.isReal(e) ? '' : h('span', { class: 'muted small-text' }, ' (answer pending)')); }))) : null);
-        paintFlow(); paintRef();
+        paintFlow(); paintRef(); paintSteps();
+        if (ws.assumptionsSet) readCalc(); else fill(calcOut, h('ul', null, DS.estimate(cur).lines.map(function (l) { return h('li', null, l); })));
       }
     }
   };
