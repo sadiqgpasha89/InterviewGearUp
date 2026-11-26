@@ -422,19 +422,26 @@
           const r = it.result;
           const aiOut = h('div', { class: 'ai-feedback', hidden: !it.ai });
           const showAi = function () {
-            fill(aiOut, h('p', { class: 'muted small-text' }, 'AI feedback from a language model. A study aid only, not a rating or a prediction of any interview.'), md(it.ai));
+            const meta = it.aiMeta ? (' (' + it.aiMeta + ')') : '';
+            fill(aiOut, h('p', { class: 'muted small-text' }, 'AI feedback' + meta + '. A study aid only, not a rating or a prediction of any interview.'), md(it.ai));
             aiOut.hidden = false;
           };
           if (it.ai) showAi();
           const aiMsg = h('p', { class: 'notice bad', role: 'alert', hidden: true });
+          const aiCancel = h('button', { class: 'btn small ghost', type: 'button', hidden: true }, 'Cancel');
+          let aiCtl = null;
+          aiCancel.addEventListener('click', function () { if (aiCtl) aiCtl.abort(); });
           const aiBtn = h('button', { class: 'btn small', type: 'button', onclick: async function () {
             if (!u.aiAvailable()) { u.openSettings(); return; }
-            aiBtn.disabled = true; aiBtn.textContent = 'Asking AI...'; aiMsg.hidden = true;
+            aiCtl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+            aiBtn.disabled = true; aiBtn.textContent = 'Asking AI...'; aiMsg.hidden = true; aiCancel.hidden = false;
             try {
-              const res = await IGU.ai.ask({ settings: store.get('settings', {}), system: MK.AI_SYSTEM, prompt: MK.aiPrompt(it.q, it.answer, session.roleName, session.level) });
-              it.ai = res.text; persist(); showAi(); aiBtn.textContent = 'Ask again';
-            } catch (err) { aiMsg.textContent = err.message; aiMsg.hidden = false; aiBtn.textContent = 'Try again'; }
-            aiBtn.disabled = false;
+              const res = await IGU.ai.ask({ settings: store.get('settings', {}), system: MK.AI_SYSTEM, prompt: MK.aiPrompt(it.q, it.answer, session.roleName, session.level), signal: aiCtl ? aiCtl.signal : undefined });
+              it.ai = res.text;
+              it.aiMeta = [res.provider, res.model, res.at ? res.at.slice(0, 10) : '', res.usage ? (res.usage.inputTokens + res.usage.outputTokens) + ' tokens' : ''].filter(Boolean).join(' · ');
+              persist(); showAi(); aiBtn.textContent = 'Ask again';
+            } catch (err) { aiMsg.textContent = err.message; aiMsg.hidden = false; aiBtn.textContent = err.kind === 'cancelled' ? 'Get AI feedback' : 'Try again'; }
+            aiBtn.disabled = false; aiCancel.hidden = true;
           } }, it.ai ? 'Ask again' : (u.aiAvailable() ? 'Get AI feedback' : 'Add API key for AI feedback'));
           return h('section', { class: 'mock-item' },
             h('h3', null, (idx + 1) + '. ' + it.q),
@@ -443,7 +450,7 @@
             it.answer ? h('details', null, h('summary', null, 'Your answer'), h('p', { class: 'userq plain' }, it.answer)) : null,
             e ? h('p', { class: 'small-text' }, h('a', { href: '#/q/' + e.id }, Q.isReal(e) ? 'Open the reference answer' : 'Open this question'),
               e.follow && e.follow.length ? ' · Likely follow-ups: ' + e.follow.slice(0, 2).join(' / ') : '') : null,
-            it.answer ? aiBtn : null, aiMsg, aiOut);
+            it.answer ? h('span', { class: 'q-actions' }, aiBtn, aiCancel) : null, aiMsg, aiOut);
         });
         const weakIds = session.items.filter(function (it) { return it.result.empty || it.result.band === 'Needs work' || it.result.band === 'Developing' || it.result.band === 'Off topic'; })
           .map(function (it) { return it.qid; }).filter(function (id) { return u.bank.some(function (e) { return e.id === id; }); });

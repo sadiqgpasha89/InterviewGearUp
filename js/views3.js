@@ -347,17 +347,26 @@
           h('p', null, h('a', { href: '#/q/' + p.id }, 'Open the reference answer')));
       };
       const aiMsg = h('p', { class: 'notice bad', role: 'alert', hidden: true }), aiOut = h('div', { class: 'ai-feedback', hidden: true });
+      const aiCancel = h('button', { class: 'btn small ghost', type: 'button', hidden: true }, 'Cancel');
+      let aiCtl = null;
+      aiCancel.addEventListener('click', function () { if (aiCtl) aiCtl.abort(); });
       const aiBtn = h('button', { class: 'btn', type: 'button', onclick: async function () {
         if (!u.aiAvailable()) { u.openSettings(); return; }
         const text = transcript.value.trim();
         if (text.length < 10) return;
         if (!confirm('The question and your transcript text will be sent to your AI provider using your own key (not audio). It may be billed to you. Continue?')) return;
-        aiBtn.disabled = true; aiMsg.hidden = true;
+        aiCtl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        aiBtn.disabled = true; aiMsg.hidden = true; aiCancel.hidden = false;
         try {
-          const res = await IGU.ai.ask({ settings: store.get('settings', {}), system: VO.AI_SYSTEM, prompt: VO.aiPrompt(current().q, text) });
-          fill(aiOut, h('p', { class: 'muted small-text' }, 'AI feedback on the text of your answer. A study aid, not a rating or a prediction.'), u.md(res.text)); aiOut.hidden = false;
+          const res = await IGU.ai.ask({ settings: store.get('settings', {}), system: VO.AI_SYSTEM, prompt: VO.aiPrompt(current().q, text), signal: aiCtl ? aiCtl.signal : undefined });
+          const metaTxt = [res.provider, res.model, res.at ? res.at.slice(0, 10) : '', res.usage ? (res.usage.inputTokens + res.usage.outputTokens) + ' tokens' : ''].filter(Boolean).join(' · ');
+          fill(aiOut, h('p', { class: 'muted small-text' }, 'AI feedback (' + metaTxt + '). A study aid, not a rating or a prediction.'),
+            res.truncated ? h('p', { class: 'notice' }, 'Output hit the token limit and may be truncated.') : null,
+            u.md(res.text),
+            h('button', { class: 'btn small ghost', type: 'button', onclick: function () { fill(aiOut); aiOut.hidden = true; } }, 'Dismiss'));
+          aiOut.hidden = false;
         } catch (e) { aiMsg.textContent = e.message; aiMsg.hidden = false; }
-        aiBtn.disabled = false;
+        aiBtn.disabled = false; aiCancel.hidden = true;
       } }, u.aiAvailable() ? 'AI feedback on the text' : 'Add API key for AI feedback');
 
       const histBox = h('div');
@@ -378,7 +387,7 @@
         Ctor ? null : h('p', { class: 'muted small-text' }, 'This browser has no speech recognition, so dictation is unavailable. Type your answer.'),
         msg, h('div', { class: 'field' }, h('label', { for: 'vp-text' }, 'Transcript (editable)'), transcript),
         h('label', { class: 'chk' }, keep, ' Save this transcript in my history on this device (off by default)'),
-        h('div', { class: 'q-actions' }, h('button', { class: 'btn primary', type: 'button', onclick: analyze }, 'Review my answer'), aiBtn),
+        h('div', { class: 'q-actions' }, h('button', { class: 'btn primary', type: 'button', onclick: analyze }, 'Review my answer'), aiBtn, aiCancel),
         out, aiMsg, aiOut,
         histBox);
       paintHist();

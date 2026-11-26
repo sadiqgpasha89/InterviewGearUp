@@ -138,11 +138,18 @@ async function postJson(url, headers, body, opts) {
   }
 }
 
+const defaultModel = (provider, fallback) => {
+  try {
+    const c = JSON.parse(JSON.stringify(loadAppEngine().config || {}));
+    return (c.providers && c.providers[provider] && c.providers[provider].defaultModel) || fallback;
+  } catch (e) { return fallback; }
+};
+
 /**
  * Calls Google Gemini API (key in header, never in URL)
  */
 async function callGemini(apiKey, model, systemPrompt, userPrompt, opts) {
-  const m = model || process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+  const m = model || process.env.GEMINI_MODEL || defaultModel('gemini', 'gemini-2.5-flash');
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent`;
   const data = await postJson(url, { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey }, {
     contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
@@ -158,7 +165,7 @@ async function callGemini(apiKey, model, systemPrompt, userPrompt, opts) {
  * Calls Anthropic Claude API
  */
 async function callAnthropic(apiKey, model, systemPrompt, userPrompt, opts) {
-  const m = model || process.env.ANTHROPIC_MODEL || 'claude-sonnet-5-5';
+  const m = model || process.env.ANTHROPIC_MODEL || defaultModel('anthropic', 'claude-sonnet-5-5');
   const data = await postJson('https://api.anthropic.com/v1/messages', {
     'content-type': 'application/json',
     'x-api-key': apiKey,
@@ -178,7 +185,7 @@ async function callAnthropic(apiKey, model, systemPrompt, userPrompt, opts) {
  * Calls OpenAI or OpenAI-compatible endpoint
  */
 async function callOpenAI(apiKey, model, systemPrompt, userPrompt, endpoint = 'https://api.openai.com/v1/chat/completions', opts) {
-  const m = model || process.env.OPENAI_MODEL || 'gpt-4o-mini';
+  const m = model || process.env.OPENAI_MODEL || defaultModel('openai', 'gpt-4o-mini');
   const data = await postJson(endpoint, {
     'content-type': 'application/json',
     authorization: `Bearer ${apiKey}`
