@@ -2,8 +2,10 @@
 (function () {
   const IGU = (window.IGU = window.IGU || {});
 
-  /* Keys that a backup file may contain. API keys are deliberately excluded. */
+  /* Keys that a backup file may contain. API keys and sync tokens are deliberately excluded. */
   const BACKUP_KEYS = ['done', 'saved', 'notes', 'practice', 'activity', 'posts', 'profile', 'srs', 'plan', 'mocks', 'stories', 'storyPractice', 'jds', 'designs', 'coding', 'voice', 'paths', 'history', 'jdTarget', 'readiness'];
+  const MAP_KEYS = ['done', 'saved', 'notes', 'practice', 'profile', 'srs', 'plan', 'designs', 'coding', 'jdTarget', 'readiness'];
+  const ARRAY_KEYS = ['activity', 'posts', 'mocks', 'stories', 'storyPractice', 'jds', 'voice', 'paths', 'history'];
 
   /* Prepared counts per role and gear. */
   function matrix(bank, done, meta) {
@@ -79,29 +81,63 @@
 
   /* Validate an imported backup. Returns { data } with only known keys, or { error }. */
   function readBackup(obj) {
-    if (!obj || typeof obj !== 'object' || obj.app !== 'InterviewGearUp' || !obj.data || typeof obj.data !== 'object') {
+    if (!obj || typeof obj !== 'object' || obj.app !== 'InterviewGearUp' || !obj.data || typeof obj.data !== 'object' || Array.isArray(obj.data)) {
       return { error: 'This is not an InterviewGearUp backup file.' };
     }
+    if ('version' in obj && (typeof obj.version !== 'number' || obj.version < 1 || obj.version > 1)) {
+      return { error: 'This backup was created with an unsupported version (' + obj.version + ').' };
+    }
     const out = {};
-    BACKUP_KEYS.forEach(function (k) { if (k in obj.data) out[k] = obj.data[k]; });
+    BACKUP_KEYS.forEach(function (k) { if (k in obj.data && obj.data[k] !== undefined && obj.data[k] !== null) out[k] = obj.data[k]; });
     const isMap = function (v) { return v && typeof v === 'object' && !Array.isArray(v); };
-    if ('done' in out && !isMap(out.done)) return { error: 'Backup "done" section is malformed.' };
-    if ('saved' in out && !isMap(out.saved)) return { error: 'Backup "saved" section is malformed.' };
-    if ('notes' in out && !isMap(out.notes)) return { error: 'Backup "notes" section is malformed.' };
-    if ('practice' in out && !isMap(out.practice)) return { error: 'Backup "practice" section is malformed.' };
-    if ('activity' in out && !Array.isArray(out.activity)) return { error: 'Backup "activity" section is malformed.' };
-    if ('srs' in out && !isMap(out.srs)) return { error: 'Backup "srs" section is malformed.' };
-    if ('plan' in out && !isMap(out.plan)) return { error: 'Backup "plan" section is malformed.' };
-    if ('stories' in out && !Array.isArray(out.stories)) return { error: 'Backup "stories" section is malformed.' };
-    if ('storyPractice' in out && !Array.isArray(out.storyPractice)) return { error: 'Backup "storyPractice" section is malformed.' };
-    if ('jds' in out && !Array.isArray(out.jds)) return { error: 'Backup "jds" section is malformed.' };
-    if ('designs' in out && !isMap(out.designs)) return { error: 'Backup "designs" section is malformed.' };
-    if ('coding' in out && !isMap(out.coding)) return { error: 'Backup "coding" section is malformed.' };
-    if ('paths' in out && !Array.isArray(out.paths)) return { error: 'Backup "paths" section is malformed.' };
-    if ('voice' in out && !Array.isArray(out.voice)) return { error: 'Backup "voice" section is malformed.' };
-    if ('mocks' in out && !Array.isArray(out.mocks)) return { error: 'Backup "mocks" section is malformed.' };
-    if ('posts' in out && !Array.isArray(out.posts)) return { error: 'Backup "posts" section is malformed.' };
+    for (let i = 0; i < MAP_KEYS.length; i++) {
+      const k = MAP_KEYS[i];
+      if (k in out && !isMap(out[k])) return { error: 'Backup "' + k + '" section is malformed.' };
+    }
+    for (let i = 0; i < ARRAY_KEYS.length; i++) {
+      const k = ARRAY_KEYS[i];
+      if (k in out && !Array.isArray(out[k])) return { error: 'Backup "' + k + '" section is malformed.' };
+    }
     return { data: out };
+  }
+
+  /* Atomically replace all BACKUP_KEYS in `store` after validating `obj` (or validated `{ data }`).
+     Never touches API keys (`settings`) or sync credentials (`sync`). Rolls back if any write throws. */
+  function applyBackup(obj, store) {
+    const res = readBackup(obj);
+    if (res.error) return { ok: false, error: res.error };
+    const snap = {};
+    BACKUP_KEYS.forEach(function (k) { snap[k] = store.get(k, undefined); });
+    try {
+      BACKUP_KEYS.forEach(function (k) {
+        if (k in res.data) store.set(k, res.data[k]);
+        else if (typeof store.remove === 'function') store.remove(k);
+      });
+      return { ok: true, data: res.data };
+    } catch (e) {
+      BACKUP_KEYS.forEach(function (k) {
+        try {
+          if (snap[k] !== undefined) store.set(k, snap[k]);
+          else if (typeof store.remove === 'function') store.remove(k);
+        } catch (x) { /* best-effort rollback */ }
+      });
+      return { ok: false, error: 'Could not save the restored backup in this browser.' };
+    }
+  }
+
+  /* Non-intrusive reminder when the learner has meaningful local progress and no recent backup or sync. */
+  function backupReminder(opts) {
+    opts = opts || {};
+    const items = (opts.preparedCount || 0) + (opts.drilledCount || 0) + (opts.storiesCount || 0);
+    if (items < 5) return { due: false, reason: '' };
+    const now = opts.now !== undefined ? new Date(opts.now).getTime() : Date.now();
+    const lastB = opts.lastBackupAt ? Date.parse(opts.lastBackupAt) : 0;
+    const lastS = opts.lastSyncAt ? Date.parse(opts.lastSyncAt) : 0;
+    const latest = Math.max(isNaN(lastB) ? 0 : lastB, isNaN(lastS) ? 0 : lastS);
+    if (!latest) return { due: true, reason: 'You have local progress on this device with no backup yet. Download a backup file to keep it safe.' };
+    const days = Math.floor((now - latest) / 86400000);
+    if (days >= 14) return { due: true, reason: 'Last backup or sync was ' + days + ' days ago. Download a fresh backup to protect recent progress.' };
+    return { due: false, reason: '' };
   }
 
   function makeBackup(get) {
@@ -110,5 +146,5 @@
     return { app: 'InterviewGearUp', version: 1, exportedAt: new Date().toISOString(), data: data };
   }
 
-  IGU.stats = { matrix: matrix, weak: weak, record: record, touch: touch, streak: streak, day: day, shiftDay: shiftDay, readBackup: readBackup, makeBackup: makeBackup, BACKUP_KEYS: BACKUP_KEYS };
+  IGU.stats = { matrix: matrix, weak: weak, record: record, touch: touch, streak: streak, day: day, shiftDay: shiftDay, readBackup: readBackup, applyBackup: applyBackup, backupReminder: backupReminder, makeBackup: makeBackup, BACKUP_KEYS: BACKUP_KEYS };
 })();

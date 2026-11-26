@@ -4,10 +4,10 @@ Scope: `js/sync.js` and the `#/sync` page. Sync is **off by default**. Nothing i
 
 ## What it does
 
-- Builds the same backup object as "Download backup" (`IGU.stats.makeBackup`). That list of keys is fixed in `BACKUP_KEYS`. It never contains the AI provider key (`settings`) or the sync token (`sync`).
+- Builds the same backup object as "Download backup" (`IGU.stats.makeBackup`). That list of keys is fixed in `BACKUP_KEYS` (including `storyPractice`, `history`, `jdTarget`, `readiness`, etc.). It never contains the AI provider key (`settings`) or the sync token (`sync`).
 - Encrypts it in the browser: AES-256-GCM, key from the passphrase with PBKDF2-SHA256 (210,000 iterations), random 16-byte salt and 12-byte IV per upload.
 - Stores the ciphertext as one file in a **secret gist** in the learner's own GitHub account, through `https://api.github.com` only (already the only GitHub host in the page's Content Security Policy).
-- Download replaces the local data after a confirmation. It does not merge.
+- Download and file restore both use `IGU.stats.applyBackup`, which validates every section before writing and replaces local `BACKUP_KEYS` atomically (rolling back if a write fails). It does not merge.
 
 ## Assets and who might attack them
 

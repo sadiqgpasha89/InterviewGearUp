@@ -679,8 +679,9 @@
         try { parsed = JSON.parse(String(reader.result)); } catch (e) { parsed = null; }
         const res = S.readBackup(parsed);
         if (res.error) { msg.className = 'notice bad'; msg.textContent = res.error; msg.hidden = false; return; }
-        if (!confirm('Replace the progress in this browser with the backup?')) return;
-        Object.keys(res.data).forEach(function (k) { store.set(k, res.data[k]); });
+        if (!confirm('Replace all local progress, notes, stories, and plans in this browser with this backup? (It replaces rather than merges; your API key and sync token are kept untouched.)')) return;
+        const applied = S.applyBackup(parsed, store);
+        if (!applied.ok) { msg.className = 'notice bad'; msg.textContent = applied.error; msg.hidden = false; return; }
         render();
       };
       reader.readAsText(file);
@@ -691,7 +692,12 @@
       const a = h('a', { href: URL.createObjectURL(blob), download: 'interviewgearup-backup-' + new Date().toISOString().slice(0, 10) + '.json' });
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
-      msg.className = 'notice'; msg.textContent = 'Backup downloaded. It contains progress, saved questions, notes and drafts, but never your API key.'; msg.hidden = false;
+      store.set('lastBackupAt', new Date().toISOString());
+      msg.className = 'notice'; msg.textContent = 'Backup downloaded. It contains progress, saved questions, notes and drafts, but never your API key or sync token.'; msg.hidden = false;
+    });
+    const reminder = S.backupReminder({
+      preparedCount: m.done, drilledCount: drilled, storiesCount: (store.get('stories', []) || []).length,
+      lastBackupAt: store.get('lastBackupAt', ''), lastSyncAt: (store.get('sync', {}).last && store.get('sync', {}).last.at) || ''
     });
 
     app.appendChild(h('div', { class: 'progress-page' },
@@ -704,10 +710,12 @@
       weakList,
       weakIds.length ? h('p', null, h('a', { class: 'btn primary', href: '#/drill' }, 'Drill these'), ' ', h('span', { class: 'muted small-text' }, 'Choose the "Needs practice" pool.')) : null,
       h('h2', null, 'Backup and restore'),
+      reminder.due ? h('p', { class: 'notice' }, reminder.reason) : null,
       msg,
       h('div', { class: 'q-actions' }, exportBtn,
         h('button', { class: 'btn ghost', type: 'button', onclick: function () { fileIn.value = ''; fileIn.click(); } }, 'Restore from backup'),
         h('label', { for: 'import-file', class: 'sr-only' }, 'Backup file'), fileIn),
+      h('p', { class: 'muted small-text' }, 'Restore replaces local progress rather than merging. API keys and sync tokens are never included in backups.'),
       h('p', { class: 'muted small-text' }, 'Want to move progress between devices without files? ', h('a', { href: '#/sync' }, 'Optional private sync'), ' (off by default, encrypted, uses your own GitHub account).')));
   }
 

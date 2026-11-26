@@ -147,9 +147,15 @@ Source: the product improvement plan (23 phases). This release does Phases 0 to 
 |---|---|---|
 | 14 AI reliability & privacy | Done | Centralized model config in `js/config.js` (used across `ai.js`, Settings UI, and `generate-answer.js`), added `AbortSignal` cancellation on all in-browser AI buttons, classified billing/quota 429s as non-retryable `'quota'`, surfaced timestamps, token usage, and truncation warnings, and added a one-click `Clear API key` button in Settings. |
 
+## v1.13: backup, sync and local data resilience (plan phase 15)
+
+| Phase | Status | What changed |
+|---|---|---|
+| 15 Backup & sync resilience | Done | Validated all 20 `BACKUP_KEYS` and version in `readBackup()`, added atomic `applyBackup()` replace-not-merge restore with rollback on write error, added a non-intrusive 14-day backup reminder on Progress, guarded empty sync files and expired tokens in `js/sync.js`, and aligned `docs/THREAT_MODEL.md`. |
+
 ## Next
 
-- [ ] Phases 15 to 17 and 18 to 22 from the product improvement plan (see `docs/PRODUCT_GAP_AUDIT.md` for priorities).
+- [ ] Phases 16 to 17 and 18 to 22 from the product improvement plan (see `docs/PRODUCT_GAP_AUDIT.md` for priorities).
 - [ ] People to work through the review queue in `docs/CONTENT_QUALITY.md`; merge single-question topics.
 - [ ] Mobile header still wraps to two rows below about 420 px.
 
