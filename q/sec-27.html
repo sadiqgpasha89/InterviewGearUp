@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>Explain Public Key Infrastructure (PKI): Certificate Authorities (CA), Root Certificates, and CRLs/OCSP. | InterviewGearUp</title>
-<meta name="description" content="PKI binds public keys to identities through certificates signed by Certificate Authorities. A client trusts root CA certificates preinstalled in its…">
+<meta name="description" content="Security engineer (Gear 3): PKI binds public keys to identities through certificates signed by Certificate Authorities. A client trusts root CA…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-27.html">
 <meta property="og:title" content="Explain Public Key Infrastructure (PKI): Certificate Authorities (CA), Root Certificates, and CRLs/OCSP. | InterviewGearUp">
-<meta property="og:description" content="PKI binds public keys to identities through certificates signed by Certificate Authorities. A client trusts root CA certificates preinstalled in its…">
+<meta property="og:description" content="Security engineer (Gear 3): PKI binds public keys to identities through certificates signed by Certificate Authorities. A client trusts root CA…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-27.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-security.html">Security engineer</a> · <a href="../#/questions?role=security&amp;level=3">Open in interactive bank</a></p>
 <h1>Explain Public Key Infrastructure (PKI): Certificate Authorities (CA), Root Certificates, and CRLs/OCSP.</h1>
 <p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · Cryptography · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -36,9 +41,13 @@
 <p><strong>Certificate Transparency</strong> logs make misissued certificates publicly detectable; CAA DNS records restrict which CAs may issue for a domain; private PKI (internal CAs) secures mTLS inside organisations.</p>
 <h4>Likely follow-ups</h4>
 <ul><li>Why do roots sign intermediates instead of issuing end certificates directly?</li><li>What is OCSP stapling and why is it used?</li><li>How does Certificate Transparency detect misissued certificates?</li></ul>
-<p><a class="btn primary" href="../#/q/sec-27">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="sec-26.html">How do digital signatures guarantee non-repudiation and data integrity using asymmetric key pairs?</a> <span class="muted small-text">(Gear 2 · Cryptography)</span></li><li><a href="sec-22.html">Compare Symmetric Encryption (AES-GCM) and Asymmetric Encryption (RSA, ECC): Speed and use cases.</a> <span class="muted small-text">(Gear 2 · Cryptography)</span></li><li><a href="sec-23.html">Why is AES-GCM preferred over AES-CBC for symmetric encryption (Authenticated Encryption)?</a> <span class="muted small-text">(Gear 2 · Cryptography)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="sec-26.html">How do digital signatures guarantee non-repudiation and data integrity using asymmetric key pairs?</a> <span class="muted small-text">(Security engineer · Gear 2)</span></li><li><a href="sec-30.html">Explain Key Management Services (KMS): Hardware Security Modules (HSM) and Envelope Encryption.</a> <span class="muted small-text">(Security engineer · Gear 3)</span></li><li><a href="sec-31.html">How do you design an automated cryptographic key rotation pipeline without service downtime?</a> <span class="muted small-text">(Security engineer · Gear 3)</span></li><li><a href="sec-114.html">How do you design a secrets and encryption key management strategy across multiple clouds and teams?</a> <span class="muted small-text">(Security engineer · Gear 4)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/sec-27">Practise in app</a> <a class="btn" href="../#/drill?id=sec-27">Drill this question</a> <a class="btn ghost" href="../#/mock?role=security&amp;level=3">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-27%3A+Explain+Public+Key+Infrastructure+%28PKI%29%3A+Certificate+Authorities%E2%80%A6&amp;question-id=sec-27&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+Cryptography%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-27.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

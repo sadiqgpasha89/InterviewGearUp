@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>How does the Two-Phase Commit (2PC) protocol work, and why does it fail under coordinator partitions? | InterviewGearUp</title>
-<meta name="description" content="Two-phase commit has a coordinator ask every participant to prepare (durably promise they can commit) and then, if all say yes, tell them all to commit,…">
+<meta name="description" content="Backend engineer (Gear 4): Two-phase commit has a coordinator ask every participant to prepare (durably promise they can commit) and then, if all say…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-43.html">
 <meta property="og:title" content="How does the Two-Phase Commit (2PC) protocol work, and why does it fail under coordinator partitions? | InterviewGearUp">
-<meta property="og:description" content="Two-phase commit has a coordinator ask every participant to prepare (durably promise they can commit) and then, if all say yes, tell them all to commit,…">
+<meta property="og:description" content="Backend engineer (Gear 4): Two-phase commit has a coordinator ask every participant to prepare (durably promise they can commit) and then, if all say…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-43.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-backend.html">Backend engineer</a> · <a href="../#/questions?role=backend&amp;level=4">Open in interactive bank</a></p>
 <h1>How does the Two-Phase Commit (2PC) protocol work, and why does it fail under coordinator partitions?</h1>
 <p class="muted small-text meta-line">Backend engineer · Gear 4 (Lead / Staff) · Distributed systems · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -36,9 +41,13 @@
 <ul><li><strong>Replicate the coordinator</strong> with consensus (Paxos or Raft), as Spanner does with 2PC across Paxos groups, so there is no single point of failure.</li><li><strong>Three-phase commit</strong> reduces blocking but is not safe under network partitions, so it is rarely used.</li><li><strong>Sagas</strong> with compensating actions, and the <strong>outbox pattern</strong>, avoid cross-service transactions in microservices, at the price of weaker isolation.</li><li>XA is the standard interface for 2PC between databases and message brokers.</li></ul>
 <h4>Likely follow-ups</h4>
 <ul><li>What state is a participant in after voting yes and losing contact with the coordinator?</li><li>How does Spanner avoid the coordinator being a single point of failure?</li><li>When would you choose a saga instead of 2PC?</li></ul>
-<p><a class="btn primary" href="../#/q/be-43">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="be-48.html">How does consistent hashing with virtual nodes prevent data skew and re-hashing overhead?</a> <span class="muted small-text">(Gear 3 · Distributed systems)</span></li><li><a href="be-49.html">Explain the trade-offs of the CAP theorem: When should a distributed system choose CP versus AP?</a> <span class="muted small-text">(Gear 3 · Distributed systems)</span></li><li><a href="be-52.html">Compare distributed locking mechanisms: Redis Redlock versus ZooKeeper/etcd sequential ephemeral nodes.</a> <span class="muted small-text">(Gear 3 · Distributed systems)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="be-51.html">How does the Raft consensus algorithm elect leaders and guarantee replicated log consistency?</a> <span class="muted small-text">(Backend engineer · Gear 4)</span></li><li><a href="be-48.html">How does consistent hashing with virtual nodes prevent data skew and re-hashing overhead?</a> <span class="muted small-text">(Backend engineer · Gear 3)</span></li><li><a href="be-49.html">Explain the trade-offs of the CAP theorem: When should a distributed system choose CP versus AP?</a> <span class="muted small-text">(Backend engineer · Gear 3)</span></li><li><a href="be-52.html">Compare distributed locking mechanisms: Redis Redlock versus ZooKeeper/etcd sequential ephemeral nodes.</a> <span class="muted small-text">(Backend engineer · Gear 3)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/be-43">Practise in app</a> <a class="btn" href="../#/drill?id=be-43">Drill this question</a> <a class="btn ghost" href="../#/mock?role=backend&amp;level=4">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-43%3A+How+does+the+Two-Phase+Commit+%282PC%29+protocol+work%2C+and+why+does+it%E2%80%A6&amp;question-id=be-43&amp;context=Backend+engineer%2C+Gear+4%2C+topic%3A+Distributed+systems%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-43.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

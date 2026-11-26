@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>How do PromQL `rate()`, `irate()`, and `histogram_quantile()` functions calculate 99th percentile latency? | InterviewGearUp</title>
-<meta name="description" content="rate() computes the per-second average increase of a counter over a window, handling resets; irate() uses only the last two samples for an instant rate…">
+<meta name="description" content="DevOps / SRE / Cloud (Gear 3): rate() computes the per-second average increase of a counter over a window, handling resets; irate() uses only the last…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-57.html">
 <meta property="og:title" content="How do PromQL `rate()`, `irate()`, and `histogram_quantile()` functions calculate 99th percentile latency? | InterviewGearUp">
-<meta property="og:description" content="rate() computes the per-second average increase of a counter over a window, handling resets; irate() uses only the last two samples for an instant rate…">
+<meta property="og:description" content="DevOps / SRE / Cloud (Gear 3): rate() computes the per-second average increase of a counter over a window, handling resets; irate() uses only the last…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-57.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-devops.html">DevOps / SRE / Cloud</a> · <a href="../#/questions?role=devops&amp;level=3">Open in interactive bank</a></p>
 <h1>How do PromQL `rate()`, `irate()`, and `histogram_quantile()` functions calculate 99th percentile latency?</h1>
 <p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · Observability · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -50,9 +55,13 @@ sum by (service) (rate(http_requests_total{status=~&quot;5..&quot;}[5m]))</code>
 <p><code>avg_over_time</code>, <code>quantile_over_time</code> (quantile of samples, not of requests), <code>increase</code>, <code>delta</code> for gauges, and <code>rate</code> with <code>by</code>, <code>on</code>, and <code>group_left</code> for joins.</p>
 <h4>Likely follow-ups</h4>
 <ul><li>Why must you aggregate with sum by (le) before histogram_quantile?</li><li>How does bucket layout limit quantile accuracy?</li><li>Why should alerts use rate() over a window of at least 4 scrape intervals?</li></ul>
-<p><a class="btn primary" href="../#/q/do-57">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="do-55.html">Explain the Four Golden Signals of monitoring: Latency, Traffic, Errors, and Saturation.</a> <span class="muted small-text">(Gear 2 · Observability)</span></li><li><a href="do-56.html">Explain Prometheus metrics architecture: Counter, Gauge, Histogram, and Summary metric types.</a> <span class="muted small-text">(Gear 2 · Observability)</span></li><li><a href="do-82.html">How do you configure synthetic monitoring to continuously probe critical user journeys from the outside?</a> <span class="muted small-text">(Gear 2 · Observability)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="do-55.html">Explain the Four Golden Signals of monitoring: Latency, Traffic, Errors, and Saturation.</a> <span class="muted small-text">(DevOps / SRE / Cloud · Gear 2)</span></li><li><a href="do-56.html">Explain Prometheus metrics architecture: Counter, Gauge, Histogram, and Summary metric types.</a> <span class="muted small-text">(DevOps / SRE / Cloud · Gear 2)</span></li><li><a href="do-82.html">How do you configure synthetic monitoring to continuously probe critical user journeys from the outside?</a> <span class="muted small-text">(DevOps / SRE / Cloud · Gear 2)</span></li><li><a href="do-97.html">How do you configure Grafana dashboard alert rules and multi-channel notifications?</a> <span class="muted small-text">(DevOps / SRE / Cloud · Gear 2)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/do-57">Practise in app</a> <a class="btn" href="../#/drill?id=do-57">Drill this question</a> <a class="btn ghost" href="../#/mock?role=devops&amp;level=3">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-57%3A+How+do+PromQL+%60rate%28%29%60%2C+%60irate%28%29%60%2C+and+%60histogram_quantile%28%29%60%E2%80%A6&amp;question-id=do-57&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+Observability%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-57.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

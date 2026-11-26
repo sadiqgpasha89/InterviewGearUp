@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>How do you design a strict Content Security Policy (CSP) without allowing `unsafe-inline` scripts? | InterviewGearUp</title>
-<meta name="description" content="Design a strict CSP with nonces or hashes instead of unsafe-inline: generate a fresh random nonce per response and add it to script tags, use…">
+<meta name="description" content="Security engineer (Gear 2): Design a strict CSP with nonces or hashes instead of unsafe-inline: generate a fresh random nonce per response and add it to…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-63.html">
 <meta property="og:title" content="How do you design a strict Content Security Policy (CSP) without allowing `unsafe-inline` scripts? | InterviewGearUp">
-<meta property="og:description" content="Design a strict CSP with nonces or hashes instead of unsafe-inline: generate a fresh random nonce per response and add it to script tags, use…">
+<meta property="og:description" content="Security engineer (Gear 2): Design a strict CSP with nonces or hashes instead of unsafe-inline: generate a fresh random nonce per response and add it to…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-63.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-security.html">Security engineer</a> · <a href="../#/questions?role=security&amp;level=2">Open in interactive bank</a></p>
 <h1>How do you design a strict Content Security Policy (CSP) without allowing `unsafe-inline` scripts?</h1>
 <p class="muted small-text meta-line">Security engineer · Gear 2 (Mid-level) · AppSec · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -49,9 +54,13 @@
 <h4>Likely follow-ups</h4>
 <ul><li>What is the difference between nonce-based, hash-based and allow-list based CSP and why are allow-lists weak?</li><li>How does strict-dynamic interact with nonces for third-party and dynamically injected scripts?</li><li>How do you deploy and monitor CSP safely on a large legacy application?</li></ul>
 <p class="muted small-text">References: <a href="https://www.w3.org/TR/CSP3/" rel="noopener noreferrer">W3C: Content Security Policy Level 3</a></p>
-<p><a class="btn primary" href="../#/q/sec-63">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="sec-8.html">Explain the OWASP Top 10 vulnerabilities and why they represent common application security risks.</a> <span class="muted small-text">(Gear 1 · AppSec)</span></li><li><a href="sec-2.html">Explain SQL injection and cross-site scripting, and how to prevent each.</a> <span class="muted small-text">(Gear 1 · Web security)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="sec-10.html">Compare Cross-Site Scripting (XSS) types: Stored, Reflected, and DOM-based XSS with remediation techniques.</a> <span class="muted small-text">(Security engineer · Gear 2)</span></li><li><a href="sec-65.html">What is HTTP Strict Transport Security (HSTS) and how does the HSTS preload list enforce HTTPS?</a> <span class="muted small-text">(Security engineer · Gear 2)</span></li><li><a href="sec-8.html">Explain the OWASP Top 10 vulnerabilities and why they represent common application security risks.</a> <span class="muted small-text">(Security engineer · Gear 1)</span></li><li><a href="sec-68.html">How do cookie security flags (`HttpOnly`, `Secure`, `SameSite`) protect authentication tokens against theft?</a> <span class="muted small-text">(Security engineer · Gear 2)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/sec-63">Practise in app</a> <a class="btn" href="../#/drill?id=sec-63">Drill this question</a> <a class="btn ghost" href="../#/mock?role=security&amp;level=2">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-63%3A+How+do+you+design+a+strict+Content+Security+Policy+%28CSP%29+without%E2%80%A6&amp;question-id=sec-63&amp;context=Security+engineer%2C+Gear+2%2C+topic%3A+AppSec%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-63.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>How does LangGraph support loops and persistent state, and why does that matter for enterprise agents compared with a linear chain or DAG? | InterviewGearUp</title>
-<meta name="description" content="LangGraph models an agent as a state machine: nodes update a typed shared state, and edges (including conditional ones) can loop back, so an agent can…">
+<meta name="description" content="ML / AI engineer (Gear 3): LangGraph models an agent as a state machine: nodes update a typed shared state, and edges (including conditional ones) can…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-126.html">
 <meta property="og:title" content="How does LangGraph support loops and persistent state, and why does that matter for enterprise agents compared with a linear chain or DAG? | InterviewGearUp">
-<meta property="og:description" content="LangGraph models an agent as a state machine: nodes update a typed shared state, and edges (including conditional ones) can loop back, so an agent can…">
+<meta property="og:description" content="ML / AI engineer (Gear 3): LangGraph models an agent as a state machine: nodes update a typed shared state, and edges (including conditional ones) can…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-126.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-ml.html">ML / AI engineer</a> · <a href="../#/questions?role=ml&amp;level=3">Open in interactive bank</a></p>
 <h1>How does LangGraph support loops and persistent state, and why does that matter for enterprise agents compared with a linear chain or DAG?</h1>
 <p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · Agents · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -41,9 +46,13 @@ graph.invoke(inputs, config={&#39;configurable&#39;: {&#39;thread_id&#39;: claim
 <ul><li>Loops need explicit exit conditions and attempt counters in state, not just the global limit.</li><li>Checkpoints contain customer data: encrypt them, set retention, and control who can read them.</li></ul>
 <h4>Likely follow-ups</h4>
 <ul><li>What is a reducer and when would you write a custom one?</li><li>What happens to side effects when a run resumes from a checkpoint?</li><li>How would you choose between an in-memory, SQLite and Postgres checkpointer?</li></ul>
-<p><a class="btn primary" href="../#/q/ml-126">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="ml-140.html">In UAT, business users complain the agent gives slightly different answers to the same policy question. How do you handle it?</a> <span class="muted small-text">(Gear 2 · Agents)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="ml-132.html">A customer&#39;s session with your coverage-change agent crashes halfway. How do you resume without re-asking questions or repeating expensive tool calls?</a> <span class="muted small-text">(ML / AI engineer · Gear 3)</span></li><li><a href="ml-134.html">Your claims triage agent loops calling the OCR tool when a customer uploads a blurry repair estimate. How do you debug and fix it?</a> <span class="muted small-text">(ML / AI engineer · Gear 3)</span></li><li><a href="ml-127.html">In LangGraph, how would you require an underwriter or adjuster to approve high-value or high-risk cases before the agent continues?</a> <span class="muted small-text">(ML / AI engineer · Gear 3)</span></li><li><a href="ml-136.html">A motor claim suggests the car was used for ride-hailing, which the policy excludes. Walk through how your agent should process it.</a> <span class="muted small-text">(ML / AI engineer · Gear 4)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/ml-126">Practise in app</a> <a class="btn" href="../#/drill?id=ml-126">Drill this question</a> <a class="btn ghost" href="../#/mock?role=ml&amp;level=3">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-126%3A+How+does+LangGraph+support+loops+and+persistent+state%2C+and+why+does%E2%80%A6&amp;question-id=ml-126&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+Agents%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-126.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

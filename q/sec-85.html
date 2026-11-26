@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>Explain memory safety vulnerabilities (buffer overflow, use-after-free) and the role of memory-safe languages. | InterviewGearUp</title>
-<meta name="description" content="Memory safety bugs let code read or write memory it should not. Buffer overflows write past an allocation, use-after-free reuses freed memory, and double…">
+<meta name="description" content="Security engineer (Gear 3): Memory safety bugs let code read or write memory it should not. Buffer overflows write past an allocation, use-after-free…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-85.html">
 <meta property="og:title" content="Explain memory safety vulnerabilities (buffer overflow, use-after-free) and the role of memory-safe languages. | InterviewGearUp">
-<meta property="og:description" content="Memory safety bugs let code read or write memory it should not. Buffer overflows write past an allocation, use-after-free reuses freed memory, and double…">
+<meta property="og:description" content="Security engineer (Gear 3): Memory safety bugs let code read or write memory it should not. Buffer overflows write past an allocation, use-after-free…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-85.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-security.html">Security engineer</a> · <a href="../#/questions?role=security&amp;level=3">Open in interactive bank</a></p>
 <h1>Explain memory safety vulnerabilities (buffer overflow, use-after-free) and the role of memory-safe languages.</h1>
 <p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · Systems · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -54,9 +59,13 @@ println!(&quot;{}&quot;, r);</code></pre>
 <p>Relying on ASLR and canaries alone, disabling mitigations for performance, ignoring <code>unsafe</code> blocks or native dependencies, believing GC languages remove all memory bugs in their native libraries, and not fuzzing parsers.</p>
 <h4>Likely follow-ups</h4>
 <ul><li>How does a stack buffer overflow overwrite a return address and how do stack canaries and ASLR stop reliable exploitation?</li><li>Why is use-after-free so hard to detect and how do sanitizers, fuzzing and allocator hardening help?</li><li>How does Rust&#39;s ownership and borrowing model prevent these bugs at compile time and what remains unsafe?</li></ul>
-<p><a class="btn primary" href="../#/q/sec-85">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="sec-78.html">How do you harden SSH access: Disabling password authentication, enforcing Ed25519 keys, and using bastions?</a> <span class="muted small-text">(Gear 2 · Systems)</span></li><li><a href="gen-81.html">What is a race condition and critical section, and how do mutexes protect shared memory?</a> <span class="muted small-text">(Gear 2 · Systems)</span></li><li><a href="gen-80.html">Explain Concurrency versus Parallelism: Thread scheduling versus physical multi-core execution.</a> <span class="muted small-text">(Gear 2 · Systems)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="sec-78.html">How do you harden SSH access: Disabling password authentication, enforcing Ed25519 keys, and using bastions?</a> <span class="muted small-text">(Security engineer · Gear 2)</span></li><li><a href="sec-91.html">How do you tune Linux kernel parameters via `sysctl` to harden network stacks against SYN flood attacks?</a> <span class="muted small-text">(Security engineer · Gear 3)</span></li><li><a href="gen-81.html">What is a race condition and critical section, and how do mutexes protect shared memory?</a> <span class="muted small-text">(Software engineer (core) · Gear 2)</span></li><li><a href="gen-84.html">Solve the Producer-Consumer problem using a bounded buffer, condition variables, and mutexes.</a> <span class="muted small-text">(Software engineer (core) · Gear 3)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/sec-85">Practise in app</a> <a class="btn" href="../#/drill?id=sec-85">Drill this question</a> <a class="btn ghost" href="../#/mock?role=security&amp;level=3">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-85%3A+Explain+memory+safety+vulnerabilities+%28buffer+overflow%2C%E2%80%A6&amp;question-id=sec-85&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+Systems%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-85.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

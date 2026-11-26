@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>How do you design an automated test suite for payment gateway flows (Stripe/PayPal) with mock webhooks? | InterviewGearUp</title>
-<meta name="description" content="Build a layered payment test suite: unit tests for pricing and state machines, contract and integration tests against the provider&#39;s sandbox or a local…">
+<meta name="description" content="QA / SDET (Gear 3): Build a layered payment test suite: unit tests for pricing and state machines, contract and integration tests against the provider&#39;s…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-61.html">
 <meta property="og:title" content="How do you design an automated test suite for payment gateway flows (Stripe/PayPal) with mock webhooks? | InterviewGearUp">
-<meta property="og:description" content="Build a layered payment test suite: unit tests for pricing and state machines, contract and integration tests against the provider&#39;s sandbox or a local…">
+<meta property="og:description" content="QA / SDET (Gear 3): Build a layered payment test suite: unit tests for pricing and state machines, contract and integration tests against the provider&#39;s…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-61.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-qa.html">QA / SDET</a> · <a href="../#/questions?role=qa&amp;level=3">Open in interactive bank</a></p>
 <h1>How do you design an automated test suite for payment gateway flows (Stripe/PayPal) with mock webhooks?</h1>
 <p class="muted small-text meta-line">QA / SDET · Gear 3 (Senior) · Payments · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -50,9 +55,13 @@ def test_payment_succeeded_marks_order_paid(api, db):
 <p>Floating-point money, testing only the success path, skipping signature verification in tests (so production code is untested), relying on sandbox availability for all tests, and asserting on UI text instead of ledger state.</p>
 <h4>Likely follow-ups</h4>
 <ul><li>How do you test webhook idempotency, duplicate delivery and out-of-order events?</li><li>How do you cover 3-D Secure, declines and disputes without real cards?</li><li>How do you reconcile payment records against the provider in automation?</li></ul>
-<p><a class="btn primary" href="../#/q/qa-61">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="qa-29.html">How do you use WireMock or Mockoon to stub third-party payment and identity APIs in integration tests?</a> <span class="muted small-text">(Gear 2 · Mocking)</span></li><li><a href="qa-20.html">How do you design a cross-browser automated testing framework supporting Chrome, Firefox, and Safari?</a> <span class="muted small-text">(Gear 2 · UI Automation)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="be-7.html">Design a payment API so that retries never charge a customer twice.</a> <span class="muted small-text">(Backend engineer · Gear 3)</span></li><li><a href="be-113.html">Design an idempotent payment processing service that never charges a customer twice.</a> <span class="muted small-text">(Backend engineer · Gear 4)</span></li><li><a href="be-66.html">How do idempotency keys guarantee that network retries do not cause duplicate financial charges?</a> <span class="muted small-text">(Backend engineer · Gear 3)</span></li><li><a href="qa-29.html">How do you use WireMock or Mockoon to stub third-party payment and identity APIs in integration tests?</a> <span class="muted small-text">(QA / SDET · Gear 2)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/qa-61">Practise in app</a> <a class="btn" href="../#/drill?id=qa-61">Drill this question</a> <a class="btn ghost" href="../#/mock?role=qa&amp;level=3">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-61%3A+How+do+you+design+an+automated+test+suite+for+payment+gateway+flows%E2%80%A6&amp;question-id=qa-61&amp;context=QA+%2F+SDET%2C+Gear+3%2C+topic%3A+Payments%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-61.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

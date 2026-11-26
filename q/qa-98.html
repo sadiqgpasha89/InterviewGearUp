@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>How do you test service degradation under simulated low disk space and memory pressure? | InterviewGearUp</title>
-<meta name="description" content="Reproduce resource exhaustion deliberately in a controlled environment: fill disks or quotas, limit container memory and CPU cgroups, or use stress…">
+<meta name="description" content="QA / SDET (Gear 3): Reproduce resource exhaustion deliberately in a controlled environment: fill disks or quotas, limit container memory and CPU cgroups,…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-98.html">
 <meta property="og:title" content="How do you test service degradation under simulated low disk space and memory pressure? | InterviewGearUp">
-<meta property="og:description" content="Reproduce resource exhaustion deliberately in a controlled environment: fill disks or quotas, limit container memory and CPU cgroups, or use stress…">
+<meta property="og:description" content="QA / SDET (Gear 3): Reproduce resource exhaustion deliberately in a controlled environment: fill disks or quotas, limit container memory and CPU cgroups,…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-98.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-qa.html">QA / SDET</a> · <a href="../#/questions?role=qa&amp;level=3">Open in interactive bank</a></p>
 <h1>How do you test service degradation under simulated low disk space and memory pressure?</h1>
 <p class="muted small-text meta-line">QA / SDET · Gear 3 (Senior) · Resilience · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -47,9 +52,13 @@ docker exec svc fallocate -l 70M /data/filler2       # then cross the line (fail
 <p>Filling the host disk and taking down the CI runner, testing only the application and not the database or log paths, assuming Kubernetes restarts mean recovery without checking data integrity, ignoring inode exhaustion, and no alert before the limit.</p>
 <h4>Likely follow-ups</h4>
 <ul><li>How do you fill a disk or limit memory in a containerised test without harming the host?</li><li>What signals should a service emit before and during resource exhaustion?</li><li>How do you verify there is no data corruption after an out-of-space or OOM-kill event?</li></ul>
-<p><a class="btn primary" href="../#/q/qa-98">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="qa-94.html">How do you test application behavior under simulated geolocation shifts and device time zone changes?</a> <span class="muted small-text">(Gear 2 · Integration)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="qa-84.html">How do you test microservice resilience patterns like circuit breakers and fallbacks under failure conditions?</a> <span class="muted small-text">(QA / SDET · Gear 3)</span></li><li><a href="qa-75.html">How do you inject Chaos Engineering faults (network latency, service drops) during integration testing?</a> <span class="muted small-text">(QA / SDET · Gear 3)</span></li><li><a href="sec-120.html">How do you build resilience against ransomware, from prevention to recovery?</a> <span class="muted small-text">(Security engineer · Gear 4)</span></li><li><a href="lead-83.html">How do you plan and execute simulated disaster recovery drills (GameDays) across production systems?</a> <span class="muted small-text">(Tech lead / Engineering manager · Gear 3)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/qa-98">Practise in app</a> <a class="btn" href="../#/drill?id=qa-98">Drill this question</a> <a class="btn ghost" href="../#/mock?role=qa&amp;level=3">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-98%3A+How+do+you+test+service+degradation+under+simulated+low+disk+space%E2%80%A6&amp;question-id=qa-98&amp;context=QA+%2F+SDET%2C+Gear+3%2C+topic%3A+Resilience%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-98.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

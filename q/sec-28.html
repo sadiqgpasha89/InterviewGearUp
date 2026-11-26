@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>Explain the TLS 1.3 handshake: What cipher suites are supported and how does 0-RTT resumption work? | InterviewGearUp</title>
-<meta name="description" content="The TLS 1.3 handshake takes one round trip: the client sends supported groups and key shares in ClientHello, the server replies with its key share,…">
+<meta name="description" content="Security engineer (Gear 3): The TLS 1.3 handshake takes one round trip: the client sends supported groups and key shares in ClientHello, the server…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-28.html">
 <meta property="og:title" content="Explain the TLS 1.3 handshake: What cipher suites are supported and how does 0-RTT resumption work? | InterviewGearUp">
-<meta property="og:description" content="The TLS 1.3 handshake takes one round trip: the client sends supported groups and key shares in ClientHello, the server replies with its key share,…">
+<meta property="og:description" content="Security engineer (Gear 3): The TLS 1.3 handshake takes one round trip: the client sends supported groups and key shares in ClientHello, the server…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-28.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-security.html">Security engineer</a> · <a href="../#/questions?role=security&amp;level=3">Open in interactive bank</a></p>
 <h1>Explain the TLS 1.3 handshake: What cipher suites are supported and how does 0-RTT resumption work?</h1>
 <p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · Cryptography · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -41,9 +46,13 @@
 <p>Enable TLS 1.3 with 1.2 as the fallback, disable older versions, use HSTS, OCSP stapling and automated certificates.</p>
 <h4>Likely follow-ups</h4>
 <ul><li>Why does 0-RTT data need to be limited to idempotent requests?</li><li>What did TLS 1.3 remove compared with 1.2 and why?</li><li>How does session resumption work with pre-shared keys?</li></ul>
-<p><a class="btn primary" href="../#/q/sec-28">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="sec-22.html">Compare Symmetric Encryption (AES-GCM) and Asymmetric Encryption (RSA, ECC): Speed and use cases.</a> <span class="muted small-text">(Gear 2 · Cryptography)</span></li><li><a href="sec-23.html">Why is AES-GCM preferred over AES-CBC for symmetric encryption (Authenticated Encryption)?</a> <span class="muted small-text">(Gear 2 · Cryptography)</span></li><li><a href="sec-24.html">Compare cryptographic hash functions: SHA-256 versus SHA-3 and the importance of collision resistance.</a> <span class="muted small-text">(Gear 2 · Cryptography)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="do-66.html">Explain TLS 1.3 handshake optimization and how 0-RTT resumption reduces connection latency.</a> <span class="muted small-text">(DevOps / SRE / Cloud · Gear 3)</span></li><li><a href="sec-29.html">What is Perfect Forward Secrecy (PFS) and how does ephemeral Diffie-Hellman prevent historical decryption?</a> <span class="muted small-text">(Security engineer · Gear 3)</span></li><li><a href="sec-22.html">Compare Symmetric Encryption (AES-GCM) and Asymmetric Encryption (RSA, ECC): Speed and use cases.</a> <span class="muted small-text">(Security engineer · Gear 2)</span></li><li><a href="sec-23.html">Why is AES-GCM preferred over AES-CBC for symmetric encryption (Authenticated Encryption)?</a> <span class="muted small-text">(Security engineer · Gear 2)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/sec-28">Practise in app</a> <a class="btn" href="../#/drill?id=sec-28">Drill this question</a> <a class="btn ghost" href="../#/mock?role=security&amp;level=3">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-28%3A+Explain+the+TLS+1.3+handshake%3A+What+cipher+suites+are+supported+and%E2%80%A6&amp;question-id=sec-28&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+Cryptography%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-28.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

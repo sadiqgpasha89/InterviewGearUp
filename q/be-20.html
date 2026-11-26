@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>Explain PostgreSQL MVCC internals, tuple bloat, and the necessity of VACUUM. | InterviewGearUp</title>
-<meta name="description" content="PostgreSQL MVCC keeps multiple versions of a row: an UPDATE writes a new tuple and marks the old one as expired, so readers see a consistent snapshot…">
+<meta name="description" content="Backend engineer (Gear 3): PostgreSQL MVCC keeps multiple versions of a row: an UPDATE writes a new tuple and marks the old one as expired, so readers…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-20.html">
 <meta property="og:title" content="Explain PostgreSQL MVCC internals, tuple bloat, and the necessity of VACUUM. | InterviewGearUp">
-<meta property="og:description" content="PostgreSQL MVCC keeps multiple versions of a row: an UPDATE writes a new tuple and marks the old one as expired, so readers see a consistent snapshot…">
+<meta property="og:description" content="Backend engineer (Gear 3): PostgreSQL MVCC keeps multiple versions of a row: an UPDATE writes a new tuple and marks the old one as expired, so readers…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-20.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-backend.html">Backend engineer</a> · <a href="../#/questions?role=backend&amp;level=3">Open in interactive bank</a></p>
 <h1>Explain PostgreSQL MVCC internals, tuple bloat, and the necessity of VACUUM.</h1>
 <p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · Databases · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -36,9 +41,13 @@
 <h4>Likely follow-ups</h4>
 <ul><li>Why can a single long-running transaction cause table bloat?</li><li>What is transaction id wraparound and how is it prevented?</li><li>What is a HOT update and when does it apply?</li></ul>
 <p class="muted small-text">References: <a href="https://www.postgresql.org/docs/current/mvcc.html" rel="noopener noreferrer">PostgreSQL: concurrency control (MVCC)</a>, <a href="https://www.postgresql.org/docs/current/routine-vacuuming.html" rel="noopener noreferrer">PostgreSQL: routine vacuuming</a></p>
-<p><a class="btn primary" href="../#/q/be-20">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="be-3.html">Explain ACID and transaction isolation levels. What anomalies can occur?</a> <span class="muted small-text">(Gear 2 · Databases)</span></li><li><a href="be-73.html">How do you read a database EXPLAIN ANALYZE output and distinguish index scans from sequential scans?</a> <span class="muted small-text">(Gear 2 · Databases)</span></li><li><a href="be-13.html">How does a B+ Tree index work in relational databases, and why is it preferred over a binary tree?</a> <span class="muted small-text">(Gear 2 · Databases)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="be-21.html">What is Write-Ahead Logging (WAL) and how does it guarantee durability and crash recovery?</a> <span class="muted small-text">(Backend engineer · Gear 3)</span></li><li><a href="be-3.html">Explain ACID and transaction isolation levels. What anomalies can occur?</a> <span class="muted small-text">(Backend engineer · Gear 2)</span></li><li><a href="be-73.html">How do you read a database EXPLAIN ANALYZE output and distinguish index scans from sequential scans?</a> <span class="muted small-text">(Backend engineer · Gear 2)</span></li><li><a href="be-75.html">What are unlogged tables in relational databases, and what are the trade-offs of using them?</a> <span class="muted small-text">(Backend engineer · Gear 3)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/be-20">Practise in app</a> <a class="btn" href="../#/drill?id=be-20">Drill this question</a> <a class="btn ghost" href="../#/mock?role=backend&amp;level=3">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-20%3A+Explain+PostgreSQL+MVCC+internals%2C+tuple+bloat%2C+and+the+necessity+of%E2%80%A6&amp;question-id=be-20&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+Databases%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-20.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

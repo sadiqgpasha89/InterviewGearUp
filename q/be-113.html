@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>Design an idempotent payment processing service that never charges a customer twice. | InterviewGearUp</title>
-<meta name="description" content="Require a client-generated idempotency key for every payment request, store the key with the request hash and result atomically in the database, return…">
+<meta name="description" content="Backend engineer (Gear 4): Require a client-generated idempotency key for every payment request, store the key with the request hash and result…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-113.html">
 <meta property="og:title" content="Design an idempotent payment processing service that never charges a customer twice. | InterviewGearUp">
-<meta property="og:description" content="Require a client-generated idempotency key for every payment request, store the key with the request hash and result atomically in the database, return…">
+<meta property="og:description" content="Backend engineer (Gear 4): Require a client-generated idempotency key for every payment request, store the key with the request hash and result…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-113.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-backend.html">Backend engineer</a> · <a href="../#/questions?role=backend&amp;level=4">Open in interactive bank</a></p>
 <h1>Design an idempotent payment processing service that never charges a customer twice.</h1>
 <p class="muted small-text meta-line">Backend engineer · Gear 4 (Lead / Staff) · Payments · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -41,9 +46,13 @@
 <p>Fault injection tests that kill the process at each step, duplicate and reordered webhooks, concurrent identical requests, and provider timeouts.</p>
 <h4>Likely follow-ups</h4>
 <ul><li>What happens if the service crashes after calling the provider but before recording the result?</li><li>How do you handle a client reusing a key with a different request body?</li><li>How do you reconcile your records with the payment provider?</li></ul>
-<p><a class="btn primary" href="../#/q/be-113">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="be-66.html">How do idempotency keys guarantee that network retries do not cause duplicate financial charges?</a> <span class="muted small-text">(Gear 3 · Payments)</span></li><li><a href="be-7.html">Design a payment API so that retries never charge a customer twice.</a> <span class="muted small-text">(Gear 3 · Payments)</span></li><li><a href="qa-61.html">How do you design an automated test suite for payment gateway flows (Stripe/PayPal) with mock webhooks?</a> <span class="muted small-text">(Gear 3 · Payments)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="be-66.html">How do idempotency keys guarantee that network retries do not cause duplicate financial charges?</a> <span class="muted small-text">(Backend engineer · Gear 3)</span></li><li><a href="be-7.html">Design a payment API so that retries never charge a customer twice.</a> <span class="muted small-text">(Backend engineer · Gear 3)</span></li><li><a href="qa-61.html">How do you design an automated test suite for payment gateway flows (Stripe/PayPal) with mock webhooks?</a> <span class="muted small-text">(QA / SDET · Gear 3)</span></li><li><a href="qa-5.html">What is your test strategy for a payments microservice?</a> <span class="muted small-text">(QA / SDET · Gear 3)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/be-113">Practise in app</a> <a class="btn" href="../#/drill?id=be-113">Drill this question</a> <a class="btn ghost" href="../#/mock?role=backend&amp;level=4">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-113%3A+Design+an+idempotent+payment+processing+service+that+never+charges+a%E2%80%A6&amp;question-id=be-113&amp;context=Backend+engineer%2C+Gear+4%2C+topic%3A+Payments%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-113.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

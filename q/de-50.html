@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>How does Confluent Schema Registry enforce Backward, Forward, and Full schema compatibility? | InterviewGearUp</title>
-<meta name="description" content="Schema Registry stores versioned schemas per subject and checks each new version against a compatibility mode before accepting it. BACKWARD lets new…">
+<meta name="description" content="Data engineer (Gear 3): Schema Registry stores versioned schemas per subject and checks each new version against a compatibility mode before accepting…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-50.html">
 <meta property="og:title" content="How does Confluent Schema Registry enforce Backward, Forward, and Full schema compatibility? | InterviewGearUp">
-<meta property="og:description" content="Schema Registry stores versioned schemas per subject and checks each new version against a compatibility mode before accepting it. BACKWARD lets new…">
+<meta property="og:description" content="Data engineer (Gear 3): Schema Registry stores versioned schemas per subject and checks each new version against a compatibility mode before accepting…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-50.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-data.html">Data engineer</a> · <a href="../#/questions?role=data&amp;level=3">Open in interactive bank</a></p>
 <h1>How does Confluent Schema Registry enforce Backward, Forward, and Full schema compatibility?</h1>
 <p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Streaming · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -49,9 +54,13 @@ curl -X POST -H &quot;Content-Type: application/vnd.schemaregistry.v1+json&quot;
 <p>Fields without defaults, reusing Protobuf field numbers, relying on the default non-transitive check while old data is still in the topic, and uncontrolled auto-registration.</p>
 <h4>Likely follow-ups</h4>
 <ul><li>Which changes are safe under each mode for Avro, such as adding a field with or without a default?</li><li>Why is BACKWARD the default and what upgrade order does each mode imply?</li><li>How do you evolve a schema with a breaking change?</li></ul>
-<p><a class="btn primary" href="../#/q/de-50">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="de-48.html">How does Apache Kafka partition topics, and how do consumer groups parallelize message consumption?</a> <span class="muted small-text">(Gear 2 · Streaming)</span></li><li><a href="de-81.html">Explain Kafka producer acknowledgment settings: `acks=0`, `acks=1`, and `acks=all`.</a> <span class="muted small-text">(Gear 2 · Streaming)</span></li><li><a href="de-82.html">How do Kafka log retention policies balance disk space with consumer replay requirements?</a> <span class="muted small-text">(Gear 2 · Streaming)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="de-48.html">How does Apache Kafka partition topics, and how do consumer groups parallelize message consumption?</a> <span class="muted small-text">(Data engineer · Gear 2)</span></li><li><a href="de-81.html">Explain Kafka producer acknowledgment settings: `acks=0`, `acks=1`, and `acks=all`.</a> <span class="muted small-text">(Data engineer · Gear 2)</span></li><li><a href="de-82.html">How do Kafka log retention policies balance disk space with consumer replay requirements?</a> <span class="muted small-text">(Data engineer · Gear 2)</span></li><li><a href="de-49.html">What is Kafka Connect and how do Source and Sink connectors simplify pipeline ingestion?</a> <span class="muted small-text">(Data engineer · Gear 2)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/de-50">Practise in app</a> <a class="btn" href="../#/drill?id=de-50">Drill this question</a> <a class="btn ghost" href="../#/mock?role=data&amp;level=3">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-50%3A+How+does+Confluent+Schema+Registry+enforce+Backward%2C+Forward%2C+and%E2%80%A6&amp;question-id=de-50&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Streaming%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-50.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

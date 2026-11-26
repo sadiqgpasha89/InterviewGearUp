@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>Explain Robin Hood hashing and how stealing from the rich reduces probe sequence variance. | InterviewGearUp</title>
-<meta name="description" content="Robin Hood hashing is open addressing with a twist: on insert, an element that has probed farther from its home slot &quot;steals&quot; the slot of a richer…">
+<meta name="description" content="Software engineer (core) (Gear 3): Robin Hood hashing is open addressing with a twist: on insert, an element that has probed farther from its home slot…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-17.html">
 <meta property="og:title" content="Explain Robin Hood hashing and how stealing from the rich reduces probe sequence variance. | InterviewGearUp">
-<meta property="og:description" content="Robin Hood hashing is open addressing with a twist: on insert, an element that has probed farther from its home slot &quot;steals&quot; the slot of a richer…">
+<meta property="og:description" content="Software engineer (core) (Gear 3): Robin Hood hashing is open addressing with a twist: on insert, an element that has probed farther from its home slot…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-17.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-general.html">Software engineer (core)</a> · <a href="../#/questions?role=general&amp;level=3">Open in interactive bank</a></p>
 <h1>Explain Robin Hood hashing and how stealing from the rich reduces probe sequence variance.</h1>
 <p class="muted small-text meta-line">Software engineer (core) · Gear 3 (Senior) · Data structures · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -51,9 +56,13 @@
 <ul><li>Inserts do extra swapping work, and entries must store the DIB (a small integer) or recompute it from the hash.</li><li>Resizing at a threshold load factor is still required; rehash everything.</li><li>A weak hash function still causes clusters; Robin Hood only evens out the damage.</li><li>Used in practice in Rust&#39;s older <code>HashMap</code> and in several high-performance tables, but modern designs (SwissTable, F14) use SIMD group probing, which often wins on raw speed.</li></ul>
 <h4>Likely follow-ups</h4>
 <ul><li>Why can a lookup stop as soon as it meets an element whose probe distance is smaller than its own?</li><li>How does deletion work with backward-shift instead of tombstones?</li><li>How does it compare with cuckoo hashing and SwissTable?</li></ul>
-<p><a class="btn primary" href="../#/q/gen-17">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="gen-16.html">Compare collision resolution strategies: Separate chaining versus open addressing (linear/quadratic probing).</a> <span class="muted small-text">(Gear 2 · Data structures)</span></li><li><a href="gen-15.html">Explain hash table internals: Hash functions, buckets, load factor, and rehashing triggers.</a> <span class="muted small-text">(Gear 1 · Data structures)</span></li><li><a href="gen-4.html">Implement an LRU cache with O(1) get and put.</a> <span class="muted small-text">(Gear 2 · Data structures)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="gen-16.html">Compare collision resolution strategies: Separate chaining versus open addressing (linear/quadratic probing).</a> <span class="muted small-text">(Software engineer (core) · Gear 2)</span></li><li><a href="gen-15.html">Explain hash table internals: Hash functions, buckets, load factor, and rehashing triggers.</a> <span class="muted small-text">(Software engineer (core) · Gear 1)</span></li><li><a href="gen-4.html">Implement an LRU cache with O(1) get and put.</a> <span class="muted small-text">(Software engineer (core) · Gear 2)</span></li><li><a href="gen-61.html">How do you implement an LRU (Least Recently Used) cache in $O(1)$ time using a Hash Map and Doubly Linked List?</a> <span class="muted small-text">(Software engineer (core) · Gear 3)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/gen-17">Practise in app</a> <a class="btn" href="../#/drill?id=gen-17">Drill this question</a> <a class="btn ghost" href="../#/mock?role=general&amp;level=3">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-17%3A+Explain+Robin+Hood+hashing+and+how+stealing+from+the+rich+reduces%E2%80%A6&amp;question-id=gen-17&amp;context=Software+engineer+%28core%29%2C+Gear+3%2C+topic%3A+Data+structures%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-17.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

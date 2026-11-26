@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>Explain Reader-Writer locks: Reader-preference versus writer-preference starvation issues. | InterviewGearUp</title>
-<meta name="description" content="A reader-writer lock allows many concurrent readers or one exclusive writer. Reader preference maximises read throughput but can starve writers under…">
+<meta name="description" content="Software engineer (core) (Gear 3): A reader-writer lock allows many concurrent readers or one exclusive writer. Reader preference maximises read…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-85.html">
 <meta property="og:title" content="Explain Reader-Writer locks: Reader-preference versus writer-preference starvation issues. | InterviewGearUp">
-<meta property="og:description" content="A reader-writer lock allows many concurrent readers or one exclusive writer. Reader preference maximises read throughput but can starve writers under…">
+<meta property="og:description" content="Software engineer (core) (Gear 3): A reader-writer lock allows many concurrent readers or one exclusive writer. Reader preference maximises read…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-85.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-general.html">Software engineer (core)</a> · <a href="../#/questions?role=general&amp;level=3">Open in interactive bank</a></p>
 <h1>Explain Reader-Writer locks: Reader-preference versus writer-preference starvation issues.</h1>
 <p class="muted small-text meta-line">Software engineer (core) · Gear 3 (Senior) · Systems · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -51,9 +56,13 @@ void put(String k, String v) {
 <ul><li><strong>Copy-on-write</strong> or immutable snapshots swapped atomically (RCU in the Linux kernel, <code>CopyOnWriteArrayList</code>).</li><li><strong>Optimistic reads</strong>: Java <code>StampedLock</code>, seqlocks validate that no write occurred during the read.</li><li>Sharded or concurrent maps with fine-grained locking.</li></ul>
 <h4>Likely follow-ups</h4>
 <ul><li>How does a fair or queued policy prevent both kinds of starvation, and what does it cost?</li><li>When is a read-write lock slower than a plain mutex?</li><li>How do StampedLock, seqlocks or RCU improve on it for read-heavy data?</li></ul>
-<p><a class="btn primary" href="../#/q/gen-85">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="gen-80.html">Explain Concurrency versus Parallelism: Thread scheduling versus physical multi-core execution.</a> <span class="muted small-text">(Gear 2 · Systems)</span></li><li><a href="gen-82.html">Compare Mutexes, Binary Semaphores, and Counting Semaphores in thread synchronization.</a> <span class="muted small-text">(Gear 2 · Systems)</span></li><li><a href="gen-81.html">What is a race condition and critical section, and how do mutexes protect shared memory?</a> <span class="muted small-text">(Gear 2 · Systems)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="gen-83.html">What are the four Coffman conditions required for deadlocks, and how can breaking one prevent deadlocks?</a> <span class="muted small-text">(Software engineer (core) · Gear 3)</span></li><li><a href="gen-86.html">What are atomic operations and Compare-And-Swap (CAS) instructions in lock-free programming?</a> <span class="muted small-text">(Software engineer (core) · Gear 3)</span></li><li><a href="gen-80.html">Explain Concurrency versus Parallelism: Thread scheduling versus physical multi-core execution.</a> <span class="muted small-text">(Software engineer (core) · Gear 2)</span></li><li><a href="gen-82.html">Compare Mutexes, Binary Semaphores, and Counting Semaphores in thread synchronization.</a> <span class="muted small-text">(Software engineer (core) · Gear 2)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/gen-85">Practise in app</a> <a class="btn" href="../#/drill?id=gen-85">Drill this question</a> <a class="btn ghost" href="../#/mock?role=general&amp;level=3">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-85%3A+Explain+Reader-Writer+locks%3A+Reader-preference+versus%E2%80%A6&amp;question-id=gen-85&amp;context=Software+engineer+%28core%29%2C+Gear+3%2C+topic%3A+Systems%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-85.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

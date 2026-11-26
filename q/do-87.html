@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>How do seccomp profiles and AppArmor security modules restrict containerized system calls? | InterviewGearUp</title>
-<meta name="description" content="seccomp filters which system calls a process may make, returning an error or killing it for blocked calls, shrinking the kernel attack surface. AppArmor…">
+<meta name="description" content="DevOps / SRE / Cloud (Gear 3): seccomp filters which system calls a process may make, returning an error or killing it for blocked calls, shrinking the…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-87.html">
 <meta property="og:title" content="How do seccomp profiles and AppArmor security modules restrict containerized system calls? | InterviewGearUp">
-<meta property="og:description" content="seccomp filters which system calls a process may make, returning an error or killing it for blocked calls, shrinking the kernel attack surface. AppArmor…">
+<meta property="og:description" content="DevOps / SRE / Cloud (Gear 3): seccomp filters which system calls a process may make, returning an error or killing it for blocked calls, shrinking the…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-87.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-devops.html">DevOps / SRE / Cloud</a> · <a href="../#/questions?role=devops&amp;level=3">Open in interactive bank</a></p>
 <h1>How do seccomp profiles and AppArmor security modules restrict containerized system calls?</h1>
 <p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · Containers · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -55,9 +60,13 @@
 <p>Using <code>Unconfined</code> or privileged containers, profiles too tight that cause mysterious EPERM failures, custom profiles not distributed to all nodes, and assuming seccomp replaces capabilities or filesystem restrictions.</p>
 <h4>Likely follow-ups</h4>
 <ul><li>How do you generate a seccomp profile for an application?</li><li>What is the difference between AppArmor and SELinux?</li><li>How do these controls interact with capabilities and Kubernetes security contexts?</li></ul>
-<p><a class="btn primary" href="../#/q/do-87">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="do-67.html">How do you scan container images for Common Vulnerabilities and Exposures (CVEs) with Trivy?</a> <span class="muted small-text">(Gear 2 · Containers)</span></li><li><a href="do-22.html">What Linux namespaces (PID, Net, MNT, IPC, UTS, User) provide container isolation?</a> <span class="muted small-text">(Gear 2 · Containers)</span></li><li><a href="do-23.html">How do control groups (cgroups v1 vs v2) enforce CPU and memory resource limits on containers?</a> <span class="muted small-text">(Gear 2 · Containers)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="do-67.html">How do you scan container images for Common Vulnerabilities and Exposures (CVEs) with Trivy?</a> <span class="muted small-text">(DevOps / SRE / Cloud · Gear 2)</span></li><li><a href="do-26.html">What are rootless containers and how do user namespaces prevent privilege escalation attacks?</a> <span class="muted small-text">(DevOps / SRE / Cloud · Gear 3)</span></li><li><a href="sec-45.html">How do Linux seccomp profiles, AppArmor, and dropping capabilities (`cap-drop`) harden Docker containers?</a> <span class="muted small-text">(Security engineer · Gear 3)</span></li><li><a href="do-22.html">What Linux namespaces (PID, Net, MNT, IPC, UTS, User) provide container isolation?</a> <span class="muted small-text">(DevOps / SRE / Cloud · Gear 2)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/do-87">Practise in app</a> <a class="btn" href="../#/drill?id=do-87">Drill this question</a> <a class="btn ghost" href="../#/mock?role=devops&amp;level=3">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-87%3A+How+do+seccomp+profiles+and+AppArmor+security+modules+restrict%E2%80%A6&amp;question-id=do-87&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+Containers%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-87.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

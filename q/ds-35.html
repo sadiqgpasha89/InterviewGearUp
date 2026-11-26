@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>How does gradient boosting work, and how do XGBoost and LightGBM differ and which parameters matter most? | InterviewGearUp</title>
-<meta name="description" content="Gradient boosting builds trees sequentially, each fitted to the negative gradient of the loss (residuals for squared error) and added with a small…">
+<meta name="description" content="Data scientist (Gear 3): Gradient boosting builds trees sequentially, each fitted to the negative gradient of the loss (residuals for squared error) and…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-35.html">
 <meta property="og:title" content="How does gradient boosting work, and how do XGBoost and LightGBM differ and which parameters matter most? | InterviewGearUp">
-<meta property="og:description" content="Gradient boosting builds trees sequentially, each fitted to the negative gradient of the loss (residuals for squared error) and added with a small…">
+<meta property="og:description" content="Data scientist (Gear 3): Gradient boosting builds trees sequentially, each fitted to the negative gradient of the loss (residuals for squared error) and…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ds-35.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-datascience.html">Data scientist</a> · <a href="../#/questions?role=datascience&amp;level=3">Open in interactive bank</a></p>
 <h1>How does gradient boosting work, and how do XGBoost and LightGBM differ and which parameters matter most?</h1>
 <p class="muted small-text meta-line">Data scientist · Gear 3 (Senior) · Machine learning algorithms · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -44,9 +49,13 @@ m.fit(X_tr, y_tr, eval_set=[(X_va, y_va)], eval_metric=&quot;auc&quot;,
 <p>Tuning on the test set, huge numbers of trees without early stopping, ignoring time-based splits for temporal data, and trusting default feature importance.</p>
 <h4>Likely follow-ups</h4>
 <ul><li>Why does a smaller learning rate with more trees usually generalise better?</li><li>How does leaf-wise growth in LightGBM differ from level-wise growth, and what risk does it add?</li><li>How do you handle categorical features and missing values in modern boosting libraries?</li></ul>
-<p><a class="btn primary" href="../#/q/ds-35">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="ml-24.html">Compare Gradient Boosted Decision Tree frameworks: XGBoost versus LightGBM versus CatBoost.</a> <span class="muted small-text">(Gear 2 · Tree Models)</span></li><li><a href="ds-19.html">Compare random forests and gradient boosting. When would you choose each for tabular data?</a> <span class="muted small-text">(Gear 2 · Modeling)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="ds-60.html">When do deep neural networks outperform gradient boosted trees on tabular data, and how do you decide which to use?</a> <span class="muted small-text">(Data scientist · Gear 4)</span></li><li><a href="ml-24.html">Compare Gradient Boosted Decision Tree frameworks: XGBoost versus LightGBM versus CatBoost.</a> <span class="muted small-text">(ML / AI engineer · Gear 2)</span></li><li><a href="ds-19.html">Compare random forests and gradient boosting. When would you choose each for tabular data?</a> <span class="muted small-text">(Data scientist · Gear 2)</span></li><li><a href="ml-25.html">How does LightGBM use histogram-based algorithms and Exclusive Feature Bundling for speed?</a> <span class="muted small-text">(ML / AI engineer · Gear 3)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/ds-35">Practise in app</a> <a class="btn" href="../#/drill?id=ds-35">Drill this question</a> <a class="btn ghost" href="../#/mock?role=datascience&amp;level=3">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ds-35%3A+How+does+gradient+boosting+work%2C+and+how+do+XGBoost+and+LightGBM%E2%80%A6&amp;question-id=ds-35&amp;context=Data+scientist%2C+Gear+3%2C+topic%3A+Machine+learning+algorithms%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fds-35.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

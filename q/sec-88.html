@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>Explain OAuth 2.0 Token Revocation (RFC 7009) and Token Introspection (RFC 7662) architectures. | InterviewGearUp</title>
-<meta name="description" content="RFC 7009 revocation lets a client call the authorization server to invalidate an access or refresh token. RFC 7662 introspection lets a resource server…">
+<meta name="description" content="Security engineer (Gear 3): RFC 7009 revocation lets a client call the authorization server to invalidate an access or refresh token. RFC 7662…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-88.html">
 <meta property="og:title" content="Explain OAuth 2.0 Token Revocation (RFC 7009) and Token Introspection (RFC 7662) architectures. | InterviewGearUp">
-<meta property="og:description" content="RFC 7009 revocation lets a client call the authorization server to invalidate an access or refresh token. RFC 7662 introspection lets a resource server…">
+<meta property="og:description" content="Security engineer (Gear 3): RFC 7009 revocation lets a client call the authorization server to invalidate an access or refresh token. RFC 7662…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-88.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-security.html">Security engineer</a> · <a href="../#/questions?role=security&amp;level=3">Open in interactive bank</a></p>
 <h1>Explain OAuth 2.0 Token Revocation (RFC 7009) and Token Introspection (RFC 7662) architectures.</h1>
 <p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · IAM · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -56,9 +61,13 @@ token=2YotnFZFEjr1zCsicMWpAA&amp;token_type_hint=access_token</code></pre>
 <p>Assuming revoking an access token invalidates everything, leaving introspection unauthenticated, caching introspection results for too long, JWT access tokens valid for hours with no revocation path, and forgetting to revoke refresh tokens at logout.</p>
 <h4>Likely follow-ups</h4>
 <ul><li>When should resource servers use introspection versus validating self-contained JWTs locally and what are the trade-offs?</li><li>How does revoking a refresh token affect related access tokens and what does &#39;token family&#39; revocation mean?</li><li>How do you secure and scale the introspection endpoint with caching and client authentication?</li></ul>
-<p><a class="btn primary" href="../#/q/sec-88">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="sec-34.html">What is OpenID Connect (OIDC) and how does it add an identity layer on top of OAuth 2.0?</a> <span class="muted small-text">(Gear 2 · IAM)</span></li><li><a href="sec-33.html">Explain OAuth 2.0 grant types and why Authorization Code with PKCE is required for public and SPA clients.</a> <span class="muted small-text">(Gear 2 · IAM)</span></li><li><a href="sec-37.html">Compare Role-Based Access Control (RBAC) and Attribute-Based Access Control (ABAC) in enterprise applications.</a> <span class="muted small-text">(Gear 2 · IAM)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="sec-34.html">What is OpenID Connect (OIDC) and how does it add an identity layer on top of OAuth 2.0?</a> <span class="muted small-text">(Security engineer · Gear 2)</span></li><li><a href="sec-33.html">Explain OAuth 2.0 grant types and why Authorization Code with PKCE is required for public and SPA clients.</a> <span class="muted small-text">(Security engineer · Gear 2)</span></li><li><a href="sec-37.html">Compare Role-Based Access Control (RBAC) and Attribute-Based Access Control (ABAC) in enterprise applications.</a> <span class="muted small-text">(Security engineer · Gear 2)</span></li><li><a href="sec-38.html">What is the Principle of Least Privilege (PoLP) and how does Just-in-Time (JIT) access enforcement work?</a> <span class="muted small-text">(Security engineer · Gear 2)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/sec-88">Practise in app</a> <a class="btn" href="../#/drill?id=sec-88">Drill this question</a> <a class="btn ghost" href="../#/mock?role=security&amp;level=3">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-88%3A+Explain+OAuth+2.0+Token+Revocation+%28RFC+7009%29+and+Token%E2%80%A6&amp;question-id=sec-88&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+IAM%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-88.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

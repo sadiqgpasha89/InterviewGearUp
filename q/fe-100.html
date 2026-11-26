@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>What is DOM clobbering and how do attackers exploit named HTML elements to overwrite global variables? | InterviewGearUp</title>
-<meta name="description" content="DOM clobbering abuses the legacy behaviour where elements with id or name attributes become properties on window or document. An attacker who can inject…">
+<meta name="description" content="Frontend engineer (Gear 3): DOM clobbering abuses the legacy behaviour where elements with id or name attributes become properties on window or document.…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-100.html">
 <meta property="og:title" content="What is DOM clobbering and how do attackers exploit named HTML elements to overwrite global variables? | InterviewGearUp">
-<meta property="og:description" content="DOM clobbering abuses the legacy behaviour where elements with id or name attributes become properties on window or document. An attacker who can inject…">
+<meta property="og:description" content="Frontend engineer (Gear 3): DOM clobbering abuses the legacy behaviour where elements with id or name attributes become properties on window or document.…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-100.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-frontend.html">Frontend engineer</a> · <a href="../#/questions?role=frontend&amp;level=3">Open in interactive bank</a></p>
 <h1>What is DOM clobbering and how do attackers exploit named HTML elements to overwrite global variables?</h1>
 <p class="muted small-text meta-line">Frontend engineer · Gear 3 (Senior) · Security · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -47,9 +52,13 @@
 <p>Security review of code that reads <code>window.*</code> or <code>document.*</code> properties near user-controlled HTML (comments, rich text, markdown rendering, email viewers, AMP), plus tools such as Burp DOM Invader which tests clobbering.</p>
 <h4>Likely follow-ups</h4>
 <ul><li>How can anchor elements with the same id clobber nested properties like config.url?</li><li>Why does DOMPurify still need the SANITIZE_NAMED_PROPS option sometimes?</li><li>Which code patterns are most vulnerable?</li></ul>
-<p><a class="btn primary" href="../#/q/fe-100">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="fe-47.html">How do Cross-Site Scripting (XSS) attacks occur, and how do modern frameworks protect against them?</a> <span class="muted small-text">(Gear 2 · Security)</span></li><li><a href="fe-49.html">Explain Cross-Site Request Forgery (CSRF) and how `SameSite=Strict/Lax` cookie attributes mitigate it.</a> <span class="muted small-text">(Gear 2 · Security)</span></li><li><a href="fe-50.html">What is Clickjacking and how do `X-Frame-Options` and CSP `frame-ancestors` defend against it?</a> <span class="muted small-text">(Gear 2 · Security)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="fe-47.html">How do Cross-Site Scripting (XSS) attacks occur, and how do modern frameworks protect against them?</a> <span class="muted small-text">(Frontend engineer · Gear 2)</span></li><li><a href="fe-7.html">How do you protect a single-page app from XSS and CSRF, and where should auth tokens be stored?</a> <span class="muted small-text">(Frontend engineer · Gear 3)</span></li><li><a href="fe-49.html">Explain Cross-Site Request Forgery (CSRF) and how `SameSite=Strict/Lax` cookie attributes mitigate it.</a> <span class="muted small-text">(Frontend engineer · Gear 2)</span></li><li><a href="fe-50.html">What is Clickjacking and how do `X-Frame-Options` and CSP `frame-ancestors` defend against it?</a> <span class="muted small-text">(Frontend engineer · Gear 2)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/fe-100">Practise in app</a> <a class="btn" href="../#/drill?id=fe-100">Drill this question</a> <a class="btn ghost" href="../#/mock?role=frontend&amp;level=3">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-100%3A+What+is+DOM+clobbering+and+how+do+attackers+exploit+named+HTML%E2%80%A6&amp;question-id=fe-100&amp;context=Frontend+engineer%2C+Gear+3%2C+topic%3A+Security%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-100.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

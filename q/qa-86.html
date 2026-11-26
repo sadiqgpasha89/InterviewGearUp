@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>How do you test outgoing webhooks: Verifying HMAC cryptographic signatures and delivery retry backoff? | InterviewGearUp</title>
-<meta name="description" content="For outgoing webhooks, run a receiver you control that records requests, then verify headers, payload schema, event types, and the HMAC signature by…">
+<meta name="description" content="QA / SDET (Gear 3): For outgoing webhooks, run a receiver you control that records requests, then verify headers, payload schema, event types, and the…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-86.html">
 <meta property="og:title" content="How do you test outgoing webhooks: Verifying HMAC cryptographic signatures and delivery retry backoff? | InterviewGearUp">
-<meta property="og:description" content="For outgoing webhooks, run a receiver you control that records requests, then verify headers, payload schema, event types, and the HMAC signature by…">
+<meta property="og:description" content="QA / SDET (Gear 3): For outgoing webhooks, run a receiver you control that records requests, then verify headers, payload schema, event types, and the…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-86.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-qa.html">QA / SDET</a> · <a href="../#/questions?role=qa&amp;level=3">Open in interactive bank</a></p>
 <h1>How do you test outgoing webhooks: Verifying HMAC cryptographic signatures and delivery retry backoff?</h1>
 <p class="muted small-text meta-line">QA / SDET · Gear 3 (Senior) · APIs · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -65,9 +70,13 @@ assert len({a.headers[&quot;X-Event-Id&quot;] for a in attempts}) == 1        # 
 <p>Verifying a re-serialised body, non-constant-time compare, testing only success, waiting real hours for backoff, and not testing duplicate and out-of-order handling at the consumer.</p>
 <h4>Likely follow-ups</h4>
 <ul><li>Why must the signature be computed over the raw request body and what attacks do timestamps prevent?</li><li>How do you test retry schedules without waiting hours in real time?</li><li>How do you verify that receivers can deduplicate events and handle out-of-order delivery?</li></ul>
-<p><a class="btn primary" href="../#/q/qa-86">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="sec-70.html">How do you secure outgoing and incoming webhooks using HMAC signatures and timestamp replay checks?</a> <span class="muted small-text">(Gear 2 · APIs)</span></li><li><a href="be-63.html">How does a sliding window log rate limiter compare to a sliding window counter approximation?</a> <span class="muted small-text">(Gear 2 · APIs)</span></li><li><a href="be-86.html">What are the pros and cons of URI path versioning versus header versioning for REST APIs?</a> <span class="muted small-text">(Gear 2 · APIs)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="sec-70.html">How do you secure outgoing and incoming webhooks using HMAC signatures and timestamp replay checks?</a> <span class="muted small-text">(Security engineer · Gear 2)</span></li><li><a href="be-68.html">How do you build a resilient webhook ingestion pipeline that handles duplicate events and bursts?</a> <span class="muted small-text">(Backend engineer · Gear 3)</span></li><li><a href="be-63.html">How does a sliding window log rate limiter compare to a sliding window counter approximation?</a> <span class="muted small-text">(Backend engineer · Gear 2)</span></li><li><a href="be-86.html">What are the pros and cons of URI path versioning versus header versioning for REST APIs?</a> <span class="muted small-text">(Backend engineer · Gear 2)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/qa-86">Practise in app</a> <a class="btn" href="../#/drill?id=qa-86">Drill this question</a> <a class="btn ghost" href="../#/mock?role=qa&amp;level=3">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-86%3A+How+do+you+test+outgoing+webhooks%3A+Verifying+HMAC+cryptographic%E2%80%A6&amp;question-id=qa-86&amp;context=QA+%2F+SDET%2C+Gear+3%2C+topic%3A+APIs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-86.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

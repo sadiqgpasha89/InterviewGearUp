@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>How do you configure Airflow SLA (Service Level Agreement) callbacks and alerts on delayed pipelines? | InterviewGearUp</title>
-<meta name="description" content="Set an sla (timedelta) on tasks or default_args, and a sla_miss_callback on the DAG that runs when a task has not finished within the SLA relative to the…">
+<meta name="description" content="Data engineer (Gear 2): Set an sla (timedelta) on tasks or default_args, and a sla_miss_callback on the DAG that runs when a task has not finished within…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-78.html">
 <meta property="og:title" content="How do you configure Airflow SLA (Service Level Agreement) callbacks and alerts on delayed pipelines? | InterviewGearUp">
-<meta property="og:description" content="Set an sla (timedelta) on tasks or default_args, and a sla_miss_callback on the DAG that runs when a task has not finished within the SLA relative to the…">
+<meta property="og:description" content="Data engineer (Gear 2): Set an sla (timedelta) on tasks or default_args, and a sla_miss_callback on the DAG that runs when a task has not finished within…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-78.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-data.html">Data engineer</a> · <a href="../#/questions?role=data&amp;level=2">Open in interactive bank</a></p>
 <h1>How do you configure Airflow SLA (Service Level Agreement) callbacks and alerts on delayed pipelines?</h1>
 <p class="muted small-text meta-line">Data engineer · Gear 2 (Mid-level) · Orchestration · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -54,9 +59,13 @@ with DAG(&quot;daily_sales&quot;, start_date=datetime(2026, 1, 1), schedule=&quo
 <p>Assuming SLA kills long tasks, relying on SLA when the scheduler is down, alert storms during catch-up, and callbacks that throw exceptions or block.</p>
 <h4>Likely follow-ups</h4>
 <ul><li>Why are Airflow SLAs measured from the schedule time instead of task start?</li><li>How do execution_timeout and sla differ?</li><li>How do you alert on missing data freshness independent of Airflow?</li></ul>
-<p><a class="btn primary" href="../#/q/de-78">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="de-113.html">Why use a workflow orchestrator such as Airflow instead of cron jobs for data pipelines?</a> <span class="muted small-text">(Gear 1 · Orchestration)</span></li><li><a href="de-2.html">ETL versus ELT: what is the difference and when do you choose each?</a> <span class="muted small-text">(Gear 1 · Pipelines)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="de-113.html">Why use a workflow orchestrator such as Airflow instead of cron jobs for data pipelines?</a> <span class="muted small-text">(Data engineer · Gear 1)</span></li><li><a href="de-45.html">What are the best practices for writing idempotent Airflow DAGs and avoiding top-level code?</a> <span class="muted small-text">(Data engineer · Gear 2)</span></li><li><a href="de-43.html">Explain the Apache Airflow architecture: Webserver, Scheduler, Metadata Database, and Workers.</a> <span class="muted small-text">(Data engineer · Gear 2)</span></li><li><a href="de-63.html">How do you safely backfill historical pipeline runs in Apache Airflow without overloading databases?</a> <span class="muted small-text">(Data engineer · Gear 2)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/de-78">Practise in app</a> <a class="btn" href="../#/drill?id=de-78">Drill this question</a> <a class="btn ghost" href="../#/mock?role=data&amp;level=2">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-78%3A+How+do+you+configure+Airflow+SLA+%28Service+Level+Agreement%29+callbacks%E2%80%A6&amp;question-id=de-78&amp;context=Data+engineer%2C+Gear+2%2C+topic%3A+Orchestration%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-78.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

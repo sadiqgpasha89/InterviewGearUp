@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>Explain Cache-Aside, Read-Through, Write-Through, and Write-Behind caching patterns. | InterviewGearUp</title>
-<meta name="description" content="Cache-aside has the application check the cache and load from the database on a miss. Read-through puts that loading logic in the cache layer.…">
+<meta name="description" content="Backend engineer (Gear 2): Cache-aside has the application check the cache and load from the database on a miss. Read-through puts that loading logic in…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-26.html">
 <meta property="og:title" content="Explain Cache-Aside, Read-Through, Write-Through, and Write-Behind caching patterns. | InterviewGearUp">
-<meta property="og:description" content="Cache-aside has the application check the cache and load from the database on a miss. Read-through puts that loading logic in the cache layer.…">
+<meta property="og:description" content="Backend engineer (Gear 2): Cache-aside has the application check the cache and load from the database on a miss. Read-through puts that loading logic in…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-26.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-backend.html">Backend engineer</a> · <a href="../#/questions?role=backend&amp;level=2">Open in interactive bank</a></p>
 <h1>Explain Cache-Aside, Read-Through, Write-Through, and Write-Behind caching patterns.</h1>
 <p class="muted small-text meta-line">Backend engineer · Gear 2 (Mid-level) · Caching · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -40,9 +45,13 @@ def update_user(uid, data):
 <ul><li>Prefer <strong>deleting</strong> the key on write over updating it, which avoids races where an older value overwrites a newer one.</li><li>Always set a TTL as a safety net against missed invalidations.</li><li>Cache-aside suits read-heavy workloads. Write-behind fits counters or analytics where occasional loss is acceptable.</li><li>Watch for cache stampedes on hot keys that expire and for caching of negative results (missing rows).</li></ul>
 <h4>Likely follow-ups</h4>
 <ul><li>Why is deleting the cache entry on write safer than updating it?</li><li>What are the risks of write-behind caching?</li><li>How would you stop many requests from reloading the same expired key at once?</li></ul>
-<p><a class="btn primary" href="../#/q/be-26">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="be-111.html">What is HTTP caching and how do Cache-Control and ETag headers work?</a> <span class="muted small-text">(Gear 1 · Caching)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="be-25.html">Compare Redis data structures: Hashes, Sets, Sorted Sets, and Bitmaps with practical use cases.</a> <span class="muted small-text">(Backend engineer · Gear 2)</span></li><li><a href="be-79.html">Compare Redis RDB point-in-time snapshots with Append-Only File (AOF) persistence modes.</a> <span class="muted small-text">(Backend engineer · Gear 2)</span></li><li><a href="be-81.html">How do atomic Redis INCR and DECR commands enable distributed counters and inventory decrement?</a> <span class="muted small-text">(Backend engineer · Gear 2)</span></li><li><a href="be-97.html">Compare Memcached multithreaded architecture with Redis single-threaded event loop architecture.</a> <span class="muted small-text">(Backend engineer · Gear 2)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/be-26">Practise in app</a> <a class="btn" href="../#/drill?id=be-26">Drill this question</a> <a class="btn ghost" href="../#/mock?role=backend&amp;level=2">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-26%3A+Explain+Cache-Aside%2C+Read-Through%2C+Write-Through%2C+and+Write-Behind%E2%80%A6&amp;question-id=be-26&amp;context=Backend+engineer%2C+Gear+2%2C+topic%3A+Caching%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-26.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

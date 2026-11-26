@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>How does mutual TLS (mTLS) provide service-to-service authentication and encryption in a zero-trust mesh? | InterviewGearUp</title>
-<meta name="description" content="In mutual TLS both sides present certificates and verify each other, so a service proves who it is as well as the server. This gives encrypted traffic…">
+<meta name="description" content="Backend engineer (Gear 4): In mutual TLS both sides present certificates and verify each other, so a service proves who it is as well as the server. This…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-85.html">
 <meta property="og:title" content="How does mutual TLS (mTLS) provide service-to-service authentication and encryption in a zero-trust mesh? | InterviewGearUp">
-<meta property="og:description" content="In mutual TLS both sides present certificates and verify each other, so a service proves who it is as well as the server. This gives encrypted traffic…">
+<meta property="og:description" content="Backend engineer (Gear 4): In mutual TLS both sides present certificates and verify each other, so a service proves who it is as well as the server. This…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-85.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-backend.html">Backend engineer</a> · <a href="../#/questions?role=backend&amp;level=4">Open in interactive bank</a></p>
 <h1>How does mutual TLS (mTLS) provide service-to-service authentication and encryption in a zero-trust mesh?</h1>
 <p class="muted small-text meta-line">Backend engineer · Gear 4 (Lead / Staff) · Security · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -36,9 +41,13 @@
 <ul><li>Keep the CA root protected and plan its rotation.</li><li>Monitor certificate expiry and clock skew; expired certificates cause outages.</li><li>mTLS proves <strong>which service</strong> is calling, not that the request is permitted; combine with authorisation rules, and still authenticate end users separately (for example with JWTs).</li><li>The handshake adds CPU and latency, mitigated by connection reuse.</li></ul>
 <h4>Likely follow-ups</h4>
 <ul><li>How do short-lived certificates reduce the risk of key theft?</li><li>What is SPIFFE and how does it relate to mTLS identities?</li><li>What breaks when certificates expire and how do you avoid it?</li></ul>
-<p><a class="btn primary" href="../#/q/be-85">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="be-5.html">What is the difference between authentication and authorization? Sessions versus JWTs?</a> <span class="muted small-text">(Gear 2 · Security)</span></li><li><a href="be-59.html">Compare JSON Web Tokens (JWT) and opaque server-side session cookies for stateless authentication.</a> <span class="muted small-text">(Gear 2 · Security)</span></li><li><a href="be-60.html">How does OAuth 2.0 Authorization Code Flow with PKCE protect against authorization code interception?</a> <span class="muted small-text">(Gear 3 · Security)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="be-5.html">What is the difference between authentication and authorization? Sessions versus JWTs?</a> <span class="muted small-text">(Backend engineer · Gear 2)</span></li><li><a href="be-59.html">Compare JSON Web Tokens (JWT) and opaque server-side session cookies for stateless authentication.</a> <span class="muted small-text">(Backend engineer · Gear 2)</span></li><li><a href="do-39.html">What is a Service Mesh (Istio, Linkerd) and how does a sidecar proxy provide mTLS and traffic shaping?</a> <span class="muted small-text">(DevOps / SRE / Cloud · Gear 4)</span></li><li><a href="sec-87.html">How does mutual TLS (mTLS) with SPIFFE/SPIRE provide verifiable service identities in microservices?</a> <span class="muted small-text">(Security engineer · Gear 4)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/be-85">Practise in app</a> <a class="btn" href="../#/drill?id=be-85">Drill this question</a> <a class="btn ghost" href="../#/mock?role=backend&amp;level=4">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-85%3A+How+does+mutual+TLS+%28mTLS%29+provide+service-to-service+authentication%E2%80%A6&amp;question-id=be-85&amp;context=Backend+engineer%2C+Gear+4%2C+topic%3A+Security%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-85.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

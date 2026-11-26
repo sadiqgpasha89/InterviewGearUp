@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>What query optimization techniques prevent expensive shuffle operations in BigQuery and Snowflake? | InterviewGearUp</title>
-<meta name="description" content="Reduce data before it shuffles and avoid shuffling at all where possible: filter and select early, partition and cluster on join and filter keys,…">
+<meta name="description" content="Data engineer (Gear 3): Reduce data before it shuffles and avoid shuffling at all where possible: filter and select early, partition and cluster on join…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-68.html">
 <meta property="og:title" content="What query optimization techniques prevent expensive shuffle operations in BigQuery and Snowflake? | InterviewGearUp">
-<meta property="og:description" content="Reduce data before it shuffles and avoid shuffling at all where possible: filter and select early, partition and cluster on join and filter keys,…">
+<meta property="og:description" content="Data engineer (Gear 3): Reduce data before it shuffles and avoid shuffling at all where possible: filter and select early, partition and cluster on join…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-68.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-data.html">Data engineer</a> · <a href="../#/questions?role=data&amp;level=3">Open in interactive bank</a></p>
 <h1>What query optimization techniques prevent expensive shuffle operations in BigQuery and Snowflake?</h1>
 <p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Warehouses · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -38,9 +43,13 @@ SELECT c.segment, SUM(d.amt) FROM daily d JOIN customers c USING (customer_id) G
 <p>Joining on non-unique keys unintentionally multiplying rows, joining before filtering, relying on <code>DISTINCT</code> to mask duplicates, and neglecting skew when one tenant dominates.</p>
 <h4>Likely follow-ups</h4>
 <ul><li>How do you spot a skewed join key in the query profile?</li><li>When does denormalisation or nested data beat joins?</li><li>How do materialised views or pre-aggregations remove shuffles?</li></ul>
-<p><a class="btn primary" href="../#/q/de-68">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="de-37.html">How do table partitioning and clustering reduce query byte scanning and costs in BigQuery?</a> <span class="muted small-text">(Gear 2 · Warehouses)</span></li><li><a href="de-39.html">How do Materialized Views and automated query rewrite improve dashboard performance?</a> <span class="muted small-text">(Gear 2 · Warehouses)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="de-37.html">How do table partitioning and clustering reduce query byte scanning and costs in BigQuery?</a> <span class="muted small-text">(Data engineer · Gear 2)</span></li><li><a href="de-35.html">How do Snowflake micro-partitions and clustering keys prune scanned data during queries?</a> <span class="muted small-text">(Data engineer · Gear 3)</span></li><li><a href="de-34.html">Explain Snowflake architecture: Cloud Services layer, Virtual Warehouses, and Storage layer.</a> <span class="muted small-text">(Data engineer · Gear 3)</span></li><li><a href="de-36.html">Explain Google Cloud BigQuery architecture: Dremel compute, Capacitor storage, and Colossus.</a> <span class="muted small-text">(Data engineer · Gear 3)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/de-68">Practise in app</a> <a class="btn" href="../#/drill?id=de-68">Drill this question</a> <a class="btn ghost" href="../#/mock?role=data&amp;level=3">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-68%3A+What+query+optimization+techniques+prevent+expensive+shuffle%E2%80%A6&amp;question-id=de-68&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Warehouses%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-68.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

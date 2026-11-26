@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>How do you implement an LRU (Least Recently Used) cache in $O(1)$ time using a Hash Map and Doubly Linked List? | InterviewGearUp</title>
-<meta name="description" content="Combine a hash map from key to node with a doubly linked list ordered by recency. get moves the node to the front, put inserts at the front and evicts…">
+<meta name="description" content="Software engineer (core) (Gear 3): Combine a hash map from key to node with a doubly linked list ordered by recency. get moves the node to the front, put…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-61.html">
 <meta property="og:title" content="How do you implement an LRU (Least Recently Used) cache in $O(1)$ time using a Hash Map and Doubly Linked List? | InterviewGearUp">
-<meta property="og:description" content="Combine a hash map from key to node with a doubly linked list ordered by recency. get moves the node to the front, put inserts at the front and evicts…">
+<meta property="og:description" content="Software engineer (core) (Gear 3): Combine a hash map from key to node with a doubly linked list ordered by recency. get moves the node to the front, put…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-61.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-general.html">Software engineer (core)</a> · <a href="../#/questions?role=general&amp;level=3">Open in interactive bank</a></p>
 <h1>How do you implement an LRU (Least Recently Used) cache in $O(1)$ time using a Hash Map and Doubly Linked List?</h1>
 <p class="muted small-text meta-line">Software engineer (core) · Gear 3 (Senior) · Data structures · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -55,9 +60,13 @@
 <ul><li>Store the key in the node so eviction can remove the map entry.</li><li>Language shortcuts: JavaScript&#39;s Map keeps insertion order (delete and re-set to refresh), Python has OrderedDict, and Java&#39;s LinkedHashMap supports access order. Interviews usually want the manual version.</li><li>In concurrent code you need a lock or a sharded design, because get also mutates the list.</li></ul>
 <h4>Likely follow-ups</h4>
 <ul><li>How would you make this thread-safe without one global lock?</li><li>How would you add a time-to-live to each entry?</li><li>What are the trade-offs of LFU compared with LRU?</li></ul>
-<p><a class="btn primary" href="../#/q/gen-61">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="gen-4.html">Implement an LRU cache with O(1) get and put.</a> <span class="muted small-text">(Gear 2 · Data structures)</span></li><li><a href="gen-16.html">Compare collision resolution strategies: Separate chaining versus open addressing (linear/quadratic probing).</a> <span class="muted small-text">(Gear 2 · Data structures)</span></li><li><a href="gen-20.html">Explain binary heap array representation: Parent-child index arithmetic and $O(N)$ bottom-up heapify.</a> <span class="muted small-text">(Gear 2 · Data structures)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="gen-4.html">Implement an LRU cache with O(1) get and put.</a> <span class="muted small-text">(Software engineer (core) · Gear 2)</span></li><li><a href="gen-62.html">How do you implement an LFU (Least Frequently Used) cache in $O(1)$ time using frequency doubly linked lists?</a> <span class="muted small-text">(Software engineer (core) · Gear 4)</span></li><li><a href="gen-95.html">How does a Segment Tree support range sum queries and point updates in $O(\log N)$ time?</a> <span class="muted small-text">(Software engineer (core) · Gear 3)</span></li><li><a href="gen-10.html">Compare singly linked lists and doubly linked lists: Pointer overheads and operation trade-offs.</a> <span class="muted small-text">(Software engineer (core) · Gear 1)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/gen-61">Practise in app</a> <a class="btn" href="../#/drill?id=gen-61">Drill this question</a> <a class="btn ghost" href="../#/mock?role=general&amp;level=3">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-61%3A+How+do+you+implement+an+LRU+%28Least+Recently+Used%29+cache+in+%24O%281%29%24%E2%80%A6&amp;question-id=gen-61&amp;context=Software+engineer+%28core%29%2C+Gear+3%2C+topic%3A+Data+structures%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-61.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

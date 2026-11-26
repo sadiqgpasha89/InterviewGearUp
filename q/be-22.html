@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>How does connection pooling work, and how do you size a pool like HikariCP or PgBouncer? | InterviewGearUp</title>
-<meta name="description" content="A connection pool keeps a set of open database connections and lends them to requests, avoiding the cost of opening one each time and capping the load on…">
+<meta name="description" content="Backend engineer (Gear 2): A connection pool keeps a set of open database connections and lends them to requests, avoiding the cost of opening one each…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-22.html">
 <meta property="og:title" content="How does connection pooling work, and how do you size a pool like HikariCP or PgBouncer? | InterviewGearUp">
-<meta property="og:description" content="A connection pool keeps a set of open database connections and lends them to requests, avoiding the cost of opening one each time and capping the load on…">
+<meta property="og:description" content="Backend engineer (Gear 2): A connection pool keeps a set of open database connections and lends them to requests, avoiding the cost of opening one each…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-22.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-backend.html">Backend engineer</a> · <a href="../#/questions?role=backend&amp;level=2">Open in interactive bank</a></p>
 <h1>How does connection pooling work, and how do you size a pool like HikariCP or PgBouncer?</h1>
 <p class="muted small-text meta-line">Backend engineer · Gear 2 (Mid-level) · Databases · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -39,9 +44,13 @@
 <p>An external pooler that multiplexes many client connections onto few server connections. <strong>Transaction mode</strong> returns the server connection after each transaction, supporting thousands of clients, but session features (prepared statements, <code>SET</code>, advisory locks) need care.</p>
 <h4>Likely follow-ups</h4>
 <ul><li>What symptoms show that the pool is too small or too large?</li><li>How does PgBouncer&#39;s transaction pooling mode differ from application-level pooling?</li><li>Why can connection leaks exhaust a pool?</li></ul>
-<p><a class="btn primary" href="../#/q/be-22">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="be-110.html">What is database connection pooling and why is it important?</a> <span class="muted small-text">(Gear 1 · Databases)</span></li><li><a href="be-101.html">What is the difference between SQL and NoSQL databases, and how do you choose between them?</a> <span class="muted small-text">(Gear 1 · Databases)</span></li><li><a href="be-102.html">What is a database index and what does it cost?</a> <span class="muted small-text">(Gear 1 · Databases)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="be-110.html">What is database connection pooling and why is it important?</a> <span class="muted small-text">(Backend engineer · Gear 1)</span></li><li><a href="be-13.html">How does a B+ Tree index work in relational databases, and why is it preferred over a binary tree?</a> <span class="muted small-text">(Backend engineer · Gear 2)</span></li><li><a href="be-16.html">How does database sharding work, and what are the trade-offs between range-based and hash-based sharding?</a> <span class="muted small-text">(Backend engineer · Gear 3)</span></li><li><a href="be-101.html">What is the difference between SQL and NoSQL databases, and how do you choose between them?</a> <span class="muted small-text">(Backend engineer · Gear 1)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/be-22">Practise in app</a> <a class="btn" href="../#/drill?id=be-22">Drill this question</a> <a class="btn ghost" href="../#/mock?role=backend&amp;level=2">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-22%3A+How+does+connection+pooling+work%2C+and+how+do+you+size+a+pool+like%E2%80%A6&amp;question-id=be-22&amp;context=Backend+engineer%2C+Gear+2%2C+topic%3A+Databases%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-22.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

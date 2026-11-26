@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>Walk through Dijkstra&#39;s shortest path algorithm using a priority queue and explain why it fails with negative weights. | InterviewGearUp</title>
-<meta name="description" content="Dijkstra keeps a priority queue of vertices by tentative distance. It repeatedly pops the closest unfinalised vertex and relaxes its edges, in O((V+E)…">
+<meta name="description" content="Software engineer (core) (Gear 2): Dijkstra keeps a priority queue of vertices by tentative distance. It repeatedly pops the closest unfinalised vertex…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-29.html">
 <meta property="og:title" content="Walk through Dijkstra&#39;s shortest path algorithm using a priority queue and explain why it fails with negative weights. | InterviewGearUp">
-<meta property="og:description" content="Dijkstra keeps a priority queue of vertices by tentative distance. It repeatedly pops the closest unfinalised vertex and relaxes its edges, in O((V+E)…">
+<meta property="og:description" content="Software engineer (core) (Gear 2): Dijkstra keeps a priority queue of vertices by tentative distance. It repeatedly pops the closest unfinalised vertex…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-29.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-general.html">Software engineer (core)</a> · <a href="../#/questions?role=general&amp;level=2">Open in interactive bank</a></p>
 <h1>Walk through Dijkstra&#39;s shortest path algorithm using a priority queue and explain why it fails with negative weights.</h1>
 <p class="muted small-text meta-line">Software engineer (core) · Gear 2 (Mid-level) · Graphs · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -47,9 +52,13 @@ def dijkstra(graph, src):            # graph[u] = [(v, w), ...]
 <ul><li>Use <strong>Bellman-Ford</strong> when negative edges exist (and it can detect negative cycles), or Johnson&#39;s algorithm for all pairs on sparse graphs.</li><li>Adding a constant to every edge does not work, because paths with more edges are penalised more.</li><li>The queue-with-stale-entries version above avoids decrease-key. A Fibonacci heap gives O(E + V log V) in theory.</li><li>A* is Dijkstra guided by a heuristic.</li></ul>
 <h4>Likely follow-ups</h4>
 <ul><li>How would you recover the actual shortest path, not just its length?</li><li>What is the complexity if you use an adjacency matrix and a linear scan for the minimum?</li><li>How does A* differ from Dijkstra?</li></ul>
-<p><a class="btn primary" href="../#/q/gen-29">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="gen-26.html">Explain Breadth-First Search (BFS): Queue implementation and finding shortest paths in unweighted graphs.</a> <span class="muted small-text">(Gear 1 · Graphs)</span></li><li><a href="gen-27.html">Explain Depth-First Search (DFS): Stack/recursive traversal and cycle detection in directed graphs.</a> <span class="muted small-text">(Gear 1 · Graphs)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="gen-26.html">Explain Breadth-First Search (BFS): Queue implementation and finding shortest paths in unweighted graphs.</a> <span class="muted small-text">(Software engineer (core) · Gear 1)</span></li><li><a href="gen-30.html">How does the Bellman-Ford algorithm compute shortest paths and detect negative weight cycles?</a> <span class="muted small-text">(Software engineer (core) · Gear 3)</span></li><li><a href="gen-33.html">Explain Prim&#39;s algorithm for Minimum Spanning Trees using priority queues.</a> <span class="muted small-text">(Software engineer (core) · Gear 2)</span></li><li><a href="gen-31.html">Explain the Floyd-Warshall dynamic programming algorithm for all-pairs shortest paths.</a> <span class="muted small-text">(Software engineer (core) · Gear 3)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/gen-29">Practise in app</a> <a class="btn" href="../#/drill?id=gen-29">Drill this question</a> <a class="btn ghost" href="../#/mock?role=general&amp;level=2">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-29%3A+Walk+through+Dijkstra%27s+shortest+path+algorithm+using+a+priority%E2%80%A6&amp;question-id=gen-29&amp;context=Software+engineer+%28core%29%2C+Gear+2%2C+topic%3A+Graphs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-29.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

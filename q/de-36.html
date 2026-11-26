@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>Explain Google Cloud BigQuery architecture: Dremel compute, Capacitor storage, and Colossus. | InterviewGearUp</title>
-<meta name="description" content="BigQuery is a serverless warehouse that separates storage and compute. Colossus is Google&#39;s distributed file system holding data, Capacitor is the…">
+<meta name="description" content="Data engineer (Gear 3): BigQuery is a serverless warehouse that separates storage and compute. Colossus is Google&#39;s distributed file system holding data,…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-36.html">
 <meta property="og:title" content="Explain Google Cloud BigQuery architecture: Dremel compute, Capacitor storage, and Colossus. | InterviewGearUp">
-<meta property="og:description" content="BigQuery is a serverless warehouse that separates storage and compute. Colossus is Google&#39;s distributed file system holding data, Capacitor is the…">
+<meta property="og:description" content="Data engineer (Gear 3): BigQuery is a serverless warehouse that separates storage and compute. Colossus is Google&#39;s distributed file system holding data,…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-36.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-data.html">Data engineer</a> · <a href="../#/questions?role=data&amp;level=3">Open in interactive bank</a></p>
 <h1>Explain Google Cloud BigQuery architecture: Dremel compute, Capacitor storage, and Colossus.</h1>
 <p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Warehouses · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -37,9 +42,13 @@
 <p>Assuming &quot;serverless&quot; means unlimited cost-free scaling, repeated full scans in dashboards (use BI Engine or materialised tables), many small DML statements (not optimised for OLTP), and unpartitioned multi-TB tables.</p>
 <h4>Likely follow-ups</h4>
 <ul><li>How does the multi-level execution tree and slot scheduling work?</li><li>Why is BigQuery billed by bytes scanned and how does columnar storage affect cost?</li><li>How does Borg provide compute capacity?</li></ul>
-<p><a class="btn primary" href="../#/q/de-36">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="de-37.html">How do table partitioning and clustering reduce query byte scanning and costs in BigQuery?</a> <span class="muted small-text">(Gear 2 · Warehouses)</span></li><li><a href="de-39.html">How do Materialized Views and automated query rewrite improve dashboard performance?</a> <span class="muted small-text">(Gear 2 · Warehouses)</span></li><li><a href="de-61.html">Compare ELT and ETL paradigms: Why has ELT become dominant with cloud data warehouses?</a> <span class="muted small-text">(Gear 2 · Architecture)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="de-37.html">How do table partitioning and clustering reduce query byte scanning and costs in BigQuery?</a> <span class="muted small-text">(Data engineer · Gear 2)</span></li><li><a href="de-68.html">What query optimization techniques prevent expensive shuffle operations in BigQuery and Snowflake?</a> <span class="muted small-text">(Data engineer · Gear 3)</span></li><li><a href="de-34.html">Explain Snowflake architecture: Cloud Services layer, Virtual Warehouses, and Storage layer.</a> <span class="muted small-text">(Data engineer · Gear 3)</span></li><li><a href="de-39.html">How do Materialized Views and automated query rewrite improve dashboard performance?</a> <span class="muted small-text">(Data engineer · Gear 2)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/de-36">Practise in app</a> <a class="btn" href="../#/drill?id=de-36">Drill this question</a> <a class="btn ghost" href="../#/mock?role=data&amp;level=3">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-36%3A+Explain+Google+Cloud+BigQuery+architecture%3A+Dremel+compute%2C%E2%80%A6&amp;question-id=de-36&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Warehouses%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-36.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

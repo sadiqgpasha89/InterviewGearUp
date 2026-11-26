@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>What is passive event listening (`{ passive: true }`) and why does it improve scroll performance? | InterviewGearUp</title>
-<meta name="description" content="A passive event listener promises not to call preventDefault, so the browser can start scrolling immediately instead of waiting for the handler to…">
+<meta name="description" content="Frontend engineer (Gear 2): A passive event listener promises not to call preventDefault, so the browser can start scrolling immediately instead of…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-60.html">
 <meta property="og:title" content="What is passive event listening (`{ passive: true }`) and why does it improve scroll performance? | InterviewGearUp">
-<meta property="og:description" content="A passive event listener promises not to call preventDefault, so the browser can start scrolling immediately instead of waiting for the handler to…">
+<meta property="og:description" content="Frontend engineer (Gear 2): A passive event listener promises not to call preventDefault, so the browser can start scrolling immediately instead of…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-60.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-frontend.html">Frontend engineer</a> · <a href="../#/questions?role=frontend&amp;level=2">Open in interactive bank</a></p>
 <h1>What is passive event listening (`{ passive: true }`) and why does it improve scroll performance?</h1>
 <p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · DOM · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -49,9 +54,13 @@ try { window.addEventListener(&#39;t&#39;, null, { get passive() { passiveSuppor
 <p>Registering heavy handlers, even if passive, still costs main-thread time (they run on every event; throttle or use <code>IntersectionObserver</code> or <code>scroll-timeline</code> instead); <code>removeEventListener</code> must use the same capture value; and frameworks (React) attach touch listeners at the root as passive, so <code>onTouchMove</code> handlers cannot prevent default without a native listener.</p>
 <h4>Likely follow-ups</h4>
 <ul><li>What happens if you call preventDefault inside a passive listener?</li><li>How do you block scrolling deliberately when you need to, for example in a custom slider or modal?</li><li>What does CSS touch-action do and how does it relate?</li></ul>
-<p><a class="btn primary" href="../#/q/fe-60">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="fe-9.html">How does the Critical Rendering Path (CRP) work from HTML parsing to pixel paint?</a> <span class="muted small-text">(Gear 1 · DOM)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="fe-11.html">Explain event bubbling, event capturing, and how event delegation improves performance.</a> <span class="muted small-text">(Frontend engineer · Gear 2)</span></li><li><a href="fe-9.html">How does the Critical Rendering Path (CRP) work from HTML parsing to pixel paint?</a> <span class="muted small-text">(Frontend engineer · Gear 1)</span></li><li><a href="fe-92.html">What is layout thrashing (forced synchronous layout) and how do batching reads and writes prevent it?</a> <span class="muted small-text">(Frontend engineer · Gear 3)</span></li><li><a href="fe-59.html">How does `requestAnimationFrame` synchronize animations with the browser refresh rate?</a> <span class="muted small-text">(Frontend engineer · Gear 2)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/fe-60">Practise in app</a> <a class="btn" href="../#/drill?id=fe-60">Drill this question</a> <a class="btn ghost" href="../#/mock?role=frontend&amp;level=2">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-60%3A+What+is+passive+event+listening+%28%60%7B+passive%3A+true+%7D%60%29+and+why+does%E2%80%A6&amp;question-id=fe-60&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+DOM%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-60.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

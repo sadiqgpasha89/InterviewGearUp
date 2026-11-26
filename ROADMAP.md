@@ -129,9 +129,15 @@ Source: the product improvement plan (23 phases). This release does Phases 0 to 
 | 10 Company preparation | Done | Report freshness indicators and stale (> 18 months) warnings, inline role/gear/round/freshness/verification filters, duplicate detection, correction/PII report links, official-vs-community checklist separation, and sensitive-data pre-post warnings. |
 | 11 Search and discovery | Done | `js/search.js`: relevance ranking prioritizing exact question and topic matches, bidirectional acronym expansion (`k8s`, `authn`, `cicd`, etc.), bounded typo tolerance with "Did you mean" suggestions, topic filter in sidebar, prerequisite concepts and related questions inside cards, random question button, and Back/Forward filter history with route focus management. |
 
+## v1.10: SEO and landing page clarity (plan phase 12)
+
+| Phase | Status | What changed |
+|---|---|---|
+| 12 SEO and landing page | Done | Static role landing pages (`q/role-<id>.html`) in `scripts/build-seo.js` and `sitemap.xml`, prerequisite and related-question links plus in-app practice CTAs on every `q/<id>.html`, branded 1200×630 social preview (`assets/og-preview.png`), canonical URL on `index.html`, richer `<noscript>` summary, and sharper landing-page value proposition on `#/home`. |
+
 ## Next
 
-- [ ] Phases 12 to 17 and 18 to 22 from the product improvement plan (see `docs/PRODUCT_GAP_AUDIT.md` for priorities).
+- [ ] Phases 13 to 17 and 18 to 22 from the product improvement plan (see `docs/PRODUCT_GAP_AUDIT.md` for priorities).
 - [ ] People to work through the review queue in `docs/CONTENT_QUALITY.md`; merge single-question topics.
 - [ ] Mobile header still wraps to two rows below about 420 px.
 
