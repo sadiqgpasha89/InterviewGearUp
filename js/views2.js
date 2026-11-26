@@ -27,23 +27,32 @@
       h('tbody', null, dims.map(function (d) { return h('tr', null, h('th', { scope: 'row' }, d.label), h('td', { class: 'lv l' + d.level }, labels[d.level]), h('td', null, d.why ? h('span', { class: 'why' }, d.why + ' ') : null, d.note)); })));
   };
 
-  /* A button that asks an AI provider (only after explicit confirmation of what is sent) and shows the reply in `out`. */
+  /* A button that asks an AI provider (only after explicit confirmation of what is sent) with cancel support and metadata display. */
   function aiButton(u, label, sendNote, build, out, msg) {
     const h = u.h;
     const btn = h('button', { class: 'btn small', type: 'button' }, u.aiAvailable() ? label : 'Add API key for AI feedback');
+    const cancelBtn = h('button', { class: 'btn small ghost', type: 'button', hidden: true }, 'Cancel');
+    let ctl = null;
+    cancelBtn.addEventListener('click', function () { if (ctl) ctl.abort(); });
     btn.addEventListener('click', async function () {
       if (!u.aiAvailable()) { u.openSettings(); return; }
       if (!confirm(sendNote + '\n\nIt is sent to your AI provider using your own key and may be billed to you. Continue?')) return;
-      btn.disabled = true; msg.hidden = true; btn.textContent = 'Asking AI...';
+      ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      btn.disabled = true; msg.hidden = true; btn.textContent = 'Asking AI...'; cancelBtn.hidden = false;
       try {
         const b = build();
-        const res = await IGU.ai.ask({ settings: u.store.get('settings', {}), system: b.system, prompt: b.prompt });
-        fill(out, h('p', { class: 'muted small-text' }, 'AI output from a language model. A study aid, not a rating or a prediction of any interview or hiring decision.'), u.md(res.text));
+        const res = await IGU.ai.ask({ settings: u.store.get('settings', {}), system: b.system, prompt: b.prompt, signal: ctl ? ctl.signal : undefined });
+        const metaTxt = [res.provider, res.model, res.at ? res.at.slice(0, 10) : '', res.usage ? (res.usage.inputTokens + res.usage.outputTokens) + ' tokens' : ''].filter(Boolean).join(' · ');
+        fill(out,
+          h('p', { class: 'muted small-text' }, 'AI output (' + metaTxt + '). Study aid only, not a rating or hiring prediction.'),
+          res.truncated ? h('p', { class: 'notice' }, 'Output hit the token limit and may be truncated.') : null,
+          u.md(res.text),
+          h('button', { class: 'btn small ghost', type: 'button', onclick: function () { fill(out); out.hidden = true; } }, 'Dismiss AI feedback'));
         out.hidden = false; btn.textContent = 'Ask again';
-      } catch (e) { msg.textContent = e.message; msg.hidden = false; btn.textContent = 'Try again'; }
-      btn.disabled = false;
+      } catch (e) { msg.textContent = e.message; msg.hidden = false; btn.textContent = e.kind === 'cancelled' ? label : 'Try again'; }
+      btn.disabled = false; cancelBtn.hidden = true;
     });
-    return btn;
+    return h('span', { class: 'q-actions' }, btn, cancelBtn);
   }
 
   /* ================= Behavioral stories ================= */

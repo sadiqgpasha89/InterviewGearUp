@@ -879,11 +879,11 @@
     return 'https://github.com/' + cfg.owner + '/' + cfg.repo + '/issues/new?' + q.toString();
   }
 
-  async function askLlm(p) {
+  async function askLlm(p, signal) {
     const s = store.get('settings', {});
     const payload = Object.assign({}, p, { roleName: roleName(p.role) });
-    const result = await IGU.ai.ask({ settings: s, system: engine.AI_SYSTEM, prompt: engine.aiPrompt(payload) });
-    return { mode: 'llm', provider: result.provider, model: result.model, md: result.text, at: new Date().toISOString() };
+    const result = await IGU.ai.ask({ settings: s, system: engine.AI_SYSTEM, prompt: engine.aiPrompt(payload), signal: signal });
+    return { mode: 'llm', provider: result.provider, model: result.model, md: result.text, at: result.at || new Date().toISOString(), usage: result.usage, truncated: result.truncated };
   }
 
   function aiCache() { return store.get('ai', {}); }
@@ -896,6 +896,7 @@
 
   function answerBlock(p) {
     const wrap = h('div', { class: 'ans' });
+    let ctl = null;
     function render() {
       wrap.replaceChildren();
       const gen = aiCache()[p.id] || p.gen || engine.generate({ question: p.question, role: p.role, level: p.level, company: p.company, domain: p.domain, round: p.round, answer: p.answer }, bank);
@@ -904,18 +905,24 @@
       const msg = h('p', { class: 'notice bad', hidden: true });
       const btnLabel = hasKey ? (isLlm ? 'Regenerate with AI' : 'Generate with AI') : 'Add API key in Settings';
       const btn = h('button', { class: 'btn small', type: 'button' }, btnLabel);
+      const cancelBtn = h('button', { class: 'btn small ghost', type: 'button', hidden: true }, 'Cancel');
+      cancelBtn.addEventListener('click', function () { if (ctl) ctl.abort(); });
       btn.addEventListener('click', async function () {
         if (!hasKey) { openSettings(); return; }
-        btn.disabled = true; btn.textContent = 'Asking AI...'; msg.hidden = true;
-        try { saveAi(p.id, await askLlm(p)); render(); }
-        catch (e) { btn.disabled = false; btn.textContent = 'Try again'; msg.textContent = e.message; msg.hidden = false; }
+        ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        btn.disabled = true; btn.textContent = 'Asking AI...'; msg.hidden = true; cancelBtn.hidden = false;
+        try { saveAi(p.id, await askLlm(p, ctl ? ctl.signal : undefined)); render(); }
+        catch (e) { btn.disabled = false; cancelBtn.hidden = true; btn.textContent = e.kind === 'cancelled' ? btnLabel : 'Try again'; msg.textContent = e.message; msg.hidden = false; }
       });
       const dateBit = gen.at ? (' · ' + String(gen.at).slice(0, 10)) : '';
       const provBit = gen.provider && gen.model ? (gen.provider + ' · ' + gen.model) : (gen.model || gen.provider || 'AI');
-      const headerTitle = isLlm ? ('AI-drafted answer (' + provBit + dateBit + ')') : 'Auto-generated answer (offline draft)';
-      wrap.appendChild(h('div', { class: 'ans-h' }, h('span', null, headerTitle), btn));
+      const tokBit = gen.usage ? (' · ' + (gen.usage.inputTokens + gen.usage.outputTokens) + ' tokens') : '';
+      const headerTitle = isLlm ? ('AI-drafted answer (' + provBit + dateBit + tokBit + ')') : 'Auto-generated answer (offline draft)';
+      const clearBtn = isLlm && aiCache()[p.id] ? h('button', { class: 'btn small ghost', type: 'button', onclick: function () { const c = aiCache(); delete c[p.id]; store.set('ai', c); render(); } }, 'Revert to offline') : null;
+      wrap.appendChild(h('div', { class: 'ans-h' }, h('span', null, headerTitle), h('span', { class: 'q-actions' }, btn, cancelBtn, clearBtn)));
       wrap.appendChild(msg);
       if (gen.fallbackNote) wrap.appendChild(h('p', { class: 'notice' }, 'AI answer not generated: ' + gen.fallbackNote + ' Showing the offline draft instead.'));
+      if (gen.truncated) wrap.appendChild(h('p', { class: 'notice' }, 'This response hit the model output limit and may be truncated.'));
       wrap.appendChild(h('div', { class: 'q-body' }, md(gen.md)));
       if (isLlm) {
         wrap.appendChild(h('p', { class: 'muted small-text' }, 'AI-generated study draft (not human-verified). Calibrated to the stated role, level, and company domain.'));
@@ -1040,15 +1047,10 @@
   function updateSettingsPlaceholders() {
     if (!providerSel || !keyInput || !modelInput) return;
     const prov = providerSel.value;
-    if (prov === 'gemini') {
-      keyInput.placeholder = 'AIzaSy... (free key via aistudio.google.com)';
-      modelInput.placeholder = 'gemini-2.5-flash (default)';
-    } else if (prov === 'anthropic') {
-      keyInput.placeholder = 'sk-ant-...';
-      modelInput.placeholder = 'claude-sonnet-5-5 (default)';
-    } else if (prov === 'openai') {
-      keyInput.placeholder = 'sk-...';
-      modelInput.placeholder = 'gpt-4o-mini (default)';
+    const p = cfg.providers && cfg.providers[prov];
+    if (p) {
+      keyInput.placeholder = p.keyHint || 'Paste API key';
+      modelInput.placeholder = p.defaultModel + ' (default)';
     }
   }
   if (providerSel) providerSel.addEventListener('change', updateSettingsPlaceholders);
@@ -1072,6 +1074,17 @@
     });
     render();
   });
+  const clearKeyBtn = document.getElementById('clear-key');
+  if (clearKeyBtn) {
+    clearKeyBtn.addEventListener('click', function () {
+      const cur = store.get('settings', {});
+      store.set('settings', { provider: cur.provider || 'gemini', key: '', model: '' });
+      if (keyInput) keyInput.value = '';
+      if (modelInput) modelInput.value = '';
+      dlg.close('cancel');
+      render();
+    });
+  }
   document.getElementById('wipe').addEventListener('click', function () {
     if (!confirm('Delete your profile, posts, progress, notes, saved questions and API key from this browser? Download a backup from the Progress page first if you want to keep them.')) return;
     store.wipe();

@@ -141,9 +141,15 @@ Source: the product improvement plan (23 phases). This release does Phases 0 to 
 |---|---|---|
 | 13 Community and AI workflow | Done | Pinned GitHub Actions (`actions/checkout` and `actions/setup-node`) to commit SHAs across `ci.yml` and `generate-answer.yml`, aligned workflows to Node 22 with explicit permissions, added privacy/originality checkboxes to issue templates, moved Gemini key to header with 30s timeout and bounded retries in `scripts/generate-answer.js`, added confidential/PII and bank-duplicate checks, and surfaced provider, model, and generation date provenance on `#/community`. |
 
+## v1.12: AI provider reliability and privacy (plan phase 14)
+
+| Phase | Status | What changed |
+|---|---|---|
+| 14 AI reliability & privacy | Done | Centralized model config in `js/config.js` (used across `ai.js`, Settings UI, and `generate-answer.js`), added `AbortSignal` cancellation on all in-browser AI buttons, classified billing/quota 429s as non-retryable `'quota'`, surfaced timestamps, token usage, and truncation warnings, and added a one-click `Clear API key` button in Settings. |
+
 ## Next
 
-- [ ] Phases 14 to 17 and 18 to 22 from the product improvement plan (see `docs/PRODUCT_GAP_AUDIT.md` for priorities).
+- [ ] Phases 15 to 17 and 18 to 22 from the product improvement plan (see `docs/PRODUCT_GAP_AUDIT.md` for priorities).
 - [ ] People to work through the review queue in `docs/CONTENT_QUALITY.md`; merge single-question topics.
 - [ ] Mobile header still wraps to two rows below about 420 px.
 

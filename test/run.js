@@ -1754,3 +1754,35 @@ test('workflow script: Gemini header auth, retry, duplicate/PII guard and proven
     assert.ok(t.includes('type: checkboxes') && /confidential/i.test(t), tpl + ' missing privacy checkbox');
   });
 });
+
+/* ---------- Phase 14: AI provider reliability and privacy ---------- */
+test('ai reliability: quota errors are not retried, cancellation works, usage and truncation are returned', async () => {
+  let quotaCalls = 0;
+  await assert.rejects(IGU.ai.ask({
+    settings: { provider: 'openai', key: 'sk-x' }, system: 's', prompt: 'p', sleep: noSleep,
+    fetch: async () => { quotaCalls++; return resp(429, { error: { code: 'insufficient_quota', message: 'You exceeded your current quota' } }); }
+  }), (e) => e.kind === 'quota' && !e.retryable);
+  assert.equal(quotaCalls, 1, 'billing/quota 429 must not retry');
+
+  const ctl = new AbortController();
+  ctl.abort();
+  let abortedCalls = 0;
+  await assert.rejects(IGU.ai.ask({
+    settings: { provider: 'gemini', key: 'AIza-x' }, system: 's', prompt: 'p', signal: ctl.signal, sleep: noSleep,
+    fetch: async () => { abortedCalls++; return resp(200, {}); }
+  }), (e) => e.kind === 'cancelled' && !e.retryable);
+  assert.equal(abortedCalls, 0);
+
+  const g = await IGU.ai.ask({
+    settings: { provider: 'gemini', key: 'AIza-x' }, system: 's', prompt: 'p',
+    fetch: async () => resp(200, { candidates: [{ finishReason: 'MAX_TOKENS', content: { parts: [{ text: 'partial' }] } }], usageMetadata: { promptTokenCount: 12, candidatesTokenCount: 34 } })
+  });
+  assert.equal(g.truncated, true);
+  assert.equal(g.usage.inputTokens, 12);
+  assert.equal(g.usage.outputTokens, 34);
+  assert.ok(/^\d{4}-\d{2}-\d{2}T/.test(g.at));
+  assert.equal(IGU.ai.defaultModel('anthropic'), IGU.config.providers.anthropic.defaultModel);
+
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  assert.ok(html.includes('id="clear-key"'));
+});
