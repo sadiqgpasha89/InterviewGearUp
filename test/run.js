@@ -10,7 +10,7 @@ const root = path.join(__dirname, '..');
 const ctx = { setTimeout, clearTimeout, AbortController, URL };
 ctx.window = ctx;
 vm.createContext(ctx);
-['js/config.js', 'js/quality.js', 'js/engine.js', 'js/search.js', 'js/srs.js', 'js/migrate.js', 'js/ai.js', 'js/adaptive.js', 'js/planner.js', 'js/mock.js', 'js/dashboard.js', 'js/stories.js', 'js/jd.js', 'js/design.js', 'data/design.js', 'js/coding-core.js', 'data/coding.js', 'data/coding-langs.js', 'js/company.js', 'js/voice.js', 'js/readiness.js', 'js/flashcards.js', 'js/topic-map.js']
+['js/config.js', 'js/quality.js', 'js/engine.js', 'js/search.js', 'js/srs.js', 'js/migrate.js', 'js/ai.js', 'js/adaptive.js', 'js/planner.js', 'js/mock.js', 'js/dashboard.js', 'js/stories.js', 'js/jd.js', 'js/design.js', 'data/design.js', 'js/coding-core.js', 'data/coding.js', 'data/coding-langs.js', 'js/company.js', 'js/voice.js', 'js/readiness.js', 'js/flashcards.js', 'js/topic-map.js', 'js/warmup.js']
   .concat(require('../scripts/lib/data-files').dataFiles(root))
   .forEach((f) => vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f }));
 
@@ -1903,4 +1903,41 @@ test('topic map: curated DAGs exist for all roles, resolve to real questions, an
   assert.ok(cacheNode.prereqs.includes('apis'));
   assert.ok(cacheNode.weakPrereqs.some((w) => w.id === 'apis'), 'weak prerequisite apis flagged on cache');
   assert.ok(res.nodes[0].step === 1 && res.nodes[res.nodes.length - 1].step === res.nodes.length);
+});
+
+/* ---------- Phase 20: daily interview warm-up ---------- */
+const WU = IGU.warmup;
+test('warmup: builds a balanced 3-slot session, avoids repeats, checks answers offline and updates progress/SRS', () => {
+  meta.roles.forEach((r) => {
+    const s = WU.buildSession(bank, { role: r.id, level: 2, day: '2026-11-26' });
+    assert.equal(s.items.length, 3, '3 warm-up items for ' + r.id);
+    assert.deepEqual(arr(s.items.map((x) => x.slot)), ['technical', 'scenario', 'behavioral']);
+    assert.equal(new Set(s.items.map((x) => x.entry.id)).size, 3);
+    assert.equal(s.targetMinutes, 10);
+  });
+
+  const first = WU.buildSession(bank, { role: 'backend', level: 2, day: '2026-11-26', practice: { 'be-4': { last: 'again' } } });
+  const hist = WU.completeSession([], {
+    day: '2026-11-26', role: 'backend', level: 2, elapsedSecs: 540,
+    items: first.items.map((x) => ({ id: x.entry.id, slot: x.slot, grade: 'solid' }))
+  });
+  const second = WU.buildSession(bank, { role: 'backend', level: 2, day: '2026-11-27', recentIds: WU.recentIds(hist) });
+  first.items.forEach((it) => {
+    if (!it.entry.isStoryPrompt) {
+      assert.ok(!second.items.some((s) => s.entry.id === it.entry.id), 'avoids recently warmed-up ' + it.entry.id);
+    }
+  });
+
+  const fbShort = WU.feedback(first.items[0], 'too short');
+  assert.equal(fbShort.ok, false);
+  const fbOk = WU.feedback({ entry: { q: 'Explain caching strategies and trade-offs.' } }, 'In our API we use cache-aside with a TTL, for example Redis, because of the trade-off between stale reads and origin database load under heavy traffic.');
+  assert.equal(fbOk.ok, true);
+  assert.ok(fbOk.passed.length >= 1);
+
+  const upd = WU.recordItem({ practice: {}, srs: {}, history: [], done: {} }, first.items[0], 'solid', 180, '2026-11-26');
+  assert.equal(upd.practice[first.items[0].entry.id].ok, 1);
+  assert.ok(upd.srs[first.items[0].entry.id].due > '2026-11-26');
+  assert.equal(upd.history.length, 1);
+  assert.equal(upd.done[first.items[0].entry.id], 1);
+  assert.ok(S.BACKUP_KEYS.includes('warmup'));
 });
