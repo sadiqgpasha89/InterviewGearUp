@@ -1,6 +1,6 @@
 /* Offline support. Network first for same-origin files (so a new deploy shows up immediately when online),
    falling back to the cache when offline. Cross-origin requests (GitHub API, LLM providers) are never touched. */
-const CACHE = 'igu-v16';
+const CACHE = 'igu-v17';
 const SHELL = [
   './',
   'index.html',
@@ -89,6 +89,10 @@ self.addEventListener('activate', function (event) {
   }).then(function () { return self.clients.claim(); }));
 });
 
+self.addEventListener('message', function (event) {
+  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
+});
+
 self.addEventListener('fetch', function (event) {
   const req = event.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
@@ -96,6 +100,10 @@ self.addEventListener('fetch', function (event) {
     if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(function (c) { c.put(req, copy); }); }
     return res;
   }).catch(function () {
-    return caches.match(req, { ignoreSearch: true }).then(function (hit) { return hit || caches.match('index.html'); });
+    return caches.match(req, { ignoreSearch: true }).then(function (hit) {
+      if (hit) return hit;
+      if (req.mode === 'navigate' || req.destination === 'document') return caches.match('index.html');
+      return Response.error();
+    });
   }));
 });

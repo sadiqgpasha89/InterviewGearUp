@@ -1848,3 +1848,17 @@ test('a11y and PWA: CSS theme tokens defined, dark dropdown readable, reduced mo
     assert.ok(fs.existsSync(path.join(root, p)), 'missing ' + p);
   });
 });
+
+/* ---------- Phase 17: service worker and release quality ---------- */
+test('service worker: precache consistency, zero missing files, cache cleanup and update flow', () => {
+  const swCheck = require(path.join(root, 'scripts/check-sw.js'));
+  const res = swCheck.verify(root);
+  assert.equal(res.ok, true, res.errors.join('; '));
+  assert.ok(res.shellCount >= 70);
+  const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
+  assert.ok(sw.includes('SKIP_WAITING'));
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  assert.ok(html.includes('id="app-banner"'));
+  const appSrc = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
+  assert.ok(appSrc.includes('updatefound') && appSrc.includes('offline'));
+});
