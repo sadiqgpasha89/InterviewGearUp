@@ -189,9 +189,14 @@ Source: the product improvement plan (23 phases). This release does Phases 0 to 
 |---|---|---|
 | 21 Calendar export | Done | Added RFC 5545 `.ics` export (`js/calendar.js`, wired into `#/plan` in `js/views.js`) for single tasks, today's study block, or a 7-day plan using local wall-clock time without private notes unless opted in. |
 
+## v1.20: product validation, walkthroughs & opt-in feedback (plan phase 22)
+
+| Phase | Status | What changed |
+|---|---|---|
+| 22 Product validation & growth | Done | Added `#/guide` (`js/guide.js`, `js/views7.js`, linked under Community): 5-step interactive walkthrough, safe sample starter scenarios, recent release highlights, and secret-redacting opt-in feedback export / GitHub issue pre-fill with zero hidden analytics, plus expanded manual QA checklist in `docs/MANUAL_QA.md`. |
+
 ## Next
 
-- [ ] Phase 22 from the product improvement plan (see `docs/PRODUCT_GAP_AUDIT.md` for priorities).
 - [ ] People to work through the review queue in `docs/CONTENT_QUALITY.md`; merge single-question topics.
 - [ ] Run real-device checks in `docs/MANUAL_QA.md` (no real phones/screen readers/Safari/Firefox tested automatically).
 
