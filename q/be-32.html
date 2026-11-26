@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>Explain Kafka consumer groups, offset commits, and the partition rebalance protocol. | InterviewGearUp</title>
-<meta name="description" content="A consumer group shares a topic&#39;s partitions among its members so each partition is read by exactly one consumer in the group. Consumers commit offsets…">
+<meta name="description" content="Backend engineer (Gear 3): A consumer group shares a topic&#39;s partitions among its members so each partition is read by exactly one consumer in the group.…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-32.html">
 <meta property="og:title" content="Explain Kafka consumer groups, offset commits, and the partition rebalance protocol. | InterviewGearUp">
-<meta property="og:description" content="A consumer group shares a topic&#39;s partitions among its members so each partition is read by exactly one consumer in the group. Consumers commit offsets…">
+<meta property="og:description" content="Backend engineer (Gear 3): A consumer group shares a topic&#39;s partitions among its members so each partition is read by exactly one consumer in the group.…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-32.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-backend.html">Backend engineer</a> · <a href="../#/questions?role=backend&amp;level=3">Open in interactive bank</a></p>
 <h1>Explain Kafka consumer groups, offset commits, and the partition rebalance protocol.</h1>
 <p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · Messaging · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -37,9 +42,13 @@
 <p>Keep <code>poll()</code> loops short, use <code>max.poll.records</code> to bound batch time, consider <strong>static membership</strong> (<code>group.instance.id</code>) so a restarting consumer keeps its partitions, and monitor <strong>consumer lag</strong>.</p>
 <h4>Likely follow-ups</h4>
 <ul><li>What is the difference between at-least-once and at-most-once from the point of commit timing?</li><li>What is cooperative incremental rebalancing?</li><li>How do static group membership and session timeouts reduce rebalances?</li></ul>
-<p><a class="btn primary" href="../#/q/be-32">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="be-35.html">Compare RabbitMQ exchange types: Direct, Fanout, Topic, and Headers.</a> <span class="muted small-text">(Gear 2 · Messaging)</span></li><li><a href="be-36.html">How do you design a resilient Dead Letter Queue (DLQ) with exponential backoff and retry limits?</a> <span class="muted small-text">(Gear 2 · Messaging)</span></li><li><a href="be-106.html">What is a message queue and why would you use one in a backend system?</a> <span class="muted small-text">(Gear 1 · Messaging)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="be-31.html">How does Apache Kafka partition topics, and how are strict message ordering guarantees maintained?</a> <span class="muted small-text">(Backend engineer · Gear 3)</span></li><li><a href="be-33.html">How does Kafka achieve exactly-once semantics (EOS) across producer and consumer streams?</a> <span class="muted small-text">(Backend engineer · Gear 4)</span></li><li><a href="be-34.html">What is Kafka log compaction and how does it support stateful stream processing?</a> <span class="muted small-text">(Backend engineer · Gear 3)</span></li><li><a href="de-48.html">How does Apache Kafka partition topics, and how do consumer groups parallelize message consumption?</a> <span class="muted small-text">(Data engineer · Gear 2)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/be-32">Practise in app</a> <a class="btn" href="../#/drill?id=be-32">Drill this question</a> <a class="btn ghost" href="../#/mock?role=backend&amp;level=3">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-32%3A+Explain+Kafka+consumer+groups%2C+offset+commits%2C+and+the+partition%E2%80%A6&amp;question-id=be-32&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+Messaging%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-32.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

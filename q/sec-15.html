@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>Explain XML External Entity (XXE) attacks and how disabling external DTD parsing prevents file exfiltration. | InterviewGearUp</title>
-<meta name="description" content="XXE happens when an XML parser resolves external entities defined in a DOCTYPE, letting an attacker make the server read local files…">
+<meta name="description" content="Security engineer (Gear 2): XXE happens when an XML parser resolves external entities defined in a DOCTYPE, letting an attacker make the server read…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-15.html">
 <meta property="og:title" content="Explain XML External Entity (XXE) attacks and how disabling external DTD parsing prevents file exfiltration. | InterviewGearUp">
-<meta property="og:description" content="XXE happens when an XML parser resolves external entities defined in a DOCTYPE, letting an attacker make the server read local files…">
+<meta property="og:description" content="Security engineer (Gear 2): XXE happens when an XML parser resolves external entities defined in a DOCTYPE, letting an attacker make the server read…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-15.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-security.html">Security engineer</a> · <a href="../#/questions?role=security&amp;level=2">Open in interactive bank</a></p>
 <h1>Explain XML External Entity (XXE) attacks and how disabling external DTD parsing prevents file exfiltration.</h1>
 <p class="muted small-text meta-line">Security engineer · Gear 2 (Mid-level) · AppSec · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -45,9 +50,13 @@ f.setExpandEntityReferences(false);</code></pre>
 <ul><li>In Python, use <code>defusedxml</code>; in .NET set <code>DtdProcessing = Prohibit</code>; in libxml2 avoid <code>NOENT</code>.</li><li>Keep parsers updated, and prefer JSON for new APIs.</li><li>Run the application with least privilege and restrict outbound network access, which limits SSRF and exfiltration even if parsing is misconfigured.</li><li>Detect with SAST, DAST and tests that send entity payloads.</li></ul>
 <h4>Likely follow-ups</h4>
 <ul><li>How does an out-of-band XXE exfiltrate data when the response is not shown?</li><li>What is the billion laughs attack?</li><li>Which libraries are vulnerable by default and how do you configure them securely?</li></ul>
-<p><a class="btn primary" href="../#/q/sec-15">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="sec-8.html">Explain the OWASP Top 10 vulnerabilities and why they represent common application security risks.</a> <span class="muted small-text">(Gear 1 · AppSec)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="sec-9.html">Explain SQL Injection (SQLi): Classic, Blind (Boolean/Time-based), and why ORMs are not inherently immune.</a> <span class="muted small-text">(Security engineer · Gear 2)</span></li><li><a href="sec-101.html">What defenses prevent automated Credential Stuffing and Account Takeover (ATO) attacks on login portals?</a> <span class="muted small-text">(Security engineer · Gear 3)</span></li><li><a href="sec-11.html">Explain Cross-Site Request Forgery (CSRF): Attack mechanics, Anti-CSRF tokens, and `SameSite` cookie flags.</a> <span class="muted small-text">(Security engineer · Gear 2)</span></li><li><a href="sec-64.html">How do Subresource Integrity (SRI) hashes prevent compromised third-party CDNs from injecting malware?</a> <span class="muted small-text">(Security engineer · Gear 2)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/sec-15">Practise in app</a> <a class="btn" href="../#/drill?id=sec-15">Drill this question</a> <a class="btn ghost" href="../#/mock?role=security&amp;level=2">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-15%3A+Explain+XML+External+Entity+%28XXE%29+attacks+and+how+disabling+external%E2%80%A6&amp;question-id=sec-15&amp;context=Security+engineer%2C+Gear+2%2C+topic%3A+AppSec%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-15.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

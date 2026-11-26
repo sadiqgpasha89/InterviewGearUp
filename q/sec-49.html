@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>How do Admission Controllers (OPA Gatekeeper, Kyverno) enforce security guardrails on Kubernetes manifests? | InterviewGearUp</title>
-<meta name="description" content="Kubernetes admission controllers intercept API requests after authentication and authorisation but before persistence. Mutating webhooks can set…">
+<meta name="description" content="Security engineer (Gear 3): Kubernetes admission controllers intercept API requests after authentication and authorisation but before persistence.…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-49.html">
 <meta property="og:title" content="How do Admission Controllers (OPA Gatekeeper, Kyverno) enforce security guardrails on Kubernetes manifests? | InterviewGearUp">
-<meta property="og:description" content="Kubernetes admission controllers intercept API requests after authentication and authorisation but before persistence. Mutating webhooks can set…">
+<meta property="og:description" content="Security engineer (Gear 3): Kubernetes admission controllers intercept API requests after authentication and authorisation but before persistence.…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-49.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-security.html">Security engineer</a> · <a href="../#/questions?role=security&amp;level=3">Open in interactive bank</a></p>
 <h1>How do Admission Controllers (OPA Gatekeeper, Kyverno) enforce security guardrails on Kubernetes manifests?</h1>
 <p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · Kubernetes · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -88,9 +93,13 @@ spec:
 <p>Enforcing immediately and breaking deployments, <code>failurePolicy: Fail</code> without high availability (cluster outage when the webhook is down), policies that deny the controllers&#39; own pods, no exception process, and forgetting that admission applies only to new or updated objects (use audit for existing ones).</p>
 <h4>Likely follow-ups</h4>
 <ul><li>What is the difference between mutating and validating admission and in which order do they run?</li><li>How do you roll out a new policy safely using audit mode before enforcing?</li><li>When would you pick Kyverno over Gatekeeper or the built-in ValidatingAdmissionPolicy?</li></ul>
-<p><a class="btn primary" href="../#/q/sec-49">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="do-40.html">How do Helm charts parameterize Kubernetes manifests, and how do you manage versioned releases?</a> <span class="muted small-text">(Gear 2 · Kubernetes)</span></li><li><a href="do-3.html">How does a Kubernetes rolling update work? Explain readiness versus liveness probes.</a> <span class="muted small-text">(Gear 2 · Kubernetes)</span></li><li><a href="do-4.html">A Pod is stuck in CrashLoopBackOff. How do you debug it?</a> <span class="muted small-text">(Gear 2 · Kubernetes)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="do-70.html">What are Kubernetes Admission Webhooks (Mutating and Validating) and how does OPA Gatekeeper use them?</a> <span class="muted small-text">(DevOps / SRE / Cloud · Gear 3)</span></li><li><a href="sec-46.html">Explain Kubernetes Pod Security Standards: Privileged, Baseline, and Restricted security profiles.</a> <span class="muted small-text">(Security engineer · Gear 3)</span></li><li><a href="sec-48.html">How do Kubernetes NetworkPolicies enforce default-deny ingress and egress rules between namespaces?</a> <span class="muted small-text">(Security engineer · Gear 3)</span></li><li><a href="sec-47.html">How do you audit and harden Kubernetes RBAC to prevent excessive ClusterRoleBinding permissions?</a> <span class="muted small-text">(Security engineer · Gear 3)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/sec-49">Practise in app</a> <a class="btn" href="../#/drill?id=sec-49">Drill this question</a> <a class="btn ghost" href="../#/mock?role=security&amp;level=3">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-49%3A+How+do+Admission+Controllers+%28OPA+Gatekeeper%2C+Kyverno%29+enforce%E2%80%A6&amp;question-id=sec-49&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+Kubernetes%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-49.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

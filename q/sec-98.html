@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>What causes container escape vulnerabilities and how do User Namespaces prevent root in container from being root on host? | InterviewGearUp</title>
-<meta name="description" content="Containers share the host kernel, so an escape usually comes from a privileged or over-permissive container configuration (privileged mode, dangerous…">
+<meta name="description" content="Security engineer (Gear 4): Containers share the host kernel, so an escape usually comes from a privileged or over-permissive container configuration…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-98.html">
 <meta property="og:title" content="What causes container escape vulnerabilities and how do User Namespaces prevent root in container from being root on host? | InterviewGearUp">
-<meta property="og:description" content="Containers share the host kernel, so an escape usually comes from a privileged or over-permissive container configuration (privileged mode, dangerous…">
+<meta property="og:description" content="Security engineer (Gear 4): Containers share the host kernel, so an escape usually comes from a privileged or over-permissive container configuration…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-98.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-security.html">Security engineer</a> · <a href="../#/questions?role=security&amp;level=4">Open in interactive bank</a></p>
 <h1>What causes container escape vulnerabilities and how do User Namespaces prevent root in container from being root on host?</h1>
 <p class="muted small-text meta-line">Security engineer · Gear 4 (Lead / Staff) · Containers · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -37,9 +42,13 @@
 <p>Run as non-root, drop all capabilities and add back only what is needed, set <code>no-new-privileges</code>, use a restrictive seccomp profile and AppArmor or SELinux, use a read-only root filesystem, never mount the Docker socket, patch the kernel and runtime, and use sandboxed runtimes (gVisor, Kata Containers) for untrusted workloads.</p>
 <h4>Likely follow-ups</h4>
 <ul><li>Why is mounting the Docker socket into a container effectively giving it root on the host?</li><li>How do user namespaces change what CAP_SYS_ADMIN means inside a container?</li><li>When would you choose gVisor or Kata Containers over regular runc containers?</li></ul>
-<p><a class="btn primary" href="../#/q/sec-98">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="sec-45.html">How do Linux seccomp profiles, AppArmor, and dropping capabilities (`cap-drop`) harden Docker containers?</a> <span class="muted small-text">(Gear 3 · Containers)</span></li><li><a href="sec-44.html">What container security best practices prevent container breakout attacks (minimal images, rootless mode)?</a> <span class="muted small-text">(Gear 2 · Containers)</span></li><li><a href="do-26.html">What are rootless containers and how do user namespaces prevent privilege escalation attacks?</a> <span class="muted small-text">(Gear 3 · Containers)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="sec-45.html">How do Linux seccomp profiles, AppArmor, and dropping capabilities (`cap-drop`) harden Docker containers?</a> <span class="muted small-text">(Security engineer · Gear 3)</span></li><li><a href="sec-44.html">What container security best practices prevent container breakout attacks (minimal images, rootless mode)?</a> <span class="muted small-text">(Security engineer · Gear 2)</span></li><li><a href="do-26.html">What are rootless containers and how do user namespaces prevent privilege escalation attacks?</a> <span class="muted small-text">(DevOps / SRE / Cloud · Gear 3)</span></li><li><a href="do-22.html">What Linux namespaces (PID, Net, MNT, IPC, UTS, User) provide container isolation?</a> <span class="muted small-text">(DevOps / SRE / Cloud · Gear 2)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/sec-98">Practise in app</a> <a class="btn" href="../#/drill?id=sec-98">Drill this question</a> <a class="btn ghost" href="../#/mock?role=security&amp;level=4">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-98%3A+What+causes+container+escape+vulnerabilities+and+how+do+User%E2%80%A6&amp;question-id=sec-98&amp;context=Security+engineer%2C+Gear+4%2C+topic%3A+Containers%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-98.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

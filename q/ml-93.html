@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>Design an enterprise RAG system that searches internal enterprise documents while enforcing ACL permissions. | InterviewGearUp</title>
-<meta name="description" content="Index documents with their access control lists as metadata, authenticate the user, and filter retrieval by the user&#39;s identity and groups before any…">
+<meta name="description" content="ML / AI engineer (Gear 4): Index documents with their access control lists as metadata, authenticate the user, and filter retrieval by the user&#39;s…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-93.html">
 <meta property="og:title" content="Design an enterprise RAG system that searches internal enterprise documents while enforcing ACL permissions. | InterviewGearUp">
-<meta property="og:description" content="Index documents with their access control lists as metadata, authenticate the user, and filter retrieval by the user&#39;s identity and groups before any…">
+<meta property="og:description" content="ML / AI engineer (Gear 4): Index documents with their access control lists as metadata, authenticate the user, and filter retrieval by the user&#39;s…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-93.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-ml.html">ML / AI engineer</a> · <a href="../#/questions?role=ml&amp;level=4">Open in interactive bank</a></p>
 <h1>Design an enterprise RAG system that searches internal enterprise documents while enforcing ACL permissions.</h1>
 <p class="muted small-text meta-line">ML / AI engineer · Gear 4 (Lead / Staff) · Architecture · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -35,9 +40,13 @@
 <ul><li>Separate indexes or namespaces for highly sensitive collections (legal, HR) and per-tenant isolation.</li><li>Guard against <strong>prompt injection</strong> in documents, and never include another user&#39;s cached answers.</li><li><strong>Audit logs</strong>: who asked, which chunks were returned, which sources were cited. Support deletion requests and retention rules.</li><li>Test with red-team users: a user who should see nothing from a restricted folder must not be able to extract it through clever questions.</li></ul>
 <h4>Likely follow-ups</h4>
 <ul><li>How do you keep ACLs in the index fresh when permissions change in the source system?</li><li>Why is filtering after retrieval risky compared with filtering inside the search?</li><li>How do you handle documents shared with very large groups?</li></ul>
-<p><a class="btn primary" href="../#/q/ml-93">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="ml-92.html">Design an end-to-end real-time credit card fraud detection ML pipeline with sub-100ms P99 latency.</a> <span class="muted small-text">(Gear 3 · Architecture)</span></li><li><a href="de-93.html">How do vector databases integrate into enterprise data lakehouse pipelines for AI applications?</a> <span class="muted small-text">(Gear 3 · Architecture)</span></li><li><a href="ml-54.html">How does Inverted File Index with Product Quantization (IVF-PQ) compress billion-scale vector indexes?</a> <span class="muted small-text">(Gear 3 · RAG)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="ml-7.html">Design an enterprise AI assistant that answers from company documents and can take actions.</a> <span class="muted small-text">(ML / AI engineer · Gear 4)</span></li><li><a href="ml-110.html">How would you design a RAG system over 10 million enterprise documents?</a> <span class="muted small-text">(ML / AI engineer · Gear 4)</span></li><li><a href="de-93.html">How do vector databases integrate into enterprise data lakehouse pipelines for AI applications?</a> <span class="muted small-text">(Data engineer · Gear 3)</span></li><li><a href="ml-92.html">Design an end-to-end real-time credit card fraud detection ML pipeline with sub-100ms P99 latency.</a> <span class="muted small-text">(ML / AI engineer · Gear 3)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/ml-93">Practise in app</a> <a class="btn" href="../#/drill?id=ml-93">Drill this question</a> <a class="btn ghost" href="../#/mock?role=ml&amp;level=4">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-93%3A+Design+an+enterprise+RAG+system+that+searches+internal+enterprise%E2%80%A6&amp;question-id=ml-93&amp;context=ML+%2F+AI+engineer%2C+Gear+4%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-93.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

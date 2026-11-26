@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>How do you use Docker Compose to spin up local integration testing environments for developers? | InterviewGearUp</title>
-<meta name="description" content="Define the full stack in a docker-compose.yml with application, database, cache, queue and mocks, add healthchecks and depends_on conditions, seed data…">
+<meta name="description" content="QA / SDET (Gear 2): Define the full stack in a docker-compose.yml with application, database, cache, queue and mocks, add healthchecks and depends_on…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-87.html">
 <meta property="og:title" content="How do you use Docker Compose to spin up local integration testing environments for developers? | InterviewGearUp">
-<meta property="og:description" content="Define the full stack in a docker-compose.yml with application, database, cache, queue and mocks, add healthchecks and depends_on conditions, seed data…">
+<meta property="og:description" content="QA / SDET (Gear 2): Define the full stack in a docker-compose.yml with application, database, cache, queue and mocks, add healthchecks and depends_on…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/qa-87.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-qa.html">QA / SDET</a> · <a href="../#/questions?role=qa&amp;level=2">Open in interactive bank</a></p>
 <h1>How do you use Docker Compose to spin up local integration testing environments for developers?</h1>
 <p class="muted small-text meta-line">QA / SDET · Gear 2 (Mid-level) · Infrastructure · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -65,9 +70,13 @@ docker compose -f compose.test.yml down -v --remove-orphans       # clean volume
 <p>Assuming <code>depends_on</code> implies readiness, persisting volumes between runs (stale data causing flaky tests), unpinned images, hard-coded ports clashing locally, tests that mutate shared seed data without cleanup, and drifting from production versions.</p>
 <h4>Likely follow-ups</h4>
 <ul><li>How do healthchecks and depends_on conditions prevent tests starting before services are ready?</li><li>How do you manage test data seeding and reset between runs in Compose environments?</li><li>When should you use Testcontainers instead of a Compose file?</li></ul>
-<p><a class="btn primary" href="../#/q/qa-87">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="qa-103.html">What are the levels of software testing: unit, integration, system and acceptance testing?</a> <span class="muted small-text">(Gear 1 · Fundamentals)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="qa-38.html">How does Testcontainers spin up ephemeral databases, message brokers, and Redis instances during test runs?</a> <span class="muted small-text">(QA / SDET · Gear 3)</span></li><li><a href="qa-100.html">How do you build self-cleaning test fixtures that prevent test database pollution during parallel runs?</a> <span class="muted small-text">(QA / SDET · Gear 2)</span></li><li><a href="qa-109.html">How do you design a test environment strategy with ephemeral environments, realistic data and production parity?</a> <span class="muted small-text">(QA / SDET · Gear 4)</span></li><li><a href="qa-112.html">How would you design test infrastructure to run 100,000 tests a day reliably and cost-effectively?</a> <span class="muted small-text">(QA / SDET · Gear 4)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/qa-87">Practise in app</a> <a class="btn" href="../#/drill?id=qa-87">Drill this question</a> <a class="btn ghost" href="../#/mock?role=qa&amp;level=2">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+qa-87%3A+How+do+you+use+Docker+Compose+to+spin+up+local+integration+testing%E2%80%A6&amp;question-id=qa-87&amp;context=QA+%2F+SDET%2C+Gear+2%2C+topic%3A+Infrastructure%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fqa-87.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

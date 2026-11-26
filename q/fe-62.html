@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>How do ES Modules (ESM) differ from CommonJS (CJS) in loading semantics and circular dependencies? | InterviewGearUp</title>
-<meta name="description" content="ES Modules are static, asynchronously loaded and export live bindings that are resolved before execution; CommonJS loads synchronously at runtime with…">
+<meta name="description" content="Frontend engineer (Gear 2): ES Modules are static, asynchronously loaded and export live bindings that are resolved before execution; CommonJS loads…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-62.html">
 <meta property="og:title" content="How do ES Modules (ESM) differ from CommonJS (CJS) in loading semantics and circular dependencies? | InterviewGearUp">
-<meta property="og:description" content="ES Modules are static, asynchronously loaded and export live bindings that are resolved before execution; CommonJS loads synchronously at runtime with…">
+<meta property="og:description" content="Frontend engineer (Gear 2): ES Modules are static, asynchronously loaded and export live bindings that are resolved before execution; CommonJS loads…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-62.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-frontend.html">Frontend engineer</a> · <a href="../#/questions?role=frontend&amp;level=2">Open in interactive bank</a></p>
 <h1>How do ES Modules (ESM) differ from CommonJS (CJS) in loading semantics and circular dependencies?</h1>
 <p class="muted small-text meta-line">Frontend engineer · Gear 2 (Mid-level) · JavaScript · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -45,9 +50,13 @@ import { count, inc } from &#39;./counter.mjs&#39;; inc(); console.log(count); /
 <p>File extensions are required in ESM specifiers, mixing default and named interop, mutating imported bindings (read-only), and bundlers that transform ESM to CJS and destroy tree shaking.</p>
 <h4>Likely follow-ups</h4>
 <ul><li>What does a live binding mean and how does it differ from a CommonJS value copy?</li><li>How does each system behave with circular dependencies?</li><li>How do Node packages ship dual ESM and CJS builds and what are the hazards?</li></ul>
-<p><a class="btn primary" href="../#/q/fe-62">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="fe-93.html">Explain the difference between `==` loose equality and `===` strict equality, and how `Object.is()` differs.</a> <span class="muted small-text">(Gear 1 · JavaScript)</span></li><li><a href="fe-1.html">What is a closure in JavaScript?</a> <span class="muted small-text">(Gear 1 · JavaScript)</span></li><li><a href="fe-61.html">Explain the difference between `null`, `undefined`, and undeclared variables in JavaScript.</a> <span class="muted small-text">(Gear 1 · JavaScript)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="fe-93.html">Explain the difference between `==` loose equality and `===` strict equality, and how `Object.is()` differs.</a> <span class="muted small-text">(Frontend engineer · Gear 1)</span></li><li><a href="fe-1.html">What is a closure in JavaScript?</a> <span class="muted small-text">(Frontend engineer · Gear 1)</span></li><li><a href="fe-61.html">Explain the difference between `null`, `undefined`, and undeclared variables in JavaScript.</a> <span class="muted small-text">(Frontend engineer · Gear 1)</span></li><li><a href="fe-102.html">What is the difference between var, let and const in JavaScript, and what is hoisting?</a> <span class="muted small-text">(Frontend engineer · Gear 1)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/fe-62">Practise in app</a> <a class="btn" href="../#/drill?id=fe-62">Drill this question</a> <a class="btn ghost" href="../#/mock?role=frontend&amp;level=2">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-62%3A+How+do+ES+Modules+%28ESM%29+differ+from+CommonJS+%28CJS%29+in+loading%E2%80%A6&amp;question-id=fe-62&amp;context=Frontend+engineer%2C+Gear+2%2C+topic%3A+JavaScript%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-62.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

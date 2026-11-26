@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>How does Direct Preference Optimization (DPO) eliminate the separate reward model required by PPO? | InterviewGearUp</title>
-<meta name="description" content="DPO shows that the policy trained under a KL-constrained reward objective implicitly defines its own reward, as beta times the log ratio of the policy to…">
+<meta name="description" content="ML / AI engineer (Gear 4): DPO shows that the policy trained under a KL-constrained reward objective implicitly defines its own reward, as beta times the…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-46.html">
 <meta property="og:title" content="How does Direct Preference Optimization (DPO) eliminate the separate reward model required by PPO? | InterviewGearUp">
-<meta property="og:description" content="DPO shows that the policy trained under a KL-constrained reward objective implicitly defines its own reward, as beta times the log ratio of the policy to…">
+<meta property="og:description" content="ML / AI engineer (Gear 4): DPO shows that the policy trained under a KL-constrained reward objective implicitly defines its own reward, as beta times the…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-46.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-ml.html">ML / AI engineer</a> · <a href="../#/questions?role=ml&amp;level=4">Open in interactive bank</a></p>
 <h1>How does Direct Preference Optimization (DPO) eliminate the separate reward model required by PPO?</h1>
 <p class="muted small-text meta-line">ML / AI engineer · Gear 4 (Lead / Staff) · LLMs · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -38,9 +43,13 @@
 <ul><li>Beta controls how far the policy may move from the reference; small values allow larger changes.</li><li>It is <strong>offline</strong>: it learns from fixed data, so quality and coverage of preferences matter, and it may not match online RL on harder tasks.</li><li>Known issues: the likelihood of both chosen and rejected answers can fall, length bias, and overfitting a small dataset. Variants such as IPO, KTO and SimPO address some of these.</li></ul>
 <h4>Likely follow-ups</h4>
 <ul><li>Why does the partition function cancel in the Bradley-Terry derivation?</li><li>What does the reference model do in the DPO loss?</li><li>When might PPO-style online training still be preferable?</li></ul>
-<p><a class="btn primary" href="../#/q/ml-46">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="ml-41.html">What are the pre-training objectives for Large Language Models: Next-Token Prediction vs Masked Language Modeling?</a> <span class="muted small-text">(Gear 3 · LLMs)</span></li><li><a href="ml-79.html">How do context window extension methods (RoPE scaling, YaRN) allow models to read 128k+ tokens?</a> <span class="muted small-text">(Gear 3 · LLMs)</span></li><li><a href="ml-99.html">How does Speculative Decoding accelerate LLM token generation using a small draft model and verification?</a> <span class="muted small-text">(Gear 3 · LLMs)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="ml-45.html">Explain Reinforcement Learning from Human Feedback (RLHF): Reward Modeling and PPO optimization.</a> <span class="muted small-text">(ML / AI engineer · Gear 4)</span></li><li><a href="ml-41.html">What are the pre-training objectives for Large Language Models: Next-Token Prediction vs Masked Language Modeling?</a> <span class="muted small-text">(ML / AI engineer · Gear 3)</span></li><li><a href="ml-79.html">How do context window extension methods (RoPE scaling, YaRN) allow models to read 128k+ tokens?</a> <span class="muted small-text">(ML / AI engineer · Gear 3)</span></li><li><a href="ml-99.html">How does Speculative Decoding accelerate LLM token generation using a small draft model and verification?</a> <span class="muted small-text">(ML / AI engineer · Gear 3)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/ml-46">Practise in app</a> <a class="btn" href="../#/drill?id=ml-46">Drill this question</a> <a class="btn ghost" href="../#/mock?role=ml&amp;level=4">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-46%3A+How+does+Direct+Preference+Optimization+%28DPO%29+eliminate+the+separate%E2%80%A6&amp;question-id=ml-46&amp;context=ML+%2F+AI+engineer%2C+Gear+4%2C+topic%3A+LLMs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-46.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

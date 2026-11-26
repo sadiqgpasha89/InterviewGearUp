@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>What causes Long Tasks (&gt;50ms) in the browser, and how do you yield to the main thread with `scheduler.yield()`? | InterviewGearUp</title>
-<meta name="description" content="A long task is any main-thread task running over 50 ms; it blocks input and rendering and hurts INP and TBT. Typical causes are big JavaScript execution,…">
+<meta name="description" content="Frontend engineer (Gear 3): A long task is any main-thread task running over 50 ms; it blocks input and rendering and hurts INP and TBT. Typical causes…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-74.html">
 <meta property="og:title" content="What causes Long Tasks (&gt;50ms) in the browser, and how do you yield to the main thread with `scheduler.yield()`? | InterviewGearUp">
-<meta property="og:description" content="A long task is any main-thread task running over 50 ms; it blocks input and rendering and hurts INP and TBT. Typical causes are big JavaScript execution,…">
+<meta property="og:description" content="Frontend engineer (Gear 3): A long task is any main-thread task running over 50 ms; it blocks input and rendering and hurts INP and TBT. Typical causes…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/fe-74.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-frontend.html">Frontend engineer</a> · <a href="../#/questions?role=frontend&amp;level=3">Open in interactive bank</a></p>
 <h1>What causes Long Tasks (&gt;50ms) in the browser, and how do you yield to the main thread with `scheduler.yield()`?</h1>
 <p class="muted small-text meta-line">Frontend engineer · Gear 3 (Senior) · Performance · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -52,9 +57,13 @@ const yieldToMain = () =&gt; globalThis.scheduler?.yield?.() ?? new Promise(r =&
 <p>Yielding too often (overhead), yielding while holding inconsistent UI state, using <code>setTimeout(0)</code> with nested throttling (4 ms clamp), and moving work to a worker with huge <code>postMessage</code> copies (use transferables).</p>
 <h4>Likely follow-ups</h4>
 <ul><li>How do you find long tasks with the Performance panel and the Long Tasks or Long Animation Frames API?</li><li>When would you move work to a Web Worker instead of yielding?</li><li>How does scheduler.postTask prioritisation differ from setTimeout yielding?</li></ul>
-<p><a class="btn primary" href="../#/q/fe-74">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="fe-41.html">How do code splitting and dynamic `import()` reduce initial JavaScript bundle size?</a> <span class="muted small-text">(Gear 2 · Performance)</span></li><li><a href="fe-42.html">What is tree shaking and what package configuration (`sideEffects`) is required for bundlers to prune unused code?</a> <span class="muted small-text">(Gear 2 · Performance)</span></li><li><a href="fe-43.html">How do you optimize image delivery using modern formats (AVIF, WebP), responsive `srcset`, and lazy loading?</a> <span class="muted small-text">(Gear 2 · Performance)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="fe-6.html">A page loads slowly on mobile. How do you diagnose and improve it?</a> <span class="muted small-text">(Frontend engineer · Gear 3)</span></li><li><a href="fe-40.html">Explain Core Web Vitals: Largest Contentful Paint (LCP), Interaction to Next Paint (INP), and Cumulative Layout Shift (CLS).</a> <span class="muted small-text">(Frontend engineer · Gear 3)</span></li><li><a href="fe-45.html">How do Web Workers offload CPU-intensive computations from the main browser UI thread?</a> <span class="muted small-text">(Frontend engineer · Gear 3)</span></li><li><a href="fe-41.html">How do code splitting and dynamic `import()` reduce initial JavaScript bundle size?</a> <span class="muted small-text">(Frontend engineer · Gear 2)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/fe-74">Practise in app</a> <a class="btn" href="../#/drill?id=fe-74">Drill this question</a> <a class="btn ghost" href="../#/mock?role=frontend&amp;level=3">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+fe-74%3A+What+causes+Long+Tasks+%28%3E50ms%29+in+the+browser%2C+and+how+do+you+yield%E2%80%A6&amp;question-id=fe-74&amp;context=Frontend+engineer%2C+Gear+3%2C+topic%3A+Performance%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Ffe-74.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

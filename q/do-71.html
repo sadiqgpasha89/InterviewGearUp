@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>How do Kubernetes Persistent Volumes (PV) and PersistentVolumeClaims (PVC) bind to cloud storage? | InterviewGearUp</title>
-<meta name="description" content="A PersistentVolume is cluster storage (a cloud disk, NFS share, CSI volume) and a PersistentVolumeClaim is a user&#39;s request for storage with a size,…">
+<meta name="description" content="DevOps / SRE / Cloud (Gear 2): A PersistentVolume is cluster storage (a cloud disk, NFS share, CSI volume) and a PersistentVolumeClaim is a user&#39;s…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-71.html">
 <meta property="og:title" content="How do Kubernetes Persistent Volumes (PV) and PersistentVolumeClaims (PVC) bind to cloud storage? | InterviewGearUp">
-<meta property="og:description" content="A PersistentVolume is cluster storage (a cloud disk, NFS share, CSI volume) and a PersistentVolumeClaim is a user&#39;s request for storage with a size,…">
+<meta property="og:description" content="DevOps / SRE / Cloud (Gear 2): A PersistentVolume is cluster storage (a cloud disk, NFS share, CSI volume) and a PersistentVolumeClaim is a user&#39;s…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-71.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-devops.html">DevOps / SRE / Cloud</a> · <a href="../#/questions?role=devops&amp;level=2">Open in interactive bank</a></p>
 <h1>How do Kubernetes Persistent Volumes (PV) and PersistentVolumeClaims (PVC) bind to cloud storage?</h1>
 <p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 2 (Mid-level) · Kubernetes · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -62,9 +67,13 @@ containers: [{ name: db, image: postgres:16, volumeMounts: [{ name: data, mountP
 <p>Using <code>Immediate</code> binding with zonal disks, forgetting Retain for production data, expecting RWO volumes to be shared, and running out of IOPS or throughput with default disk types.</p>
 <h4>Likely follow-ups</h4>
 <ul><li>What are the access modes and which cloud disks support ReadWriteMany?</li><li>How does volumeBindingMode WaitForFirstConsumer prevent zone mismatch?</li><li>What happens to the data when a PVC is deleted with Retain versus Delete reclaim policies?</li></ul>
-<p><a class="btn primary" href="../#/q/do-71">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="do-107.html">What are the core Kubernetes objects (Pod, ReplicaSet, Deployment, Service, ConfigMap, Secret) and how do they relate?</a> <span class="muted small-text">(Gear 1 · Kubernetes)</span></li><li><a href="do-106.html">What is the difference between Docker volumes and bind mounts, and how do you persist container data?</a> <span class="muted small-text">(Gear 1 · Containers)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="do-107.html">What are the core Kubernetes objects (Pod, ReplicaSet, Deployment, Service, ConfigMap, Secret) and how do they relate?</a> <span class="muted small-text">(DevOps / SRE / Cloud · Gear 1)</span></li><li><a href="do-3.html">How does a Kubernetes rolling update work? Explain readiness versus liveness probes.</a> <span class="muted small-text">(DevOps / SRE / Cloud · Gear 2)</span></li><li><a href="do-4.html">A Pod is stuck in CrashLoopBackOff. How do you debug it?</a> <span class="muted small-text">(DevOps / SRE / Cloud · Gear 2)</span></li><li><a href="do-30.html">Explain the Pod lifecycle phases (Pending, Running, Succeeded, Failed, Unknown) and container restart policies.</a> <span class="muted small-text">(DevOps / SRE / Cloud · Gear 2)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/do-71">Practise in app</a> <a class="btn" href="../#/drill?id=do-71">Drill this question</a> <a class="btn ghost" href="../#/mock?role=devops&amp;level=2">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-71%3A+How+do+Kubernetes+Persistent+Volumes+%28PV%29+and+PersistentVolumeClaims%E2%80%A6&amp;question-id=do-71&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+2%2C+topic%3A+Kubernetes%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-71.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

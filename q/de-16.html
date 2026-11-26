@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>How does the Spark Catalyst Optimizer optimize logical plans into physical execution plans? | InterviewGearUp</title>
-<meta name="description" content="Catalyst turns a query into a logical plan, analyses it against the catalog, then applies rule-based optimisations such as predicate pushdown, column…">
+<meta name="description" content="Data engineer (Gear 3): Catalyst turns a query into a logical plan, analyses it against the catalog, then applies rule-based optimisations such as…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-16.html">
 <meta property="og:title" content="How does the Spark Catalyst Optimizer optimize logical plans into physical execution plans? | InterviewGearUp">
-<meta property="og:description" content="Catalyst turns a query into a logical plan, analyses it against the catalog, then applies rule-based optimisations such as predicate pushdown, column…">
+<meta property="og:description" content="Data engineer (Gear 3): Catalyst turns a query into a logical plan, analyses it against the catalog, then applies rule-based optimisations such as…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-16.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-data.html">Data engineer</a> · <a href="../#/questions?role=data&amp;level=3">Open in interactive bank</a></p>
 <h1>How does the Spark Catalyst Optimizer optimize logical plans into physical execution plans?</h1>
 <p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Spark · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -37,9 +42,13 @@
 <ul><li>Prefer built-in functions: Catalyst can optimise them, but treats UDFs as a black box.</li><li>Keep statistics fresh for good join ordering, use hints (<code>BROADCAST</code>) when you know better, and read <code>EXPLAIN FORMATTED</code> to verify the plan.</li></ul>
 <h4>Likely follow-ups</h4>
 <ul><li>How do you read an EXPLAIN output to confirm predicate pushdown?</li><li>What does adaptive query execution (AQE) change at runtime?</li><li>How do join hints such as BROADCAST influence the physical plan?</li></ul>
-<p><a class="btn primary" href="../#/q/de-16">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="de-15.html">Explain the Apache Spark driver, executor, and cluster manager architecture.</a> <span class="muted small-text">(Gear 2 · Spark)</span></li><li><a href="de-18.html">Compare Resilient Distributed Datasets (RDD), DataFrames, and Datasets in Apache Spark.</a> <span class="muted small-text">(Gear 2 · Spark)</span></li><li><a href="de-19.html">Explain the difference between narrow transformations and wide transformations in Spark.</a> <span class="muted small-text">(Gear 2 · Spark)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="de-17.html">What is the Tungsten execution engine in Spark and how does whole-stage code generation work?</a> <span class="muted small-text">(Data engineer · Gear 3)</span></li><li><a href="de-22.html">Explain Spark memory management: Storage Memory versus Execution Memory and off-heap memory.</a> <span class="muted small-text">(Data engineer · Gear 3)</span></li><li><a href="de-69.html">What is speculative execution in Apache Spark and how does it mitigate straggler tasks?</a> <span class="muted small-text">(Data engineer · Gear 3)</span></li><li><a href="de-15.html">Explain the Apache Spark driver, executor, and cluster manager architecture.</a> <span class="muted small-text">(Data engineer · Gear 2)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/de-16">Practise in app</a> <a class="btn" href="../#/drill?id=de-16">Drill this question</a> <a class="btn ghost" href="../#/mock?role=data&amp;level=3">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-16%3A+How+does+the+Spark+Catalyst+Optimizer+optimize+logical+plans+into%E2%80%A6&amp;question-id=de-16&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Spark%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-16.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

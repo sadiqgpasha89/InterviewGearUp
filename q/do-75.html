@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>How do you architect a multi-region disaster recovery (Active-Passive vs Active-Active) strategy? | InterviewGearUp</title>
-<meta name="description" content="Pick the disaster recovery pattern from the RTO and RPO you need. Active-passive keeps a standby region that takes over on failure: cheaper and simpler,…">
+<meta name="description" content="DevOps / SRE / Cloud (Gear 4): Pick the disaster recovery pattern from the RTO and RPO you need. Active-passive keeps a standby region that takes over on…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-75.html">
 <meta property="og:title" content="How do you architect a multi-region disaster recovery (Active-Passive vs Active-Active) strategy? | InterviewGearUp">
-<meta property="og:description" content="Pick the disaster recovery pattern from the RTO and RPO you need. Active-passive keeps a standby region that takes over on failure: cheaper and simpler,…">
+<meta property="og:description" content="DevOps / SRE / Cloud (Gear 4): Pick the disaster recovery pattern from the RTO and RPO you need. Active-passive keeps a standby region that takes over on…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-75.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-devops.html">DevOps / SRE / Cloud</a> · <a href="../#/questions?role=devops&amp;level=4">Open in interactive bank</a></p>
 <h1>How do you architect a multi-region disaster recovery (Active-Passive vs Active-Active) strategy?</h1>
 <p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 4 (Lead / Staff) · Cloud · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -37,9 +42,13 @@
 <ul><li>Health checks and automated or well-rehearsed traffic failover.</li><li>Infrastructure as code so a region can be rebuilt, and replicated secrets and configuration.</li><li><strong>Avoid split brain</strong> with fencing and a quorum or tie-breaker in a third location.</li><li>Check hidden dependencies on a single region (a control plane, an identity provider, a shared service).</li><li>Regular <strong>game days</strong> that actually fail over, plus a plan for failback.</li><li>Immutable, separate backups, because replication copies corruption and deletes too.</li></ul>
 <h4>Likely follow-ups</h4>
 <ul><li>How would you decide between active-passive and active-active for a payments system?</li><li>How do you avoid split brain during a regional failover?</li><li>Why are replicas not a substitute for backups?</li></ul>
-<p><a class="btn primary" href="../#/q/do-75">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="do-92.html">What strategies minimize cloud egress costs across availability zones and regions?</a> <span class="muted small-text">(Gear 3 · Cloud)</span></li><li><a href="do-73.html">How does AWS IAM Role Assumption (`sts:AssumeRole`) enable cross-account access securely?</a> <span class="muted small-text">(Gear 3 · Cloud)</span></li><li><a href="do-74.html">How does GCP Workload Identity allow Kubernetes pods to access cloud resources without static JSON keys?</a> <span class="muted small-text">(Gear 3 · Cloud)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="do-8.html">Design a multi-region setup for a critical service with a defined RTO and RPO.</a> <span class="muted small-text">(DevOps / SRE / Cloud · Gear 4)</span></li><li><a href="de-116.html">How do you design disaster recovery and multi-region resilience for a cloud data platform?</a> <span class="muted small-text">(Data engineer · Gear 4)</span></li><li><a href="do-92.html">What strategies minimize cloud egress costs across availability zones and regions?</a> <span class="muted small-text">(DevOps / SRE / Cloud · Gear 3)</span></li><li><a href="do-115.html">How would you design a cloud landing zone and multi-account structure for a growing company?</a> <span class="muted small-text">(DevOps / SRE / Cloud · Gear 4)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/do-75">Practise in app</a> <a class="btn" href="../#/drill?id=do-75">Drill this question</a> <a class="btn ghost" href="../#/mock?role=devops&amp;level=4">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-75%3A+How+do+you+architect+a+multi-region+disaster+recovery%E2%80%A6&amp;question-id=do-75&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+4%2C+topic%3A+Cloud%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-75.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

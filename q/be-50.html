@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>What is the PACELC theorem and how does it expand upon the CAP theorem during normal operation? | InterviewGearUp</title>
-<meta name="description" content="PACELC says: if there is a Partition, choose between Availability and Consistency (as in CAP); Else, during normal operation, choose between Latency and…">
+<meta name="description" content="Backend engineer (Gear 4): PACELC says: if there is a Partition, choose between Availability and Consistency (as in CAP); Else, during normal operation,…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-50.html">
 <meta property="og:title" content="What is the PACELC theorem and how does it expand upon the CAP theorem during normal operation? | InterviewGearUp">
-<meta property="og:description" content="PACELC says: if there is a Partition, choose between Availability and Consistency (as in CAP); Else, during normal operation, choose between Latency and…">
+<meta property="og:description" content="Backend engineer (Gear 4): PACELC says: if there is a Partition, choose between Availability and Consistency (as in CAP); Else, during normal operation,…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-50.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-backend.html">Backend engineer</a> · <a href="../#/questions?role=backend&amp;level=4">Open in interactive bank</a></p>
 <h1>What is the PACELC theorem and how does it expand upon the CAP theorem during normal operation?</h1>
 <p class="muted small-text meta-line">Backend engineer · Gear 4 (Lead / Staff) · Distributed systems · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -36,9 +41,13 @@
 <p>Start from the business requirement: a shopping cart can accept stale reads (EL), a bank balance or inventory reservation usually cannot (EC). Then name what you pay: cross-region synchronous replication might add tens or hundreds of milliseconds, and a partition may make some operations unavailable. Note that the labels are simplifications: real systems offer different guarantees per operation.</p>
 <h4>Likely follow-ups</h4>
 <ul><li>Where would you place a multi-region system with strong reads and why does that cost latency?</li><li>How do quorum settings (R + W &gt; N) trade latency for consistency?</li><li>Which parts of an e-commerce system can tolerate EL and which cannot?</li></ul>
-<p><a class="btn primary" href="../#/q/be-50">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="be-49.html">Explain the trade-offs of the CAP theorem: When should a distributed system choose CP versus AP?</a> <span class="muted small-text">(Gear 3 · Distributed systems)</span></li><li><a href="be-6.html">Explain the CAP theorem and how it affects your choice of database.</a> <span class="muted small-text">(Gear 3 · Distributed systems)</span></li><li><a href="be-48.html">How does consistent hashing with virtual nodes prevent data skew and re-hashing overhead?</a> <span class="muted small-text">(Gear 3 · Distributed systems)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="be-49.html">Explain the trade-offs of the CAP theorem: When should a distributed system choose CP versus AP?</a> <span class="muted small-text">(Backend engineer · Gear 3)</span></li><li><a href="be-6.html">Explain the CAP theorem and how it affects your choice of database.</a> <span class="muted small-text">(Backend engineer · Gear 3)</span></li><li><a href="be-51.html">How does the Raft consensus algorithm elect leaders and guarantee replicated log consistency?</a> <span class="muted small-text">(Backend engineer · Gear 4)</span></li><li><a href="be-48.html">How does consistent hashing with virtual nodes prevent data skew and re-hashing overhead?</a> <span class="muted small-text">(Backend engineer · Gear 3)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/be-50">Practise in app</a> <a class="btn" href="../#/drill?id=be-50">Drill this question</a> <a class="btn ghost" href="../#/mock?role=backend&amp;level=4">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-50%3A+What+is+the+PACELC+theorem+and+how+does+it+expand+upon+the+CAP%E2%80%A6&amp;question-id=be-50&amp;context=Backend+engineer%2C+Gear+4%2C+topic%3A+Distributed+systems%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-50.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

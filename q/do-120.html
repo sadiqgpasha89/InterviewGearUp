@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>How do you design an observability architecture that scales to thousands of services while controlling cost? | InterviewGearUp</title>
-<meta name="description" content="Standardise instrumentation on OpenTelemetry with a collector tier, then set telemetry budgets: cap metric cardinality, sample traces with tail-based…">
+<meta name="description" content="DevOps / SRE / Cloud (Gear 4): Standardise instrumentation on OpenTelemetry with a collector tier, then set telemetry budgets: cap metric cardinality,…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-120.html">
 <meta property="og:title" content="How do you design an observability architecture that scales to thousands of services while controlling cost? | InterviewGearUp">
-<meta property="og:description" content="Standardise instrumentation on OpenTelemetry with a collector tier, then set telemetry budgets: cap metric cardinality, sample traces with tail-based…">
+<meta property="og:description" content="DevOps / SRE / Cloud (Gear 4): Standardise instrumentation on OpenTelemetry with a collector tier, then set telemetry budgets: cap metric cardinality,…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-120.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-devops.html">DevOps / SRE / Cloud</a> · <a href="../#/questions?role=devops&amp;level=4">Open in interactive bank</a></p>
 <h1>How do you design an observability architecture that scales to thousands of services while controlling cost?</h1>
 <p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 4 (Lead / Staff) · Observability · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -37,9 +42,13 @@
 <p>Make the observability pipeline itself resilient (queues and backpressure, multiple collectors, monitoring of the monitoring), and ensure incident tooling works when the main platform is down.</p>
 <h4>Likely follow-ups</h4>
 <ul><li>What is tail-based sampling and what does it require?</li><li>How do you control metric cardinality?</li><li>When should you consider self-hosting versus a vendor?</li></ul>
-<p><a class="btn primary" href="../#/q/do-120">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="do-59.html">How does OpenTelemetry collect, process, and export distributed traces, metrics, and logs?</a> <span class="muted small-text">(Gear 3 · Observability)</span></li><li><a href="do-57.html">How do PromQL `rate()`, `irate()`, and `histogram_quantile()` functions calculate 99th percentile latency?</a> <span class="muted small-text">(Gear 3 · Observability)</span></li><li><a href="do-58.html">How does Prometheus Alertmanager handle alert deduplication, grouping, inhibition, and silencing?</a> <span class="muted small-text">(Gear 3 · Observability)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="do-59.html">How does OpenTelemetry collect, process, and export distributed traces, metrics, and logs?</a> <span class="muted small-text">(DevOps / SRE / Cloud · Gear 3)</span></li><li><a href="do-56.html">Explain Prometheus metrics architecture: Counter, Gauge, Histogram, and Summary metric types.</a> <span class="muted small-text">(DevOps / SRE / Cloud · Gear 2)</span></li><li><a href="do-57.html">How do PromQL `rate()`, `irate()`, and `histogram_quantile()` functions calculate 99th percentile latency?</a> <span class="muted small-text">(DevOps / SRE / Cloud · Gear 3)</span></li><li><a href="do-58.html">How does Prometheus Alertmanager handle alert deduplication, grouping, inhibition, and silencing?</a> <span class="muted small-text">(DevOps / SRE / Cloud · Gear 3)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/do-120">Practise in app</a> <a class="btn" href="../#/drill?id=do-120">Drill this question</a> <a class="btn ghost" href="../#/mock?role=devops&amp;level=4">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-120%3A+How+do+you+design+an+observability+architecture+that+scales+to%E2%80%A6&amp;question-id=do-120&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+4%2C+topic%3A+Observability%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-120.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>How does the Horizontal Pod Autoscaler (HPA) scale pods based on metrics, and how does KEDA extend it? | InterviewGearUp</title>
-<meta name="description" content="The Horizontal Pod Autoscaler periodically compares an observed metric (CPU, memory, custom or external) with a target and computes desiredReplicas =…">
+<meta name="description" content="DevOps / SRE / Cloud (Gear 3): The Horizontal Pod Autoscaler periodically compares an observed metric (CPU, memory, custom or external) with a target and…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-35.html">
 <meta property="og:title" content="How does the Horizontal Pod Autoscaler (HPA) scale pods based on metrics, and how does KEDA extend it? | InterviewGearUp">
-<meta property="og:description" content="The Horizontal Pod Autoscaler periodically compares an observed metric (CPU, memory, custom or external) with a target and computes desiredReplicas =…">
+<meta property="og:description" content="DevOps / SRE / Cloud (Gear 3): The Horizontal Pod Autoscaler periodically compares an observed metric (CPU, memory, custom or external) with a target and…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-35.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-devops.html">DevOps / SRE / Cloud</a> · <a href="../#/questions?role=devops&amp;level=3">Open in interactive bank</a></p>
 <h1>How does the Horizontal Pod Autoscaler (HPA) scale pods based on metrics, and how does KEDA extend it?</h1>
 <p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 3 (Senior) · Kubernetes · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -48,9 +53,13 @@ spec:
 <p>The <strong>Vertical Pod Autoscaler</strong> adjusts requests per pod, and the <strong>Cluster Autoscaler</strong> (or Karpenter) adds nodes when pods cannot be scheduled. They work together: HPA creates pods, and the node autoscaler provides capacity.</p>
 <h4>Likely follow-ups</h4>
 <ul><li>Why must pods set resource requests for CPU-based HPA to work?</li><li>How do you avoid flapping with the scaleDown stabilisation window?</li><li>How does HPA differ from the Vertical Pod Autoscaler and the Cluster Autoscaler?</li></ul>
-<p><a class="btn primary" href="../#/q/do-35">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="do-33.html">How does a Kubernetes Service abstract pods using ClusterIP, NodePort, and LoadBalancer types?</a> <span class="muted small-text">(Gear 2 · Kubernetes)</span></li><li><a href="do-4.html">A Pod is stuck in CrashLoopBackOff. How do you debug it?</a> <span class="muted small-text">(Gear 2 · Kubernetes)</span></li><li><a href="do-30.html">Explain the Pod lifecycle phases (Pending, Running, Succeeded, Failed, Unknown) and container restart policies.</a> <span class="muted small-text">(Gear 2 · Kubernetes)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="do-88.html">What is the Vertical Pod Autoscaler (VPA) and how does it dynamically resize pod CPU and memory requests?</a> <span class="muted small-text">(DevOps / SRE / Cloud · Gear 3)</span></li><li><a href="do-33.html">How does a Kubernetes Service abstract pods using ClusterIP, NodePort, and LoadBalancer types?</a> <span class="muted small-text">(DevOps / SRE / Cloud · Gear 2)</span></li><li><a href="do-38.html">How do Kubernetes NetworkPolicies isolate traffic between namespaces and pods using CNI plugins?</a> <span class="muted small-text">(DevOps / SRE / Cloud · Gear 3)</span></li><li><a href="do-107.html">What are the core Kubernetes objects (Pod, ReplicaSet, Deployment, Service, ConfigMap, Secret) and how do they relate?</a> <span class="muted small-text">(DevOps / SRE / Cloud · Gear 1)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/do-35">Practise in app</a> <a class="btn" href="../#/drill?id=do-35">Drill this question</a> <a class="btn ghost" href="../#/mock?role=devops&amp;level=3">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-35%3A+How+does+the+Horizontal+Pod+Autoscaler+%28HPA%29+scale+pods+based+on%E2%80%A6&amp;question-id=do-35&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+3%2C+topic%3A+Kubernetes%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-35.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>How do presigned S3/GCS URLs allow clients to upload large files directly without overwhelming backend servers? | InterviewGearUp</title>
-<meta name="description" content="A presigned URL is a time-limited, signed URL that grants permission to perform one specific storage operation, such as PUT of an object. The backend…">
+<meta name="description" content="Backend engineer (Gear 2): A presigned URL is a time-limited, signed URL that grants permission to perform one specific storage operation, such as PUT of…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-69.html">
 <meta property="og:title" content="How do presigned S3/GCS URLs allow clients to upload large files directly without overwhelming backend servers? | InterviewGearUp">
-<meta property="og:description" content="A presigned URL is a time-limited, signed URL that grants permission to perform one specific storage operation, such as PUT of an object. The backend…">
+<meta property="og:description" content="Backend engineer (Gear 2): A presigned URL is a time-limited, signed URL that grants permission to perform one specific storage operation, such as PUT of…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-69.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-backend.html">Backend engineer</a> · <a href="../#/questions?role=backend&amp;level=2">Open in interactive bank</a></p>
 <h1>How do presigned S3/GCS URLs allow clients to upload large files directly without overwhelming backend servers?</h1>
 <p class="muted small-text meta-line">Backend engineer · Gear 2 (Mid-level) · Architecture · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -47,9 +52,13 @@ const url = await getSignedUrl(s3, cmd, { expiresIn: 300 });       // valid 5 mi
 <p>Long-lived URLs that leak via logs or referrers, trusting client-provided content type and size, missing CORS configuration (browser upload fails), orphaned objects without a pending-record cleanup, and signing URLs for a wrong region or endpoint.</p>
 <h4>Likely follow-ups</h4>
 <ul><li>How do multipart uploads and resumable sessions support very large files?</li><li>How do you restrict size, type and key names in a presigned upload?</li><li>How do you validate and process uploaded files safely afterwards?</li></ul>
-<p><a class="btn primary" href="../#/q/be-69">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="be-112.html">What is middleware in a web framework, and what are typical uses?</a> <span class="muted small-text">(Gear 1 · Architecture)</span></li><li><a href="be-107.html">What is dependency injection and why is it useful in backend code?</a> <span class="muted small-text">(Gear 1 · Fundamentals)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="be-38.html">How does service discovery work in microservices using client-side vs. server-side approaches?</a> <span class="muted small-text">(Backend engineer · Gear 3)</span></li><li><a href="be-94.html">How does the Strangler Fig pattern allow incrementally decomposing a legacy monolith into microservices?</a> <span class="muted small-text">(Backend engineer · Gear 3)</span></li><li><a href="be-100.html">Design a highly available, globally distributed URL shortener service handling 100k writes/sec.</a> <span class="muted small-text">(Backend engineer · Gear 3)</span></li><li><a href="be-82.html">How do background task queues (e.g., Celery, BullMQ) handle task retries, timeouts, and state tracking?</a> <span class="muted small-text">(Backend engineer · Gear 2)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/be-69">Practise in app</a> <a class="btn" href="../#/drill?id=be-69">Drill this question</a> <a class="btn ghost" href="../#/mock?role=backend&amp;level=2">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-69%3A+How+do+presigned+S3%2FGCS+URLs+allow+clients+to+upload+large+files%E2%80%A6&amp;question-id=be-69&amp;context=Backend+engineer%2C+Gear+2%2C+topic%3A+Architecture%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-69.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

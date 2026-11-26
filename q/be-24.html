@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>How do you execute zero-downtime database schema migrations using the expand-contract pattern? | InterviewGearUp</title>
-<meta name="description" content="The expand-contract (parallel change) pattern splits a breaking schema change into backward-compatible steps: expand the schema with the new structure,…">
+<meta name="description" content="Backend engineer (Gear 3): The expand-contract (parallel change) pattern splits a breaking schema change into backward-compatible steps: expand the…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-24.html">
 <meta property="og:title" content="How do you execute zero-downtime database schema migrations using the expand-contract pattern? | InterviewGearUp">
-<meta property="og:description" content="The expand-contract (parallel change) pattern splits a breaking schema change into backward-compatible steps: expand the schema with the new structure,…">
+<meta property="og:description" content="Backend engineer (Gear 3): The expand-contract (parallel change) pattern splits a breaking schema change into backward-compatible steps: expand the…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-24.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-backend.html">Backend engineer</a> · <a href="../#/questions?role=backend&amp;level=3">Open in interactive bank</a></p>
 <h1>How do you execute zero-downtime database schema migrations using the expand-contract pattern?</h1>
 <p class="muted small-text meta-line">Backend engineer · Gear 3 (Senior) · Databases · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -52,9 +57,13 @@ ALTER TABLE users DROP COLUMN fullname;</code></pre>
 <p>Dropping a column before all old pods are gone, enum or type changes that rewrite the whole table, unique indexes created without concurrency, and forgetting that rollback after the contract step is a data restore.</p>
 <h4>Likely follow-ups</h4>
 <ul><li>How do you rename a column with zero downtime step by step?</li><li>Which operations take long locks in PostgreSQL and MySQL and how do you avoid them?</li><li>How do you backfill billions of rows safely?</li></ul>
-<p><a class="btn primary" href="../#/q/be-24">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="be-74.html">What are the trade-offs of enforcing foreign keys at the database level versus the application service layer?</a> <span class="muted small-text">(Gear 2 · Databases)</span></li><li><a href="be-17.html">What is database replication lag, and how do you ensure read-your-own-writes consistency?</a> <span class="muted small-text">(Gear 2 · Databases)</span></li><li><a href="be-23.html">What are the normal forms (1NF, 2NF, 3NF) and when is denormalization preferred?</a> <span class="muted small-text">(Gear 2 · Databases)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="be-74.html">What are the trade-offs of enforcing foreign keys at the database level versus the application service layer?</a> <span class="muted small-text">(Backend engineer · Gear 2)</span></li><li><a href="be-17.html">What is database replication lag, and how do you ensure read-your-own-writes consistency?</a> <span class="muted small-text">(Backend engineer · Gear 2)</span></li><li><a href="be-23.html">What are the normal forms (1NF, 2NF, 3NF) and when is denormalization preferred?</a> <span class="muted small-text">(Backend engineer · Gear 2)</span></li><li><a href="be-73.html">How do you read a database EXPLAIN ANALYZE output and distinguish index scans from sequential scans?</a> <span class="muted small-text">(Backend engineer · Gear 2)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/be-24">Practise in app</a> <a class="btn" href="../#/drill?id=be-24">Drill this question</a> <a class="btn ghost" href="../#/mock?role=backend&amp;level=3">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-24%3A+How+do+you+execute+zero-downtime+database+schema+migrations+using%E2%80%A6&amp;question-id=be-24&amp;context=Backend+engineer%2C+Gear+3%2C+topic%3A+Databases%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-24.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

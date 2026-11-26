@@ -1677,3 +1677,36 @@ test('search: typo tolerance, related questions, prerequisites, topic listing an
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   assert.ok(html.includes('src="js/search.js"'));
 });
+
+/* ---------- Phase 12: SEO and landing page ---------- */
+test('seo: unique titles/descriptions, role landing pages, og:image, internal practice links and full sitemap', () => {
+  const files = seo.build(root);
+  const htmlFiles = Object.keys(files).filter((f) => f.endsWith('.html'));
+  const titles = new Set(), descs = new Set();
+  htmlFiles.forEach((f) => {
+    const c = files[f];
+    const tm = c.match(/<title>([^<]+)<\/title>/);
+    const dm = c.match(/<meta name="description" content="([^"]+)">/);
+    assert.ok(tm && tm[1], f + ' missing title');
+    assert.ok(dm && dm[1], f + ' missing description');
+    assert.ok(!titles.has(tm[1]), f + ' duplicate title: ' + tm[1]);
+    assert.ok(!descs.has(dm[1]), f + ' duplicate description');
+    titles.add(tm[1]); descs.add(dm[1]);
+    assert.ok(c.includes('og:image') && c.includes('og-preview.png'), f + ' missing og:image');
+    assert.ok(c.includes('summary_large_image'), f + ' missing twitter:card');
+  });
+  meta.roles.forEach((r) => {
+    const rp = 'q/role-' + r.id + '.html';
+    assert.ok(files[rp], 'missing role landing page ' + rp);
+    assert.ok(files['sitemap.xml'].includes('/' + rp), 'sitemap missing ' + rp);
+    assert.ok(files[rp].includes('#/drill?role=' + r.id), rp + ' missing practice CTA');
+  });
+  assert.ok(files['q/be-6.html'].includes('Related questions') || files['q/be-6.html'].includes('Prerequisite concepts'));
+  assert.ok(files['q/be-6.html'].includes('#/drill?id=be-6'));
+
+  const indexHtml = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  assert.ok(indexHtml.includes('rel="canonical"') && indexHtml.includes('og-preview.png'));
+  assert.ok(fs.existsSync(path.join(root, 'assets/og-preview.png')));
+  const homeJs = fs.readFileSync(path.join(root, 'js/views5.js'), 'utf8');
+  assert.ok(/no account/i.test(homeJs) && /offline/i.test(homeJs) && /Private/i.test(homeJs));
+});

@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>How would you design communication between a claims intake agent and a fraud detection agent, and how is agent-to-agent communication different from tool calling? | InterviewGearUp</title>
-<meta name="description" content="Tool calling is a function call: fixed schema, synchronous, no autonomy. Agent-to-agent (for example the A2A protocol) delegates a task to another agent…">
+<meta name="description" content="ML / AI engineer (Gear 4): Tool calling is a function call: fixed schema, synchronous, no autonomy. Agent-to-agent (for example the A2A protocol)…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-130.html">
 <meta property="og:title" content="How would you design communication between a claims intake agent and a fraud detection agent, and how is agent-to-agent communication different from tool calling? | InterviewGearUp">
-<meta property="og:description" content="Tool calling is a function call: fixed schema, synchronous, no autonomy. Agent-to-agent (for example the A2A protocol) delegates a task to another agent…">
+<meta property="og:description" content="ML / AI engineer (Gear 4): Tool calling is a function call: fixed schema, synchronous, no autonomy. Agent-to-agent (for example the A2A protocol)…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-130.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-ml.html">ML / AI engineer</a> · <a href="../#/questions?role=ml&amp;level=4">Open in interactive bank</a></p>
 <h1>How would you design communication between a claims intake agent and a fraud detection agent, and how is agent-to-agent communication different from tool calling?</h1>
 <p class="muted small-text meta-line">ML / AI engineer · Gear 4 (Lead / Staff) · Agents · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -34,9 +39,13 @@
 <ul><li>Carry a <code>trace_id</code>, <code>hop_count</code> and <code>max_hops</code> in every message; stop and hand off to a person when the limit is reached.</li><li>Use explicit <strong>terminal states</strong> (approved, referred, needs human) and a state machine for the negotiation instead of open-ended agent conversation.</li><li>Timeouts, retries with backoff, and <strong>circuit breakers</strong>: if the fraud agent is down, the claim proceeds to manual triage rather than auto-approval.</li><li>Idempotency keys so a retried task is not scored twice.</li><li>End-to-end tracing across agents, and authentication between them (mutual TLS or OAuth), with each agent authorised only for its own data.</li></ul>
 <h4>Likely follow-ups</h4>
 <ul><li>When would you use a plain tool call instead of a second agent?</li><li>What should happen if the fraud agent times out?</li><li>How do you stop the intake agent from leaking fraud signals to the claimant?</li></ul>
-<p><a class="btn primary" href="../#/q/ml-130">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="ml-137.html">Why shouldn&#39;t an LLM calculate insurance payouts and deductibles directly, and how do you design the system instead?</a> <span class="muted small-text">(Gear 3 · Agents)</span></li><li><a href="ml-134.html">Your claims triage agent loops calling the OCR tool when a customer uploads a blurry repair estimate. How do you debug and fix it?</a> <span class="muted small-text">(Gear 3 · Agents)</span></li><li><a href="ml-127.html">In LangGraph, how would you require an underwriter or adjuster to approve high-value or high-risk cases before the agent continues?</a> <span class="muted small-text">(Gear 3 · Agents)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="ml-137.html">Why shouldn&#39;t an LLM calculate insurance payouts and deductibles directly, and how do you design the system instead?</a> <span class="muted small-text">(ML / AI engineer · Gear 3)</span></li><li><a href="ml-134.html">Your claims triage agent loops calling the OCR tool when a customer uploads a blurry repair estimate. How do you debug and fix it?</a> <span class="muted small-text">(ML / AI engineer · Gear 3)</span></li><li><a href="ml-136.html">A motor claim suggests the car was used for ride-hailing, which the policy excludes. Walk through how your agent should process it.</a> <span class="muted small-text">(ML / AI engineer · Gear 4)</span></li><li><a href="ml-138.html">A stakeholder wants an agent to auto-approve 80% of health and motor claims within 5 minutes with no human involvement. How do you respond?</a> <span class="muted small-text">(ML / AI engineer · Gear 4)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/ml-130">Practise in app</a> <a class="btn" href="../#/drill?id=ml-130">Drill this question</a> <a class="btn ghost" href="../#/mock?role=ml&amp;level=4">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-130%3A+How+would+you+design+communication+between+a+claims+intake+agent+and%E2%80%A6&amp;question-id=ml-130&amp;context=ML+%2F+AI+engineer%2C+Gear+4%2C+topic%3A+Agents%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-130.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

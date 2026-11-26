@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>Explain Apache Flink time semantics: Event Time versus Processing Time versus Ingestion Time. | InterviewGearUp</title>
-<meta name="description" content="Event time is when the event happened at the source, processing time is the wall clock of the operator processing it, and ingestion time is when Flink…">
+<meta name="description" content="Data engineer (Gear 3): Event time is when the event happened at the source, processing time is the wall clock of the operator processing it, and…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-51.html">
 <meta property="og:title" content="Explain Apache Flink time semantics: Event Time versus Processing Time versus Ingestion Time. | InterviewGearUp">
-<meta property="og:description" content="Event time is when the event happened at the source, processing time is the wall clock of the operator processing it, and ingestion time is when Flink…">
+<meta property="og:description" content="Data engineer (Gear 3): Event time is when the event happened at the source, processing time is the wall clock of the operator processing it, and…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-51.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-data.html">Data engineer</a> · <a href="../#/questions?role=data&amp;level=3">Open in interactive bank</a></p>
 <h1>Explain Apache Flink time semantics: Event Time versus Processing Time versus Ingestion Time.</h1>
 <p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Streaming · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -52,9 +57,13 @@ clicks.keyBy(ClickEvent::getUserId)
 <p>Watermark delay too small (many late drops) or too large (high latency and state growth), forgetting idleness settings so windows never close, using event timestamps in the future, and clock skew across producers.</p>
 <h4>Likely follow-ups</h4>
 <ul><li>How do watermarks and allowed lateness handle late events?</li><li>How does Flink handle idle partitions that hold back watermarks?</li><li>Which time semantic would you choose for billing and for live monitoring?</li></ul>
-<p><a class="btn primary" href="../#/q/de-51">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="de-84.html">Compare Tumbling Windows, Sliding Windows, and Session Windows in real-time stream aggregation.</a> <span class="muted small-text">(Gear 2 · Streaming)</span></li><li><a href="de-48.html">How does Apache Kafka partition topics, and how do consumer groups parallelize message consumption?</a> <span class="muted small-text">(Gear 2 · Streaming)</span></li><li><a href="de-49.html">What is Kafka Connect and how do Source and Sink connectors simplify pipeline ingestion?</a> <span class="muted small-text">(Gear 2 · Streaming)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="de-83.html">How do you deduplicate incoming streaming events using stateful rocksdb storage in Apache Flink?</a> <span class="muted small-text">(Data engineer · Gear 3)</span></li><li><a href="de-84.html">Compare Tumbling Windows, Sliding Windows, and Session Windows in real-time stream aggregation.</a> <span class="muted small-text">(Data engineer · Gear 2)</span></li><li><a href="de-52.html">How does Apache Flink achieve stateful fault tolerance using asynchronous barrier checkpointing?</a> <span class="muted small-text">(Data engineer · Gear 4)</span></li><li><a href="de-53.html">How does a Two-Phase Commit Sink guarantee end-to-end exactly-once processing in stream pipelines?</a> <span class="muted small-text">(Data engineer · Gear 4)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/de-51">Practise in app</a> <a class="btn" href="../#/drill?id=de-51">Drill this question</a> <a class="btn ghost" href="../#/mock?role=data&amp;level=3">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-51%3A+Explain+Apache+Flink+time+semantics%3A+Event+Time+versus+Processing%E2%80%A6&amp;question-id=de-51&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Streaming%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-51.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

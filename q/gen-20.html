@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>Explain binary heap array representation: Parent-child index arithmetic and $O(N)$ bottom-up heapify. | InterviewGearUp</title>
-<meta name="description" content="A binary heap is a complete binary tree stored in an array: with 0-based indexes the parent of i is (i-1)/2 and the children are 2i+1 and 2i+2. Building…">
+<meta name="description" content="Software engineer (core) (Gear 2): A binary heap is a complete binary tree stored in an array: with 0-based indexes the parent of i is (i-1)/2 and the…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-20.html">
 <meta property="og:title" content="Explain binary heap array representation: Parent-child index arithmetic and $O(N)$ bottom-up heapify. | InterviewGearUp">
-<meta property="og:description" content="A binary heap is a complete binary tree stored in an array: with 0-based indexes the parent of i is (i-1)/2 and the children are 2i+1 and 2i+2. Building…">
+<meta property="og:description" content="Software engineer (core) (Gear 2): A binary heap is a complete binary tree stored in an array: with 0-based indexes the parent of i is (i-1)/2 and the…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/gen-20.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-general.html">Software engineer (core)</a> · <a href="../#/questions?role=general&amp;level=2">Open in interactive bank</a></p>
 <h1>Explain binary heap array representation: Parent-child index arithmetic and $O(N)$ bottom-up heapify.</h1>
 <p class="muted small-text meta-line">Software engineer (core) · Gear 2 (Mid-level) · Data structures · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -39,9 +44,13 @@
 <p>Priority queues, heap sort (build a heap, then repeatedly extract), top-K problems, Dijkstra, and merging K sorted lists.</p>
 <h4>Likely follow-ups</h4>
 <ul><li>Why can you not search for an arbitrary element in a heap in better than O(N)?</li><li>How does heap sort work and why is it not stable?</li><li>How would you implement decrease-key for Dijkstra with a binary heap?</li></ul>
-<p><a class="btn primary" href="../#/q/gen-20">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="gen-10.html">Compare singly linked lists and doubly linked lists: Pointer overheads and operation trade-offs.</a> <span class="muted small-text">(Gear 1 · Data structures)</span></li><li><a href="gen-9.html">How does a dynamic array manage geometric resizing, and what is the amortized cost of an append?</a> <span class="muted small-text">(Gear 1 · Data structures)</span></li><li><a href="gen-14.html">How do you implement a queue using two stacks, and what is the amortized cost per dequeue?</a> <span class="muted small-text">(Gear 1 · Data structures)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="gen-10.html">Compare singly linked lists and doubly linked lists: Pointer overheads and operation trade-offs.</a> <span class="muted small-text">(Software engineer (core) · Gear 1)</span></li><li><a href="gen-95.html">How does a Segment Tree support range sum queries and point updates in $O(\log N)$ time?</a> <span class="muted small-text">(Software engineer (core) · Gear 3)</span></li><li><a href="gen-9.html">How does a dynamic array manage geometric resizing, and what is the amortized cost of an append?</a> <span class="muted small-text">(Software engineer (core) · Gear 1)</span></li><li><a href="gen-61.html">How do you implement an LRU (Least Recently Used) cache in $O(1)$ time using a Hash Map and Doubly Linked List?</a> <span class="muted small-text">(Software engineer (core) · Gear 3)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/gen-20">Practise in app</a> <a class="btn" href="../#/drill?id=gen-20">Drill this question</a> <a class="btn ghost" href="../#/mock?role=general&amp;level=2">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+gen-20%3A+Explain+binary+heap+array+representation%3A+Parent-child+index%E2%80%A6&amp;question-id=gen-20&amp;context=Software+engineer+%28core%29%2C+Gear+2%2C+topic%3A+Data+structures%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fgen-20.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

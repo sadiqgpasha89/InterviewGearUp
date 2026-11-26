@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>How does Kubernetes handle split-brain in multi-master clusters during network partitions? | InterviewGearUp</title>
-<meta name="description" content="Kubernetes avoids split-brain by keeping all cluster state in etcd, which uses the Raft consensus protocol: only the partition holding a majority…">
+<meta name="description" content="DevOps / SRE / Cloud (Gear 4): Kubernetes avoids split-brain by keeping all cluster state in etcd, which uses the Raft consensus protocol: only the…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-89.html">
 <meta property="og:title" content="How does Kubernetes handle split-brain in multi-master clusters during network partitions? | InterviewGearUp">
-<meta property="og:description" content="Kubernetes avoids split-brain by keeping all cluster state in etcd, which uses the Raft consensus protocol: only the partition holding a majority…">
+<meta property="og:description" content="DevOps / SRE / Cloud (Gear 4): Kubernetes avoids split-brain by keeping all cluster state in etcd, which uses the Raft consensus protocol: only the…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-89.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-devops.html">DevOps / SRE / Cloud</a> · <a href="../#/questions?role=devops&amp;level=4">Open in interactive bank</a></p>
 <h1>How does Kubernetes handle split-brain in multi-master clusters during network partitions?</h1>
 <p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 4 (Lead / Staff) · Kubernetes · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -32,9 +37,13 @@
 <ul><li>Run an <strong>odd number</strong> of etcd members (3 or 5) spread across failure domains. Three tolerate one failure and five tolerate two. Never split members evenly across two sites.</li><li>Keep etcd on fast disks, monitor leader changes and fsync latency, and take regular snapshots (<code>etcdctl snapshot save</code>).</li><li>The controller manager and scheduler use leader-election leases stored in the API, so only one active instance runs at a time.</li><li>For two regions, either place the majority in one region or run separate clusters per region.</li></ul>
 <h4>Likely follow-ups</h4>
 <ul><li>What happens if you lose etcd quorum entirely, and how do you recover?</li><li>How do leases prevent two controller managers from acting at once?</li></ul>
-<p><a class="btn primary" href="../#/q/do-89">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="do-29.html">How does etcd maintain distributed consensus in Kubernetes, and what happens if etcd loses quorum?</a> <span class="muted small-text">(Gear 3 · Kubernetes)</span></li><li><a href="do-28.html">Explain the Kubernetes control plane architecture: API Server, etcd, Scheduler, and Controller Manager.</a> <span class="muted small-text">(Gear 3 · Kubernetes)</span></li><li><a href="do-36.html">What are PodDisruptionBudgets (PDB) and why are they critical during node upgrades and drain events?</a> <span class="muted small-text">(Gear 3 · Kubernetes)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="do-29.html">How does etcd maintain distributed consensus in Kubernetes, and what happens if etcd loses quorum?</a> <span class="muted small-text">(DevOps / SRE / Cloud · Gear 3)</span></li><li><a href="do-28.html">Explain the Kubernetes control plane architecture: API Server, etcd, Scheduler, and Controller Manager.</a> <span class="muted small-text">(DevOps / SRE / Cloud · Gear 3)</span></li><li><a href="do-114.html">How do you design multi-tenancy on Kubernetes: namespaces per team, shared clusters or separate clusters?</a> <span class="muted small-text">(DevOps / SRE / Cloud · Gear 4)</span></li><li><a href="do-36.html">What are PodDisruptionBudgets (PDB) and why are they critical during node upgrades and drain events?</a> <span class="muted small-text">(DevOps / SRE / Cloud · Gear 3)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/do-89">Practise in app</a> <a class="btn" href="../#/drill?id=do-89">Drill this question</a> <a class="btn ghost" href="../#/mock?role=devops&amp;level=4">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-89%3A+How+does+Kubernetes+handle+split-brain+in+multi-master+clusters%E2%80%A6&amp;question-id=do-89&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+4%2C+topic%3A+Kubernetes%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-89.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

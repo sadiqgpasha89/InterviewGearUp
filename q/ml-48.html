@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>What is the KV Cache in autoregressive LLM decoding and why does it create GPU memory bottlenecks? | InterviewGearUp</title>
-<meta name="description" content="During autoregressive decoding each new token needs the keys and values of all previous tokens in every layer. The KV cache stores them so they are…">
+<meta name="description" content="ML / AI engineer (Gear 3): During autoregressive decoding each new token needs the keys and values of all previous tokens in every layer. The KV cache…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-48.html">
 <meta property="og:title" content="What is the KV Cache in autoregressive LLM decoding and why does it create GPU memory bottlenecks? | InterviewGearUp">
-<meta property="og:description" content="During autoregressive decoding each new token needs the keys and values of all previous tokens in every layer. The KV cache stores them so they are…">
+<meta property="og:description" content="ML / AI engineer (Gear 3): During autoregressive decoding each new token needs the keys and values of all previous tokens in every layer. The KV cache…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/ml-48.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-ml.html">ML / AI engineer</a> · <a href="../#/questions?role=ml&amp;level=3">Open in interactive bank</a></p>
 <h1>What is the KV Cache in autoregressive LLM decoding and why does it create GPU memory bottlenecks?</h1>
 <p class="muted small-text meta-line">ML / AI engineer · Gear 3 (Senior) · LLMs · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -37,9 +42,13 @@
 <ul><li><strong>GQA and MQA</strong>: share K and V across heads, cutting cache several times.</li><li><strong>PagedAttention</strong> (vLLM): store the cache in fixed-size blocks, like virtual memory pages, to avoid fragmentation and allow sharing of common prefixes.</li><li><strong>KV cache quantisation</strong> (INT8 or FP8), sliding-window or sparse attention, and offloading to CPU.</li><li><strong>Prefix caching</strong> to reuse the cache for shared system prompts.</li><li>Continuous batching and speculative decoding improve throughput.</li></ul>
 <h4>Likely follow-ups</h4>
 <ul><li>How do you estimate KV cache size for a given model and context?</li><li>How do grouped-query attention and PagedAttention reduce the cost?</li><li>What is the difference between the prefill and decode phases?</li></ul>
-<p><a class="btn primary" href="../#/q/ml-48">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="ml-4.html">What is RAG, and how does it work? Where does it fail?</a> <span class="muted small-text">(Gear 2 · LLMs)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="ml-49.html">How does PagedAttention (vLLM) allocate KV cache memory non-contiguously like virtual memory in operating systems?</a> <span class="muted small-text">(ML / AI engineer · Gear 4)</span></li><li><a href="ml-50.html">Explain FlashAttention: How does hardware-aware tiling compute exact attention without materializing $N \times N$ attention matrices?</a> <span class="muted small-text">(ML / AI engineer · Gear 4)</span></li><li><a href="ml-47.html">Compare LLM quantization approaches: Post-Training Quantization (PTQ) versus Quantization-Aware Training (QAT).</a> <span class="muted small-text">(ML / AI engineer · Gear 3)</span></li><li><a href="ml-99.html">How does Speculative Decoding accelerate LLM token generation using a small draft model and verification?</a> <span class="muted small-text">(ML / AI engineer · Gear 3)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/ml-48">Practise in app</a> <a class="btn" href="../#/drill?id=ml-48">Drill this question</a> <a class="btn ghost" href="../#/mock?role=ml&amp;level=3">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+ml-48%3A+What+is+the+KV+Cache+in+autoregressive+LLM+decoding+and+why+does+it%E2%80%A6&amp;question-id=ml-48&amp;context=ML+%2F+AI+engineer%2C+Gear+3%2C+topic%3A+LLMs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fml-48.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

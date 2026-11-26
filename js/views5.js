@@ -40,12 +40,12 @@
         const mins = h('select', { id: 'ob-mins' }, DB.ONBOARDING_MINUTES.map(function (m) { return h('option', { value: String(m), selected: m === 30 }, m + ' minutes'); }));
 
         fill(app, h('div', { class: 'home onboarding' },
-          h('h1', null, 'Prepare for your next tech interview'),
-          h('p', { class: 'lede' }, 'Free interview practice for ' + meta.roles.length + ' IT roles, junior to staff. Tell us what you are aiming for and you get a short daily plan: questions to learn, reviews that are due and a mock round every few days.'),
+          h('h1', null, 'Your personal, evidence-based interview coach'),
+          h('p', { class: 'lede' }, 'Built for engineers and tech leads across ' + meta.roles.length + ' IT roles, from first job (Gear 1) to Staff/EM (Gear 4). Unlike a static question list, InterviewGearUp turns preparation into a structured Assess → Plan → Practice → Revise → Simulate loop.'),
           h('ul', { class: 'ob-points' },
-            h('li', null, h('strong', null, 'Private. '), 'Everything is saved only in this browser. No account, nothing uploaded, no tracking.'),
-            h('li', null, h('strong', null, 'Works offline. '), 'Install it as an app; AI features are optional and use your own key.'),
-            h('li', null, h('strong', null, 'Honest. '), 'Answers say whether a person has reviewed them. The plan is a rule-based schedule, not a prediction.')),
+            h('li', null, h('strong', null, 'Free & no account required. '), 'Start preparing in under a minute — no sign-up, no paywall, no tracking.'),
+            h('li', null, h('strong', null, 'Private by default & offline-ready. '), 'All progress, notes, STAR stories, and plans stay in this browser and keep working offline. Optional AI feedback uses your own key.'),
+            h('li', null, h('strong', null, 'Practice beyond reading. '), 'Adaptive daily plans, spaced repetition, timed drills, rubric-scored mocks, a JavaScript coding lab, system design workspace, and transparent readiness evidence.')),
           h('form', { class: 'plan-form ob-form', novalidate: true, onsubmit: function (ev) {
             ev.preventDefault();
             const g = app.querySelector('input[name="ob-gear"]:checked');

@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>Explain Kafka producer acknowledgment settings: `acks=0`, `acks=1`, and `acks=all`. | InterviewGearUp</title>
-<meta name="description" content="acks controls how many brokers must confirm a write. acks=0 does not wait, so it is fastest and can lose data silently. acks=1 waits for the leader only,…">
+<meta name="description" content="Data engineer (Gear 2): acks controls how many brokers must confirm a write. acks=0 does not wait, so it is fastest and can lose data silently. acks=1…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-81.html">
 <meta property="og:title" content="Explain Kafka producer acknowledgment settings: `acks=0`, `acks=1`, and `acks=all`. | InterviewGearUp">
-<meta property="og:description" content="acks controls how many brokers must confirm a write. acks=0 does not wait, so it is fastest and can lose data silently. acks=1 waits for the leader only,…">
+<meta property="og:description" content="Data engineer (Gear 2): acks controls how many brokers must confirm a write. acks=0 does not wait, so it is fastest and can lose data silently. acks=1…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-81.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-data.html">Data engineer</a> · <a href="../#/questions?role=data&amp;level=2">Open in interactive bank</a></p>
 <h1>Explain Kafka producer acknowledgment settings: `acks=0`, `acks=1`, and `acks=all`.</h1>
 <p class="muted small-text meta-line">Data engineer · Gear 2 (Mid-level) · Streaming · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -34,9 +39,11 @@
 <p>Metrics or logs where occasional loss is fine: <code>acks=1</code> or even 0. Payments, orders and anything you cannot afford to lose: <code>acks=all</code>, replication factor 3, <code>min.insync.replicas=2</code>, idempotent producer.</p>
 <h4>Likely follow-ups</h4>
 <ul><li>What does min.insync.replicas do when only one replica is in sync?</li><li>How does the idempotent producer prevent duplicates on retry?</li><li>What is the risk of unclean leader election?</li></ul>
-<p><a class="btn primary" href="../#/q/de-81">Practise this question in the app</a></p>
+<h4>Related questions</h4>
+<ul><li><a href="de-48.html">How does Apache Kafka partition topics, and how do consumer groups parallelize message consumption?</a> <span class="muted small-text">(Data engineer · Gear 2)</span></li><li><a href="de-82.html">How do Kafka log retention policies balance disk space with consumer replay requirements?</a> <span class="muted small-text">(Data engineer · Gear 2)</span></li><li><a href="de-50.html">How does Confluent Schema Registry enforce Backward, Forward, and Full schema compatibility?</a> <span class="muted small-text">(Data engineer · Gear 3)</span></li><li><a href="de-49.html">What is Kafka Connect and how do Source and Sink connectors simplify pipeline ingestion?</a> <span class="muted small-text">(Data engineer · Gear 2)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/de-81">Practise in app</a> <a class="btn" href="../#/drill?id=de-81">Drill this question</a> <a class="btn ghost" href="../#/mock?role=data&amp;level=2">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-81%3A+Explain+Kafka+producer+acknowledgment+settings%3A+%60acks%3D0%60%2C+%60acks%3D1%60%2C%E2%80%A6&amp;question-id=de-81&amp;context=Data+engineer%2C+Gear+2%2C+topic%3A+Streaming%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-81.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

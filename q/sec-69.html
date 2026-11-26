@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>How do you prevent Mass Assignment and Broken Function-Level Authorization in RESTful APIs? | InterviewGearUp</title>
-<meta name="description" content="Prevent mass assignment by never binding request bodies directly to domain models: use explicit DTOs or allow-lists of writable fields, and mark…">
+<meta name="description" content="Security engineer (Gear 3): Prevent mass assignment by never binding request bodies directly to domain models: use explicit DTOs or allow-lists of…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-69.html">
 <meta property="og:title" content="How do you prevent Mass Assignment and Broken Function-Level Authorization in RESTful APIs? | InterviewGearUp">
-<meta property="og:description" content="Prevent mass assignment by never binding request bodies directly to domain models: use explicit DTOs or allow-lists of writable fields, and mark…">
+<meta property="og:description" content="Security engineer (Gear 3): Prevent mass assignment by never binding request bodies directly to domain models: use explicit DTOs or allow-lists of…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/sec-69.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-security.html">Security engineer</a> · <a href="../#/questions?role=security&amp;level=3">Open in interactive bank</a></p>
 <h1>How do you prevent Mass Assignment and Broken Function-Level Authorization in RESTful APIs?</h1>
 <p class="muted small-text meta-line">Security engineer · Gear 3 (Senior) · APIs · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -49,9 +54,13 @@ app.use((req, res, next) =&gt; policy[`${req.method} ${req.route.path}`]?.some(r
 <p>Using the ORM entity as the API contract, trusting the front end to hide functions, authorisation only in the gateway, forgetting that new endpoints inherit no default policy, and allowing clients to set ownership or tenant fields.</p>
 <h4>Likely follow-ups</h4>
 <ul><li>How does binding a JSON body straight into an ORM entity enable privilege escalation through fields like isAdmin?</li><li>What is the difference between BOLA and BFLA and how do you test for each?</li><li>How do you structure authorization so new endpoints are protected by default?</li></ul>
-<p><a class="btn primary" href="../#/q/sec-69">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="sec-70.html">How do you secure outgoing and incoming webhooks using HMAC signatures and timestamp replay checks?</a> <span class="muted small-text">(Gear 2 · APIs)</span></li><li><a href="sec-13.html">Explain Broken Object-Level Authorization (BOLA/IDOR) and how to enforce object ownership checks.</a> <span class="muted small-text">(Gear 2 · AppSec)</span></li><li><a href="be-10.html">How do GraphQL and REST compare, and how do you resolve the GraphQL N+1 problem?</a> <span class="muted small-text">(Gear 2 · APIs)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="sec-73.html">How do you prevent GraphQL Denial of Service attacks using query depth limiting and query cost analysis?</a> <span class="muted small-text">(Security engineer · Gear 3)</span></li><li><a href="sec-70.html">How do you secure outgoing and incoming webhooks using HMAC signatures and timestamp replay checks?</a> <span class="muted small-text">(Security engineer · Gear 2)</span></li><li><a href="sec-13.html">Explain Broken Object-Level Authorization (BOLA/IDOR) and how to enforce object ownership checks.</a> <span class="muted small-text">(Security engineer · Gear 2)</span></li><li><a href="qa-69.html">How do you test for Broken Object-Level Authorization (BOLA/IDOR) in automated API suites?</a> <span class="muted small-text">(QA / SDET · Gear 3)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/sec-69">Practise in app</a> <a class="btn" href="../#/drill?id=sec-69">Drill this question</a> <a class="btn ghost" href="../#/mock?role=security&amp;level=3">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+sec-69%3A+How+do+you+prevent+Mass+Assignment+and+Broken+Function-Level%E2%80%A6&amp;question-id=sec-69&amp;context=Security+engineer%2C+Gear+3%2C+topic%3A+APIs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fsec-69.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>

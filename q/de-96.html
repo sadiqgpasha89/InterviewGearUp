@@ -5,12 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>Design a high-throughput clickstream event ingestion pipeline handling 500,000 events/second. | InterviewGearUp</title>
-<meta name="description" content="At 500,000 events per second, use a partitioned log (Kafka or Kinesis) behind a stateless, autoscaled collector tier, compress and batch on the client,…">
+<meta name="description" content="Data engineer (Gear 3): At 500,000 events per second, use a partitioned log (Kafka or Kinesis) behind a stateless, autoscaled collector tier, compress…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-96.html">
 <meta property="og:title" content="Design a high-throughput clickstream event ingestion pipeline handling 500,000 events/second. | InterviewGearUp">
-<meta property="og:description" content="At 500,000 events per second, use a partitioned log (Kafka or Kinesis) behind a stateless, autoscaled collector tier, compress and batch on the client,…">
+<meta property="og:description" content="Data engineer (Gear 3): At 500,000 events per second, use a partitioned log (Kafka or Kinesis) behind a stateless, autoscaled collector tier, compress…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/de-96.html">
+<meta property="og:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sadiqgpasha89.github.io/InterviewGearUp/assets/og-preview.png">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +24,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="top-in"><a class="brand" href="../"><span>InterviewGearUp</span></a></div></header>
 <main id="main" class="static-page">
-<p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
+<p class="muted small-text"><a href="index.html">All questions</a> · <a href="role-data.html">Data engineer</a> · <a href="../#/questions?role=data&amp;level=3">Open in interactive bank</a></p>
 <h1>Design a high-throughput clickstream event ingestion pipeline handling 500,000 events/second.</h1>
 <p class="muted small-text meta-line">Data engineer · Gear 3 (Senior) · Ingestion · Difficulty: hard · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
@@ -52,9 +57,13 @@
 <p>Too few partitions (cannot scale consumers later without rekeying), unbounded keys causing skew, no idempotency (retries create duplicates), schema chaos from many client versions, tiny files in the lake, and processing everything synchronously in the collector.</p>
 <h4>Likely follow-ups</h4>
 <ul><li>How do you size Kafka partitions and brokers for this throughput?</li><li>How do you handle bursts, late events and duplicates?</li><li>How would you design the serving layer for real-time and batch dashboards?</li></ul>
-<p><a class="btn primary" href="../#/q/de-96">Practise this question in the app</a></p>
+<h4>Prerequisite concepts</h4>
+<ul><li><a href="de-94.html">How do you efficiently ingest and flatten semi-structured nested JSON arrays into tabular warehouses?</a> <span class="muted small-text">(Gear 2 · Ingestion)</span></li><li><a href="de-49.html">What is Kafka Connect and how do Source and Sink connectors simplify pipeline ingestion?</a> <span class="muted small-text">(Gear 2 · Streaming)</span></li><li><a href="de-105.html">What are the main stages of a data pipeline, from ingestion to serving?</a> <span class="muted small-text">(Gear 1 · Pipelines)</span></li></ul>
+<h4>Related questions</h4>
+<ul><li><a href="de-94.html">How do you efficiently ingest and flatten semi-structured nested JSON arrays into tabular warehouses?</a> <span class="muted small-text">(Data engineer · Gear 2)</span></li><li><a href="de-60.html">What is Change Data Capture (CDC) and how does Debezium stream database changes into Kafka?</a> <span class="muted small-text">(Data engineer · Gear 3)</span></li><li><a href="de-6.html">Design a clickstream analytics pipeline.</a> <span class="muted small-text">(Data engineer · Gear 3)</span></li><li><a href="de-49.html">What is Kafka Connect and how do Source and Sink connectors simplify pipeline ingestion?</a> <span class="muted small-text">(Data engineer · Gear 2)</span></li></ul>
+<p class="q-actions"><a class="btn primary" href="../#/q/de-96">Practise in app</a> <a class="btn" href="../#/drill?id=de-96">Drill this question</a> <a class="btn ghost" href="../#/mock?role=data&amp;level=3">Mock interview</a></p>
 <p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+de-96%3A+Design+a+high-throughput+clickstream+event+ingestion+pipeline%E2%80%A6&amp;question-id=de-96&amp;context=Data+engineer%2C+Gear+3%2C+topic%3A+Ingestion%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fde-96.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
-<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
+<footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../#/home">Open the app</a> · <a href="index.html">All questions</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>
 </html>
