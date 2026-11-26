@@ -121,11 +121,19 @@ Source: the product improvement plan (23 phases). This release does Phases 0 to 
 | 7 Coding lab | Done, async problems still open | Seven new JavaScript problems covering linked lists, trees, graphs, queues (topological sort), backtracking, heaps and dynamic programming (15 in total), each with reference solution, edge-case tests and wrong-solution tests. Every problem shows a target complexity and an estimated time. Test summaries name the first failure; errors say whether the code did not run, timed out or crashed. Phone editor uses 16 px text and no wrapping. The lab states that client-side tests are practice feedback, not a secure grading boundary. New problems are JavaScript-only for now and say so. Still open: JavaScript async/concurrency problems need async support in the worker runner. |
 | 8 System design workspace | Done | Interview steps as checkpoints, an editable capacity calculator that shows its arithmetic, nine failure scenarios (database, queue lag, hot keys, retry storms, regional outage, inconsistency, traffic spike, cache failure, abuse), separate observability and security sections, an SVG diagram preview with SVG and Mermaid downloads, a print or PDF view, staged reference reveal with a stage counter, and a rubric that shows the evidence behind each score and covers failures, observability and security. |
 
+## v1.9: stories, company preparation and search (plan phases 9 to 11)
+
+| Phase | Status | What changed |
+|---|---|---|
+| 9 Behavioral story bank | Done | Expanded to 12 competencies (`influence` and `learning` added), STAR-L field prompts, action-depth and overuse checks, keyword + tag question matching, timed 2-minute behavioral practice mode with post-attempt reflections saved locally (`storyPractice` in backups). |
+| 10 Company preparation | Done | Report freshness indicators and stale (> 18 months) warnings, inline role/gear/round/freshness/verification filters, duplicate detection, correction/PII report links, official-vs-community checklist separation, and sensitive-data pre-post warnings. |
+| 11 Search and discovery | Done | `js/search.js`: relevance ranking prioritizing exact question and topic matches, bidirectional acronym expansion (`k8s`, `authn`, `cicd`, etc.), bounded typo tolerance with "Did you mean" suggestions, topic filter in sidebar, prerequisite concepts and related questions inside cards, random question button, and Back/Forward filter history with route focus management. |
+
 ## Next
 
-- [ ] Phases 5 to 17 and 18 to 22 from the product improvement plan (see `docs/PRODUCT_GAP_AUDIT.md` for priorities).
+- [ ] Phases 12 to 17 and 18 to 22 from the product improvement plan (see `docs/PRODUCT_GAP_AUDIT.md` for priorities).
 - [ ] People to work through the review queue in `docs/CONTENT_QUALITY.md`; merge single-question topics.
-- [ ] Mobile header still wraps to two rows below about 420 px; move focus to the main region on route change.
+- [ ] Mobile header still wraps to two rows below about 420 px.
 
 - [ ] Keep writing answers for the questions that still have only a practice structure (`npm run content:status` lists them) and have people review the AI-drafted ones, then set `reviewStatus: 'reviewed'` with a date.
 - [ ] Retire semantic-duplicate placeholder questions.

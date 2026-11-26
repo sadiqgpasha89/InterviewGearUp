@@ -10,7 +10,7 @@ const root = path.join(__dirname, '..');
 const ctx = { setTimeout, clearTimeout, AbortController, URL };
 ctx.window = ctx;
 vm.createContext(ctx);
-['js/config.js', 'js/quality.js', 'js/engine.js', 'js/srs.js', 'js/migrate.js', 'js/ai.js', 'js/adaptive.js', 'js/planner.js', 'js/mock.js', 'js/dashboard.js', 'js/stories.js', 'js/jd.js', 'js/design.js', 'data/design.js', 'js/coding-core.js', 'data/coding.js', 'data/coding-langs.js', 'js/company.js', 'js/voice.js', 'js/readiness.js']
+['js/config.js', 'js/quality.js', 'js/engine.js', 'js/search.js', 'js/srs.js', 'js/migrate.js', 'js/ai.js', 'js/adaptive.js', 'js/planner.js', 'js/mock.js', 'js/dashboard.js', 'js/stories.js', 'js/jd.js', 'js/design.js', 'data/design.js', 'js/coding-core.js', 'data/coding.js', 'data/coding-langs.js', 'js/company.js', 'js/voice.js', 'js/readiness.js']
   .concat(require('../scripts/lib/data-files').dataFiles(root))
   .forEach((f) => vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f }));
 
@@ -1493,7 +1493,7 @@ test('readiness: rounds use coding, design, story and mock evidence; target job 
   const r = RD.assess(rdBase({ coding, stories, mocks, jdTarget: { title: 'Backend', skills: ['messaging', 'azure'], role: 'backend', level: 2 } }));
   const rd = (id) => r.rounds.find((x) => x.id === id);
   assert.equal(rd('coding').status, 'strong'); assert.ok(/5 of 6/.test(rd('coding').evidence));
-  assert.equal(rd('behavioral').status, 'strong'); assert.ok(/7 of 10 competencies/.test(rd('behavioral').evidence));
+  assert.equal(rd('behavioral').status, 'strong'); assert.ok(/7 of 12 competencies/.test(rd('behavioral').evidence));
   assert.equal(rd('mock').status, 'strong');
   assert.equal(rd('design').status, 'not-assessed');
   assert.equal(r.jd.skills.length, 2);
@@ -1576,4 +1576,104 @@ test('design: diagram layout puts nodes after their predecessors and survives cy
   assert.equal(self.nodes.length, 2);
   const v = fs.readFileSync(path.join(root, 'js/views2.js'), 'utf8');
   assert.ok(v.includes('createElementNS') && v.includes("'image/svg+xml'") && v.includes('window.print()'));
+});
+
+/* ---------- Phase 9: behavioral story bank improvements ---------- */
+test('stories: 12 competencies, action depth, overuse detection and timed practice history', () => {
+  assert.equal(ST.TAGS.length, 12);
+  assert.ok(ST.TAGS.includes('influence') && ST.TAGS.includes('learning'));
+  assert.equal(ST.PROMPTS.length, 12);
+  assert.ok(arr(ST.tagsForQuestion('Tell me how you influenced leadership without authority.')).includes('influence'));
+  assert.ok(arr(ST.tagsForQuestion('How did you learn a new technology quickly?')).includes('learning'));
+
+  const longSit = ST.clean({
+    title: 'Long setup', tags: ['delivery'], questionIds: ['be-1'],
+    situation: 'word '.repeat(25).trim(), task: 'I owned the delivery of the migration.',
+    action: 'I wrote tests and shipped.', result: 'Cut deploy time by 35%.', lessons: 'Keep rollouts small.'
+  }).story;
+  assert.ok(arr(ST.suggest(longSit)).some((n) => /Action depth/.test(n)));
+  assert.equal(ST.completeness(longSit).score, 4);
+
+  const over = ST.clean({ title: 'Everything story', tags: ['ownership', 'conflict', 'failure', 'leadership', 'delivery'], questionIds: ['q1', 'q2', 'q3', 'q4'] }).story;
+  const ov = ST.overused([over]);
+  assert.equal(ov.length, 1);
+  assert.ok(/Linked to 4 questions/.test(ov[0].reason));
+
+  const q = { id: 'q-99', q: 'Tell me about a database outage you debugged.' };
+  const s = ST.clean({ title: 'Database outage in checkout', tags: ['failure'], situation: 'Database primary crashed.', action: 'I promoted the replica.' }).story;
+  const matches = ST.storiesFor([s], q);
+  assert.equal(matches.length, 1);
+  assert.ok(matches[0].why.includes('tags: failure'));
+
+  let hist = [];
+  for (let i = 0; i < ST.MAX_PRACTICE + 5; i++) hist = ST.recordAttempt(hist, { day: '2026-11-26', qid: 'q1', question: 'Q', secs: 95, reflection: 'Tighten situation', rating: 'solid' });
+  assert.equal(hist.length, ST.MAX_PRACTICE);
+  assert.equal(hist[0].secs, 95);
+  assert.ok(p14.IGU.stats.BACKUP_KEYS.includes('storyPractice'));
+});
+
+/* ---------- Phase 10: company preparation quality ---------- */
+test('company: freshness indicators, stale detection, filters, duplicate check and PII hints', () => {
+  const now = '2026-11-26T00:00:00Z';
+  assert.equal(CO.freshness(post({ createdAt: '2026-10-01' }), now).id, 'recent');
+  assert.equal(CO.freshness(post({ createdAt: '2025-11-01' }), now).id, 'aging');
+  assert.equal(CO.freshness(post({ createdAt: '2024-01-01' }), now).stale, true);
+  assert.equal(CO.statusOf(post({ labels: ['pii'] })), 'hidden');
+
+  const items = [
+    post({ id: '1', company: 'Acme', role: 'backend', level: 3, round: 'Coding', createdAt: '2026-10-15', question: 'Design a distributed cache with consistent hashing and TTL eviction', labels: ['approved'] }),
+    post({ id: '2', company: 'Acme', role: 'backend', level: 3, round: 'Coding', createdAt: '2026-10-10', question: 'Design a distributed cache using consistent hashing and TTL eviction', labels: [] }),
+    post({ id: '3', company: 'Acme', role: 'frontend', level: 2, round: 'System design', createdAt: '2024-01-10', question: 'Build a collaborative rich text editor', labels: [] })
+  ];
+  const s = CO.summarize(items, 'Acme', now);
+  assert.equal(s.recentCount, 2);
+  assert.equal(s.staleCount, 1);
+  assert.equal(s.duplicatePairs.length, 1);
+  assert.equal(CO.filter(items, { role: 'frontend', freshness: 'stale' }, now).length, 1);
+  assert.equal(CO.filter(items, { status: 'approved' }, now).length, 1);
+  assert.ok(CO.checklist(s).some((c) => /older than 18 months/.test(c)));
+  assert.ok(CO.reportUrl(items[0]).startsWith('https://github.com/'));
+  assert.ok(CO.hasSensitiveHint('Contact bob@acme.com under NDA').length >= 2);
+  assert.equal(CO.hasSensitiveHint('Describe how you design a rate limiter.').length, 0);
+});
+
+/* ---------- Phase 11: search and content discovery ---------- */
+const SE = IGU.search;
+test('search: relevance ranking prioritizes question/topic matches and expands acronyms', () => {
+  const k8s = SE.query(bank, 'k8s', {});
+  assert.ok(k8s.items.length >= 3, 'k8s expands to kubernetes');
+  assert.ok(/kubernetes/i.test(k8s.items[0].q + ' ' + k8s.items[0].topic));
+
+  const cap = SE.query(bank, 'CAP theorem', {});
+  assert.ok(cap.items.length >= 1);
+  assert.ok(/CAP/i.test(cap.items[0].q), 'exact question match ranks first: ' + cap.items[0].q);
+
+  const auth = SE.query(bank, 'authn', {});
+  assert.ok(auth.items.length >= 1);
+
+  const multi = SE.query(bank, 'react reconciliation keys', {});
+  assert.ok(multi.items.length >= 1);
+  assert.ok(/reconciliation/i.test(multi.items[0].q));
+});
+
+test('search: typo tolerance, related questions, prerequisites, topic listing and random picker', () => {
+  const typo = SE.query(bank, 'kubernetse', {});
+  assert.ok(typo.items.length >= 1, '1-edit transposition still finds Kubernetes');
+  assert.ok(typo.suggestions.includes('kubernetes'), 'suggests real word: ' + JSON.stringify(typo.suggestions));
+
+  const sr = bank.find((x) => x.id === 'be-6');
+  const rel = SE.related(sr, bank, 4);
+  assert.ok(rel.length >= 2 && rel.every((x) => x.id !== sr.id));
+  const prereqs = SE.prerequisites(sr, bank, 3);
+  assert.ok(prereqs.every((x) => x.level < sr.level));
+
+  const topics = SE.topics(bank, { role: 'backend' });
+  assert.ok(topics.length >= 5 && topics[0].count >= topics[topics.length - 1].count);
+
+  const pick = SE.pickRandom([{ id: 'a' }, { id: 'b' }], 'a', () => 0);
+  assert.equal(pick.id, 'b');
+  assert.equal(SE.pickRandom([], 'a'), null);
+
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  assert.ok(html.includes('src="js/search.js"'));
 });

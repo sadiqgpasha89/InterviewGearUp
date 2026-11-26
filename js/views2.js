@@ -50,10 +50,11 @@
   IGU.routes.stories = {
     title: 'Behavioral stories',
     render: function () {
-      const u = ui(), h = u.h, store = u.store, app = u.app;
+      const u = ui(), h = u.h, store = u.store, app = u.app, day = u.today();
       const load = function () { return (store.get('stories', []) || []).map(function (s) { return ST.clean(s).story; }); };
       const save = function (list) { store.set('stories', list.slice(0, ST.MAX_STORIES)); };
-      let query = '', tag = '';
+      const clock = function (s) { s = Math.max(0, Math.floor(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+      let query = '', tag = '', status = '';
       const root = h('div', { class: 'plan-page' });
       fill(app, root);
       list();
@@ -61,18 +62,25 @@
       function list() {
         const stories = load();
         const cov = ST.coverage(stories);
-        const shown = ST.search(stories, query, tag);
+        const over = ST.overused(stories);
         const qIn = h('input', { id: 'st-q', type: 'search', placeholder: 'Search your stories', value: query, 'aria-label': 'Search your stories', oninput: function () { query = qIn.value; paintList(); } });
-        const tagSel = h('select', { id: 'st-tag', 'aria-label': 'Filter by tag', onchange: function () { tag = tagSel.value; paintList(); } }, [h('option', { value: '' }, 'All tags')].concat(ST.TAGS.map(function (t) { return h('option', { value: t }, t); })));
+        const tagSel = h('select', { id: 'st-tag', 'aria-label': 'Filter by competency', onchange: function () { tag = tagSel.value; paintList(); } }, [h('option', { value: '' }, 'All competencies')].concat(ST.TAGS.map(function (t) { return h('option', { value: t }, t); })));
         tagSel.value = tag;
+        const stSel = h('select', { id: 'st-status', 'aria-label': 'Filter by status', onchange: function () { status = stSel.value; paintList(); } }, [
+          h('option', { value: '' }, 'All statuses'),
+          h('option', { value: 'complete' }, 'Complete STAR'),
+          h('option', { value: 'draft' }, 'Drafts (needs work)')
+        ]);
+        stSel.value = status;
         const results = h('div', { 'aria-live': 'polite' });
         function paintList() {
-          const rows = ST.search(load(), query, tag);
+          const rows = ST.search(load(), query, tag, status);
           fill(results, rows.length ? h('ul', { class: 'story-list' }, rows.map(function (s) {
             const c = ST.completeness(s);
             return h('li', null,
-              h('div', { class: 'story-h' }, h('strong', null, s.title), ' ', h('span', { class: 'muted small-text' }, c.complete ? 'complete' : 'draft: missing ' + c.missing.join(', '))),
-              h('div', { class: 'muted small-text' }, s.tags.join(', ') || 'no tags'),
+              h('div', { class: 'story-h' }, h('strong', null, s.title), ' ',
+                h('span', { class: 'pill ' + (c.complete ? 'conf-high' : 'conf-medium') }, 'STAR ' + c.score + '/' + c.max + (c.complete ? '' : ' · missing ' + c.missing.join(', ')))),
+              h('div', { class: 'muted small-text' }, (s.tags.join(', ') || 'no tags') + ' · ' + s.questionIds.length + ' linked question' + (s.questionIds.length === 1 ? '' : 's') + (c.hasLessons ? ' · has reflection' : '')),
               h('div', { class: 'q-actions' },
                 h('button', { class: 'btn small', type: 'button', onclick: function () { edit(s); } }, 'Edit'),
                 h('button', { class: 'btn small ghost', type: 'button', onclick: function () { download('story-' + s.id + '.md', ST.toMarkdown(s), 'text/markdown'); } }, 'Export'),
@@ -80,37 +88,129 @@
                   if (!confirm('Delete "' + s.title + '"? This cannot be undone.')) return;
                   save(load().filter(function (x) { return x.id !== s.id; })); list();
                 } }, 'Delete')));
-          })) : h('p', { class: 'muted' }, stories.length ? 'No stories match this search.' : 'No stories yet. Write your first from a real experience; the site never writes one for you.'));
+          })) : h('p', { class: 'muted' }, stories.length ? 'No stories match this filter.' : 'No stories yet. Write your first from a real experience; the site never writes one for you.'));
         }
-        fill(root, 
+        fill(root,
           h('h1', null, 'Behavioral stories'),
-          h('p', { class: 'lede' }, 'Keep your own experiences as reusable stories and match them to questions. They stay in this browser unless you ask an AI provider for feedback on one.'),
-          h('div', { class: 'tag-cov', role: 'group', 'aria-label': 'Story coverage by tag' }, ST.TAGS.map(function (t) {
-            return h('span', { class: 'chip' + (cov.by[t] ? ' on' : '') }, t + ': ' + cov.by[t]);
+          h('p', { class: 'lede' }, 'Keep your own experiences as private, reusable STAR-L stories and practise delivering them under time. Stored only in this browser unless you request AI feedback on a single story.'),
+          h('div', { class: 'tag-cov', role: 'group', 'aria-label': 'Story coverage by competency' }, ST.TAGS.map(function (t) {
+            return h('button', { type: 'button', class: 'chip' + (cov.by[t] ? ' on' : ''), 'aria-pressed': tag === t ? 'true' : 'false', onclick: function () { tag = tag === t ? '' : t; tagSel.value = tag; paintList(); list(); } }, t + ': ' + cov.by[t]);
           })),
-          cov.uncovered.length ? h('p', { class: 'muted small-text' }, 'No story yet for: ' + cov.uncovered.join(', ') + '.') : h('p', { class: 'notice ok' }, 'Every tag has at least one story.'),
+          cov.uncovered.length ? h('p', { class: 'muted small-text' }, 'Missing competencies (' + cov.uncovered.length + '): ' + cov.uncovered.join(', ') + '.') : h('p', { class: 'notice ok' }, 'All ' + ST.TAGS.length + ' competencies have at least one story.'),
+          over.length ? h('div', { class: 'notice' }, h('strong', null, 'Overused story check: '), h('ul', null, over.map(function (o) { return h('li', null, h('strong', null, o.story.title), ' — ', o.reason); }))) : null,
           h('div', { class: 'q-actions' }, h('button', { class: 'btn primary', type: 'button', onclick: function () { edit(null); } }, 'New story')),
-          h('div', { class: 'drill-filters' }, h('div', null, h('label', { for: 'st-q', class: 'sr-only' }, 'Search'), qIn), h('div', null, h('label', { for: 'st-tag', class: 'sr-only' }, 'Tag'), tagSel)),
+          h('div', { class: 'drill-filters three' },
+            h('div', null, h('label', { for: 'st-q', class: 'sr-only' }, 'Search'), qIn),
+            h('div', null, h('label', { for: 'st-tag', class: 'sr-only' }, 'Competency'), tagSel),
+            h('div', null, h('label', { for: 'st-status', class: 'sr-only' }, 'Status'), stSel)),
           results, practice(stories));
         paintList();
       }
 
       function practice(stories) {
-        const prompts = ST.behavioralQuestions(u.bank).map(function (e) { return { id: e.id, q: e.q }; }).concat(ST.PROMPTS);
-        const sel = h('select', { id: 'st-prompt', 'aria-label': 'Practice question' }, prompts.map(function (p) { return h('option', { value: p.id }, p.q); }));
+        const prompts = ST.behavioralQuestions(u.bank).map(function (e) { return { id: e.id, q: e.q, tags: ST.tagsForQuestion(e.q) }; })
+          .concat(ST.PROMPTS.map(function (p) { return { id: p.id, q: p.q, tags: p.tag ? [p.tag] : ST.tagsForQuestion(p.q) }; }));
+        const pTagSel = h('select', { id: 'st-ptag', 'aria-label': 'Filter practice questions by competency' },
+          [h('option', { value: '' }, 'All competencies')].concat(ST.TAGS.map(function (t) { return h('option', { value: t }, t); })));
+        const sel = h('select', { id: 'st-prompt', 'aria-label': 'Practice question' });
+        let filtered = prompts;
+        function fillPrompts() {
+          const want = pTagSel.value;
+          filtered = want ? prompts.filter(function (p) { return p.tags.indexOf(want) >= 0; }) : prompts;
+          if (!filtered.length) filtered = prompts;
+          sel.replaceChildren();
+          filtered.forEach(function (p) { sel.appendChild(h('option', { value: p.id }, p.q)); });
+        }
+        fillPrompts();
+
+        const clockEl = h('span', { class: 'timer', role: 'timer', 'aria-label': 'Elapsed practice time' }, '0:00');
+        const notes = h('textarea', { id: 'st-pnotes', rows: '4', maxlength: '2500', placeholder: 'Optional bullet points as you speak out loud (Situation -> Task -> Action -> Result -> Lessons). Target: ~2:00.' });
         const out = h('div', { 'aria-live': 'polite' });
-        const show = function () {
-          const p = prompts.filter(function (x) { return x.id === sel.value; })[0];
+        const reflectBox = h('div', { 'aria-live': 'polite' });
+        const histBox = h('div', { 'aria-live': 'polite' });
+        let t0 = 0, elapsed = 0, timer = null;
+        const totalSecs = function () { return elapsed + (timer ? (Date.now() - t0) / 1000 : 0); };
+        const stopTimer = function () { if (timer) { clearInterval(timer); timer = null; elapsed += (Date.now() - t0) / 1000; } };
+        const startTimer = function () {
+          if (timer) return;
+          t0 = Date.now();
+          timer = setInterval(function () {
+            const s = totalSecs();
+            clockEl.textContent = clock(s);
+            clockEl.classList.toggle('late', s > 150);
+          }, 400);
+        };
+        const resetTimer = function () { stopTimer(); elapsed = 0; clockEl.textContent = '0:00'; clockEl.classList.remove('late'); };
+        u.setCleanup(function () { if (timer) clearInterval(timer); });
+
+        const currentPrompt = function () { return filtered.filter(function (x) { return x.id === sel.value; })[0] || filtered[0]; };
+        const showMatches = function () {
+          const p = currentPrompt();
           const m = ST.storiesFor(load(), p);
           fill(out, h('p', { class: 'drill-q' }, p.q),
-            m.length ? h('div', null, h('p', { class: 'muted small-text' }, 'Your stories that fit (' + (m.some(function (x) { return x.linked; }) ? 'linked first, then matching tags' : 'matching tags') + '). Answer out loud from your own notes.'),
-              h('ul', { class: 'plain-list' }, m.map(function (x) { return h('li', null, h('button', { class: 'linkish', type: 'button', onclick: function () { edit(x.story); } }, x.story.title), x.linked ? ' (linked)' : ' (tags: ' + x.story.tags.join(', ') + ')'); })))
-              : h('p', { class: 'muted' }, 'None of your stories match yet. Write one from a real experience; the site will not invent one for you.'));
+            p.tags.length ? h('p', { class: 'muted small-text' }, 'Competencies: ' + p.tags.join(', ')) : null,
+            m.length ? h('details', null, h('summary', null, 'Matching stories (' + m.length + ') — keep collapsed while practising from memory'),
+              h('ul', { class: 'plain-list' }, m.map(function (x) {
+                return h('li', null, h('button', { class: 'linkish', type: 'button', onclick: function () { edit(x.story); } }, x.story.title), ' ', h('span', { class: 'muted small-text' }, '(' + x.why + ')'));
+              })))
+              : h('p', { class: 'muted small-text' }, 'None of your stories match yet. Write one from a real experience; the site will not invent one for you.'));
         };
-        sel.addEventListener('change', show);
-        return h('section', { class: 'mock-history' }, h('h2', null, 'Practise a question'),
-          h('label', { for: 'st-prompt', class: 'sr-only' }, 'Question'), sel,
-          h('div', { class: 'q-actions' }, h('button', { class: 'btn', type: 'button', onclick: function () { sel.selectedIndex = Math.floor(Math.random() * prompts.length); show(); } }, 'Random question'), h('button', { class: 'btn ghost', type: 'button', onclick: show }, 'Show matching stories')), out);
+
+        const paintHistory = function () {
+          const hist = store.get('storyPractice', []) || [];
+          fill(histBox, hist.length ? h('details', null, h('summary', null, 'Recent behavioral attempts (' + hist.length + ')'),
+            h('ul', { class: 'res-list' }, hist.slice(0, 8).map(function (x) {
+              return h('li', null, h('strong', null, x.day + ' · ' + clock(x.secs) + ' · ' + (x.rating === 'solid' ? 'Solid' : 'Needs work')),
+                h('div', { class: 'small-text' }, x.question),
+                x.reflection ? h('div', { class: 'muted small-text' }, 'Reflection: ' + x.reflection) : null);
+            }))) : null);
+        };
+
+        const finishAndReflect = function () {
+          stopTimer();
+          const secs = Math.round(totalSecs());
+          const p = currentPrompt();
+          const curStories = load();
+          const usedSel = h('select', { id: 'st-used' }, [h('option', { value: '' }, 'No saved story selected')].concat(curStories.map(function (s) { return h('option', { value: s.id }, s.title); })));
+          const ratingSel = h('select', { id: 'st-rate' }, [
+            h('option', { value: 'solid' }, 'Solid — clear STAR, stayed concise'),
+            h('option', { value: 'needs-work' }, 'Needs work — tighten or add metrics')
+          ]);
+          const refNote = h('textarea', { id: 'st-ref', rows: '2', maxlength: '600', placeholder: 'What went well, and what would you tighten next time?' });
+          fill(reflectBox, h('div', { class: 'hcard' },
+            h('h3', null, 'Post-attempt reflection (' + clock(secs) + ')'),
+            h('p', { class: 'muted small-text' }, secs > 150 ? 'Ran past 2:30 — try trimming Situation to 2 sentences.' : secs < 45 ? 'Under 45s — check that Action and Result have enough detail.' : 'Good pacing (aiming for ~2 minutes).'),
+            field(h, 'st-used', 'Story used', usedSel),
+            field(h, 'st-rate', 'Self-check', ratingSel),
+            field(h, 'st-ref', 'Reflection note', refNote, '(saved only on this device)'),
+            h('div', { class: 'q-actions' },
+              h('button', { class: 'btn primary small', type: 'button', onclick: function () {
+                const next = ST.recordAttempt(store.get('storyPractice', []), { day: day, qid: p.id, question: p.q, storyId: usedSel.value, secs: secs, reflection: refNote.value, rating: ratingSel.value });
+                store.set('storyPractice', next); u.touchActivity();
+                fill(reflectBox, h('p', { class: 'notice ok' }, 'Attempt and reflection saved on this device.'));
+                resetTimer(); notes.value = ''; paintHistory();
+              } }, 'Save reflection'),
+              h('button', { class: 'btn ghost small', type: 'button', onclick: function () { fill(reflectBox); } }, 'Dismiss'))));
+        };
+
+        pTagSel.addEventListener('change', function () { fillPrompts(); showMatches(); });
+        sel.addEventListener('change', showMatches);
+        setTimeout(function () { showMatches(); paintHistory(); }, 0);
+
+        return h('section', { class: 'mock-history' }, h('h2', null, 'Timed behavioral practice'),
+          h('p', { class: 'muted small-text' }, 'Pick a prompt, start the 2-minute timer, answer aloud (or jot quick bullet points), then record a short reflection.'),
+          h('div', { class: 'drill-filters' },
+            h('div', null, h('label', { for: 'st-ptag' }, 'Competency'), pTagSel),
+            h('div', null, h('label', { for: 'st-prompt' }, 'Question'), sel)),
+          h('div', { class: 'q-actions' },
+            h('button', { class: 'btn', type: 'button', onclick: function () { sel.selectedIndex = Math.floor(Math.random() * filtered.length); resetTimer(); fill(reflectBox); showMatches(); } }, 'Random question'),
+            h('button', { class: 'btn primary', type: 'button', onclick: function () { if (timer) stopTimer(); else startTimer(); } }, 'Start / pause timer'),
+            h('button', { class: 'btn', type: 'button', onclick: finishAndReflect }, 'Finish & reflect'),
+            h('button', { class: 'btn ghost', type: 'button', onclick: function () { resetTimer(); notes.value = ''; fill(reflectBox); } }, 'Reset'),
+            clockEl),
+          out,
+          field(h, 'st-pnotes', 'Practice notes', notes, '(optional, cleared on save)'),
+          reflectBox, histBox);
       }
 
       function edit(existing) {
@@ -132,10 +232,13 @@
         };
         const check = function () {
           const r = gather(); const n = ST.suggest(r.story);
-          fill(notesEl, n.length ? h('div', null, h('h3', null, 'Suggestions'), h('ul', null, n.map(function (x) { return h('li', null, x); }))) : h('p', { class: 'notice ok' }, 'Nothing to flag. Read it aloud and time it: aim for about two minutes.'));
+          const comp = ST.completeness(r.story);
+          fill(notesEl,
+            h('p', { class: 'muted small-text' }, 'STAR completeness: ' + comp.score + ' of ' + comp.max + (comp.hasMetrics ? ' · has impact metrics' : '') + (comp.hasLessons ? ' · has reflection' : '') + '.'),
+            n.length ? h('div', null, h('h3', null, 'Suggestions'), h('ul', null, n.map(function (x) { return h('li', null, x); }))) : h('p', { class: 'notice ok' }, 'Nothing to flag. Read it aloud and time it: aim for about two minutes.'));
         };
         fill(root, h('h1', null, existing ? 'Edit story' : 'New story'),
-          h('p', { class: 'lede' }, 'Write from your real experience. Use "I" for what you did and credit your team separately.'),
+          h('p', { class: 'lede' }, 'Write from your real experience. Use "I" for what you did and credit your team separately. Saved privately on this device.'),
           h('form', { class: 'plan-form', novalidate: true, onsubmit: function (ev) {
             ev.preventDefault();
             const r = gather();
@@ -145,14 +248,17 @@
             save([r.story].concat(all)); u.touchActivity(); list();
           } },
             err, field(h, 'st-title', 'Title', title, '(for you, e.g. "Checkout outage during the sale")'),
-            h('fieldset', null, h('legend', null, 'Tags'), h('div', { class: 'chk-grid' }, tagBoxes)),
-            area('situation', 'Situation', 'Context in two or three sentences.'), area('task', 'Task', 'What you were responsible for.'),
-            area('action', 'Action', 'What YOU did, step by step.', 5), area('result', 'Result', 'The outcome, with numbers if you have them.'),
-            area('metrics', 'Impact and metrics', '(optional)', 2), area('lessons', 'Lessons', '(optional) what you learned or would change.'),
+            h('fieldset', null, h('legend', null, 'Competency tags'), h('div', { class: 'chk-grid' }, tagBoxes)),
+            area('situation', 'Situation', ST.FIELD_PROMPTS.situation),
+            area('task', 'Task', ST.FIELD_PROMPTS.task),
+            area('action', 'Action', ST.FIELD_PROMPTS.action, 5),
+            area('result', 'Result', ST.FIELD_PROMPTS.result),
+            area('metrics', 'Impact and metrics', '(optional) ' + ST.FIELD_PROMPTS.metrics, 2),
+            area('lessons', 'Lessons', '(optional) ' + ST.FIELD_PROMPTS.lessons),
             h('details', null, h('summary', null, 'Link to questions (' + qs.length + ')'), h('div', { class: 'chk-list' }, qBoxes)),
             h('div', { class: 'formfoot' }, h('button', { class: 'btn primary', type: 'submit' }, 'Save story'),
               h('button', { class: 'btn', type: 'button', onclick: check }, 'Check my story'),
-              aiButton(u, 'AI feedback', 'This story text (title, situation, task, action, result, metrics, lessons) will be sent to the AI provider. Do not include confidential details.',
+              aiButton(u, 'AI feedback', 'This story text (title, situation, task, action, result, metrics, lessons) will be sent to the AI provider. AI will only review clarity and structure and will not invent accomplishments. Do not include confidential details.',
                 function () { return { system: ST.AI_SYSTEM, prompt: ST.aiPrompt(gather().story) }; }, aiOut, aiMsg),
               h('button', { class: 'btn ghost', type: 'button', onclick: list }, 'Cancel'))),
           notesEl, aiMsg, aiOut);

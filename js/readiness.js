@@ -17,7 +17,7 @@
     'Topics: Not assessed until at least 2 graded attempts (Drill or Review). Strong needs recency-weighted recall of 75% or more over at least 3 attempts on 2 or more questions, practised in the last 30 days. Under 50% is Needs practice. A low mock score on the topic lowers recall by 15 points.',
     'Coding: Not assessed until a problem is run. Strong needs 5 or more solved and 70% of attempted problems solved; under 40% is Needs practice.',
     'System design: Not assessed until a workspace has written content. Strong needs one design rated Thorough or two rated Solid by the self-review; only Early drafts is Needs practice.',
-    'Behavioral: Not assessed until a story exists. Strong needs 5 complete STAR stories covering 7 of the 10 competencies; fewer than 2 complete stories is Needs practice.',
+    'Behavioral: Not assessed until a story exists. Strong needs 5 complete STAR stories covering 7 of the 12 competencies; fewer than 2 complete stories is Needs practice.',
     'Mock interviews (last 30 days): Not assessed with no rounds. Strong needs 2 or more rounds at 75% or more of rubric points; under 45% is Needs practice. Rubric points measure answer shape, not correctness or hiring chances.'
   ];
 

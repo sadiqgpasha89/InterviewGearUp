@@ -203,27 +203,90 @@
       const done = function (remote, err) {
         const posts = u.localPosts().concat(remote);
         const seen = {}; const uniq = posts.filter(function (p) { if (seen[p.id]) return false; seen[p.id] = 1; return true; });
-        const disclaimer = h('p', { class: 'notice' }, 'Everything here is reported by community members. Unless a report is marked Reviewed, nobody has checked it, and the company has not confirmed or endorsed any of it. Interview formats change; rely on your recruiter and the company\'s own pages.');
+        const disclaimer = h('p', { class: 'notice' },
+          h('strong', null, 'Community experiences, not official company policy. '),
+          'Everything below comes from community members. Unless marked Reviewed by a maintainer, nobody has verified it, and no company has endorsed it. Confidential or personally identifying details are not permitted.');
         if (!name) {
-          const list = CO.companies(uniq);
+          const allList = CO.companies(uniq);
+          const qIn = h('input', { id: 'co-q', type: 'search', placeholder: 'Filter companies...', 'aria-label': 'Filter companies' });
+          const revOnly = h('input', { id: 'co-rev', type: 'checkbox' });
+          const listEl = h('div', { 'aria-live': 'polite' });
+          const paintIndex = function () {
+            const q = qIn.value.trim().toLowerCase();
+            const filtered = allList.filter(function (c) {
+              if (revOnly.checked && !c.reviewed) return false;
+              return !q || c.name.toLowerCase().indexOf(q) >= 0;
+            });
+            fill(listEl, filtered.length ? h('ul', { class: 'design-list' }, filtered.map(function (c) {
+              return h('li', null, h('a', { href: '#/company?name=' + encodeURIComponent(c.name) }, h('strong', null, c.name)),
+                h('div', { class: 'muted small-text' }, c.count + ' report' + (c.count === 1 ? '' : 's') + ' · ' + c.reviewed + ' reviewed' + (c.latestAt ? ' · latest ' + c.latestAt : '')));
+            })) : h('p', { class: 'muted' }, allList.length ? 'No companies match that filter.' : ['No company reports yet. ', h('a', { href: '#/post' }, 'Post a question you were asked'), ' (describe it in your own words; no confidential or NDA material).']));
+          };
+          qIn.addEventListener('input', paintIndex);
+          revOnly.addEventListener('change', paintIndex);
           fill(root, h('h1', null, 'Companies'), disclaimer, err ? h('p', { class: 'notice' }, 'Showing what is on this device. ' + err) : null,
-            list.length ? h('ul', { class: 'design-list' }, list.map(function (c) { return h('li', null, h('a', { href: '#/company?name=' + encodeURIComponent(c.name) }, h('strong', null, c.name)), h('div', { class: 'muted small-text' }, c.count + ' report' + (c.count === 1 ? '' : 's'))); }))
-              : h('p', { class: 'muted' }, 'No company reports yet. ', h('a', { href: '#/post' }, 'Post a question you were asked'), ' (describe it in your own words; no confidential or NDA material).'));
+            allList.length ? h('div', { class: 'drill-filters' },
+              h('div', null, h('label', { for: 'co-q', class: 'sr-only' }, 'Search companies'), qIn),
+              h('label', { class: 'chk' }, revOnly, ' Has maintainer-reviewed reports')) : null,
+            listEl);
+          paintIndex();
           return;
         }
         const s = CO.summarize(uniq, name);
         const chips = function (arr, label, map) { return arr.length ? h('p', null, h('strong', null, label + ': '), arr.map(function (x) { return (map ? map(x.label) : x.label) + ' (' + x.count + ')'; }).join(', ')) : null; };
+        const fRole = h('select', { id: 'co-role', 'aria-label': 'Filter by role' }, [h('option', { value: '' }, 'All roles')].concat(meta.roles.map(function (r) { return h('option', { value: r.id }, r.name); })));
+        const fLevel = h('select', { id: 'co-level', 'aria-label': 'Filter by gear' }, [h('option', { value: '' }, 'All gears')].concat(meta.levels.map(function (l) { return h('option', { value: String(l.n) }, 'Gear ' + l.n + ': ' + l.name); })));
+        const fRound = h('select', { id: 'co-round', 'aria-label': 'Filter by round' }, [h('option', { value: '' }, 'All rounds')].concat(meta.rounds.map(function (r) { return h('option', { value: r }, r); })));
+        const fFresh = h('select', { id: 'co-fresh', 'aria-label': 'Filter by date' }, [
+          h('option', { value: '' }, 'All dates'),
+          h('option', { value: 'recent' }, 'Last 6 months'),
+          h('option', { value: '18m' }, 'Last 18 months'),
+          h('option', { value: 'stale' }, 'Older than 18 months')
+        ]);
+        const fStatus = h('select', { id: 'co-status', 'aria-label': 'Filter by verification status' }, [
+          h('option', { value: '' }, 'All verification statuses'),
+          h('option', { value: 'approved' }, 'Reviewed by maintainer only'),
+          h('option', { value: 'unreviewed' }, 'Unreviewed / awaiting review')
+        ]);
+        const repBox = h('div', { 'aria-live': 'polite' });
+        const paintReports = function () {
+          const shown = CO.filter(s.items, { role: fRole.value, level: fLevel.value, round: fRound.value, freshness: fFresh.value, status: fStatus.value });
+          fill(repBox,
+            h('p', { class: 'muted small-text' }, 'Showing ' + shown.length + ' of ' + s.total + ' report' + (s.total === 1 ? '' : 's') + '.'),
+            shown.length ? h('ul', { class: 'story-list' }, shown.map(function (p) {
+              const st = CO.statusOf(p);
+              const fr = CO.freshness(p);
+              const dateBits = [p.year ? 'Asked ' + p.year : '', p.createdAt ? 'Reported ' + String(p.createdAt).slice(0, 10) : ''].filter(Boolean).join(' · ');
+              return h('li', null,
+                h('div', { class: 'story-h' }, h('strong', null, p.question.slice(0, 160)), ' ',
+                  h('span', { class: 'pill ' + (st === 'approved' ? 'conf-high' : 'conf-medium') }, CO.STATUS_TEXT[st]), ' ',
+                  fr.id !== 'unknown' ? h('span', { class: 'pill ' + (fr.stale ? 'rd-needs-practice' : 'conf-high') }, fr.label) : null),
+                h('div', { class: 'muted small-text' }, [u.roleName(p.role), 'Gear ' + p.level, p.round, p.domain, dateBits].filter(Boolean).join(' · ')),
+                h('div', { class: 'q-actions' },
+                  p.remote && /^https:\/\/github\.com\//.test(String(p.url || '')) ? h('a', { class: 'small-text', href: p.url, rel: 'noopener noreferrer', target: '_blank' }, 'Source: GitHub issue') : null,
+                  p.remote ? h('a', { class: 'small-text', href: CO.reportUrl(p, IGU.config), rel: 'noopener noreferrer', target: '_blank' }, 'Report outdated, duplicate or PII') : null));
+            })) : h('p', { class: 'muted' }, s.total ? 'No reports match those filters.' : 'No reports for this company yet.'));
+        };
+        [fRole, fLevel, fRound, fFresh, fStatus].forEach(function (el) { el.addEventListener('change', paintReports); });
+
         fill(root, h('p', null, h('a', { href: '#/company' }, '← All companies')), h('h1', null, s.name), disclaimer,
           err ? h('p', { class: 'notice' }, 'Showing what is on this device. ' + err) : null,
-          s.total ? h('p', null, s.total + ' report' + (s.total === 1 ? '' : 's') + ', ' + s.reviewed + ' reviewed by a maintainer.') : h('p', { class: 'muted' }, 'No reports for this company yet.'),
+          s.total ? h('p', null, s.total + ' report' + (s.total === 1 ? '' : 's') + ' · ' + s.reviewed + ' reviewed by a maintainer · ' + s.recentCount + ' recent (last 6 months)' + (s.staleCount ? ' · ' + s.staleCount + ' older than 18 months' : '') + '.') : h('p', { class: 'muted' }, 'No reports for this company yet.'),
+          s.duplicatePairs.length ? h('p', { class: 'notice' }, s.duplicatePairs.length + ' possible duplicate report pair(s) detected here. Maintainers can mark duplicates on GitHub.') : null,
           chips(s.rounds, 'Rounds mentioned'), chips(s.roles, 'Roles', function (id) { return u.roleName(id); }), chips(s.levels, 'Gears'), chips(s.domains, 'Domains'),
-          h('h2', null, 'Preparation checklist'), h('ul', null, CO.checklist(s).map(function (c) { return h('li', null, c); })),
+          h('h2', null, 'Official & general preparation checklist'),
+          h('p', { class: 'muted small-text' }, 'Official guidance comes first; community reports below are unverified individual experiences, never company policy.'),
+          h('ul', null, CO.checklist(s).map(function (c) { return h('li', null, c); })),
           h('p', null, h('a', { class: 'btn', href: '#/community?company=' + encodeURIComponent(s.name) }, 'Filter the community board'), ' ', h('a', { class: 'btn ghost', href: '#/plan' }, 'Open my plan')),
-          s.items.length ? h('div', null, h('h2', null, 'Reports'), h('ul', { class: 'story-list' }, s.items.map(function (p) {
-            return h('li', null, h('div', { class: 'story-h' }, h('strong', null, p.question.slice(0, 160))),
-              h('div', { class: 'muted small-text' }, [CO.STATUS_TEXT[p.review || (p.remote ? 'unreviewed' : 'local')], u.roleName(p.role), 'Gear ' + p.level, p.round, p.domain, 'reported ' + String(p.createdAt).slice(0, 10)].filter(Boolean).join(' · ')),
-              p.remote && /^https:\/\/github\.com\//.test(String(p.url || '')) ? h('a', { class: 'small-text', href: p.url, rel: 'noopener noreferrer', target: '_blank' }, 'Source: GitHub issue') : null);
-          }))) : null);
+          h('h2', null, 'Community reports'),
+          s.total ? h('div', { class: 'filters' },
+            h('div', null, h('label', { for: 'co-role' }, 'Role'), fRole),
+            h('div', null, h('label', { for: 'co-level' }, 'Gear'), fLevel),
+            h('div', null, h('label', { for: 'co-round' }, 'Round'), fRound),
+            h('div', null, h('label', { for: 'co-fresh' }, 'Freshness'), fFresh),
+            h('div', null, h('label', { for: 'co-status' }, 'Verification'), fStatus)) : null,
+          repBox);
+        paintReports();
       };
       u.fetchShared().then(function (items) { done(items, ''); }, function (e) { done([], e.message || 'Could not load shared reports.'); });
     }
