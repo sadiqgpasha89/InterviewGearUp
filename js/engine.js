@@ -80,7 +80,7 @@
 
   /* ---------- classification ---------- */
   const RULES = [
-    ['behavioral', /tell me about a time|describe a (time|situation)|give me an example of a time|conflict|disagree|failure|mistake|weakness|strength|leadership style|mentor|motivat|tight deadline|stakeholder|difficult (team|co-?worker|person|manager)|why (do you want|should we hire)|handle pressure|most proud|biggest (challenge|achievement)|ambiguity/i],
+    ['behavioral', /tell me about a time|describe a (time|situation)|give me an example of a time|conflict (with|between (you|two|team|senior|engineers|people|colleagues))|(a|team|interpersonal) conflict\b|disagree|\b(a|your|biggest) (failure|mistake)\b|you (failed|made a mistake)|learn(ed)? from (a |your )?(failure|mistake)|weakness|strength|leadership style|mentor|motivat|tight deadline|stakeholder|difficult (team|co-?worker|person|manager)|why (do you want|should we hire)|handle pressure|most proud|biggest (challenge|achievement)|ambiguity/i],
     ['design', /design (a|an|the)\b|system design|architect|scal(e|ing|able)\b|high[- ]level design|low[- ]level design|how would you build|build (a|an) .{0,40}(system|service|platform|pipeline)|schema for/i],
     ['debug', /debug|troubleshoot|outage|incident|slow\b|latency spike|memory leak|crash|flaky|root cause|not working|intermittent|5\d\d error|high cpu|production (issue|bug|problem)|why is (my|the|our)/i],
     ['sql', /\bsql\b|\bselect\b|\bjoin\b|group by|window function|query (optimi|plan)|normali[sz]/i],

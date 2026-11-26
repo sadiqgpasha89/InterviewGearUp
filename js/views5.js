@@ -73,7 +73,8 @@
         const profile = hasProfile ? Object.assign(PL.validateProfile(plan.profile, null).profile, { createdDay: plan.profile.createdDay || day }) : null;
         const d = DB.summarize({
           profile: profile, bank: u.bank, done: u.done.all(), practice: store.get('practice', {}), srs: store.get('srs', {}),
-          mocks: store.get('mocks', []), plan: plan, streak: S.streak(store.get('activity', [])), today: day
+          mocks: store.get('mocks', []), plan: plan, streak: S.streak(store.get('activity', [])), today: day,
+          history: store.get('history', []), lastActive: store.get('activity', []).filter(function (x) { return x < day; }).sort().pop() || ''
         });
         const card = function (title, body, cls) { return h('section', { class: 'hcard' + (cls ? ' ' + cls : ''), 'aria-label': title }, h('h2', null, title), body); };
         const tile = function (big, label, href) {

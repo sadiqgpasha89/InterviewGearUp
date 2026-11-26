@@ -10,7 +10,7 @@ const root = path.join(__dirname, '..');
 const ctx = { setTimeout, clearTimeout, AbortController, URL };
 ctx.window = ctx;
 vm.createContext(ctx);
-['js/config.js', 'js/quality.js', 'js/engine.js', 'js/srs.js', 'js/migrate.js', 'js/ai.js', 'js/planner.js', 'js/mock.js', 'js/dashboard.js', 'js/stories.js', 'js/jd.js', 'js/design.js', 'data/design.js', 'js/coding-core.js', 'data/coding.js', 'data/coding-langs.js', 'js/company.js', 'js/voice.js']
+['js/config.js', 'js/quality.js', 'js/engine.js', 'js/srs.js', 'js/migrate.js', 'js/ai.js', 'js/adaptive.js', 'js/planner.js', 'js/mock.js', 'js/dashboard.js', 'js/stories.js', 'js/jd.js', 'js/design.js', 'data/design.js', 'js/coding-core.js', 'data/coding.js', 'data/coding-langs.js', 'js/company.js', 'js/voice.js']
   .concat(require('../scripts/lib/data-files').dataFiles(root))
   .forEach((f) => vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f }));
 
@@ -184,7 +184,7 @@ test('parseIssue extracts AI generated answer from GitHub issues', () => {
   const testCtx = { setTimeout, clearTimeout, AbortController, window: {}, document: dummyDoc, location: { hash: '' }, addEventListener: () => {}, scrollTo: () => {}, URLSearchParams, Node, DocumentFragment };
   testCtx.window = testCtx;
   vm.createContext(testCtx);
-  ['js/config.js', 'js/util.js', 'js/quality.js', 'js/engine.js', 'js/stats.js', 'js/srs.js', 'js/migrate.js', 'js/ai.js', 'js/planner.js', 'js/mock.js', 'js/stories.js', 'js/jd.js', 'js/design.js', 'js/company.js', 'js/app.js'].forEach((f) => {
+  ['js/config.js', 'js/util.js', 'js/quality.js', 'js/engine.js', 'js/stats.js', 'js/srs.js', 'js/migrate.js', 'js/ai.js', 'js/adaptive.js', 'js/planner.js', 'js/mock.js', 'js/stories.js', 'js/jd.js', 'js/design.js', 'js/company.js', 'js/app.js'].forEach((f) => {
     vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), testCtx);
   });
   const issue = {
@@ -1223,4 +1223,185 @@ test('home is the default route, onboarding is optional, and navigation is group
   assert.ok(v.includes('Reset profile'), 'profile can be reset from home');
   assert.ok(!/innerHTML|fetch\(|IGU\.ai\./.test(v), 'home must not use innerHTML, the network or AI');
   assert.ok(JSON.parse(fs.readFileSync(path.join(root, 'manifest.webmanifest'), 'utf8')).start_url.endsWith('#/home'));
+});
+
+/* ---------- Phase 3: evaluation and feedback ---------- */
+const STRONG_TECH = 'In short, I use cache-aside: read the cache, and on a miss load from the database and set it with a TTL. First, for example at 5,000 requests per second a 100 ms query is too slow, so Redis in front helps. ' +
+  'The trade-off is staleness versus speed, however deleting the key on write keeps it fresh instead of setting it, because concurrent writers can race. ' +
+  'One pitfall is a stampede when a hot key expires; then I would use a lock per key or early refresh with jittered TTLs. Invalidation on update deletes the key. Write-through and write-behind are alternatives.';
+
+test('feedback: technical answers are scored on content and delivery separately, with evidence and at most three actions', () => {
+  const e = bank.find((x) => x.id === 'be-4');
+  const weak = MK.score('It is a cache thing and it is fast.', e);
+  const incomplete = MK.score('Caching keeps data in memory so reads are faster. Redis is common. You set a TTL so data expires eventually and the cache does not grow forever, and that is mostly it.', e);
+  const offTopic = MK.score('My favourite football team won the league this year and the stadium was full of happy fans singing songs all night in the rain.', e);
+  const strong = MK.score(STRONG_TECH, e);
+  assert.equal(strong.kind, 'technical');
+  assert.ok(strong.total > incomplete.total && incomplete.total > weak.total, [strong.total, incomplete.total, weak.total].join(' > '));
+  assert.ok(['Solid', 'Strong'].includes(strong.band), strong.band);
+  assert.equal(weak.band, 'Needs work');
+  assert.ok(offTopic.offTopic && offTopic.band === 'Off topic');
+  assert.ok(/question that was asked/.test(offTopic.actions[0].text));
+  assert.ok(offTopic.dims.filter((d) => d.group === 'content').every((d) => d.level === 0));
+  [weak, incomplete, offTopic, strong].forEach((r) => {
+    assert.ok(r.actions.length <= 3);
+    assert.ok(r.dims.every((d) => ['content', 'delivery'].includes(d.group) && d.why && d.note && d.what));
+    assert.ok(r.dims.some((d) => d.group === 'delivery') && r.dims.some((d) => d.group === 'content'));
+    assert.ok(!/pass(ing)? (the|your) interview|probability|chance of|hired/i.test(JSON.stringify(r)));
+  });
+  assert.ok(incomplete.concepts.miss.length > 0 && incomplete.concepts.miss.length < incomplete.concepts.list.length, 'names missing concepts, credits found ones');
+  assert.ok(incomplete.actions.some((a) => /Explain /.test(a.text)), 'first actions point at missing concepts');
+  assert.ok(strong.concepts.hit.length >= strong.concepts.list.length / 2);
+});
+
+test('feedback: behavioral and design questions use their own rubrics (STAR and system design)', () => {
+  const b = bank.find((x) => x.id === 'lead-14');
+  assert.equal(MK.kindForRubric(b), 'behavioral');
+  const thinB = MK.score('We fixed it eventually and everyone was happy.', b);
+  const strongB = MK.score('At my last company two senior engineers disagreed about splitting the monolith. I was responsible for getting a decision in two weeks. First I met each of them, then I wrote a one-page comparison and I ran a review with both. ' +
+    'As a result we chose an incremental split, shipped the first service in 6 weeks and cut deploy time by 40%. I learned to put the decision criteria in writing first; next time I would do that on day one.', b);
+  ['situation', 'task', 'action', 'result', 'ownership', 'impact', 'reflection', 'communication'].forEach((id) => assert.ok(strongB.dims.some((d) => d.id === id), id));
+  assert.ok(strongB.total > thinB.total + 12);
+  assert.ok(!thinB.offTopic, 'behavioral answers are never marked off topic by vocabulary');
+  assert.ok(thinB.actions.length === 3 && /Situation/.test(thinB.actions[0].text));
+  const d = bank.find((x) => x.id === 'be-7');
+  assert.equal(MK.kindForRubric(d), 'design');
+  const ds = MK.score('First, requirements: clients retry, so POST /payments must be idempotent. At 2,000 requests per second and 50M payments a year ' +
+    'the API service stores an idempotency key table (key primary key, request hash, response) in Postgres behind a load balancer. A retry with the same key returns the stored response instead of charging again. ' +
+    'If the database fails we return 503 and the client retries with backoff; replicas give failover. Requests need an OAuth token and we rate limit per merchant. The trade-off is extra storage versus double charges.', d);
+  ['requirements', 'scale', 'architecture', 'apis', 'datamodel', 'reliability', 'security', 'tradeoffs', 'communication'].forEach((id) => assert.ok(ds.dims.find((x) => x.id === id).level >= 2, id));
+  assert.equal(MK.score('Use a database.', d).band, 'Needs work');
+  assert.equal(engine.classify('How do HTTP status codes and error responses help clients handle failures?'), 'concept', 'technical questions about failures are not behavioral');
+});
+
+test('feedback: criteria are published before practice and old saved sessions still render in reports', () => {
+  Object.keys(MK.RUBRICS).forEach((k) => MK.RUBRICS[k].criteria.forEach((c) => assert.ok(c[3].length > 10 && ['content', 'delivery'].includes(c[1]))));
+  const v = fs.readFileSync(path.join(root, 'js/views.js'), 'utf8');
+  assert.ok(v.includes('rubricGuide(h, null)') && v.includes('rubricGuide(h, MK.kindForRubric(e))'), 'rubric shown on setup and under each question');
+  const e = bank.find((x) => x.id === 'be-4');
+  const legacy = { empty: false, words: 30, dims: [{ id: 'structure', label: 'Structure', level: 1, note: 'Add order.' }], missing: [], total: 1, max: 3, band: 'Needs work' };
+  const md = MK.reportMd({ day: '2026-11-26', roleName: 'Backend engineer', level: 2, type: 'mixed', items: [{ q: e.q, secs: 60, answer: 'x', result: legacy }, { q: e.q, secs: 60, answer: STRONG_TECH, result: MK.score(STRONG_TECH, e) }] });
+  assert.ok(/\*\*Content\*\*/.test(md) && /\*\*Delivery\*\*/.test(md) && /Structure: Thin/.test(md));
+});
+
+test('feedback: coding review uses the real test run and flags nested loops, var and loose equality', () => {
+  IGU.codingProblems.forEach((p) => {
+    const run = Object.assign({ state: 'done' }, CC.runTests(p.solution.code, p.fn, p.tests));
+    const r = CC.review(p.solution.code, p, run);
+    assert.equal(r.dims.find((d) => d.id === 'correctness').level, 3, p.id);
+    assert.ok(r.dims.find((d) => d.id === 'complexity').level >= 2, p.id + ' reference solution is efficient');
+    assert.ok(r.actions.length <= 3);
+  });
+  const p = IGU.codingProblems.find((x) => x.id === 'two-sum');
+  const brute = 'function twoSum(nums, target) {\n for (var a = 0; a < nums.length; a++) { for (var b = a + 1; b < nums.length; b++) { if (nums[a] + nums[b] == target) return [a, b]; } }\n console.log(1)\n}';
+  const r = CC.review(brute, p, Object.assign({ state: 'done' }, CC.runTests(brute, p.fn, p.tests)));
+  assert.equal(r.dims.find((d) => d.id === 'correctness').level, 3);
+  assert.equal(r.dims.find((d) => d.id === 'complexity').level, 0);
+  assert.ok(/var/.test(r.dims.find((d) => d.id === 'quality').why) && /==/.test(r.dims.find((d) => d.id === 'quality').why));
+  const broken = CC.review('function twoSum( {', p, { state: 'done', error: 'SyntaxError: x', results: [] });
+  assert.equal(broken.dims.find((d) => d.id === 'correctness').level, 0);
+  assert.ok(/did not run/.test(broken.dims[0].why));
+  const vp = IGU.codingProblems.find((x) => x.id === 'valid-parentheses');
+  const noEmpty = 'function isValid(s) { if (!s.length) throw new Error("x"); const st = []; const m = { ")": "(", "]": "[", "}": "{" }; for (const c of s) { if (c in m) { if (st.pop() !== m[c]) return false; } else st.push(c); } return st.length === 0; }';
+  const ev = CC.review(noEmpty, vp, Object.assign({ state: 'done' }, CC.runTests(noEmpty, vp.fn, vp.tests))).dims.find((d) => d.id === 'edges');
+  assert.ok(ev && ev.level < 3, 'edge-case failure is reported separately from correctness');
+});
+
+/* ---------- Phase 4: adaptive preparation ---------- */
+const AD = IGU.adaptive;
+const PLN = IGU.planner;
+const profileFor = (extra, today) => PLN.validateProfile(Object.assign({ role: 'backend', level: 2, minutes: 45, createdDay: '2026-11-01' }, extra), today || '2026-11-26').profile;
+const dueSrs = (ids, due) => { const s = {}; ids.forEach((id) => { s[id] = { due, interval: 1, reps: 1, lapses: 0, last: '2026-11-01', grade: 'partial' }; }); return s; };
+
+test('adaptive: history log is capped, mastery weighs repeated and recent attempts', () => {
+  let h = [];
+  for (let i = 0; i < AD.MAX_HISTORY + 20; i++) h = AD.logAttempt(h, 'be-1', 'ok', '2026-11-01');
+  assert.equal(h.length, AD.MAX_HISTORY);
+  assert.equal(AD.logAttempt([], 'be-1', 'bogus', '2026-11-01').length, 0);
+  assert.equal(AD.logAttempt([], 'be-1', 'solid', '2026-11-01')[0].o, 'ok', 'review grade solid counts as ok');
+  const old = [{ d: '2026-10-01', id: 'be-1', o: 'mastered' }, { d: '2026-11-25', id: 'be-1', o: 'again' }];
+  const recentBad = AD.mastery(old, '2026-11-26')['be-1'];
+  const recentGood = AD.mastery([{ d: '2026-10-01', id: 'be-1', o: 'again' }, { d: '2026-11-25', id: 'be-1', o: 'mastered' }], '2026-11-26')['be-1'];
+  assert.equal(recentBad.attempts, 2);
+  assert.ok(recentBad.score < 0.3 && recentGood.score > 0.7, recentBad.score + ' / ' + recentGood.score);
+  assert.equal(AD.mastery([{ d: '2026-12-30', id: 'be-1', o: 'ok' }], '2026-11-26')['be-1'], undefined, 'future-dated entries are ignored');
+});
+
+test('adaptive: weak signals combine drills, reviews and mock scores, with readable reasons', () => {
+  const e = bank.find((x) => x.id === 'be-4');
+  const mocks = [{ day: '2026-11-24', items: [{ qid: 'be-4', result: MK.score('It is a cache thing.', e) }] }];
+  const sig = AD.weakSignals({ bank, today: '2026-11-26', history: [{ d: '2026-11-25', id: 'be-3', o: 'again' }, { d: '2026-11-26', id: 'be-3', o: 'again' }], practice: { 'be-20': { last: 'again' } }, srs: {}, mocks });
+  assert.ok(sig.byId['be-4'].reasons.some((r) => /mock/.test(r)));
+  assert.ok(sig.byId['be-3'].reasons.some((r) => /2 attempts/.test(r)));
+  assert.ok(sig.byId['be-20'].reasons.some((r) => /needs practice/.test(r)));
+  assert.equal(Object.keys(AD.weakSignals({ bank, today: '2026-11-26', mocks: [{ day: '2026-09-01', items: mocks[0].items }] }).byId).length, 0, 'old mocks age out');
+});
+
+test('planner: reviews cannot crowd out new learning, the backlog is carried forward, and limits are respected', () => {
+  const backendIds = bank.filter((x) => x.role === 'backend').map((x) => x.id).slice(0, 40);
+  const srs = dueSrs(backendIds, '2026-11-20');
+  const p = profileFor({});
+  const t = PLN.daily(p, bank, { srs }, '2026-11-26');
+  assert.ok(t.tasks.some((x) => x.kind === 'new'), 'a new question survives a 40-review backlog');
+  assert.ok(t.minutes <= p.minutes + 5, t.minutes);
+  assert.ok(t.notes.some((n) => /more reviews are due/.test(n)));
+  const capped = PLN.daily(profileFor({ maxReviews: 2, maxNew: 1, minutes: 120 }), bank, { srs }, '2026-11-26');
+  assert.equal(capped.tasks.filter((x) => x.kind === 'review').length, 2);
+  assert.equal(capped.tasks.filter((x) => x.kind === 'new').length, 1);
+  assert.ok(!PLN.validateProfile({ role: 'backend', level: 2, minutes: 30, maxNew: 50 }, '2026-11-26').ok);
+  assert.ok(!PLN.validateProfile({ role: 'backend', level: 2, minutes: 30, restDays: [0, 1, 2, 3, 4, 5] }, '2026-11-26').ok);
+  t.tasks.filter((x) => x.kind === 'new').forEach((x) => assert.ok(x.minutes >= 5 && x.minutes <= 15 && x.why));
+  assert.deepEqual(arr(PLN.daily(p, bank, { srs }, '2026-11-26').tasks.map((x) => x.id)), arr(t.tasks.map((x) => x.id)), 'deterministic');
+});
+
+test('planner: missed days, rest days, date changes and weak topics change the plan in explainable ways', () => {
+  const p = profileFor({});
+  const back = PLN.daily(p, bank, { lastActive: '2026-11-18' }, '2026-11-26');
+  assert.ok(back.notes.some((n) => /Welcome back: 8 days/.test(n)));
+  assert.ok(back.minutes <= p.minutes + 5);
+  // 2026-11-29 is a Sunday
+  const rest = PLN.daily(profileFor({ restDays: [0] }), bank, { srs: dueSrs(['be-1', 'be-2'], '2026-11-29') }, '2026-11-29');
+  assert.ok(rest.rest && rest.budget === 15);
+  assert.ok(rest.tasks.every((x) => x.kind === 'review'));
+  const far = PLN.daily(profileFor({ interviewDate: '2027-03-01' }), bank, {}, '2026-11-26');
+  const near = PLN.daily(profileFor({ interviewDate: '2026-12-02' }), bank, {}, '2026-11-26');
+  assert.equal(far.phase.id, 'build'); assert.equal(near.phase.id, 'strengthen');
+  assert.ok(near.notes.some((n) => /fit before the final review days/.test(n)));
+  const weakE = bank.find((x) => x.role === 'backend' && x.level === 2 && Q.isReal(x) && x.topic !== bank.find((y) => y.role === 'backend' && y.level === 2).topic);
+  const sibling = bank.find((x) => x.role === 'backend' && x.level === 2 && x.topic === weakE.topic && x.id !== weakE.id);
+  if (sibling) {
+    const hist = [{ d: '2026-11-25', id: weakE.id, o: 'again' }, { d: '2026-11-26', id: weakE.id, o: 'again' }];
+    const srs = { [weakE.id]: { due: '2027-01-01', interval: 9, reps: 2, lapses: 2, last: '2026-11-26', grade: 'again' } };
+    const t = PLN.daily(p, bank, { history: hist, srs }, '2026-11-26');
+    const first = t.tasks.find((x) => x.kind === 'new');
+    assert.equal(bank.find((x) => x.id === first.id).topic, weakE.topic, 'weak topic comes first');
+    assert.ok(/^Weak topic /.test(first.why), first.why);
+  }
+});
+
+test('weekly summary counts completed and missed days, trends and focus topics', () => {
+  const hist = [];
+  ['2026-11-01', '2026-11-05', '2026-11-10'].forEach((d) => { hist.push({ d, id: 'be-1', o: 'again' }); hist.push({ d, id: 'be-2', o: 'again' }); });
+  ['2026-11-24', '2026-11-25', '2026-11-26'].forEach((d) => { hist.push({ d, id: 'be-1', o: 'mastered' }); hist.push({ d, id: 'be-2', o: 'ok' }); });
+  const plan = { profile: { createdDay: '2026-11-01' }, completed: { '2026-11-24': { 'new:be-9': 1, 'review:be-1': 1 }, '2026-11-26': { 'new:be-10': 1 } } };
+  const w = AD.weekly({ today: '2026-11-26', plan, bank, history: hist, mocks: [], srs: {}, practice: {}, activity: ['2026-11-24', '2026-11-25', '2026-11-26'] });
+  assert.equal(w.tasksCompleted, 3);
+  assert.equal(w.activeDays, 3);
+  assert.equal(w.missedDays, 4);
+  assert.equal(w.attempts, 6);
+  const t1 = bank.find((x) => x.id === 'be-1').topic;
+  assert.ok(w.improving.some((r) => r.topic === t1), JSON.stringify(w.improving));
+  assert.equal(w.declining.length, 0);
+  assert.ok(Array.isArray(w.focus));
+  assert.ok(/'history'\]/.test(fs.readFileSync(path.join(root, 'js/stats.js'), 'utf8')), 'attempt history is part of backups');
+});
+
+test('planner: one weak topic cannot fill the whole day', () => {
+  const e = bank.find((x) => x.id === 'be-4');
+  const topicIds = bank.filter((x) => x.role === 'backend' && x.level === e.level && x.topic === e.topic).map((x) => x.id);
+  const mocks = [{ day: '2026-11-25', items: topicIds.map((id) => ({ qid: id, result: { empty: true } })) }];
+  const t = PLN.daily(profileFor({ level: e.level, minutes: 60 }), bank, { mocks }, '2026-11-26');
+  const fresh = t.tasks.filter((x) => x.kind === 'new');
+  const sameTopic = fresh.filter((x) => bank.find((y) => y.id === x.id).topic === e.topic).length;
+  assert.ok(fresh.length > 3 && sameTopic <= 2, sameTopic + ' of ' + fresh.length);
 });

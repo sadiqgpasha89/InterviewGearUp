@@ -3,7 +3,7 @@
   const IGU = (window.IGU = window.IGU || {});
 
   /* Keys that a backup file may contain. API keys are deliberately excluded. */
-  const BACKUP_KEYS = ['done', 'saved', 'notes', 'practice', 'activity', 'posts', 'profile', 'srs', 'plan', 'mocks', 'stories', 'jds', 'designs', 'coding', 'voice', 'paths'];
+  const BACKUP_KEYS = ['done', 'saved', 'notes', 'practice', 'activity', 'posts', 'profile', 'srs', 'plan', 'mocks', 'stories', 'jds', 'designs', 'coding', 'voice', 'paths', 'history'];
 
   /* Prepared counts per role and gear. */
   function matrix(bank, done, meta) {
