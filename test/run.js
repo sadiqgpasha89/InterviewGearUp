@@ -10,7 +10,7 @@ const root = path.join(__dirname, '..');
 const ctx = { setTimeout, clearTimeout, AbortController, URL };
 ctx.window = ctx;
 vm.createContext(ctx);
-['js/config.js', 'js/quality.js', 'js/engine.js', 'js/search.js', 'js/srs.js', 'js/migrate.js', 'js/ai.js', 'js/adaptive.js', 'js/planner.js', 'js/mock.js', 'js/dashboard.js', 'js/stories.js', 'js/jd.js', 'js/design.js', 'data/design.js', 'js/coding-core.js', 'data/coding.js', 'data/coding-langs.js', 'js/company.js', 'js/voice.js', 'js/readiness.js', 'js/flashcards.js', 'js/topic-map.js', 'js/warmup.js']
+['js/config.js', 'js/quality.js', 'js/engine.js', 'js/search.js', 'js/srs.js', 'js/migrate.js', 'js/ai.js', 'js/adaptive.js', 'js/planner.js', 'js/mock.js', 'js/dashboard.js', 'js/stories.js', 'js/jd.js', 'js/design.js', 'data/design.js', 'js/coding-core.js', 'data/coding.js', 'data/coding-langs.js', 'js/company.js', 'js/voice.js', 'js/readiness.js', 'js/flashcards.js', 'js/topic-map.js', 'js/warmup.js', 'js/calendar.js']
   .concat(require('../scripts/lib/data-files').dataFiles(root))
   .forEach((f) => vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f }));
 
@@ -1940,4 +1940,34 @@ test('warmup: builds a balanced 3-slot session, avoids repeats, checks answers o
   assert.equal(upd.history.length, 1);
   assert.equal(upd.done[first.items[0].entry.id], 1);
   assert.ok(S.BACKUP_KEYS.includes('warmup'));
+});
+
+/* ---------- Phase 21: calendar export (.ics) ---------- */
+const CAL = IGU.calendar;
+test('calendar: exports valid RFC 5545 .ics events with local time, folding, escaping and private notes guard', () => {
+  assert.equal(CAL.formatLocalDateTime('2026-11-30', '23:45', 30), '20261201T001500');
+  assert.equal(CAL.escapeText('A, B; C\\D\nNext'), 'A\\, B\\; C\\\\D\\nNext');
+  const folded = CAL.foldLine('SUMMARY:' + 'x'.repeat(120));
+  folded.split('\r\n').forEach((ln) => assert.ok(Buffer.byteLength(ln, 'utf8') <= 75));
+
+  const prof = PL.validateProfile({ role: 'backend', level: 2, minutes: 30, createdDay: '2026-11-26' }, '2026-11-26').profile;
+  const ctx0 = { done: {}, practice: {}, srs: {}, history: [], mocks: [] };
+  const evs = CAL.buildWeekEvents(prof, bank, ctx0, '2026-11-26', {
+    days: 7, startTime: '08:30',
+    notes: { 'be-1': 'SECRET_PERSONAL_NOTE', 'be-2': 'SECRET_PERSONAL_NOTE' },
+    includeNotes: false
+  });
+  assert.ok(evs.length >= 1 && evs.length <= 7);
+  const ics = CAL.buildIcs(evs, { includeNotes: false });
+  assert.ok(ics.startsWith('BEGIN:VCALENDAR\r\nVERSION:2.0\r\n'));
+  assert.ok(ics.endsWith('\r\nEND:VCALENDAR\r\n'));
+  assert.ok(ics.includes('DTSTART:20261126T083000\r\n'));
+  assert.ok(!ics.includes('SECRET_PERSONAL_NOTE'), 'private notes excluded by default');
+
+  const taskIcs = CAL.exportTask({ kind: 'new', id: 'be-1', title: 'REST, APIs & Design; Basics', minutes: 15, why: 'Core skill' }, '2026-11-26', {
+    startTime: '18:00', includeNotes: true, notes: { 'be-1': 'MY_STUDY_NOTE' }
+  });
+  assert.ok(taskIcs.includes('DTSTART:20261126T180000'));
+  assert.ok(taskIcs.includes('DTEND:20261126T181500'));
+  assert.ok(taskIcs.includes('MY_STUDY_NOTE'), 'notes included only when explicitly requested');
 });

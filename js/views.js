@@ -3,7 +3,7 @@
 (function () {
   const IGU = window.IGU;
   IGU.routes = IGU.routes || {};
-  const meta = IGU.meta, SRS = IGU.srs, PL = IGU.planner, MK = IGU.mock, S = IGU.stats, Q = IGU.quality;
+  const meta = IGU.meta, SRS = IGU.srs, PL = IGU.planner, MK = IGU.mock, S = IGU.stats, Q = IGU.quality, CAL = IGU.calendar;
   const ui = function () { return IGU.ui; };
   /* replaceChildren that skips null/false (the native method would insert the text "null"). */
   function fill(el) {
@@ -136,6 +136,9 @@
           return h('div', { class: 'tile' }, h('div', { class: 'big' }, big), href ? h('a', { href: href }, label) : h('div', null, label));
         };
 
+        const notesMap = store.get('notes', {}) || {};
+        let calStart = '09:00', calIncludeNotes = false;
+
         const list = t.tasks.length ? h('ul', { class: 'task-list' }, t.tasks.map(function (x, i) {
           const on = !!doneToday[key(x)];
           return h('li', { class: on ? 'done' : '' },
@@ -143,9 +146,31 @@
             h('div', { class: 'task-main' },
               h('a', { href: x.href }, x.kind === 'review' ? 'Review: ' + x.title : x.title),
               h('div', { class: 'muted small-text' }, x.why + ' · about ' + x.minutes + ' min')),
+            CAL ? h('button', { class: 'btn small ghost', type: 'button', onclick: function () {
+              download('igu-task-' + day + '.ics', CAL.exportTask(x, day, { startTime: calStart, includeNotes: calIncludeNotes, notes: notesMap }), 'text/calendar;charset=utf-8');
+            }, 'aria-label': 'Export task to calendar: ' + x.title, title: 'Download single .ics calendar event' }, '.ics') : null,
             x.kind === 'new' && !on ? h('button', { class: 'btn small ghost', type: 'button', onclick: function () { skipTask(x); }, 'aria-label': 'Swap for another question: ' + x.title, title: 'Swap for another question' }, 'Swap') : null,
             x.kind === 'review' && !on ? h('button', { class: 'btn small ghost', type: 'button', onclick: function () { skipTask(x); }, 'aria-label': 'Move to tomorrow: ' + x.title, title: 'It stays due and comes back tomorrow' }, 'Tomorrow') : null);
         })) : h('div', { class: 'empty' }, h('p', null, 'Nothing is scheduled for today.'));
+
+        const calControls = CAL ? h('section', { class: 'hcard', 'aria-label': 'Calendar export' },
+          h('h2', null, 'Calendar export (.ics)'),
+          h('p', { class: 'muted small-text' }, 'Download standard RFC 5545 calendar events for Apple Calendar, Google Calendar, or Outlook. Local wall-clock time is used; personal notes are excluded unless you opt in.'),
+          h('div', { class: 'drill-filters two' },
+            h('div', null, h('label', { for: 'cal-start' }, 'Start time'),
+              h('input', { id: 'cal-start', type: 'time', value: calStart, onchange: function (ev) { calStart = ev.target.value || '09:00'; } })),
+            h('div', null, h('label', { class: 'chk' },
+              h('input', { id: 'cal-notes', type: 'checkbox', onchange: function (ev) { calIncludeNotes = !!ev.target.checked; } }),
+              ' Include personal question notes in descriptions'))),
+          h('div', { class: 'q-actions' },
+            t.tasks.length ? h('button', { class: 'btn small', type: 'button', onclick: function () {
+              const evs = CAL.buildDayEvents(t, day, { startTime: calStart, includeNotes: calIncludeNotes, notes: notesMap });
+              download('interviewgearup-' + day + '.ics', CAL.buildIcs(evs, { startTime: calStart, includeNotes: calIncludeNotes }), 'text/calendar;charset=utf-8');
+            } }, 'Export today (.ics)') : null,
+            h('button', { class: 'btn small', type: 'button', onclick: function () {
+              const evs = CAL.buildWeekEvents(profile, u.bank, ctx, day, { days: 7, startTime: calStart, includeNotes: calIncludeNotes, notes: notesMap });
+              download('interviewgearup-week-' + day + '.ics', CAL.buildIcs(evs, { startTime: calStart, includeNotes: calIncludeNotes }), 'text/calendar;charset=utf-8');
+            } }, 'Export 7-day plan (.ics)'))) : null;
 
         fill(app, h('div', { class: 'plan-page' },
           h('h1', null, 'Today'),
@@ -158,6 +183,7 @@
           t.notes.map(function (n) { return h('p', { class: 'notice' }, n); }),
           list,
           t.tasks.length && !left.length ? h('p', { class: 'notice ok' }, 'All done for today. Come back tomorrow for the next set.') : null,
+          calControls,
           weeklyBlock(h, wk, u),
           h('div', { class: 'q-actions' },
             left.length ? h('a', { class: 'btn primary', href: left[0].href }, 'Continue preparation') : null,
