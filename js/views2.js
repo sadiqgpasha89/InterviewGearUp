@@ -214,21 +214,25 @@
           const byId = {}; ex.skills.forEach(function (s) { byId[s.id] = s; });
           const rows = pl.maps.map(function (m) {
             const sk = byId[m.id];
-            const links = m.map.ids.map(function (id) { const e = u.bank.filter(function (x) { return x.id === id; })[0]; return h('li', null, h('a', { href: '#/q/' + id }, e.q), Q.isReal(e) ? '' : h('span', { class: 'muted small-text' }, ' (answer pending)')); });
+            const links = m.map.ids.map(function (id) { const e = u.bank.filter(function (x) { return x.id === id; })[0]; return h('li', null, h('a', { href: '#/q/' + id }, e.q), Q.isReal(e) ? '' : h('span', { class: 'muted small-text' }, ' (answer pending)'), m.map.reasons && m.map.reasons[id] ? h('div', { class: 'muted small-text' }, 'Why: ' + m.map.reasons[id] + '.') : null); });
             return h('li', { class: 'skill' },
               h('label', { class: 'chk' }, h('input', { type: 'checkbox', checked: true, 'aria-label': 'Keep ' + m.name, onchange: function (ev) { if (!ev.target.checked) delete kept[m.id]; paint(); } }), ' ', h('strong', null, m.name)),
-              ' ', h('span', { class: 'pill conf-' + m.map.confidence }, m.map.confidence === 'none' ? 'not covered' : m.map.confidence + ' match · ' + m.map.total + ' question' + (m.map.total === 1 ? '' : 's')),
-              sk ? h('div', { class: 'muted small-text' }, 'In the posting: "' + sk.evidence + '"') : h('div', { class: 'muted small-text' }, 'Added by you.'),
+              ' ', sk ? h('span', { class: 'pill ' + (sk.match === 'inferred' ? 'conf-medium' : 'conf-high') }, sk.match === 'inferred' ? 'inferred' : 'named in posting') : h('span', { class: 'pill' }, 'added by you'),
+              ' ', h('span', { class: 'pill conf-' + m.map.confidence }, m.map.confidence === 'none' ? 'not covered' : m.map.confidence + ' confidence · ' + m.map.total + ' question' + (m.map.total === 1 ? '' : 's')),
+              sk ? h('div', { class: 'muted small-text' }, (sk.match === 'inferred' ? 'Implied by ' : 'Found ') + (sk.phrases && sk.phrases.length ? sk.phrases.map(function (x) { return '"' + x + '"'; }).join(', ') : 'it') + ' in: "' + sk.evidence + '"') : h('div', { class: 'muted small-text' }, 'You added this skill.'),
+              m.map.confidenceWhy ? h('div', { class: 'muted small-text' }, 'Confidence: ' + m.map.confidenceWhy) : null,
               links.length ? h('details', null, h('summary', null, 'Matching questions'), h('ul', null, links), h('p', { class: 'muted small-text' }, m.map.how)) : h('p', { class: 'muted small-text' }, 'No question in the bank mentions this yet. Nothing is made up for it.'));
           });
           fill(out, 
             h('div', { class: 'drill-filters three' }, h('div', null, h('label', { for: 'jd-role' }, 'Role'), roleSel), h('div', null, h('label', { for: 'jd-level' }, 'Gear'), lvlSel), h('div', null, h('label', { for: 'jd-add' }, 'Skills'), addSel)),
-            h('p', { class: 'muted small-text' }, 'Estimated from the text: ' + (ex.seniority.signals.join(', ') || 'no seniority signals found') + '. Check the role and gear above.'),
+            h('p', { class: 'muted small-text' }, 'Heuristic estimate from the text, not a fact about the job: ' + (ex.seniority.signals.join(', ') || 'no seniority signals found') + '. Role guessed from the skills and the title. Check both above.'),
+            h('p', { class: 'muted small-text' }, 'Untick a skill to drop it, or add one the posting needs. "Named" skills appear in the text; "inferred" ones are implied by a framework or service it names.'),
             ex.themes.length ? h('p', null, 'Likely interview themes: ' + ex.themes.join(', ') + '.') : null,
             ex.responsibilities.length ? h('details', null, h('summary', null, 'Responsibilities found (' + ex.responsibilities.length + ')'), h('ul', null, ex.responsibilities.map(function (r) { return h('li', null, r); }))) : null,
             h('h2', null, 'Skills (' + pl.maps.length + ')'), pl.maps.length ? h('ul', { class: 'plain-list' }, rows) : h('p', { class: 'muted' }, 'No known skills were found in this text. Add them from the list above.'),
             pl.uncovered.length ? h('p', { class: 'notice' }, 'Not covered by the bank: ' + pl.uncovered.map(function (m) { return m.name; }).join(', ') + '.') : null,
-            h('h2', null, 'Preparation checklist'), h('ul', null, pl.checklist.map(function (c) { return h('li', null, c); })),
+            h('h2', null, 'Interview focus checklist'), h('ul', null, pl.checklist.map(function (c) { return h('li', null, c); })),
+            pl.modules && pl.modules.length ? h('div', null, h('h3', null, 'Practise these skills'), h('ul', { class: 'plain-list' }, pl.modules.map(function (m) { return h('li', null, h('a', { href: m.href }, m.label), h('span', { class: 'muted small-text' }, ' · ' + m.why)); }))) : null,
             h('div', { class: 'q-actions' },
               h('button', { class: 'btn primary', type: 'button', onclick: function () {
                 const cur = store.get('plan', {});
@@ -244,6 +248,10 @@
                 n.unshift({ title: jd.title, company: jd.company, url: jd.url, text: jd.text, skills: Object.keys(kept), role: role, level: level, day: day });
                 store.set('jds', n.slice(0, 10)); msg.className = 'notice ok'; msg.textContent = 'Saved on this device.'; msg.hidden = false;
               } }, 'Save analysis'),
+              h('button', { class: 'btn', type: 'button', onclick: function () {
+                store.set('jdTarget', { title: jd.title || 'Untitled role', company: jd.company || '', skills: Object.keys(kept), role: role, level: level, day: day });
+                msg.className = 'notice ok'; msg.textContent = 'Set as your target job. Its skills now appear on the Readiness page.'; msg.hidden = false;
+              } }, 'Use as my target job'),
               aiButton(u, 'AI: likely interview themes', 'The job description text you pasted will be sent to the AI provider.', function () { return { system: JD.AI_SYSTEM, prompt: JD.aiPrompt(jd.text, jd) }; }, aiOut, aiMsg),
               h('button', { class: 'btn ghost', type: 'button', onclick: function () { form(jd); } }, 'Edit text')),
             msg, aiMsg, aiOut);
