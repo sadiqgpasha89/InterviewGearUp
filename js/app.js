@@ -71,10 +71,16 @@
     if (Q.metaProblems(e).length) return null;
     const bits = [];
     if (e.difficulty) bits.push('Difficulty: ' + e.difficulty);
-    if (e.reviewStatus === 'reviewed') bits.push('Reviewed ' + e.lastReviewed);
-    else if (e.reviewStatus === 'ai-drafted') bits.push('AI-drafted, not yet reviewed by a person');
+    bits.push(Q.label(e));
     if (e.contentVersion > 1) bits.push('Version ' + e.contentVersion);
-    return bits.length ? h('p', { class: 'muted small-text meta-line' }, bits.join(' · ')) : null;
+    return h('p', { class: 'muted small-text meta-line' }, bits.join(' · '));
+  }
+  /* A reviewer flagged this answer: say so above the answer, with their note, instead of hiding the answer. */
+  function correctionNotice(e) {
+    if (Q.status(e) !== 'needs-correction' || Q.metaProblems(e).length) return null;
+    return h('p', { class: 'notice bad', role: 'note' }, h('strong', null, 'Needs correction. '),
+      'A reviewer found a problem with this answer that is not fixed yet: ' + e.correctionNote + ' ',
+      h('a', { href: reportUrl(e), rel: 'noopener noreferrer', target: '_blank' }, 'Help fix it'), '.');
   }
 
   function referencesBlock(e) {
@@ -98,6 +104,8 @@
     const f = document.createDocumentFragment();
     const ml = metaLine(e);
     if (ml) f.appendChild(ml);
+    const cn = correctionNotice(e);
+    if (cn) f.appendChild(cn);
     f.appendChild(h('div', { class: 'short' }, h('h4', null, 'In 30 seconds'), md(e.short)));
     f.appendChild(h('h4', null, 'Explained in depth'));
     f.appendChild(md(e.detail));
@@ -280,7 +288,9 @@
     const chips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Show' });
     function paintChips() {
       chips.replaceChildren();
+      const anyPending = bank.some(Q.isPlaceholder);
       SHOW.forEach(function (s) {
+        if ((s.id === 'pending' || s.id === 'real') && !anyPending && f.show !== s.id) return; // nothing to separate: every question has an answer
         chips.appendChild(h('button', {
           type: 'button', class: 'chip', 'aria-pressed': f.show === s.id ? 'true' : 'false',
           onclick: function () { f.show = s.id; showOk = showFilter(f.show); f.limit = PAGE; sync(); paint(); }
@@ -350,8 +360,17 @@
       h('section', null,
         h('h1', null, 'Pick your gear'),
         h('p', { class: 'lede' }, 'Questions run from first gear (junior) to fourth (lead or staff). Open one for a 30-second answer, then the full explanation.'),
-        h('p', { class: 'muted small-text' }, bank.filter(Q.isReal).length + ' of ' + bank.length + ' questions have a full written answer. The rest are real interview questions whose answers are still being written; they show a practice structure instead. ',
-          h('a', { href: '#/questions?show=real' }, 'Show only full answers'), '.'),
+        (function () {
+          const real = bank.filter(Q.isReal).length;
+          const reviewed = bank.filter(function (e) { return Q.status(e) === 'reviewed'; }).length;
+          return h('p', { class: 'muted small-text' },
+            real === bank.length ? 'Every one of the ' + bank.length + ' questions has a written answer. '
+              : real + ' of ' + bank.length + ' questions have a written answer; the rest show a practice structure instead (',
+            real === bank.length ? null : h('a', { href: '#/questions?show=real' }, 'show only full answers'), real === bank.length ? null : '). ',
+            reviewed ? reviewed + ' have been reviewed by a person; the rest are AI-drafted or of unrecorded origin, so verify anything you rely on. '
+              : 'None has been reviewed by a person yet: they are AI-drafted or of unrecorded origin, so verify anything you rely on. ',
+            h('a', { href: 'https://github.com/' + cfg.owner + '/' + cfg.repo + '/blob/main/docs/CONTENT_QUALITY.md', rel: 'noopener noreferrer' }, 'Content quality report'), '.');
+        })(),
         openId && !openEntry ? h('p', { class: 'notice bad' }, 'That question link is not in the bank. Showing everything instead.') : null,
         h('div', { class: 'search' }, input),
         chips,

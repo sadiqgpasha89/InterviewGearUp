@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>How does a Kubernetes rolling update work? Explain readiness versus liveness probes. | InterviewGearUp</title>
-<meta name="description" content="A Deployment manages ReplicaSets of Pods and does rolling updates by starting new Pods and stopping old ones gradually. Readiness decides when a Pod…">
+<meta name="description" content="A Deployment rolling update creates Pods from the new ReplicaSet a few at a time and removes old ones as new ones become Ready, bounded by maxSurge and…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-3.html">
 <meta property="og:title" content="How does a Kubernetes rolling update work? Explain readiness versus liveness probes. | InterviewGearUp">
-<meta property="og:description" content="A Deployment manages ReplicaSets of Pods and does rolling updates by starting new Pods and stopping old ones gradually. Readiness decides when a Pod…">
+<meta property="og:description" content="A Deployment rolling update creates Pods from the new ReplicaSet a few at a time and removes old ones as new ones become Ready, bounded by maxSurge and…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-3.html">
 <meta name="color-scheme" content="light dark">
@@ -21,25 +21,33 @@
 <main id="main" class="static-page">
 <p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
 <h1>How does a Kubernetes rolling update work? Explain readiness versus liveness probes.</h1>
-<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 2 (Mid-level) · Kubernetes · AI-drafted, not yet reviewed by a person</p>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 2 (Mid-level) · Kubernetes · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
-<p>A Deployment manages ReplicaSets of Pods and does rolling updates by starting new Pods and stopping old ones gradually. Readiness decides when a Pod receives traffic; liveness decides when to restart it.</p></div>
+<p>A Deployment rolling update creates Pods from the new ReplicaSet a few at a time and removes old ones as new ones become Ready, bounded by maxSurge and maxUnavailable. Readiness decides whether a Pod receives traffic; liveness decides whether the container is restarted. A failing readiness probe stalls the rollout instead of breaking users.</p></div>
 <h4>Explained in depth</h4>
-<p><strong>Objects</strong>: a Pod runs one or more containers; a Deployment declares replicas and update strategy; a Service gives a stable address that load-balances across Pods matching its label selector.</p>
-<p><strong>Rolling update</strong>: a new ReplicaSet scales up while the old one scales down, limited by <code>maxSurge</code> and <code>maxUnavailable</code>. Roll back with <code>kubectl rollout undo</code>.</p>
-<p><strong>Probes</strong>:</p>
-<ul><li>Failing <strong>readiness</strong>: the Pod is removed from Service endpoints, not restarted.</li><li>Failing <strong>liveness</strong>: the container is restarted. Use it for deadlocks, and do not make it depend on downstream services.</li><li><strong>Startup</strong> probe: gives slow-starting apps time before liveness begins.</li></ul>
+<h4>How the rollout proceeds</h4>
+<p>Changing the Pod template (for example the image tag) creates a new ReplicaSet. The controller scales it up and the old one down in steps:</p>
+<ul><li><code>maxSurge: 25%</code>: how many extra Pods may exist above the desired count.</li><li><code>maxUnavailable: 0</code>: never drop below the desired count of Ready Pods (safest for user traffic).</li></ul>
+<p>A new Pod only counts once it is <strong>Ready</strong>. If new Pods never become Ready, the rollout stops and <code>progressDeadlineSeconds</code> marks it failed; <code>kubectl rollout undo</code> goes back.</p>
+<h4>The three probes</h4>
+<div class="md-table"><table><thead><tr><th>Probe</th><th>On failure</th><th>Use it for</th></tr></thead><tbody><tr><td>Readiness</td><td>Removed from Service endpoints, not restarted</td><td>Can I serve traffic right now? (warm-up, dependency down)</td></tr><tr><td>Liveness</td><td>Container restarted</td><td>Is the process stuck beyond recovery? (deadlock)</td></tr><tr><td>Startup</td><td>Other probes wait until it passes</td><td>Slow-starting apps, so liveness does not kill them during boot</td></tr></tbody></table></div>
 <pre><code>readinessProbe:
   httpGet: { path: /ready, port: 8080 }
   periodSeconds: 5
+  failureThreshold: 3
 livenessProbe:
-  httpGet: { path: /healthz, port: 8080 }
-  initialDelaySeconds: 15</code></pre>
-<p>Also set resource requests and limits, a PodDisruptionBudget, and handle SIGTERM gracefully (finish in-flight requests, use <code>preStop</code> and <code>terminationGracePeriodSeconds</code>) so deployments do not drop traffic.</p>
+  httpGet: { path: /live, port: 8080 }
+  periodSeconds: 10
+  failureThreshold: 6</code></pre>
+<h4>Trade-offs</h4>
+<p>Strict readiness protects users but can stall a rollout or empty a Service during a partial outage. Aggressive liveness catches hangs quickly but can turn a slow dependency into a restart storm.</p>
+<h4>Pitfalls</h4>
+<ul><li>Liveness that checks the database: the database blips and every Pod restarts at once. Liveness should check only the process itself.</li><li>Same endpoint for both probes, so a busy Pod is killed instead of being taken out of rotation.</li><li>No graceful shutdown: handle SIGTERM, fail readiness, finish in-flight requests within <code>terminationGracePeriodSeconds</code>.</li><li>Schema changes that are not backward compatible: during a rollout old and new versions run side by side.</li></ul>
 <h4>Likely follow-ups</h4>
-<ul><li>What happens if the readiness probe is too strict?</li><li>What is the difference between requests and limits?</li><li>How does a Service find its Pods?</li></ul>
+<ul><li>What happens if the readiness probe is too strict?</li><li>What is the difference between requests and limits?</li><li>How does a Service find its Pods?</li><li>Why should a liveness probe not call the database?</li></ul>
+<p class="muted small-text">References: <a href="https://kubernetes.io/docs/concepts/workloads/controllers/deployment/" rel="noopener noreferrer">Kubernetes: Deployments</a>, <a href="https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/" rel="noopener noreferrer">Kubernetes: liveness, readiness and startup probes</a></p>
 <p><a class="btn primary" href="../#/q/do-3">Practise this question in the app</a></p>
-<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-3%3A+How+does+a+Kubernetes+rolling+update+work%3F+Explain+readiness+versus%E2%80%A6&amp;question-id=do-3&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+2%2C+topic%3A+Kubernetes%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-3.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-3%3A+How+does+a+Kubernetes+rolling+update+work%3F+Explain+readiness+versus%E2%80%A6&amp;question-id=do-3&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+2%2C+topic%3A+Kubernetes%2C+content+version+2.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-3.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
 <footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>

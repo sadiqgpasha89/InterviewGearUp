@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>What is Terraform state, and why use a remote backend with locking? | InterviewGearUp</title>
-<meta name="description" content="State maps your configuration to the real resources and is how Terraform computes what to change. Keep it in a remote, encrypted backend with locking so…">
+<meta name="description" content="Terraform state is a JSON file that maps the resources in your configuration to the real objects in the cloud, with their IDs and attributes. Terraform…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-5.html">
 <meta property="og:title" content="What is Terraform state, and why use a remote backend with locking? | InterviewGearUp">
-<meta property="og:description" content="State maps your configuration to the real resources and is how Terraform computes what to change. Keep it in a remote, encrypted backend with locking so…">
+<meta property="og:description" content="Terraform state is a JSON file that maps the resources in your configuration to the real objects in the cloud, with their IDs and attributes. Terraform…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/do-5.html">
 <meta name="color-scheme" content="light dark">
@@ -21,22 +21,32 @@
 <main id="main" class="static-page">
 <p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
 <h1>What is Terraform state, and why use a remote backend with locking?</h1>
-<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 2 (Mid-level) · Infrastructure as code · AI-drafted, not yet reviewed by a person</p>
+<p class="muted small-text meta-line">DevOps / SRE / Cloud · Gear 2 (Mid-level) · Infrastructure as code · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
-<p>State maps your configuration to the real resources and is how Terraform computes what to change. Keep it in a remote, encrypted backend with locking so a team shares one source of truth and two applies cannot run at once.</p></div>
+<p>Terraform state is a JSON file that maps the resources in your configuration to the real objects in the cloud, with their IDs and attributes. Terraform diffs config against state to plan changes. A remote backend keeps one shared copy, and locking stops two applies from writing it at the same time and corrupting it.</p></div>
 <h4>Explained in depth</h4>
-<p>State holds resource IDs and sometimes secrets, so never commit it. Use S3 with locking, GCS, Azure Blob or Terraform Cloud.</p>
-<p><strong>Drift</strong> is when someone changes a resource outside Terraform. <code>terraform plan</code> reveals it. Prevent it by routing all changes through code, and use <code>terraform import</code> to adopt existing resources.</p>
-<h4>Workflow</h4>
-<p>Pull request, <code>plan</code> posted for review, <code>apply</code> from CI with a least-privilege role.</p>
-<h4>Structure</h4>
-<p>Reusable modules, separate state per environment and per blast radius (not one giant state), pinned provider versions, <code>prevent_destroy</code> on critical resources.</p>
-<h4>Danger zones</h4>
-<p>A plan that replaces a stateful resource (database, disk) will destroy data. Read plans carefully and add policy-as-code checks (OPA, Sentinel, Checkov) in CI.</p>
+<h4>What state is for</h4>
+<p>Terraform cannot infer from the cloud API alone which bucket belongs to which block in your code. State records that mapping (<code>aws_s3_bucket.logs</code> is bucket <code>acme-logs-prod</code>), plus attribute values and dependency order. <code>terraform plan</code> compares three things: your configuration, the state, and a refresh of the real resources.</p>
+<h4>Why remote, why locked</h4>
+<ul><li><strong>Local state</strong> lives on one laptop. A teammate who runs apply from another machine has a stale or missing copy and may try to recreate resources that already exist.</li><li><strong>Remote backend</strong> (for example S3, GCS, Azure Blob or Terraform Cloud) gives everyone and CI the same copy, with versioning so you can roll back a bad write.</li><li><strong>Locking</strong> (a DynamoDB table or the native lock of the backend) makes apply exclusive. Without it, two concurrent applies both read version N and both write N+1, and one set of changes is lost from state while still existing in the cloud.</li></ul>
+<pre><code>terraform {
+  backend &quot;s3&quot; {
+    bucket         = &quot;acme-tf-state&quot;
+    key            = &quot;payments/prod/terraform.tfstate&quot;
+    region         = &quot;eu-west-1&quot;
+    encrypt        = true
+    dynamodb_table = &quot;tf-locks&quot;
+  }
+}</code></pre>
+<h4>Trade-offs in how you split state</h4>
+<ul><li><strong>One big state</strong>: simple, but every plan is slow, the blast radius of a mistake is the whole estate and every team needs write access.</li><li><strong>Per environment and per component</strong> (network, data, app): faster plans and smaller blast radius, at the cost of passing outputs between states (<code>terraform_remote_state</code> or a data source) and more pipelines to run.</li></ul>
+<h4>Pitfalls</h4>
+<ul><li>State stores attribute values in plain text, including generated passwords. Encrypt the bucket, restrict who can read it, and prefer secrets managers over Terraform-generated secrets.</li><li><strong>Drift</strong>: someone changes a resource in the console. The next plan wants to revert it. Decide whether to accept the change in code or let Terraform restore it.</li><li>A stuck lock after a crashed CI job: <code>terraform force-unlock</code> only after confirming nothing is still running.</li><li>Never hand-edit the JSON. Use <code>terraform state mv</code>, <code>rm</code> and <code>import</code> (or <code>moved</code> and <code>import</code> blocks) so the change is reviewable.</li></ul>
 <h4>Likely follow-ups</h4>
-<ul><li>How do you handle secrets that end up in state?</li><li>How would you split state across teams and environments?</li><li>What does terraform import do?</li></ul>
+<ul><li>How do you handle secrets that end up in state?</li><li>How would you split state across teams and environments?</li><li>What does terraform import do?</li><li>A plan shows a resource will be destroyed and recreated after a refactor. How do you avoid that?</li></ul>
+<p class="muted small-text">References: <a href="https://developer.hashicorp.com/terraform/language/state" rel="noopener noreferrer">Terraform: state</a></p>
 <p><a class="btn primary" href="../#/q/do-5">Practise this question in the app</a></p>
-<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-5%3A+What+is+Terraform+state%2C+and+why+use+a+remote+backend+with+locking%3F&amp;question-id=do-5&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+2%2C+topic%3A+Infrastructure+as+code%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-5.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+do-5%3A+What+is+Terraform+state%2C+and+why+use+a+remote+backend+with+locking%3F&amp;question-id=do-5&amp;context=DevOps+%2F+SRE+%2F+Cloud%2C+Gear+2%2C+topic%3A+Infrastructure+as+code%2C+content+version+2.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fdo-5.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
 <footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>

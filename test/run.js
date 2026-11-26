@@ -323,6 +323,65 @@ test('stored review status is honest: nothing is marked reviewed without a perso
   drafted.forEach((e) => assert.ok(Q.isReal(e) && !/requires balancing performance/.test(e.short), e.id + ' still has filler'));
 });
 
+test('review states: needs-correction requires a note, every state has a label, AI drafts are never called reviewed', () => {
+  assert.deepEqual(Array.from(Q.metaProblems({ reviewStatus: 'needs-correction', correctionNote: 'Mixes up liveness and readiness probes.' })), []);
+  assert.ok(Q.metaProblems({ reviewStatus: 'needs-correction' }).length, 'needs-correction without a note');
+  assert.ok(Q.metaProblems({ reviewStatus: 'ai-drafted', correctionNote: 'stray note here' }).length, 'note only with needs-correction');
+  assert.equal(Q.label({ reviewStatus: 'reviewed', lastReviewed: '2026-11-01' }), 'Human-reviewed 2026-11-01');
+  assert.ok(/not yet reviewed by a person/.test(Q.label({ reviewStatus: 'ai-drafted' })));
+  assert.ok(/Needs correction/.test(Q.label({ reviewStatus: 'needs-correction', correctionNote: 'x'.repeat(12) })));
+  assert.ok(/origin not recorded/.test(Q.label({ short: 'A real hand written answer.' })));
+  Q.STATUSES.forEach((s) => assert.ok(Q.STATUS_NAMES[s], 'no display name for ' + s));
+  bank.forEach((e) => { if (Q.status(e) !== 'reviewed') assert.ok(!/^Human-reviewed/.test(Q.label(e)), e.id); });
+});
+
+test('rubric signals separate a shallow answer from a strong one, and the review queue is deterministic', () => {
+  const weak = { id: 'x-1', level: 3, q: 'Explain caching?', short: 'Caching makes things fast.', detail: 'Caching stores data in memory so it is faster to read.', follow: ['Why?'], tags: [] };
+  const strong = { id: 'x-2', level: 3, q: 'Explain caching?', short: 'x',
+    detail: 'For example, a product page. ' + 'word '.repeat(200) + 'The trade-off is staleness versus speed. A pitfall is a stampede when a hot key expires. Decide the TTL from requirements.',
+    follow: ['a?', 'b?', 'c?'], tags: [], references: [{ title: 'Doc', url: 'https://example.com' }] };
+  const fw = Q.flags(weak);
+  ['thin', 'no-example', 'no-tradeoffs', 'no-edge-cases', 'few-follow-ups', 'no-references', 'senior-calibration'].forEach((f) => assert.ok(fw.includes(f), 'weak answer should be flagged ' + f));
+  assert.deepEqual(Array.from(Q.flags(strong)), []);
+  assert.ok(Q.flags({ id: 'g-1', level: 2, short: 'x', detail: "In today's world it plays a crucial role, and various factors matter.", follow: [] }).includes('generic'));
+  assert.ok(Q.reviewPriority(weak) > Q.reviewPriority(strong));
+  assert.equal(Q.reviewPriority({ reviewStatus: 'reviewed', lastReviewed: '2026-01-01', short: 'a', detail: 'b', follow: [] }), 0, 'reviewed answers leave the queue');
+  assert.ok(Q.reviewPriority(Object.assign({}, strong, { reviewStatus: 'needs-correction', correctionNote: 'Wrong TTL advice.' })) >= 50, 'corrections jump the queue');
+  Object.keys(Q.FLAG_TEXT).forEach((k) => assert.ok(Q.FLAG_TEXT[k].length > 5));
+});
+
+test('content quality report is current and README statistics match the data', () => {
+  const ca = require('../scripts/content-audit.js');
+  const a = ca.audit(root);
+  const fresh = ca.markdown(a);
+  assert.equal(fs.readFileSync(path.join(root, ca.REPORT), 'utf8'), fresh, 'docs/CONTENT_QUALITY.md is stale: run npm run content:audit -- --write');
+  const readme = fs.readFileSync(path.join(root, 'README.md'), 'utf8');
+  assert.ok(readme.includes(bank.length.toLocaleString('en-US') + ' interview questions'), 'README question total is out of date');
+  assert.ok(readme.includes(meta.roles.length + ' tech roles'), 'README role count is out of date');
+  meta.roles.forEach((r) => {
+    const n = bank.filter((e) => e.role === r.id).length;
+    const row = readme.split('\n').find((l) => l.startsWith('| **') && l.includes('| ' + n + ' |'));
+    assert.ok(row, 'README role table has no row with ' + n + ' questions for ' + r.id);
+  });
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  assert.ok(!/Interview prep for \d+ IT roles/.test(html) || html.includes('Interview prep for ' + meta.roles.length + ' IT roles'), 'index.html meta role count is out of date');
+});
+
+test('references point at known questions over https, and the second-version fundamentals keep their identity', () => {
+  Object.keys(IGU.referenceMap).forEach((id) => {
+    const e = bank.find((x) => x.id === id);
+    assert.ok(e, 'reference for unknown question ' + id);
+    assert.ok(e.references.length && e.references.every((r) => /^https:\/\//.test(r.url) && r.title), id);
+  });
+  ['do-5', 'sec-1', 'be-4', 'fe-5', 'be-1', 'do-3', 'fe-3', 'sec-3', 'fe-1', 'ml-2'].forEach((id) => {
+    const e = bank.find((x) => x.id === id);
+    assert.equal(e.contentVersion, 2, id);
+    assert.equal(e.reviewStatus, 'ai-drafted', id + ' must stay labelled AI-drafted');
+    assert.ok(e.follow.length >= 4, id);
+    assert.deepEqual(Array.from(Q.flags(e)).filter((f) => ['thin', 'no-example', 'no-tradeoffs', 'no-edge-cases'].includes(f)), [], id + ' still shallow');
+  });
+});
+
 test('placeholder detection finds exactly the generated filler', () => {
   const ph = bank.filter(Q.isPlaceholder);
   ph.forEach((e) => assert.ok(/requires balancing performance, reliability, and architectural complexity/.test(e.short), e.id));
@@ -1089,7 +1148,7 @@ test('static pages: committed q/ pages, sitemap and robots.txt match the current
     assert.ok(/Content-Security-Policy/.test(files[f]) && /rel="canonical"/.test(files[f]), f);
   });
   assert.ok(files['sitemap.xml'].includes('/q/be-3.html') && files['robots.txt'].includes('Sitemap:'));
-  assert.ok(/AI-drafted, not yet reviewed|Reviewed \d{4}/.test(files['q/be-3.html']), 'review status is disclosed');
+  ['q/be-3.html', 'q/be-2.html', 'q/fe-14.html'].forEach((f) => assert.ok(/AI-drafted, not yet reviewed|Human-reviewed \d{4}|Not yet reviewed by a person|Needs correction/.test(files[f]), f + ': review status is disclosed'));
 });
 
 test('new files are registered: index.html loads them and the service worker precaches them (checked above), nav links the new routes', () => {

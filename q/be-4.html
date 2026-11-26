@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>Describe caching strategies and how you deal with invalidation and cache stampedes. | InterviewGearUp</title>
-<meta name="description" content="Cache-aside is the usual pattern: check the cache, on a miss read the database and fill the cache with a TTL. The hard parts are invalidation, stampedes…">
+<meta name="description" content="Common strategies are cache-aside (app reads cache, falls back to the database and fills the cache), read-through, write-through and write-behind.…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-4.html">
 <meta property="og:title" content="Describe caching strategies and how you deal with invalidation and cache stampedes. | InterviewGearUp">
-<meta property="og:description" content="Cache-aside is the usual pattern: check the cache, on a miss read the database and fill the cache with a TTL. The hard parts are invalidation, stampedes…">
+<meta property="og:description" content="Common strategies are cache-aside (app reads cache, falls back to the database and fills the cache), read-through, write-through and write-behind.…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-4.html">
 <meta name="color-scheme" content="light dark">
@@ -21,23 +21,36 @@
 <main id="main" class="static-page">
 <p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
 <h1>Describe caching strategies and how you deal with invalidation and cache stampedes.</h1>
-<p class="muted small-text meta-line">Backend engineer · Gear 2 (Mid-level) · Caching · AI-drafted, not yet reviewed by a person</p>
+<p class="muted small-text meta-line">Backend engineer · Gear 2 (Mid-level) · Caching · Difficulty: medium · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
-<p>Cache-aside is the usual pattern: check the cache, on a miss read the database and fill the cache with a TTL. The hard parts are invalidation, stampedes when a hot key expires, and stale reads.</p></div>
+<p>Common strategies are cache-aside (app reads cache, falls back to the database and fills the cache), read-through, write-through and write-behind. Invalidate with TTLs plus explicit deletes on writes, and accept a bounded staleness window. Prevent stampedes with request coalescing or a lock per key, early refresh before expiry and jittered TTLs.</p></div>
 <h4>Explained in depth</h4>
-<h4>Patterns</h4>
-<ul><li><strong>Cache-aside</strong>: the application manages the cache.</li><li><strong>Read-through</strong>: the cache loads data itself.</li><li><strong>Write-through</strong>: write cache and database together. Consistent but slower writes.</li><li><strong>Write-behind</strong>: write the database asynchronously. Fast, but risks losing data.</li></ul>
+<h4>Strategies</h4>
+<ul><li><strong>Cache-aside</strong>: read cache; on a miss read the database and set the cache. Simple and the most common. The app owns consistency.</li><li><strong>Read-through / write-through</strong>: the cache library loads and writes the database for you. Write-through keeps the cache fresh but adds write latency.</li><li><strong>Write-behind</strong>: write to the cache, flush to the database later. Fast writes, but you can lose data if the cache dies before flushing.</li></ul>
 <h4>Invalidation</h4>
-<p>TTLs are simplest. Delete-on-write (update the database, then delete the key) is common, but a concurrent read can refill the cache with the old value, so keep a TTL as a safety net. Versioned keys avoid invalidation entirely.</p>
-<h4>Stampede (many misses at once)</h4>
-<p>Request coalescing (single-flight), a lock around the refill, jittered TTLs, refresh-ahead, or serving stale data while revalidating in the background.</p>
-<h4>Other issues</h4>
-<p>Cache penetration (lookups for keys that do not exist): cache negative results or use a Bloom filter. Eviction policy: LRU or LFU.</p>
-<p>Cache what is read-heavy, expensive, and tolerant of staleness. Track hit ratio and latency.</p>
+<p>On update, write the database first, then <strong>delete</strong> the cache key (not set it). Deleting avoids a race where two writers set values in the wrong order. A TTL is the safety net for anything you miss.</p>
+<pre><code>def get_product(pid):
+    key = f&quot;product:{pid}:v3&quot;          # version the key when the schema changes
+    val = cache.get(key)
+    if val is None:
+        val = db.load_product(pid)
+        cache.set(key, val, ttl=300 + random.randint(0, 60))  # jitter
+    return val
+
+def update_product(pid, data):
+    db.save_product(pid, data)
+    cache.delete(f&quot;product:{pid}:v3&quot;)</code></pre>
+<h4>Cache stampede</h4>
+<p>A hot key expires and thousands of requests miss at once, all hitting the database. Fixes:</p>
+<ul><li><strong>Single flight / lock per key</strong>: the first request recomputes, the rest wait briefly or get the stale value.</li><li><strong>Early or probabilistic refresh</strong>: refresh slightly before expiry, while still serving the old value.</li><li><strong>Jittered TTLs</strong> so many keys written together do not expire together (a cache avalanche).</li><li><strong>Negative caching</strong> of &quot;not found&quot; for a short time so missing keys do not hit the database every time.</li></ul>
+<h4>Trade-offs</h4>
+<p>Every cache trades freshness for speed. Ask how stale the data may be: a product description can be minutes old, an account balance cannot be cached at all without care. In-process caches are fastest but each instance has its own copy; Redis or Memcached are shared but add a network hop and another system to operate.</p>
+<h4>Pitfalls</h4>
+<p>Caching per-user data under a shared key (data leak), unbounded cache growth, caching errors as if they were results, and having no way to measure hit rate.</p>
 <h4>Likely follow-ups</h4>
-<ul><li>How do you prevent a cache stampede?</li><li>How would you cache user-specific data?</li><li>Redis versus an in-process cache?</li></ul>
+<ul><li>How do you prevent a cache stampede?</li><li>How would you cache user-specific data?</li><li>Redis versus an in-process cache?</li><li>Why delete the key on update instead of writing the new value?</li></ul>
 <p><a class="btn primary" href="../#/q/be-4">Practise this question in the app</a></p>
-<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-4%3A+Describe+caching+strategies+and+how+you+deal+with+invalidation+and%E2%80%A6&amp;question-id=be-4&amp;context=Backend+engineer%2C+Gear+2%2C+topic%3A+Caching%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-4.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-4%3A+Describe+caching+strategies+and+how+you+deal+with+invalidation+and%E2%80%A6&amp;question-id=be-4&amp;context=Backend+engineer%2C+Gear+2%2C+topic%3A+Caching%2C+content+version+2.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-4.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
 <footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>

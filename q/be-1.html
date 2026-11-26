@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>What makes an API RESTful? Explain HTTP methods, status codes and idempotency. | InterviewGearUp</title>
-<meta name="description" content="REST models things as resources addressed by URLs and manipulated with standard HTTP methods. GET, PUT and DELETE are idempotent (repeating them has the…">
+<meta name="description" content="REST models a system as resources identified by URLs, manipulated with standard HTTP methods, using stateless requests and representations such as JSON.…">
 <link rel="canonical" href="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-1.html">
 <meta property="og:title" content="What makes an API RESTful? Explain HTTP methods, status codes and idempotency. | InterviewGearUp">
-<meta property="og:description" content="REST models things as resources addressed by URLs and manipulated with standard HTTP methods. GET, PUT and DELETE are idempotent (repeating them has the…">
+<meta property="og:description" content="REST models a system as resources identified by URLs, manipulated with standard HTTP methods, using stateless requests and representations such as JSON.…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://sadiqgpasha89.github.io/InterviewGearUp/q/be-1.html">
 <meta name="color-scheme" content="light dark">
@@ -21,21 +21,26 @@
 <main id="main" class="static-page">
 <p class="muted small-text"><a href="index.html">All questions with written answers</a></p>
 <h1>What makes an API RESTful? Explain HTTP methods, status codes and idempotency.</h1>
-<p class="muted small-text meta-line">Backend engineer · Gear 1 (Junior) · APIs · AI-drafted, not yet reviewed by a person</p>
+<p class="muted small-text meta-line">Backend engineer · Gear 1 (Junior) · APIs · Difficulty: easy · AI-drafted, not yet reviewed by a person</p>
 <div class="short"><h4>In 30 seconds</h4>
-<p>REST models things as resources addressed by URLs and manipulated with standard HTTP methods. GET, PUT and DELETE are idempotent (repeating them has the same effect as once); POST is not; status codes tell the client what happened.</p></div>
+<p>REST models a system as resources identified by URLs, manipulated with standard HTTP methods, using stateless requests and representations such as JSON. Methods have defined meanings: GET reads, POST creates or triggers, PUT replaces, PATCH partially updates, DELETE removes. Idempotent methods (GET, PUT, DELETE) give the same result when repeated; POST does not.</p></div>
 <h4>Explained in depth</h4>
+<h4>Principles</h4>
+<ul><li><strong>Resources and URLs</strong>: nouns, not verbs: <code>GET /orders/42</code>, not <code>GET /getOrder?id=42</code>.</li><li><strong>Stateless</strong>: each request carries what the server needs (auth token, parameters). This makes horizontal scaling easy.</li><li><strong>Uniform interface</strong>: standard methods, status codes and headers (caching, content negotiation).</li></ul>
 <h4>Methods</h4>
-<ul><li><strong>GET</strong>: read, safe, idempotent.</li><li><strong>POST</strong>: create or trigger an action, not idempotent.</li><li><strong>PUT</strong>: replace a resource, idempotent.</li><li><strong>PATCH</strong>: partial update, not guaranteed idempotent.</li><li><strong>DELETE</strong>: remove, idempotent.</li></ul>
-<h4>Status codes to know</h4>
-<p>200 OK, 201 Created (with a <code>Location</code> header), 204 No Content, 400 bad request, 401 unauthenticated, 403 forbidden, 404 not found, 409 conflict, 422 validation failed, 429 too many requests, 500 server error, 503 unavailable.</p>
-<h4>Habits of a good REST API</h4>
-<p>Plural nouns for resources (<code>/orders/42</code>), stateless requests, pagination for collections, a consistent error body, and versioning.</p>
-<p>Idempotency matters because networks retry: retrying a PUT is safe. For POST, accept an <strong>idempotency key</strong> so a retried request does not create a duplicate.</p>
+<div class="md-table"><table><thead><tr><th>Method</th><th>Use</th><th>Safe</th><th>Idempotent</th></tr></thead><tbody><tr><td>GET</td><td>Read</td><td>Yes</td><td>Yes</td></tr><tr><td>POST</td><td>Create, or run an action</td><td>No</td><td>No</td></tr><tr><td>PUT</td><td>Replace the whole resource</td><td>No</td><td>Yes</td></tr><tr><td>PATCH</td><td>Partial update</td><td>No</td><td>Not guaranteed</td></tr><tr><td>DELETE</td><td>Remove</td><td>No</td><td>Yes</td></tr></tbody></table></div>
+<p><strong>Idempotent</strong> means sending the same request twice leaves the server in the same state as sending it once. That matters because clients and proxies retry after timeouts. Example: a client sends <code>POST /payments</code>, the response is lost, and it retries: without protection the customer is charged twice. Fix it with an <code>Idempotency-Key</code> header that the server stores with the result.</p>
+<h4>Status codes</h4>
+<ul><li><code>200 OK</code>, <code>201 Created</code> (with a <code>Location</code> header), <code>204 No Content</code></li><li><code>400</code> bad input, <code>401</code> not authenticated, <code>403</code> authenticated but not allowed, <code>404</code> not found, <code>409</code> conflict, <code>422</code> validation failed, <code>429</code> rate limited</li><li><code>500</code> server bug, <code>503</code> temporarily unavailable (with <code>Retry-After</code>)</li></ul>
+<h4>Trade-offs</h4>
+<p>REST is simple, cacheable and works everywhere, but clients may over-fetch or need several round trips for one screen. GraphQL lets clients ask for exactly what they need at the cost of harder caching and query-cost control; gRPC is faster for internal service calls but awkward in browsers.</p>
+<h4>Pitfalls</h4>
+<p>Returning <code>200</code> with an error body, verbs in URLs, breaking changes without versioning, and offset pagination on large, changing collections (prefer cursor pagination).</p>
 <h4>Likely follow-ups</h4>
-<ul><li>What is the difference between 401 and 403?</li><li>PUT versus PATCH?</li><li>How would you paginate a large collection?</li></ul>
+<ul><li>What is the difference between 401 and 403?</li><li>PUT versus PATCH?</li><li>How would you paginate a large collection?</li><li>How would you make POST /payments safe to retry?</li></ul>
+<p class="muted small-text">References: <a href="https://www.rfc-editor.org/rfc/rfc9110" rel="noopener noreferrer">RFC 9110: HTTP semantics</a></p>
 <p><a class="btn primary" href="../#/q/be-1">Practise this question in the app</a></p>
-<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-1%3A+What+makes+an+API+RESTful%3F+Explain+HTTP+methods%2C+status+codes+and%E2%80%A6&amp;question-id=be-1&amp;context=Backend+engineer%2C+Gear+1%2C+topic%3A+APIs%2C+content+version+1.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-1.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
+<p class="small-text"><a href="https://github.com/sadiqgpasha89/InterviewGearUp/issues/new?template=content-feedback.yml&amp;title=%5BAnswer+feedback%5D+be-1%3A+What+makes+an+API+RESTful%3F+Explain+HTTP+methods%2C+status+codes+and%E2%80%A6&amp;question-id=be-1&amp;context=Backend+engineer%2C+Gear+1%2C+topic%3A+APIs%2C+content+version+2.+Link%3A+https%3A%2F%2Fsadiqgpasha89.github.io%2FInterviewGearUp%2Fq%2Fbe-1.html" rel="noopener noreferrer">Report a problem with this answer</a></p>
 </main>
 <footer class="foot"><p>Answers are study aids written to explain the ideas, not scripts to memorise. Verify anything you rely on. <a href="../">Open the app</a> · <a href="https://github.com/sadiqgpasha89/InterviewGearUp" rel="noopener noreferrer">Source on GitHub</a></p></footer>
 </body>

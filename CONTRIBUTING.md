@@ -25,19 +25,44 @@ IGU.revise([ Object.assign(meta('medium'), { id: 'be-65', short: '...', detail: 
 
 ## Review status
 
-| Value | Meaning |
-| --- | --- |
-| *(none, filler text)* | Placeholder. Shown as "answer not written yet". |
-| `ai-drafted` | Written with AI help; no person has checked it. Shown as such. |
-| `reviewed` | A person checked it. Requires `lastReviewed: 'YYYY-MM-DD'`. Do not set this unless you really reviewed it. |
+| Value | Shown as | Meaning |
+| --- | --- | --- |
+| *(none, filler text)* | Pending | Placeholder. The app shows a practice structure instead of the filler. |
+| *(none, real text)* | Not yet reviewed by a person (origin not recorded) | Early answers whose author was not recorded. Treat them like AI drafts. |
+| `ai-drafted` | AI-drafted, not yet reviewed by a person | Written with AI help; no person has checked it. |
+| `reviewed` | Human-reviewed *date* | A person checked it against the rubric below. Requires `lastReviewed: 'YYYY-MM-DD'`. Do not set this unless you really reviewed it. |
+| `needs-correction` | Needs correction (warning above the answer) | A person found a problem that is not fixed yet. Requires `correctionNote` (10 to 400 characters) saying what is wrong. |
 
-Bump `contentVersion` when an answer changes materially.
+Bump `contentVersion` when an answer changes materially. AI-written answers stay `ai-drafted`, whatever their version, until a person reviews them.
+
+## Human review workflow
+
+1. **Pick from the queue.** `npm run content:audit` (or [docs/CONTENT_QUALITY.md](docs/CONTENT_QUALITY.md)) lists the answers to review first: correction requests, then answers of unrecorded origin, rubric gaps, fundamentals and starter-path questions.
+2. **Check the answer against the rubric.** For each point, note pass or fail:
+   - Technical correctness (verify against primary documentation, not memory)
+   - Clarity: an interviewer could follow the 30-second answer
+   - Completeness for the question as asked
+   - Practical relevance: real tools, real failure modes
+   - At least one concrete example
+   - Trade-offs or alternatives
+   - Edge cases, pitfalls or failure modes
+   - Calibrated to the gear: Gear 1 stays on fundamentals and practical understanding; Gear 3 and 4 cover ambiguity, decisions, architecture, organisational impact and trade-offs
+   - Follow-ups an interviewer would really ask (at least 3)
+   - References to authoritative sources where the topic has them (specs, RFCs, official docs)
+3. **Record the outcome** in the data file (curated files can use `IGU.revise` with just the fields you change):
+   - All points pass: `reviewStatus: 'reviewed', lastReviewed: 'YYYY-MM-DD'`.
+   - Something is wrong and you cannot fix it now: `reviewStatus: 'needs-correction', correctionNote: 'What is wrong'`. The app warns readers until it is fixed.
+   - You fixed it: bump `contentVersion`, then mark it reviewed only if you (a person) checked the final text.
+4. Run `npm run seo`, `npm run content:audit -- --write` and `npm test`, then open a pull request.
+
+The rubric flags in the report are text heuristics. They help choose what to review; they never prove an answer right or wrong.
 
 ## Before you open a pull request
 
 ```sh
 npm test            # schema, metadata, duplicates, coverage ratchet, static page freshness
 npm run content:status
+npm run content:audit -- --write   # regenerate docs/CONTENT_QUALITY.md after any answer change
 npm run seo         # regenerate the static pages in q/, sitemap.xml and robots.txt after any answer change
 ```
 
